@@ -114,7 +114,9 @@ A separate local integration smoke test ran the patched decoder and the real
 `tiny.en` checkpoint on the JFK fixture. It committed the expected transcript,
 returned the worker queue to zero, and restored the complete resource budget.
 The source revision and loaded model weights were verified before the result was
-reported. The native integration workflow repeats this check in CI.
+reported. The versioned [smoke record](evidence/native-cpu-tiny-en-jfk-2026-09-03.json)
+contains the exact revisions, environment, hashes, and result. The native
+integration workflow repeats this check in CI.
 
 The Lean model currently contains 35 theorem declarations, including helper
 lemmas. It starts from a canonical empty runtime and proves properties for
@@ -171,6 +173,7 @@ lake build
 ```text
 conformance/     Fixture schema, case matrix, and one implemented fixture pair
 docs/            Architecture, conformance contract, and roadmap
+evidence/        Versioned local integration observations
 formal/lean/     Abstract lease, lifecycle, and capacity model
 patches/         Reviewable patch series for the tested Whisper backend
 src/             Executable reference implementation

@@ -1,0 +1,53 @@
+{
+  "schema_version": "1",
+  "recorded_at": "2026-09-03T14:10:52.1398888Z",
+  "status": "passed",
+  "runtime": {
+    "version": "0.1.0.dev0",
+    "git_commit": "619e164f69d5bcf1a2a427a9aaa1ec2c643c6c13"
+  },
+  "backend": {
+    "name": "openai-whisper-suspendable",
+    "base_commit": "86098128c0b4f24f0e2aa2994de830614b474227",
+    "applied_commit": "d7ba9a64e93c22a83964045b0ac29ac01c601fc7",
+    "git_tree": "c011d2563c26763b5f147026e6b18ef85bccd4fb",
+    "patch_manifest": "patches/openai-whisper/SHA256SUMS"
+  },
+  "environment": {
+    "platform": "Windows-11-10.0.26200-SP0",
+    "python": "3.13.1",
+    "torch": "2.6.0+cpu",
+    "numpy": "2.5.2",
+    "tiktoken": "0.14.0",
+    "numba": "0.67.0",
+    "tqdm": "4.70.0",
+    "more_itertools": "11.1.0"
+  },
+  "model": {
+    "name": "tiny.en",
+    "device": "cpu",
+    "checkpoint_sha256": "d3dd57d32accea0b295c96e26691aa14d8822fac7d9d27d5dc00b4ca2826dd03",
+    "loaded_state_sha256": "8041a80119a588f542472da35e97d0372fce1d9709ed9874475e9c03deac5de6"
+  },
+  "input": {
+    "fixture_id": "openai-whisper-jfk-flac",
+    "sha256": "63a4b1e4c1dc655ac70961ffbf518acd249df237e5a0152faae9a4a836949715",
+    "sample_rate_hz": 16000,
+    "sample_count": 176000
+  },
+  "execution": {
+    "adapter": "NativeWhisperAdapter",
+    "profile": "native-cpu-smoke",
+    "rng_seed": 7,
+    "elapsed_seconds": 1.259099499991862,
+    "request_status": "committed",
+    "session_version": 1,
+    "window_id": "window-0",
+    "queue_depth_after": 0,
+    "resources_released": true
+  },
+  "result": {
+    "expected_text_matched": true,
+    "text": "And so my fellow Americans ask not what your country can do for you, ask what you can do for your country."
+  }
+}

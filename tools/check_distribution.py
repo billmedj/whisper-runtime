@@ -15,6 +15,8 @@ SDIST_REQUIRED_SUFFIXES = {
     "conformance/fixture.schema.json",
     "constraints/native-integration.txt",
     "docs/rfcs/0001-state-resource-execution.md",
+    "evidence/README.md",
+    "evidence/native-cpu-tiny-en-jfk-2026-09-03.json",
     "formal/lean/WhisperRuntimeFormal.lean",
     "patches/openai-whisper/0001-Make-native-inference-state-request-local.patch",
     "patches/openai-whisper/0002-Make-decode-options-request-local.patch",
