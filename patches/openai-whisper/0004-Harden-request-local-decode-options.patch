@@ -1,0 +1,322 @@
+From 0a750618031ebe2dc99ac7434d9679a15505ac71 Mon Sep 17 00:00:00 2001
+From: Bilal Medjani <322728156+billmedj@users.noreply.github.com>
+Date: Thu, 3 Sep 2026 20:51:45 +0800
+Subject: [PATCH 4/7] Harden request-local decode options
+
+---
+ tests/test_decoding_state.py | 183 ++++++++++++++++++++++++++++++++++-
+ whisper/decoding.py          |  24 +++--
+ 2 files changed, 199 insertions(+), 8 deletions(-)
+
+diff --git a/tests/test_decoding_state.py b/tests/test_decoding_state.py
+index f3bbda7..99cff11 100644
+--- a/tests/test_decoding_state.py
++++ b/tests/test_decoding_state.py
+@@ -1,10 +1,20 @@
++from concurrent.futures import ThreadPoolExecutor
++from threading import Barrier
+ from types import SimpleNamespace
+ from unittest.mock import patch
+ 
++import pytest
+ import torch
+ from torch.distributions import Categorical
+ 
+-from whisper.decoding import DecodingOptions, DecodingTask, GreedyDecoder
++from whisper.decoding import (
++    DecodingOptions,
++    DecodingResult,
++    DecodingTask,
++    GreedyDecoder,
++    decode,
++)
++from whisper.model import ModelDimensions, Whisper
+ 
+ 
+ class StubTokenizer:
+@@ -40,6 +50,28 @@ def make_task(options):
+         return DecodingTask(make_stub_model(), options)
+ 
+ 
++def make_public_decode_model():
++    with torch.random.fork_rng():
++        torch.manual_seed(0)
++        model = Whisper(
++            ModelDimensions(
++                n_mels=4,
++                n_audio_ctx=4,
++                n_audio_state=4,
++                n_audio_head=1,
++                n_audio_layer=1,
++                n_vocab=51864,
++                n_text_ctx=8,
++                n_text_state=4,
++                n_text_head=1,
++                n_text_layer=1,
++            )
++        )
++        for parameter in model.parameters():
++            torch.nn.init.uniform_(parameter, -0.1, 0.1)
++    return model.eval()
++
++
+ def test_decoding_task_snapshots_caller_owned_collections():
+     prompt = [10, 11]
+     prefix = (20, 21)
+@@ -104,6 +136,63 @@ def test_decoding_task_consumes_single_use_option_iterables_once():
+     assert 30 in task.logit_filters[0].suppress_tokens
+ 
+ 
++def test_decoding_task_keeps_tokenizer_available_to_option_validation():
++    class TokenizerAwareTask(DecodingTask):
++        def _verify_options(self, options):
++            assert isinstance(self.tokenizer, StubTokenizer)
++            return super()._verify_options(options)
++
++    with patch("whisper.decoding.get_tokenizer", return_value=StubTokenizer()):
++        task = TokenizerAwareTask(
++            make_stub_model(),
++            DecodingOptions(
++                suppress_blank=False,
++                suppress_tokens=(),
++                without_timestamps=True,
++            ),
++        )
++
++    assert isinstance(task.tokenizer, StubTokenizer)
++
++
++def test_default_task_keeps_the_historical_greedy_constructor_call():
++    class LegacyGreedyDecoder:
++        def __init__(self, temperature, eot):
++            self.temperature = temperature
++            self.eot = eot
++
++    with (
++        patch("whisper.decoding.get_tokenizer", return_value=StubTokenizer()),
++        patch("whisper.decoding.GreedyDecoder", LegacyGreedyDecoder),
++    ):
++        task = DecodingTask(
++            make_stub_model(),
++            DecodingOptions(
++                suppress_blank=False,
++                suppress_tokens=(),
++                without_timestamps=True,
++            ),
++        )
++        _, decoder = task._new_run_components()
++
++    assert isinstance(decoder, LegacyGreedyDecoder)
++    assert decoder.temperature == 0.0
++    assert decoder.eot == StubTokenizer.eot
++
++
++def test_generator_is_not_part_of_option_config_equality_or_repr():
++    default = DecodingOptions()
++    with_generator = DecodingOptions(generator=torch.Generator().manual_seed(1))
++    with_equivalent_generator = DecodingOptions(
++        generator=torch.Generator().manual_seed(1)
++    )
++
++    assert with_generator == default
++    assert with_generator == with_equivalent_generator
++    assert repr(with_generator) == repr(default)
++    assert "generator" not in repr(with_generator)
++
++
+ def decoder_step(decoder, tokens, logits, sum_logprobs):
+     tokens, _ = decoder.update(tokens, logits.clone(), sum_logprobs)
+     return tokens
+@@ -156,6 +245,41 @@ def test_request_local_generators_are_reproducible_under_interleaving():
+     torch.testing.assert_close(logprobs_a, reference_logprobs)
+ 
+ 
++def test_distinct_generators_are_reproducible_during_concurrent_sampling():
++    logits = torch.tensor(
++        [[0.2, 0.5, 1.1, -0.3], [1.0, -0.4, 0.3, 0.8]],
++        dtype=torch.float32,
++    )
++
++    def sample(seed, barrier=None):
++        decoder = GreedyDecoder(
++            temperature=0.8,
++            eot=99,
++            generator=torch.Generator().manual_seed(seed),
++        )
++        tokens = torch.tensor([[0], [1]])
++        sum_logprobs = torch.zeros(2)
++        for _ in range(16):
++            if barrier is not None:
++                barrier.wait(timeout=10)
++            tokens = decoder_step(decoder, tokens, logits, sum_logprobs)
++        return tokens, sum_logprobs
++
++    expected_a = sample(17)
++    expected_b = sample(91)
++    barrier = Barrier(2)
++    with ThreadPoolExecutor(max_workers=2) as executor:
++        future_a = executor.submit(sample, 17, barrier)
++        future_b = executor.submit(sample, 91, barrier)
++        actual_a = future_a.result(timeout=30)
++        actual_b = future_b.result(timeout=30)
++
++    for actual, expected in zip(actual_a, expected_a):
++        torch.testing.assert_close(actual, expected)
++    for actual, expected in zip(actual_b, expected_b):
++        torch.testing.assert_close(actual, expected)
++
++
+ def test_request_local_sampling_does_not_advance_the_global_rng():
+     decoder = GreedyDecoder(
+         temperature=0.9,
+@@ -174,6 +298,27 @@ def test_request_local_sampling_does_not_advance_the_global_rng():
+     torch.testing.assert_close(after, before)
+ 
+ 
++def test_generator_device_mismatch_has_an_actionable_error():
++    decoder = GreedyDecoder(
++        temperature=0.9,
++        eot=99,
++        generator=torch.Generator().manual_seed(7),
++    )
++
++    with pytest.raises(
++        ValueError,
++        match=(
++            "sampling generator is on cpu, but logits are on meta; "
++            "create the generator on the logits device"
++        ),
++    ):
++        decoder.update(
++            torch.tensor([[0]]),
++            torch.empty((1, 3), device="meta"),
++            torch.zeros(1),
++        )
++
++
+ def test_request_local_sampling_advances_the_supplied_generator():
+     generator = torch.Generator().manual_seed(7)
+     decoder = GreedyDecoder(temperature=0.9, eot=99, generator=generator)
+@@ -187,6 +332,42 @@ def test_request_local_sampling_advances_the_supplied_generator():
+     assert not torch.equal(generator.get_state(), before)
+ 
+ 
++def test_public_decode_uses_local_sampling_without_mutating_option_lists():
++    model = make_public_decode_model()
++    mel = torch.linspace(-1, 1, 32).reshape(4, 8)
++    prompt = [100]
++    prefix = [101]
++    suppress_tokens = [30]
++    generator = torch.Generator().manual_seed(9)
++    generator_before = generator.get_state().clone()
++    torch.manual_seed(2026)
++    global_before = torch.random.get_rng_state()
++
++    result = decode(
++        model,
++        mel,
++        DecodingOptions(
++            language="en",
++            temperature=0.7,
++            sample_len=1,
++            prompt=prompt,
++            prefix=prefix,
++            suppress_tokens=suppress_tokens,
++            suppress_blank=False,
++            without_timestamps=True,
++            fp16=False,
++            generator=generator,
++        ),
++    )
++
++    assert isinstance(result, DecodingResult)
++    assert prompt == [100]
++    assert prefix == [101]
++    assert suppress_tokens == [30]
++    assert not torch.equal(generator.get_state(), generator_before)
++    torch.testing.assert_close(torch.random.get_rng_state(), global_before)
++
++
+ def test_decoding_task_rejects_non_torch_generator():
+     options = DecodingOptions(
+         generator=object(),
+diff --git a/whisper/decoding.py b/whisper/decoding.py
+index e1fbe04..3c59bf8 100644
+--- a/whisper/decoding.py
++++ b/whisper/decoding.py
+@@ -99,6 +99,7 @@ class DecodingOptions:
+ 
+     # text or tokens to feed as the prompt or the prefix; for more info:
+     # https://github.com/openai/whisper/discussions/117#discussioncomment-3727051
++    # Non-string iterables are consumed once when the decoding task starts.
+     prompt: Optional[Union[str, Iterable[int]]] = None  # for the previous context
+     prefix: Optional[Union[str, Iterable[int]]] = None  # to prefix the current context
+ 
+@@ -113,13 +114,16 @@ class DecodingOptions:
+ 
+     # implementation details
+     fp16: bool = True  # use fp16 for most of the calculation
+-    # The caller owns this generator and the decoder advances it. Concurrent
+-    # requests must use distinct generators if they require isolated streams.
+-    generator: Optional[torch.Generator] = None
++    # The caller owns this generator and the decoder advances it. It is not
++    # rolled back after a failed decode. Concurrent requests must use distinct
++    # generators if they require isolated streams.
++    generator: Optional[torch.Generator] = field(
++        default=None, repr=False, compare=False
++    )
+ 
+ 
+ def _snapshot_options(options: DecodingOptions) -> DecodingOptions:
+-    """Detach iterable options from caller-owned mutable or single-use objects."""
++    """Copy mutable sequences and consume each one-shot iterable once."""
+ 
+     def snapshot_tokens(value):
+         if value is None or isinstance(value, str):
+@@ -317,6 +321,11 @@ class GreedyDecoder(TokenDecoder):
+         if self.temperature == 0:
+             next_tokens = logits.argmax(dim=-1)
+         else:
++            if self.generator is not None and self.generator.device != logits.device:
++                raise ValueError(
++                    f"sampling generator is on {self.generator.device}, but logits "
++                    f"are on {logits.device}; create the generator on the logits device"
++                )
+             distribution = Categorical(logits=logits / self.temperature)
+             if self.generator is None:
+                 # Keep the historical global-RNG path unchanged by default.
+@@ -559,8 +568,6 @@ class DecodingTask:
+     def __init__(self, model: "Whisper", options: DecodingOptions):
+         self.model = model
+ 
+-        options = _snapshot_options(self._verify_options(options))
+-
+         language = options.language or "en"
+         tokenizer = get_tokenizer(
+             model.is_multilingual,
+@@ -569,6 +576,7 @@ class DecodingTask:
+             task=options.task,
+         )
+         self.tokenizer: Tokenizer = tokenizer
++        options = _snapshot_options(self._verify_options(options))
+         self.options: DecodingOptions = options
+ 
+         self.n_group: int = options.beam_size or options.best_of or 1
+@@ -616,11 +624,13 @@ class DecodingTask:
+                 inference,
+                 self.options.patience,
+             )
++        elif self.options.generator is None:
++            decoder = GreedyDecoder(self.options.temperature, self.tokenizer.eot)
+         else:
+             decoder = GreedyDecoder(
+                 self.options.temperature,
+                 self.tokenizer.eot,
+-                self.options.generator,
++                generator=self.options.generator,
+             )
+         return inference, decoder
+ 
+-- 
+2.48.1.windows.1
+

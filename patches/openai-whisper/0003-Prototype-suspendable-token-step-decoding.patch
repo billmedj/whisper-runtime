@@ -1,0 +1,674 @@
+From aef541ce0167ecfb8e48dc3379e67e9f7693024c Mon Sep 17 00:00:00 2001
+From: Bilal Medjani <322728156+billmedj@users.noreply.github.com>
+Date: Thu, 3 Sep 2026 20:54:34 +0800
+Subject: [PATCH 3/7] Prototype suspendable token-step decoding
+
+---
+ tests/test_decoding_state.py     |   4 +-
+ tests/test_suspendable_decode.py | 210 +++++++++++++++++++
+ whisper/decoding.py              | 342 ++++++++++++++++++++++++-------
+ 3 files changed, 475 insertions(+), 81 deletions(-)
+ create mode 100644 tests/test_suspendable_decode.py
+
+diff --git a/tests/test_decoding_state.py b/tests/test_decoding_state.py
+index e3182f9..f3bbda7 100644
+--- a/tests/test_decoding_state.py
++++ b/tests/test_decoding_state.py
+@@ -61,7 +61,7 @@ def test_decoding_task_snapshots_caller_owned_collections():
+     assert task.options.prompt == (10, 11)
+     assert task.options.prefix == (20, 21)
+     assert task.options.suppress_tokens == (-1, 30)
+-    assert task.decoder.generator is None
++    assert task.options.generator is None
+     assert task.initial_tokens == (2, 10, 11, 1, 8, 20, 21)
+     assert task.logit_filters[0].suppress_tokens == [
+         1,
+@@ -99,7 +99,7 @@ def test_decoding_task_consumes_single_use_option_iterables_once():
+     assert task.options.prompt == (10, 11)
+     assert task.options.prefix == (20, 21)
+     assert task.options.suppress_tokens == (30,)
+-    assert task.decoder.generator is generator
++    assert task.options.generator is generator
+     assert task.initial_tokens == (2, 10, 11, 1, 8, 20, 21)
+     assert 30 in task.logit_filters[0].suppress_tokens
+ 
+diff --git a/tests/test_suspendable_decode.py b/tests/test_suspendable_decode.py
+new file mode 100644
+index 0000000..2db87e8
+--- /dev/null
++++ b/tests/test_suspendable_decode.py
+@@ -0,0 +1,210 @@
++from unittest.mock import patch
++
++import pytest
++import torch
++
++from whisper.decoding import DecodingOptions, DecodingTask
++from whisper.model import ModelDimensions, Whisper
++
++
++@pytest.fixture
++def model() -> Whisper:
++    torch.manual_seed(0)
++    dimensions = ModelDimensions(
++        n_mels=80,
++        n_audio_ctx=2,
++        n_audio_state=4,
++        n_audio_head=1,
++        n_audio_layer=1,
++        n_vocab=51864,
++        n_text_ctx=12,
++        n_text_state=4,
++        n_text_head=1,
++        n_text_layer=1,
++    )
++    model = Whisper(dimensions).eval()
++    for parameter in model.parameters():
++        torch.nn.init.normal_(parameter, mean=0.0, std=0.02)
++    return model
++
++
++@pytest.fixture
++def audio_features() -> torch.Tensor:
++    torch.manual_seed(1)
++    return torch.randn(1, 2, 4)
++
++
++def make_options(**kwargs) -> DecodingOptions:
++    defaults = dict(
++        language="en",
++        sample_len=4,
++        suppress_blank=False,
++        suppress_tokens=(),
++        without_timestamps=True,
++        fp16=False,
++    )
++    defaults.update(kwargs)
++    return DecodingOptions(**defaults)
++
++
++def run_with_pause(
++    model: Whisper, audio_features: torch.Tensor, options: DecodingOptions
++):
++    run = DecodingTask(model, options)._start_run(audio_features)
++    initial_tokens = run.tokens.clone()
++    run.prefill()
++    assert run.step_index == 0
++    assert torch.equal(run.tokens, initial_tokens)
++
++    run.step()
++    checkpoint = run.tokens.clone()
++    assert run.step_index == 1
++    assert run.tokens.shape[-1] == initial_tokens.shape[-1] + 1
++    assert torch.equal(run.tokens, checkpoint)
++
++    while not run.complete:
++        run.step()
++    return run.finalize()
++
++
++def assert_results_equal(actual, expected) -> None:
++    assert len(actual) == len(expected)
++    for actual_result, expected_result in zip(actual, expected):
++        assert actual_result.language == expected_result.language
++        assert actual_result.language_probs == expected_result.language_probs
++        assert actual_result.tokens == expected_result.tokens
++        assert actual_result.text == expected_result.text
++        assert actual_result.avg_logprob == pytest.approx(expected_result.avg_logprob)
++        assert actual_result.no_speech_prob == pytest.approx(
++            expected_result.no_speech_prob
++        )
++        assert actual_result.temperature == expected_result.temperature
++        assert actual_result.compression_ratio == expected_result.compression_ratio
++        torch.testing.assert_close(
++            actual_result.audio_features, expected_result.audio_features
++        )
++
++
++def test_paused_greedy_decode_matches_uninterrupted_run(
++    model: Whisper, audio_features: torch.Tensor
++) -> None:
++    options = make_options()
++
++    uninterrupted = DecodingTask(model, options).run(audio_features)
++    resumed = run_with_pause(model, audio_features, options)
++
++    assert_results_equal(resumed, uninterrupted)
++
++
++def test_paused_sampling_decode_preserves_request_local_rng(
++    model: Whisper, audio_features: torch.Tensor
++) -> None:
++    uninterrupted_generator = torch.Generator().manual_seed(17)
++    resumed_generator = torch.Generator().manual_seed(17)
++
++    uninterrupted = DecodingTask(
++        model,
++        make_options(temperature=0.8, generator=uninterrupted_generator),
++    ).run(audio_features)
++    resumed = run_with_pause(
++        model,
++        audio_features,
++        make_options(temperature=0.8, generator=resumed_generator),
++    )
++
++    assert_results_equal(resumed, uninterrupted)
++    torch.testing.assert_close(
++        resumed_generator.get_state(), uninterrupted_generator.get_state()
++    )
++
++
++def test_paused_beam_decode_matches_uninterrupted_run(
++    model: Whisper, audio_features: torch.Tensor
++) -> None:
++    options = make_options(beam_size=2)
++
++    uninterrupted = DecodingTask(model, options).run(audio_features)
++    resumed = run_with_pause(model, audio_features, options)
++
++    assert_results_equal(resumed, uninterrupted)
++
++
++def test_inference_cleanup_runs_exactly_once(
++    model: Whisper, audio_features: torch.Tensor
++) -> None:
++    run = DecodingTask(model, make_options())._start_run(audio_features)
++    assert run.inference is not None
++
++    cleanup = run.inference.cleanup_caching
++    with patch.object(run.inference, "cleanup_caching", wraps=cleanup) as cleanup_spy:
++        run.prefill()
++        while not run.complete:
++            run.step()
++        assert cleanup_spy.call_count == 1
++
++        run.finalize()
++        run.cleanup()
++        assert cleanup_spy.call_count == 1
++
++
++def test_two_runs_do_not_alias_mutable_decode_state(
++    model: Whisper, audio_features: torch.Tensor
++) -> None:
++    task = DecodingTask(model, make_options(beam_size=2))
++    first = task._start_run(audio_features)
++    second = task._start_run(audio_features)
++
++    assert first.inference is not second.inference
++    assert first.decoder is not second.decoder
++    assert first.tokens.data_ptr() != second.tokens.data_ptr()
++    assert first.sum_logprobs.data_ptr() != second.sum_logprobs.data_ptr()
++    assert first.no_speech_probs is not second.no_speech_probs
++    assert first.inference.kv_cache is not second.inference.kv_cache
++
++    try:
++        first.prefill()
++        second.prefill()
++        first.step()
++        second.step()
++
++        assert first.decoder.finished_sequences is not second.decoder.finished_sequences
++        assert first.inference.kv_cache is not second.inference.kv_cache
++    finally:
++        first.cleanup()
++        second.cleanup()
++
++
++def test_finalized_run_rejects_reuse(
++    model: Whisper, audio_features: torch.Tensor
++) -> None:
++    run = DecodingTask(model, make_options())._start_run(audio_features)
++    while not run.complete:
++        run.step()
++    run.finalize()
++
++    with pytest.raises(RuntimeError, match="decode run is finalized"):
++        run.prefill()
++    with pytest.raises(RuntimeError, match="decode run is finalized"):
++        run.step()
++    with pytest.raises(RuntimeError, match="decode run is finalized"):
++        run.finalize()
++
++
++def test_cancelled_run_rejects_further_work(
++    model: Whisper, audio_features: torch.Tensor
++) -> None:
++    run = DecodingTask(model, make_options())._start_run(audio_features)
++    assert run.inference is not None
++    cleanup = run.inference.cleanup_caching
++    with patch.object(run.inference, "cleanup_caching", wraps=cleanup) as cleanup_spy:
++        run.prefill()
++        run.cleanup()
++        run.cleanup()
++        assert cleanup_spy.call_count == 1
++
++    with pytest.raises(RuntimeError, match="decode run is cancelled"):
++        run.prefill()
++    with pytest.raises(RuntimeError, match="decode run is cancelled"):
++        run.step()
++    with pytest.raises(RuntimeError, match="decode run is cancelled"):
++        run.finalize()
+diff --git a/whisper/decoding.py b/whisper/decoding.py
+index 429ad70..e1fbe04 100644
+--- a/whisper/decoding.py
++++ b/whisper/decoding.py
+@@ -1,4 +1,5 @@
+ from dataclasses import dataclass, field, replace
++from enum import Enum, auto
+ from typing import TYPE_CHECKING, Dict, Iterable, List, Optional, Sequence, Tuple, Union
+ 
+ import numpy as np
+@@ -552,9 +553,7 @@ class ApplyTimestampRules(LogitFilter):
+ 
+ 
+ class DecodingTask:
+-    inference: Inference
+     sequence_ranker: SequenceRanker
+-    decoder: TokenDecoder
+     logit_filters: List[LogitFilter]
+ 
+     def __init__(self, model: "Whisper", options: DecodingOptions):
+@@ -584,22 +583,9 @@ class DecodingTask:
+         self.sample_begin: int = len(self.initial_tokens)
+         self.sot_index: int = self.initial_tokens.index(tokenizer.sot)
+ 
+-        # inference: implements the forward pass through the decoder, including kv caching
+-        self.inference = PyTorchInference(model, len(self.initial_tokens))
+-
+         # sequence ranker: implements how to rank a group of sampled sequences
+         self.sequence_ranker = MaximumLikelihoodRanker(options.length_penalty)
+ 
+-        # decoder: implements how to select the next tokens, given the autoregressive distribution
+-        if options.beam_size is not None:
+-            self.decoder = BeamSearchDecoder(
+-                options.beam_size, tokenizer.eot, self.inference, options.patience
+-            )
+-        else:
+-            self.decoder = GreedyDecoder(
+-                options.temperature, tokenizer.eot, options.generator
+-            )
+-
+         # logit filters: applies various rules to suppress or penalize certain tokens
+         self.logit_filters = []
+         if self.options.suppress_blank:
+@@ -619,6 +605,25 @@ class DecodingTask:
+                 )
+             )
+ 
++    def _new_run_components(self) -> Tuple[Inference, TokenDecoder]:
++        """Create the mutable inference and search state for one decode run."""
++
++        inference = PyTorchInference(self.model, len(self.initial_tokens))
++        if self.options.beam_size is not None:
++            decoder: TokenDecoder = BeamSearchDecoder(
++                self.options.beam_size,
++                self.tokenizer.eot,
++                inference,
++                self.options.patience,
++            )
++        else:
++            decoder = GreedyDecoder(
++                self.options.temperature,
++                self.tokenizer.eot,
++                self.options.generator,
++            )
++        return inference, decoder
++
+     def _verify_options(self, options: DecodingOptions) -> DecodingOptions:
+         if options.generator is not None and not isinstance(
+             options.generator, torch.Generator
+@@ -733,93 +738,272 @@ class DecodingTask:
+ 
+         return languages, lang_probs
+ 
+-    def _main_loop(self, audio_features: Tensor, tokens: Tensor):
+-        n_batch = tokens.shape[0]
+-        sum_logprobs: Tensor = torch.zeros(n_batch, device=audio_features.device)
+-        no_speech_probs = [np.nan] * n_batch
++    @torch.no_grad()
++    def _start_run(self, mel: Tensor) -> "_DecodingRun":
++        """Create an opt-in, suspendable run with request-local mutable state."""
+ 
+-        try:
+-            for i in range(self.sample_len):
+-                logits = self.inference.logits(tokens, audio_features)
++        return _DecodingRun.start(self, mel)
+ 
+-                if (
+-                    i == 0 and self.tokenizer.no_speech is not None
+-                ):  # save no_speech_probs
+-                    probs_at_sot = logits[:, self.sot_index].float().softmax(dim=-1)
+-                    no_speech_probs = probs_at_sot[:, self.tokenizer.no_speech].tolist()
++    @torch.no_grad()
++    def run(self, mel: Tensor) -> List[DecodingResult]:
++        run = self._start_run(mel)
++        try:
++            if not run.complete:
++                run.prefill()
++            while not run.complete:
++                run.step()
++            return run.finalize()
++        except BaseException:
++            run.cleanup()
++            raise
+ 
+-                # now we need to consider the logits at the last token only
+-                logits = logits[:, -1]
+ 
+-                # apply the logit filters, e.g. for suppressing or applying penalty to
+-                for logit_filter in self.logit_filters:
+-                    logit_filter.apply(logits, tokens)
++class _DecodingRunPhase(Enum):
++    PREPARED = auto()
++    ACTIVE = auto()
++    COMPLETE = auto()
++    FINALIZED = auto()
++    CANCELLED = auto()
++    FAILED = auto()
+ 
+-                # expand the tokens tensor with the selected next tokens
+-                tokens, completed = self.decoder.update(tokens, logits, sum_logprobs)
+ 
+-                if completed or tokens.shape[-1] > self.n_ctx:
+-                    break
+-        finally:
+-            self.inference.cleanup_caching()
++class _DecodingRun:
++    """Own the mutable state and resources of one suspendable decode run."""
+ 
+-        return tokens, sum_logprobs, no_speech_probs
++    def __init__(
++        self,
++        task: DecodingTask,
++        audio_features: Tensor,
++        tokens: Tensor,
++        languages,
++        language_probs,
++        inference: Optional[Inference],
++        decoder: Optional[TokenDecoder],
++        direct_results: Optional[List[DecodingResult]] = None,
++    ):
++        self.task = task
++        self.audio_features = audio_features
++        self.tokens = tokens
++        self.languages = languages
++        self.language_probs = language_probs
++        self.inference = inference
++        self.decoder = decoder
++        self.n_audio = audio_features.shape[0]
++        self.step_index = 0
++        self.sum_logprobs = torch.zeros(tokens.shape[0], device=audio_features.device)
++        self.no_speech_probs = [np.nan] * tokens.shape[0]
++        self._pending_logits: Optional[Tensor] = None
++        self._direct_results = direct_results
++        self._results: Optional[List[DecodingResult]] = None
++        self._cleanup_done = False
++        self._phase = (
++            _DecodingRunPhase.COMPLETE
++            if direct_results is not None
++            else _DecodingRunPhase.PREPARED
++        )
+ 
++    @classmethod
+     @torch.no_grad()
+-    def run(self, mel: Tensor) -> List[DecodingResult]:
+-        self.decoder.reset()
+-        tokenizer: Tokenizer = self.tokenizer
+-        n_audio: int = mel.shape[0]
+-
+-        audio_features: Tensor = self._get_audio_features(mel)  # encoder forward pass
+-        tokens: Tensor = torch.tensor([self.initial_tokens]).repeat(n_audio, 1)
+-
+-        # detect language if requested, overwriting the language token
+-        languages, language_probs = self._detect_language(audio_features, tokens)
+-        if self.options.task == "lang_id":
+-            return [
++    def start(cls, task: DecodingTask, mel: Tensor) -> "_DecodingRun":
++        audio_features = task._get_audio_features(mel)
++        n_audio = mel.shape[0]
++        tokens = torch.tensor([task.initial_tokens]).repeat(n_audio, 1)
++        languages, language_probs = task._detect_language(audio_features, tokens)
++
++        if task.options.task == "lang_id":
++            results = [
+                 DecodingResult(
+-                    audio_features=features, language=language, language_probs=probs
++                    audio_features=features,
++                    language=language,
++                    language_probs=probs,
+                 )
+                 for features, language, probs in zip(
+                     audio_features, languages, language_probs
+                 )
+             ]
++            return cls(
++                task,
++                audio_features,
++                tokens,
++                languages,
++                language_probs,
++                inference=None,
++                decoder=None,
++                direct_results=results,
++            )
+ 
+-        # repeat text tensors by the group size, for beam search or best-of-n sampling
+-        tokens = tokens.repeat_interleave(self.n_group, dim=0).to(audio_features.device)
++        inference, decoder = task._new_run_components()
++        try:
++            decoder.reset()
++            tokens = tokens.repeat_interleave(task.n_group, dim=0).to(
++                audio_features.device
++            )
++            run = cls(
++                task,
++                audio_features,
++                tokens,
++                languages,
++                language_probs,
++                inference,
++                decoder,
++            )
++            if task.sample_len <= 0:
++                run._phase = _DecodingRunPhase.COMPLETE
++                run._cleanup_once()
++            return run
++        except BaseException:
++            inference.cleanup_caching()
++            raise
++
++    @property
++    def complete(self) -> bool:
++        return self._phase in {
++            _DecodingRunPhase.COMPLETE,
++            _DecodingRunPhase.FINALIZED,
++        }
+ 
+-        # call the main sampling loop
+-        tokens, sum_logprobs, no_speech_probs = self._main_loop(audio_features, tokens)
++    def _require_phase(self, *allowed: _DecodingRunPhase) -> None:
++        if self._phase not in allowed:
++            phase = self._phase.name.lower()
++            raise RuntimeError(f"decode run is {phase}")
+ 
+-        # reshape the tensors to have (n_audio, n_group) as the first two dimensions
+-        audio_features = audio_features[:: self.n_group]
+-        no_speech_probs = no_speech_probs[:: self.n_group]
+-        assert audio_features.shape[0] == len(no_speech_probs) == n_audio
++    def _cleanup_once(self) -> None:
++        if self._cleanup_done:
++            return
++        self._cleanup_done = True
++        if self.inference is not None:
++            self.inference.cleanup_caching()
+ 
+-        tokens = tokens.reshape(n_audio, self.n_group, -1)
+-        sum_logprobs = sum_logprobs.reshape(n_audio, self.n_group)
++    def _fail(self) -> None:
++        self._phase = _DecodingRunPhase.FAILED
++        self._pending_logits = None
++        self._cleanup_once()
+ 
+-        # get the final candidates for each group, and slice between the first sampled token and EOT
+-        tokens, sum_logprobs = self.decoder.finalize(tokens, sum_logprobs)
+-        tokens: List[List[Tensor]] = [
+-            [t[self.sample_begin : (t == tokenizer.eot).nonzero()[0, 0]] for t in s]
+-            for s in tokens
+-        ]
++    @torch.no_grad()
++    def prefill(self) -> None:
++        """Build the initial decoder cache without selecting a token."""
++
++        self._require_phase(_DecodingRunPhase.PREPARED)
++        assert self.inference is not None
++        try:
++            logits = self.inference.logits(self.tokens, self.audio_features)
++            if self.task.tokenizer.no_speech is not None:
++                probs_at_sot = logits[:, self.task.sot_index].float().softmax(dim=-1)
++                self.no_speech_probs = probs_at_sot[
++                    :, self.task.tokenizer.no_speech
++                ].tolist()
++            self._pending_logits = logits[:, -1]
++            self._phase = _DecodingRunPhase.ACTIVE
++        except BaseException:
++            self._fail()
++            raise
+ 
+-        # select the top-ranked sample in each group
+-        selected = self.sequence_ranker.rank(tokens, sum_logprobs)
+-        tokens: List[List[int]] = [t[i].tolist() for i, t in zip(selected, tokens)]
+-        texts: List[str] = [tokenizer.decode(t).strip() for t in tokens]
++    @torch.no_grad()
++    def step(self) -> bool:
++        """Select exactly one token for every active hypothesis."""
++
++        if self._phase == _DecodingRunPhase.PREPARED:
++            self.prefill()
++        self._require_phase(_DecodingRunPhase.ACTIVE)
++        assert self.inference is not None
++        assert self.decoder is not None
+ 
+-        sum_logprobs: List[float] = [lp[i] for i, lp in zip(selected, sum_logprobs)]
+-        avg_logprobs: List[float] = [
+-            lp / (len(t) + 1) for t, lp in zip(tokens, sum_logprobs)
++        try:
++            if self._pending_logits is None:
++                logits = self.inference.logits(self.tokens, self.audio_features)[:, -1]
++            else:
++                logits = self._pending_logits
++                self._pending_logits = None
++
++            for logit_filter in self.task.logit_filters:
++                logit_filter.apply(logits, self.tokens)
++
++            self.tokens, decoder_complete = self.decoder.update(
++                self.tokens, logits, self.sum_logprobs
++            )
++            self.step_index += 1
++            if (
++                decoder_complete
++                or self.tokens.shape[-1] > self.task.n_ctx
++                or self.step_index >= self.task.sample_len
++            ):
++                self._phase = _DecodingRunPhase.COMPLETE
++                self._cleanup_once()
++            return self.complete
++        except BaseException:
++            self._fail()
++            raise
++
++    def cleanup(self) -> None:
++        """Release inference resources, cancelling an incomplete run."""
++
++        if self._phase in {
++            _DecodingRunPhase.PREPARED,
++            _DecodingRunPhase.ACTIVE,
++        }:
++            self._phase = _DecodingRunPhase.CANCELLED
++            self._pending_logits = None
++        self._cleanup_once()
++
++    @torch.no_grad()
++    def finalize(self) -> List[DecodingResult]:
++        """Publish results once after the run reaches completion."""
++
++        self._require_phase(_DecodingRunPhase.COMPLETE)
++        try:
++            self._cleanup_once()
++            if self._direct_results is not None:
++                results = self._direct_results
++            else:
++                results = self._build_results()
++            self._results = results
++            self._phase = _DecodingRunPhase.FINALIZED
++            return results
++        except BaseException:
++            self._fail()
++            raise
++
++    def _build_results(self) -> List[DecodingResult]:
++        assert self.decoder is not None
++
++        audio_features = self.audio_features[:: self.task.n_group]
++        no_speech_probs = self.no_speech_probs[:: self.task.n_group]
++        assert audio_features.shape[0] == len(no_speech_probs) == self.n_audio
++
++        grouped_tokens = self.tokens.reshape(self.n_audio, self.task.n_group, -1)
++        grouped_logprobs = self.sum_logprobs.reshape(self.n_audio, self.task.n_group)
++        candidate_tokens, candidate_logprobs = self.decoder.finalize(
++            grouped_tokens, grouped_logprobs
++        )
++        candidate_tokens = [
++            [
++                tokens[
++                    self.task.sample_begin : (
++                        tokens == self.task.tokenizer.eot
++                    ).nonzero()[0, 0]
++                ]
++                for tokens in candidates
++            ]
++            for candidates in candidate_tokens
++        ]
++
++        selected = self.task.sequence_ranker.rank(candidate_tokens, candidate_logprobs)
++        tokens = [
++            candidates[index].tolist()
++            for index, candidates in zip(selected, candidate_tokens)
++        ]
++        texts = [self.task.tokenizer.decode(sequence).strip() for sequence in tokens]
++        sum_logprobs = [
++            candidates[index] for index, candidates in zip(selected, candidate_logprobs)
++        ]
++        avg_logprobs = [
++            logprob / (len(sequence) + 1)
++            for sequence, logprob in zip(tokens, sum_logprobs)
+         ]
+ 
+         fields = (
+             texts,
+-            languages,
++            self.languages,
+             tokens,
+             audio_features,
+             avg_logprobs,
+@@ -832,14 +1016,14 @@ class DecodingTask:
+             DecodingResult(
+                 audio_features=features,
+                 language=language,
+-                tokens=tokens,
++                tokens=sequence,
+                 text=text,
+                 avg_logprob=avg_logprob,
+                 no_speech_prob=no_speech_prob,
+-                temperature=self.options.temperature,
++                temperature=self.task.options.temperature,
+                 compression_ratio=compression_ratio(text),
+             )
+-            for text, language, tokens, features, avg_logprob, no_speech_prob in zip(
++            for text, language, sequence, features, avg_logprob, no_speech_prob in zip(
+                 *fields
+             )
+         ]
+-- 
+2.48.1.windows.1
+

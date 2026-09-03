@@ -1,0 +1,75 @@
+name: Native Whisper integration
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/native-integration.yml"
+      - "constraints/native-integration.txt"
+      - "patches/openai-whisper/**"
+      - "src/whisper_runtime/**"
+      - "tools/smoke_native_whisper.py"
+  push:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/native-integration.yml"
+      - "constraints/native-integration.txt"
+      - "patches/openai-whisper/**"
+      - "src/whisper_runtime/**"
+      - "tools/smoke_native_whisper.py"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: native-integration-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  tiny-en-cpu:
+    name: Patched decoder and tiny.en on CPU
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Check out runtime
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.13"
+
+      - name: Verify backend patch files
+        working-directory: patches/openai-whisper
+        run: sha256sum --check SHA256SUMS
+
+      - name: Build the pinned Whisper backend
+        shell: bash
+        run: |
+          git clone https://github.com/openai/whisper.git .integration/whisper
+          git -C .integration/whisper checkout 86098128c0b4f24f0e2aa2994de830614b474227
+          git -C .integration/whisper config user.name "Whisper Runtime CI"
+          git -C .integration/whisper config user.email "whisper-runtime-ci@example.invalid"
+          git -C .integration/whisper am "$GITHUB_WORKSPACE"/patches/openai-whisper/*.patch
+          test "$(git -C .integration/whisper rev-parse 'HEAD^{tree}')" = "c011d2563c26763b5f147026e6b18ef85bccd4fb"
+
+      - name: Install runtime and decoder dependencies
+        run: |
+          python -m pip install --index-url https://download.pytorch.org/whl/cpu torch==2.6.0
+          python -m pip install -r constraints/native-integration.txt
+          python -m pip install --no-deps .
+          python -m pip check
+
+      - name: Run the real-model transaction smoke test
+        shell: bash
+        run: |
+          revision="$(git -C .integration/whisper rev-parse HEAD)"
+          PYTHONPATH="$GITHUB_WORKSPACE/.integration/whisper" python -B tools/smoke_native_whisper.py \
+            .integration/whisper/tests/jfk.flac \
+            --model tiny.en \
+            --download-root "$RUNNER_TEMP/whisper-models" \
+            --revision "$revision" \
+            --expected-text "And so my fellow Americans ask not what your country can do for you, ask what you can do for your country."

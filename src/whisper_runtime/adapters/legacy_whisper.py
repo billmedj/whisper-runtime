@@ -20,10 +20,8 @@ import json
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from hashlib import sha256
-from threading import Lock, RLock
 from time import perf_counter_ns
 from typing import Protocol, cast, runtime_checkable
-from weakref import ReferenceType, ref
 
 from ..errors import (
     ModelMismatchError,
@@ -34,25 +32,17 @@ from ..execution import ExecutionScope
 from ..model import ModelSnapshot
 from ..resources import ResourceVector
 from ..state import RequestState, Session, SessionState, WindowResult
-from ..transaction import TransactionStatus, WindowTransaction
+from ..transaction import WindowTransaction
 from ..worker import Worker
+from ._model_binding import (
+    ModelBinding,
+    bind_model,
+    get_model_binding,
+    require_model_available,
+    transaction_is_fully_recovered,
+)
 
 LEGACY_WHISPER_ENVELOPE_VERSION = "whisper-runtime/legacy-transcription/v1"
-
-_MODEL_BINDINGS_GUARD = Lock()
-
-
-class _ModelBinding:
-    __slots__ = ("execution_profile", "lock", "retained_error", "worker")
-
-    def __init__(self) -> None:
-        self.lock = RLock()
-        self.worker: Worker | None = None
-        self.execution_profile: LegacyExecutionProfile | None = None
-        self.retained_error: LegacyTranscriptionRetainedError | None = None
-
-
-_MODEL_BINDINGS: dict[int, tuple[ReferenceType[object], _ModelBinding]] = {}
 
 
 class LegacyAdapterError(RuntimeStateError):
@@ -83,7 +73,7 @@ class LegacyTranscriptionRetainedError(LegacyAdapterError):
         envelope: LegacyTranscriptionEnvelope | None,
         payload_items: tuple[tuple[str, _FrozenValue], ...] | None,
         payload_digest: str | None,
-        model_binding: _ModelBinding,
+        model_binding: ModelBinding,
         worker: Worker,
     ) -> None:
         state = (
@@ -130,7 +120,7 @@ class LegacyTranscriptionRetainedError(LegacyAdapterError):
             if current is not None and current is not self:
                 return False
             self._worker.recover(self.transaction)
-            if not _transaction_is_fully_recovered(self.transaction):
+            if not transaction_is_fully_recovered(self.transaction):
                 return False
             if self._model_binding.retained_error is self:
                 self._model_binding.retained_error = None
@@ -150,61 +140,6 @@ class LegacyWhisperModel(Protocol):
 
 
 ModelIdentityProbe = Callable[[LegacyWhisperModel], ModelSnapshot]
-
-
-def _drop_model_binding(key: int, dead_reference: ReferenceType[object]) -> None:
-    with _MODEL_BINDINGS_GUARD:
-        current = _MODEL_BINDINGS.get(key)
-        if current is not None and current[0] is dead_reference:
-            del _MODEL_BINDINGS[key]
-
-
-def _model_binding(model: object) -> _ModelBinding:
-    """Return one shared execution binding for a live model object.
-
-    Weak references let the registry preserve object identity without keeping
-    unused models alive. Models that cannot be weak-referenced are rejected.
-    """
-
-    key = id(model)
-
-    def remove(dead_reference: ReferenceType[object]) -> None:
-        _drop_model_binding(key, dead_reference)
-
-    try:
-        reference = ref(model, remove)
-    except TypeError as exc:
-        raise TypeError("a legacy model must support weak references") from exc
-
-    with _MODEL_BINDINGS_GUARD:
-        current = _MODEL_BINDINGS.get(key)
-        if current is not None and current[0]() is model:
-            return current[1]
-        binding = _ModelBinding()
-        _MODEL_BINDINGS[key] = (reference, binding)
-        return binding
-
-
-def _transaction_is_fully_recovered(transaction: WindowTransaction) -> bool:
-    return bool(
-        transaction.status
-        in (
-            TransactionStatus.COMMITTED,
-            TransactionStatus.ABORTED,
-            TransactionStatus.EXPIRED,
-        )
-        and transaction.cleanup_error is None
-    )
-
-
-def _require_model_available(binding: _ModelBinding) -> None:
-    retained = binding.retained_error
-    if retained is None:
-        return
-    if _transaction_is_fully_recovered(retained.transaction):
-        binding.retained_error = None
-        return
-    raise retained
 
 
 @dataclass(frozen=True, slots=True)
@@ -611,7 +546,7 @@ class LegacyWhisperAdapter:
     _model: LegacyWhisperModel
     _identity_probe: ModelIdentityProbe
     _model_identity: ModelSnapshot
-    _model_binding: _ModelBinding
+    _model_binding: ModelBinding
 
     def __init__(
         self,
@@ -635,18 +570,9 @@ class LegacyWhisperAdapter:
                 "a legacy execution profile must reserve the full worker capacity"
             )
 
-        model_binding = _model_binding(model)
+        model_binding = get_model_binding(model, subject="legacy model")
         with model_binding.lock:
-            _require_model_available(model_binding)
-            if model_binding.worker is not None and model_binding.worker is not worker:
-                raise ValueError("one legacy model object cannot use multiple workers")
-            if (
-                model_binding.execution_profile is not None
-                and model_binding.execution_profile != execution_profile
-            ):
-                raise ValueError(
-                    "one legacy model object cannot use multiple execution profiles"
-                )
+            require_model_available(model_binding)
             identity = identity_probe(model)
             if not isinstance(identity, ModelSnapshot):
                 raise TypeError("identity_probe must return ModelSnapshot")
@@ -654,8 +580,14 @@ class LegacyWhisperAdapter:
                 raise ModelMismatchError(
                     "the loaded historical model does not match the worker snapshot"
                 )
-            model_binding.worker = worker
-            model_binding.execution_profile = execution_profile
+            bind_model(
+                model_binding,
+                adapter_kind="legacy",
+                worker=worker,
+                profile_id=execution_profile.profile_id,
+                resources=execution_profile.resources,
+                subject="legacy model object",
+            )
 
         object.__setattr__(self, "worker", worker)
         object.__setattr__(self, "execution_profile", execution_profile)
@@ -718,7 +650,7 @@ class LegacyWhisperAdapter:
             self._model_binding.lock.acquire()
             model_lock_acquired = True
             model_lock_wait_ns_holder.append(perf_counter_ns() - lock_wait_started_ns)
-            _require_model_available(self._model_binding)
+            require_model_available(self._model_binding)
             kwargs = frozen_options.to_kwargs()
             initial_kwargs_fingerprint = LegacyTranscribeOptions(kwargs).fingerprint
 

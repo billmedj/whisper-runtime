@@ -10,6 +10,7 @@ from pathlib import Path
 from capture_whisper_reference import git_metadata
 from check_repository import contains_absolute_user_path, validate_audio_binding
 from compare_whisper_fixtures import compare_fixtures
+from smoke_native_whisper import verify_source_revision
 
 ROOT = Path(__file__).resolve().parents[1]
 REFERENCE_PATH = (
@@ -62,6 +63,90 @@ class AudioManifestTests(unittest.TestCase):
 
 
 class ProvenanceTests(unittest.TestCase):
+    def _create_whisper_worktree(self, root: Path) -> tuple[Path, str]:
+        module = root / "whisper" / "__init__.py"
+        module.parent.mkdir()
+        module.write_text("__version__ = 'test'\n", encoding="utf-8")
+        (root / ".gitignore").write_text("__pycache__/\n*.py[cod]\n", encoding="utf-8")
+        subprocess.run(["git", "init", "-q", str(root)], check=True)
+        subprocess.run(
+            [
+                "git",
+                "-C",
+                str(root),
+                "config",
+                "user.email",
+                "test@example.invalid",
+            ],
+            check=True,
+        )
+        subprocess.run(
+            ["git", "-C", str(root), "config", "user.name", "Provenance Test"],
+            check=True,
+        )
+        subprocess.run(
+            ["git", "-C", str(root), "add", ".gitignore", "whisper/__init__.py"],
+            check=True,
+        )
+        subprocess.run(
+            ["git", "-C", str(root), "commit", "-q", "-m", "fixture"],
+            check=True,
+        )
+        revision = subprocess.run(
+            ["git", "-C", str(root), "rev-parse", "HEAD"],
+            check=True,
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+        ).stdout.strip()
+        return module, revision
+
+    def test_native_smoke_binds_the_reported_revision_to_executed_source(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            module, revision = self._create_whisper_worktree(Path(temporary_directory))
+            self.assertEqual(verify_source_revision(str(module), revision), revision)
+
+    def test_native_smoke_rejects_a_false_revision(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            module, _ = self._create_whisper_worktree(Path(temporary_directory))
+            with self.assertRaisesRegex(RuntimeError, "does not match"):
+                verify_source_revision(str(module), "0" * 40)
+
+    def test_native_smoke_rejects_tracked_source_changes(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            module, revision = self._create_whisper_worktree(Path(temporary_directory))
+            module.write_text("__version__ = 'changed'\n", encoding="utf-8")
+            with self.assertRaisesRegex(RuntimeError, "source changes"):
+                verify_source_revision(str(module), revision)
+
+    def test_native_smoke_rejects_untracked_source_changes(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            root = Path(temporary_directory)
+            module, revision = self._create_whisper_worktree(root)
+            (module.parent / "override.py").write_text("VALUE = 1\n", encoding="utf-8")
+            with self.assertRaisesRegex(RuntimeError, "source changes"):
+                verify_source_revision(str(module), revision)
+
+    def test_native_smoke_rejects_an_ancestor_repository(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            root = Path(temporary_directory)
+            _, revision = self._create_whisper_worktree(root)
+            nested_module = root / "vendor" / "whisper" / "__init__.py"
+            nested_module.parent.mkdir(parents=True)
+            nested_module.write_text("__version__ = 'nested'\n", encoding="utf-8")
+            with self.assertRaisesRegex(RuntimeError, "not rooted"):
+                verify_source_revision(str(nested_module), revision)
+
+    def test_native_smoke_rejects_ignored_package_bytecode(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            root = Path(temporary_directory)
+            module, revision = self._create_whisper_worktree(root)
+            bytecode = module.parent / "__pycache__" / "override.pyc"
+            bytecode.parent.mkdir()
+            bytecode.write_bytes(b"untracked executable payload")
+            with self.assertRaisesRegex(RuntimeError, "ignored files"):
+                verify_source_revision(str(module), revision)
+
     def test_audio_is_the_only_untracked_file_that_can_be_excluded(self) -> None:
         with tempfile.TemporaryDirectory() as temporary_directory:
             root = Path(temporary_directory)

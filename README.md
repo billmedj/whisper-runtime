@@ -6,10 +6,11 @@ defines how one process admits work, owns mutable state, stops backend work,
 publishes a result, and returns reserved capacity.
 
 The current package is a reference implementation. A conservative adapter can
-run the historical `model.transcribe()` API as one transaction. It serializes
-calls to one model object and reserves one complete worker for each call. The
-adapter does not expose Whisper's internal encode, decode-step, or alignment
-stages to the scheduler. This package is not a production transcription service.
+run the historical `model.transcribe()` API as one transaction. An experimental
+native CPU adapter can also expose run creation, prefill, individual token
+steps, and finalization to the transaction boundary. Both adapters serialize
+calls to one model object and reserve one complete worker for each call. This
+package is not a production transcription service.
 
 ## Implemented model
 
@@ -24,6 +25,8 @@ The Python package defines these ownership boundaries:
 - `SubmissionGate` orders backend submission against transaction close.
 - `LegacyWhisperAdapter` places one existing synchronous Whisper transcription
   behind the same admission, commit, and recovery boundary.
+- `NativeWhisperAdapter` places each CPU decoder stage and token step behind the
+  submission gate and checks cancellation between them.
 
 `Budget.acquire()` creates leases. Lease construction is not public. A lease is
 bound to its originating budget and ledger entry. The worker creates
@@ -87,14 +90,31 @@ retained transaction is recovered. The adapter cannot stop a blocking
 historical `transcribe()` call between decoder tokens; that requires the native
 staged backend described in RFC 0001.
 
+The native CPU adapter uses the same full-worker restriction. It creates a
+fresh PyTorch generator from a rollback-safe transaction seed, commits one
+result for one exact 30-second mel window, and cleans request-local
+decode state at the completion fence. The native and legacy adapters cannot
+bind the same live model object. PyTorch and Whisper remain optional runtime
+dependencies and are not imported with the package.
+
 ## Current evidence
 
-The local suite currently contains 68 Python unit tests. They cover resource
+The local suite currently contains 89 Python unit tests. They cover resource
 accounting, queue bounds, stale commits, cancellation races, deadlines,
 submission drain, stop retries, quarantine, cleanup retry, and owner-death
 takeover. Adapter tests also cover cross-adapter serialization, fixed resource
 profiles, immutable result payloads, retained-result recovery, and provenance
-validation. One state-machine test executes a deterministic 2,000-step trace.
+validation. Native adapter tests cover stage submission, token checkpoints,
+rollback-safe generator seeds, cooperative cancellation, exception cleanup,
+model identity changes, and the single-result commit boundary. One state-machine
+test executes a deterministic 2,000-step trace. The native unit tests use
+controlled backend doubles so they can force failure and race paths.
+
+A separate local integration smoke test ran the patched decoder and the real
+`tiny.en` checkpoint on the JFK fixture. It committed the expected transcript,
+returned the worker queue to zero, and restored the complete resource budget.
+The source revision and loaded model weights were verified before the result was
+reported. The native integration workflow repeats this check in CI.
 
 The Lean model currently contains 35 theorem declarations, including helper
 lemmas. It starts from a canonical empty runtime and proves properties for
@@ -152,15 +172,20 @@ lake build
 conformance/     Fixture schema, case matrix, and one implemented fixture pair
 docs/            Architecture, conformance contract, and roadmap
 formal/lean/     Abstract lease, lifecycle, and capacity model
+patches/         Reviewable patch series for the tested Whisper backend
 src/             Executable reference implementation
 tests/           Unit and deterministic state-machine tests
 tools/           Repository, fixture, and local check commands
 ```
 
-The optional compatibility bridge is under
-`src/whisper_runtime/adapters/`. It imports no Whisper, PyTorch, or NumPy module;
-applications provide the model object, its identity probe, and a fixed execution
-profile. See [the adapter contract](docs/LEGACY_ADAPTER.md).
+The optional bridges are under `src/whisper_runtime/adapters/`. Importing the
+package loads no Whisper, PyTorch, or NumPy module. Applications provide the
+model object, its identity probe, and a fixed execution profile. See the
+[legacy adapter contract](docs/LEGACY_ADAPTER.md) and the
+[native CPU adapter contract](docs/NATIVE_ADAPTER.md).
+
+The tested suspendable backend is reproducible from the pinned base and patch
+series in [`patches/openai-whisper`](patches/openai-whisper/README.md).
 
 The upstream request-local cache change that motivated this work remains
 separate in [openai/whisper#2842](https://github.com/openai/whisper/pull/2842).

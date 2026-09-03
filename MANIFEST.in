@@ -2,8 +2,10 @@ include LICENSE
 include README.md
 include pyproject.toml
 recursive-include conformance *.json *.md
+recursive-include constraints *.txt
 recursive-include docs *.md
 recursive-include formal/lean *.lean *.toml lean-toolchain lake-manifest.json
+recursive-include patches *.md *.patch SHA256SUMS
 recursive-include tools *.py *.ps1
 include src/whisper_runtime/py.typed
 prune formal/lean/.lake

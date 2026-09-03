@@ -1,0 +1,847 @@
+From b676632187bd093acd026713688812693879ce49 Mon Sep 17 00:00:00 2001
+From: Bilal Medjani <322728156+billmedj@users.noreply.github.com>
+Date: Thu, 3 Sep 2026 21:15:04 +0800
+Subject: [PATCH 6/7] Harden suspendable decode lifecycle
+
+---
+ tests/test_decoding_state.py     | 203 +++++++++++++++++-
+ tests/test_suspendable_decode.py | 111 ++++++++++
+ whisper/decoding.py              | 345 ++++++++++++++++++++++++-------
+ 3 files changed, 583 insertions(+), 76 deletions(-)
+
+diff --git a/tests/test_decoding_state.py b/tests/test_decoding_state.py
+index 99cff11..b753256 100644
+--- a/tests/test_decoding_state.py
++++ b/tests/test_decoding_state.py
+@@ -1,6 +1,6 @@
+ from concurrent.futures import ThreadPoolExecutor
+-from threading import Barrier
+-from types import SimpleNamespace
++from threading import Barrier, Event
++from types import MethodType, SimpleNamespace
+ from unittest.mock import patch
+ 
+ import pytest
+@@ -213,6 +213,32 @@ def test_default_sampling_keeps_the_legacy_global_rng_path():
+     torch.testing.assert_close(actual, expected)
+ 
+ 
++def test_public_default_sampling_uses_the_legacy_non_suspendable_path():
++    model = make_public_decode_model()
++    task = DecodingTask(
++        model,
++        DecodingOptions(
++            language="en",
++            temperature=0.7,
++            sample_len=1,
++            suppress_blank=False,
++            suppress_tokens=(),
++            without_timestamps=True,
++            fp16=False,
++        ),
++    )
++
++    with patch.object(
++        task, "_start_run", side_effect=AssertionError("suspendable path used")
++    ):
++        torch.manual_seed(1234)
++        first = task.run(torch.randn(1, 4, 4))[0]
++        torch.manual_seed(1234)
++        second = task.run(torch.randn(1, 4, 4))[0]
++
++    assert first.tokens == second.tokens
++
++
+ def test_request_local_generators_are_reproducible_under_interleaving():
+     logits = torch.tensor(
+         [[0.2, 0.5, 1.1, -0.3], [1.0, -0.4, 0.3, 0.8]],
+@@ -364,10 +390,181 @@ def test_public_decode_uses_local_sampling_without_mutating_option_lists():
+     assert prompt == [100]
+     assert prefix == [101]
+     assert suppress_tokens == [30]
+-    assert not torch.equal(generator.get_state(), generator_before)
++    torch.testing.assert_close(generator.get_state(), generator_before)
+     torch.testing.assert_close(torch.random.get_rng_state(), global_before)
+ 
+ 
++def test_each_decode_run_owns_a_distinct_child_generator():
++    generator = torch.Generator().manual_seed(23)
++    before = generator.get_state().clone()
++    task = make_task(
++        DecodingOptions(
++            temperature=0.7,
++            suppress_blank=False,
++            suppress_tokens=(),
++            without_timestamps=True,
++            generator=generator,
++        )
++    )
++
++    _, first_decoder = task._new_run_components()
++    _, second_decoder = task._new_run_components()
++
++    assert first_decoder.generator is not generator
++    assert second_decoder.generator is not generator
++    assert first_decoder.generator is not second_decoder.generator
++    assert not torch.equal(
++        first_decoder.generator.get_state(), second_decoder.generator.get_state()
++    )
++    torch.testing.assert_close(generator.get_state(), before)
++
++
++def test_subclass_main_loop_override_uses_the_legacy_extension_state():
++    class MainLoopTask(DecodingTask):
++        calls = 0
++
++        def _main_loop(self, audio_features, tokens):
++            self.calls += 1
++            assert self.inference is not None
++            assert self.decoder is not None
++            return super()._main_loop(audio_features, tokens)
++
++    model = make_public_decode_model()
++    task = MainLoopTask(
++        model,
++        DecodingOptions(
++            language="en",
++            sample_len=1,
++            suppress_blank=False,
++            suppress_tokens=(),
++            without_timestamps=True,
++            fp16=False,
++        ),
++    )
++
++    result = task.run(torch.randn(1, 4, 4))
++
++    assert task.calls == 1
++    assert len(result) == 1
++
++
++def test_instance_main_loop_monkeypatch_uses_the_legacy_extension_state():
++    model = make_public_decode_model()
++    task = DecodingTask(
++        model,
++        DecodingOptions(
++            language="en",
++            sample_len=1,
++            suppress_blank=False,
++            suppress_tokens=(),
++            without_timestamps=True,
++            fp16=False,
++        ),
++    )
++    original_main_loop = task._main_loop
++    calls = []
++
++    def patched_main_loop(self, audio_features, tokens):
++        calls.append((self.inference, self.decoder))
++        return original_main_loop(audio_features, tokens)
++
++    task._main_loop = MethodType(patched_main_loop, task)
++    result = task.run(torch.randn(1, 4, 4))
++
++    assert len(calls) == 1
++    assert calls[0] == (task.inference, task.decoder)
++    assert len(result) == 1
++
++
++def test_decoder_monkeypatch_routes_run_through_the_legacy_extension_path():
++    model = make_public_decode_model()
++    task = DecodingTask(
++        model,
++        DecodingOptions(
++            language="en",
++            sample_len=1,
++            suppress_blank=False,
++            suppress_tokens=(),
++            without_timestamps=True,
++            fp16=False,
++        ),
++    )
++    replacement = GreedyDecoder(0.0, task.tokenizer.eot)
++    task.decoder = replacement
++
++    with patch.object(
++        task, "_start_run", side_effect=AssertionError("suspendable path used")
++    ):
++        result = task.run(torch.randn(1, 4, 4))
++
++    assert len(result) == 1
++
++
++def test_inference_monkeypatch_routes_run_through_the_legacy_extension_path():
++    model = make_public_decode_model()
++    task = DecodingTask(
++        model,
++        DecodingOptions(
++            language="en",
++            sample_len=1,
++            suppress_blank=False,
++            suppress_tokens=(),
++            without_timestamps=True,
++            fp16=False,
++        ),
++    )
++    task.inference = type(task.inference)(model, len(task.initial_tokens))
++
++    with patch.object(
++        task, "_start_run", side_effect=AssertionError("suspendable path used")
++    ):
++        result = task.run(torch.randn(1, 4, 4))
++
++    assert len(result) == 1
++
++
++def test_legacy_extension_runs_share_one_lock_per_model():
++    first_entered = Event()
++    allow_first = Event()
++    second_entered = Event()
++
++    class BlockingTask(DecodingTask):
++        def __init__(self, *args, entered, release=None, **kwargs):
++            self._entered = entered
++            self._release = release
++            super().__init__(*args, **kwargs)
++
++        def _main_loop(self, audio_features, tokens):
++            self._entered.set()
++            if self._release is not None:
++                assert self._release.wait(timeout=10)
++            return super()._main_loop(audio_features, tokens)
++
++    model = make_public_decode_model()
++    options = DecodingOptions(
++        language="en",
++        sample_len=1,
++        suppress_blank=False,
++        suppress_tokens=(),
++        without_timestamps=True,
++        fp16=False,
++    )
++    first = BlockingTask(model, options, entered=first_entered, release=allow_first)
++    second = BlockingTask(model, options, entered=second_entered)
++    features = torch.randn(1, 4, 4)
++
++    with ThreadPoolExecutor(max_workers=2) as executor:
++        first_future = executor.submit(first.run, features)
++        assert first_entered.wait(timeout=10)
++        second_future = executor.submit(second.run, features)
++        assert not second_entered.wait(timeout=0.2)
++        allow_first.set()
++        assert len(first_future.result(timeout=10)) == 1
++        assert len(second_future.result(timeout=10)) == 1
++
++    assert second_entered.is_set()
++
++
+ def test_decoding_task_rejects_non_torch_generator():
+     options = DecodingOptions(
+         generator=object(),
+diff --git a/tests/test_suspendable_decode.py b/tests/test_suspendable_decode.py
+index 2db87e8..e4aba65 100644
+--- a/tests/test_suspendable_decode.py
++++ b/tests/test_suspendable_decode.py
+@@ -1,3 +1,5 @@
++from concurrent.futures import ThreadPoolExecutor
++from threading import Event
+ from unittest.mock import patch
+ 
+ import pytest
+@@ -118,6 +120,17 @@ def test_paused_sampling_decode_preserves_request_local_rng(
+     )
+ 
+ 
++def test_suspendable_sampling_requires_an_explicit_generator(
++    model: Whisper, audio_features: torch.Tensor
++) -> None:
++    task = DecodingTask(model, make_options(temperature=0.8))
++
++    with pytest.raises(
++        ValueError, match="suspendable sampling requires DecodingOptions"
++    ):
++        task._start_run(audio_features)
++
++
+ def test_paused_beam_decode_matches_uninterrupted_run(
+     model: Whisper, audio_features: torch.Tensor
+ ) -> None:
+@@ -208,3 +221,101 @@ def test_cancelled_run_rejects_further_work(
+         run.step()
+     with pytest.raises(RuntimeError, match="decode run is cancelled"):
+         run.finalize()
++
++
++def test_cleanup_waits_for_an_in_flight_step_and_cancellation_wins(
++    model: Whisper, audio_features: torch.Tensor
++) -> None:
++    run = DecodingTask(model, make_options())._start_run(audio_features)
++    run.prefill()
++    assert run.decoder is not None
++    assert run.inference is not None
++
++    update_entered = Event()
++    allow_update = Event()
++    cleanup_started = Event()
++    original_update = run.decoder.update
++    original_cleanup = run.inference.cleanup_caching
++
++    def blocked_update(*args, **kwargs):
++        update_entered.set()
++        assert allow_update.wait(timeout=10)
++        tokens, _ = original_update(*args, **kwargs)
++        return tokens, False
++
++    def cancel():
++        cleanup_started.set()
++        run.cleanup()
++
++    with (
++        patch.object(run.decoder, "update", side_effect=blocked_update),
++        patch.object(
++            run.inference, "cleanup_caching", wraps=original_cleanup
++        ) as cleanup_spy,
++        ThreadPoolExecutor(max_workers=2) as executor,
++    ):
++        step_future = executor.submit(run.step)
++        assert update_entered.wait(timeout=10)
++        cleanup_future = executor.submit(cancel)
++        assert cleanup_started.wait(timeout=10)
++        assert cleanup_spy.call_count == 0
++
++        allow_update.set()
++        assert step_future.result(timeout=10) is False
++        cleanup_future.result(timeout=10)
++        assert cleanup_spy.call_count == 1
++
++    with pytest.raises(RuntimeError, match="decode run is cancelled"):
++        run.step()
++
++
++def test_cleanup_failure_is_retryable_and_releases_terminal_state_after_success(
++    model: Whisper, audio_features: torch.Tensor
++) -> None:
++    run = DecodingTask(model, make_options())._start_run(audio_features)
++    assert run.inference is not None
++    inference = run.inference
++
++    with patch.object(
++        inference,
++        "cleanup_caching",
++        side_effect=[RuntimeError("first cleanup failed"), None],
++    ) as cleanup_spy:
++        with pytest.raises(RuntimeError, match="first cleanup failed"):
++            run.cleanup()
++        assert run.inference is inference
++
++        run.cleanup()
++        run.cleanup()
++        assert cleanup_spy.call_count == 2
++
++    assert run.inference is None
++    assert run.decoder is None
++    assert run.audio_features is None
++    assert run.tokens is None
++    assert run.sum_logprobs is None
++
++
++def test_decode_error_remains_primary_when_cleanup_also_fails(
++    model: Whisper, audio_features: torch.Tensor
++) -> None:
++    run = DecodingTask(model, make_options())._start_run(audio_features)
++    assert run.inference is not None
++    inference = run.inference
++
++    with (
++        patch.object(inference, "logits", side_effect=ValueError("decode failed")),
++        patch.object(
++            inference,
++            "cleanup_caching",
++            side_effect=[RuntimeError("cleanup failed"), None],
++        ) as cleanup_spy,
++    ):
++        with pytest.raises(ValueError, match="decode failed") as exc_info:
++            run.prefill()
++        assert any("cleanup also failed" in note for note in exc_info.value.__notes__)
++
++        run.cleanup()
++        assert cleanup_spy.call_count == 2
++
++    assert run.inference is None
+diff --git a/whisper/decoding.py b/whisper/decoding.py
+index 3531bad..a26f033 100644
+--- a/whisper/decoding.py
++++ b/whisper/decoding.py
+@@ -1,6 +1,8 @@
+ from dataclasses import dataclass, field, replace
+ from enum import Enum, auto
++from threading import Lock, RLock
+ from typing import TYPE_CHECKING, Dict, Iterable, List, Optional, Sequence, Tuple, Union
++from weakref import WeakValueDictionary
+ 
+ import numpy as np
+ import torch
+@@ -16,6 +18,22 @@ if TYPE_CHECKING:
+     from .model import Whisper
+ 
+ 
++_legacy_run_locks_guard = Lock()
++_legacy_run_locks = WeakValueDictionary()
++
++
++def _legacy_run_lock(model: "Whisper") -> RLock:
++    """Return the lock that serializes legacy mutable cache state for a model."""
++
++    with _legacy_run_locks_guard:
++        model_id = id(model)
++        lock = _legacy_run_locks.get(model_id)
++        if lock is None:
++            lock = RLock()
++            _legacy_run_locks[model_id] = lock
++        return lock
++
++
+ @torch.no_grad()
+ def detect_language(
+     model: "Whisper", mel: Tensor, tokenizer: Tokenizer = None
+@@ -114,9 +132,9 @@ class DecodingOptions:
+ 
+     # implementation details
+     fp16: bool = True  # use fp16 for most of the calculation
+-    # The caller owns this generator and the decoder advances it. It is not
+-    # rolled back after a failed decode. Concurrent requests must use distinct
+-    # generators if they require isolated streams.
++    # The task snapshots this generator. Each decode run receives a distinct
++    # child generator, so concurrent runs never mutate the same RNG state.
++    # The caller-owned generator is not advanced.
+     generator: Optional[torch.Generator] = field(
+         default=None, repr=False, compare=False
+     )
+@@ -138,6 +156,14 @@ def _snapshot_options(options: DecodingOptions) -> DecodingOptions:
+     )
+ 
+ 
++def _clone_generator(generator: torch.Generator) -> torch.Generator:
++    """Copy a generator without advancing the caller-owned instance."""
++
++    clone = torch.Generator(device=generator.device)
++    clone.set_state(generator.get_state().clone())
++    return clone
++
++
+ @dataclass(frozen=True)
+ class DecodingResult:
+     audio_features: Tensor
+@@ -578,6 +604,12 @@ class DecodingTask:
+         self.tokenizer: Tokenizer = tokenizer
+         options = _snapshot_options(self._verify_options(options))
+         self.options: DecodingOptions = options
++        self._generator_lock = Lock()
++        self._generator_source = (
++            _clone_generator(options.generator)
++            if options.generator is not None
++            else None
++        )
+ 
+         self.n_group: int = options.beam_size or options.best_of or 1
+         self.n_ctx: int = model.dims.n_text_ctx
+@@ -594,6 +626,28 @@ class DecodingTask:
+         # sequence ranker: implements how to rank a group of sampled sequences
+         self.sequence_ranker = MaximumLikelihoodRanker(options.length_penalty)
+ 
++        # Keep the original extension surface for subclasses that override
++        # _main_loop. Built-in decoding uses fresh components for every run.
++        self.inference = PyTorchInference(self.model, len(self.initial_tokens))
++        if self.options.beam_size is not None:
++            self.decoder: TokenDecoder = BeamSearchDecoder(
++                self.options.beam_size,
++                self.tokenizer.eot,
++                self.inference,
++                self.options.patience,
++            )
++        elif self._generator_source is None:
++            self.decoder = GreedyDecoder(self.options.temperature, self.tokenizer.eot)
++        else:
++            self.decoder = GreedyDecoder(
++                self.options.temperature,
++                self.tokenizer.eot,
++                generator=_clone_generator(self._generator_source),
++            )
++        self._original_inference = self.inference
++        self._original_decoder = self.decoder
++        self._legacy_run_lock = _legacy_run_lock(self.model)
++
+         # logit filters: applies various rules to suppress or penalize certain tokens
+         self.logit_filters = []
+         if self.options.suppress_blank:
+@@ -624,13 +678,21 @@ class DecodingTask:
+                 inference,
+                 self.options.patience,
+             )
+-        elif self.options.generator is None:
++        elif self._generator_source is None:
+             decoder = GreedyDecoder(self.options.temperature, self.tokenizer.eot)
+         else:
++            # Reserve one seed from the task-owned stream, then give the run a
++            # separate generator. The lock makes concurrent reservations stable.
++            with self._generator_lock:
++                seed = torch.empty(
++                    (), dtype=torch.int64, device=self._generator_source.device
++                ).random_(generator=self._generator_source)
++            run_generator = torch.Generator(device=self._generator_source.device)
++            run_generator.manual_seed(seed.item())
+             decoder = GreedyDecoder(
+                 self.options.temperature,
+                 self.tokenizer.eot,
+-                generator=self.options.generator,
++                generator=run_generator,
+             )
+         return inference, decoder
+ 
+@@ -748,14 +810,101 @@ class DecodingTask:
+ 
+         return languages, lang_probs
+ 
++    def _main_loop(self, audio_features: Tensor, tokens: Tensor):
++        """Original subclass extension point; built-in runs use _DecodingRun."""
++
++        n_batch = tokens.shape[0]
++        sum_logprobs: Tensor = torch.zeros(n_batch, device=audio_features.device)
++        no_speech_probs = [np.nan] * n_batch
++
++        try:
++            for i in range(self.sample_len):
++                logits = self.inference.logits(tokens, audio_features)
++                if i == 0 and self.tokenizer.no_speech is not None:
++                    probs_at_sot = logits[:, self.sot_index].float().softmax(dim=-1)
++                    no_speech_probs = probs_at_sot[:, self.tokenizer.no_speech].tolist()
++
++                logits = logits[:, -1]
++                for logit_filter in self.logit_filters:
++                    logit_filter.apply(logits, tokens)
++                tokens, completed = self.decoder.update(tokens, logits, sum_logprobs)
++                if completed or tokens.shape[-1] > self.n_ctx:
++                    break
++        finally:
++            self.inference.cleanup_caching()
++
++        return tokens, sum_logprobs, no_speech_probs
++
++    def _uses_legacy_extension(self) -> bool:
++        main_loop = self._main_loop
++        return (
++            getattr(main_loop, "__func__", None) is not DecodingTask._main_loop
++            or self.inference is not self._original_inference
++            or self.decoder is not self._original_decoder
++        )
++
++    def _run_legacy_extension(self, mel: Tensor) -> List[DecodingResult]:
++        """Run an overridden _main_loop through the historical task state."""
++
++        with self._legacy_run_lock:
++            self.decoder.reset()
++            n_audio = mel.shape[0]
++            audio_features = self._get_audio_features(mel)
++            tokens = torch.tensor([self.initial_tokens]).repeat(n_audio, 1)
++            languages, language_probs = self._detect_language(audio_features, tokens)
++            if self.options.task == "lang_id":
++                return [
++                    DecodingResult(
++                        audio_features=features,
++                        language=language,
++                        language_probs=probs,
++                    )
++                    for features, language, probs in zip(
++                        audio_features, languages, language_probs
++                    )
++                ]
++
++            if n_audio > 1 and self.n_group > 1:
++                audio_features = audio_features.repeat_interleave(self.n_group, dim=0)
++            tokens = tokens.repeat_interleave(self.n_group, dim=0).to(
++                audio_features.device
++            )
++            tokens, sum_logprobs, no_speech_probs = self._main_loop(
++                audio_features, tokens
++            )
++
++            run = _DecodingRun(
++                self,
++                audio_features,
++                tokens,
++                languages,
++                language_probs,
++                self.inference,
++                self.decoder,
++            )
++            run.sum_logprobs = sum_logprobs
++            run.no_speech_probs = no_speech_probs
++            run._phase = _DecodingRunPhase.COMPLETE
++            run._cleanup_done = True
++            return run.finalize()
++
+     @torch.no_grad()
+     def _start_run(self, mel: Tensor) -> "_DecodingRun":
+         """Create an opt-in, suspendable run with request-local mutable state."""
+ 
++        if self.options.temperature > 0 and self._generator_source is None:
++            raise ValueError(
++                "suspendable sampling requires DecodingOptions(generator=...); "
++                "run() retains the historical global-RNG behavior"
++            )
+         return _DecodingRun.start(self, mel)
+ 
+     @torch.no_grad()
+     def run(self, mel: Tensor) -> List[DecodingResult]:
++        if self._uses_legacy_extension() or (
++            self.options.temperature > 0 and self._generator_source is None
++        ):
++            return self._run_legacy_extension(mel)
+         run = self._start_run(mel)
+         try:
+             if not run.complete:
+@@ -763,8 +912,14 @@ class DecodingTask:
+             while not run.complete:
+                 run.step()
+             return run.finalize()
+-        except BaseException:
+-            run.cleanup()
++        except BaseException as error:
++            try:
++                run.cleanup()
++            except BaseException as cleanup_error:
++                error.add_note(
++                    "decode cleanup also failed: "
++                    f"{type(cleanup_error).__name__}: {cleanup_error}"
++                )
+             raise
+ 
+ 
+@@ -806,6 +961,7 @@ class _DecodingRun:
+         self._direct_results = direct_results
+         self._results: Optional[List[DecodingResult]] = None
+         self._cleanup_done = False
++        self._operation_lock = RLock()
+         self._phase = (
+             _DecodingRunPhase.COMPLETE
+             if direct_results is not None
+@@ -865,8 +1021,14 @@ class _DecodingRun:
+                 run._phase = _DecodingRunPhase.COMPLETE
+                 run._cleanup_once()
+             return run
+-        except BaseException:
+-            inference.cleanup_caching()
++        except BaseException as error:
++            try:
++                inference.cleanup_caching()
++            except BaseException as cleanup_error:
++                error.add_note(
++                    "decode cleanup also failed: "
++                    f"{type(cleanup_error).__name__}: {cleanup_error}"
++                )
+             raise
+ 
+     @property
+@@ -884,98 +1046,135 @@ class _DecodingRun:
+     def _cleanup_once(self) -> None:
+         if self._cleanup_done:
+             return
+-        self._cleanup_done = True
+         if self.inference is not None:
+             self.inference.cleanup_caching()
++        self._cleanup_done = True
+ 
+-    def _fail(self) -> None:
++    def _release_failed_state(self) -> None:
++        """Drop run-owned tensors after terminal cleanup."""
++
++        if not self._cleanup_done or self._phase not in {
++            _DecodingRunPhase.CANCELLED,
++            _DecodingRunPhase.FAILED,
++        }:
++            return
++        self._pending_logits = None
++        self.audio_features = None
++        self.tokens = None
++        self.sum_logprobs = None
++        self.inference = None
++        self.decoder = None
++
++    def _fail(self, primary_error: BaseException) -> None:
+         self._phase = _DecodingRunPhase.FAILED
+         self._pending_logits = None
+-        self._cleanup_once()
++        try:
++            self._cleanup_once()
++        except BaseException as cleanup_error:
++            primary_error.add_note(
++                "decode cleanup also failed: "
++                f"{type(cleanup_error).__name__}: {cleanup_error}"
++            )
++        self._release_failed_state()
+ 
+     @torch.no_grad()
+     def prefill(self) -> None:
+         """Build the initial decoder cache without selecting a token."""
+ 
+-        self._require_phase(_DecodingRunPhase.PREPARED)
+-        assert self.inference is not None
+-        try:
+-            logits = self.inference.logits(self.tokens, self.audio_features)
+-            if self.task.tokenizer.no_speech is not None:
+-                probs_at_sot = logits[:, self.task.sot_index].float().softmax(dim=-1)
+-                self.no_speech_probs = probs_at_sot[
+-                    :, self.task.tokenizer.no_speech
+-                ].tolist()
+-            self._pending_logits = logits[:, -1]
+-            self._phase = _DecodingRunPhase.ACTIVE
+-        except BaseException:
+-            self._fail()
+-            raise
++        with self._operation_lock:
++            self._require_phase(_DecodingRunPhase.PREPARED)
++            assert self.inference is not None
++            try:
++                logits = self.inference.logits(self.tokens, self.audio_features)
++                if self.task.tokenizer.no_speech is not None:
++                    probs_at_sot = (
++                        logits[:, self.task.sot_index].float().softmax(dim=-1)
++                    )
++                    self.no_speech_probs = probs_at_sot[
++                        :, self.task.tokenizer.no_speech
++                    ].tolist()
++                self._pending_logits = logits[:, -1]
++                self._phase = _DecodingRunPhase.ACTIVE
++            except BaseException as error:
++                self._fail(error)
++                raise
+ 
+     @torch.no_grad()
+     def step(self) -> bool:
+         """Select exactly one token for every active hypothesis."""
+ 
+-        if self._phase == _DecodingRunPhase.PREPARED:
+-            self.prefill()
+-        self._require_phase(_DecodingRunPhase.ACTIVE)
+-        assert self.inference is not None
+-        assert self.decoder is not None
+-
+-        try:
+-            if self._pending_logits is None:
+-                logits = self.inference.logits(self.tokens, self.audio_features)[:, -1]
+-            else:
+-                logits = self._pending_logits
+-                self._pending_logits = None
++        with self._operation_lock:
++            if self._phase == _DecodingRunPhase.PREPARED:
++                self.prefill()
++            self._require_phase(_DecodingRunPhase.ACTIVE)
++            assert self.inference is not None
++            assert self.decoder is not None
++
++            try:
++                if self._pending_logits is None:
++                    logits = self.inference.logits(self.tokens, self.audio_features)[
++                        :, -1
++                    ]
++                else:
++                    logits = self._pending_logits
++                    self._pending_logits = None
+ 
+-            for logit_filter in self.task.logit_filters:
+-                logit_filter.apply(logits, self.tokens)
++                for logit_filter in self.task.logit_filters:
++                    logit_filter.apply(logits, self.tokens)
+ 
+-            self.tokens, decoder_complete = self.decoder.update(
+-                self.tokens, logits, self.sum_logprobs
+-            )
+-            self.step_index += 1
+-            if (
+-                decoder_complete
+-                or self.tokens.shape[-1] > self.task.n_ctx
+-                or self.step_index >= self.task.sample_len
+-            ):
+-                self._phase = _DecodingRunPhase.COMPLETE
+-                self._cleanup_once()
++                self.tokens, decoder_complete = self.decoder.update(
++                    self.tokens, logits, self.sum_logprobs
++                )
++                self.step_index += 1
++                if (
++                    decoder_complete
++                    or self.tokens.shape[-1] > self.task.n_ctx
++                    or self.step_index >= self.task.sample_len
++                ):
++                    self._phase = _DecodingRunPhase.COMPLETE
++            except BaseException as error:
++                self._fail(error)
++                raise
++
++            if self._phase == _DecodingRunPhase.COMPLETE:
++                try:
++                    self._cleanup_once()
++                except BaseException:
++                    self._phase = _DecodingRunPhase.FAILED
++                    raise
+             return self.complete
+-        except BaseException:
+-            self._fail()
+-            raise
+ 
+     def cleanup(self) -> None:
+         """Release inference resources, cancelling an incomplete run."""
+ 
+-        if self._phase in {
+-            _DecodingRunPhase.PREPARED,
+-            _DecodingRunPhase.ACTIVE,
+-        }:
+-            self._phase = _DecodingRunPhase.CANCELLED
+-            self._pending_logits = None
+-        self._cleanup_once()
++        with self._operation_lock:
++            if self._phase in {
++                _DecodingRunPhase.PREPARED,
++                _DecodingRunPhase.ACTIVE,
++            }:
++                self._phase = _DecodingRunPhase.CANCELLED
++                self._pending_logits = None
++            self._cleanup_once()
++            self._release_failed_state()
+ 
+     @torch.no_grad()
+     def finalize(self) -> List[DecodingResult]:
+         """Publish results once after the run reaches completion."""
+ 
+-        self._require_phase(_DecodingRunPhase.COMPLETE)
+-        try:
++        with self._operation_lock:
++            self._require_phase(_DecodingRunPhase.COMPLETE)
+             self._cleanup_once()
+-            if self._direct_results is not None:
+-                results = self._direct_results
+-            else:
+-                results = self._build_results()
+-            self._results = results
+-            self._phase = _DecodingRunPhase.FINALIZED
+-            return results
+-        except BaseException:
+-            self._fail()
+-            raise
++            try:
++                if self._direct_results is not None:
++                    results = self._direct_results
++                else:
++                    results = self._build_results()
++                self._results = results
++                self._phase = _DecodingRunPhase.FINALIZED
++                return results
++            except BaseException as error:
++                self._fail(error)
++                raise
+ 
+     def _build_results(self) -> List[DecodingResult]:
+         assert self.decoder is not None
+-- 
+2.48.1.windows.1
+

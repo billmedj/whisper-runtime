@@ -4,12 +4,12 @@ RFC 0001 is the normative architecture and milestone definition. This page is
 a short execution index. It does not define a second milestone scheme.
 
 No milestone is complete. The repository currently provides a transactional
-reference model, a formal lease model, 68 Python tests, one implemented Whisper
-conformance pair, and a serialized adapter for the historical synchronous API.
-The adapter proves the end-to-end transaction boundary. It does not provide
-stage-level scheduling or token-level cancellation. The transaction work
-implements part of the M0, M3, and M7 foundations before native integration
-with the decode kernels.
+reference model, a formal lease model, 89 Python tests, one implemented Whisper
+conformance pair, a serialized adapter for the historical synchronous API, and
+an experimental native CPU adapter. The native adapter submits run creation,
+prefill, each token step, and finalization separately. It checks cancellation
+between stages but still reserves one complete worker. The transaction work
+implements part of the M0, M1, M2, M3, and M7 foundations.
 
 ## M0 — Characterize the reference
 
@@ -27,12 +27,20 @@ of shared model objects.
 
 Exit: forced concurrent interleavings match isolated executions.
 
+Current status: the companion decoder exposes request-local suspendable run
+state. The native CPU adapter owns one such run through a transaction fence.
+Forced concurrent real-model interleavings remain untested.
+
 ## M2 — Separate and reuse kernels
 
 Expose encode, prefill, decode-step, and alignment boundaries. Reuse encoded
 audio where the reference algorithm permits it.
 
 Exit: reference outputs pass and redundant encoder work is removed.
+
+Current status: the native CPU adapter exposes create, prefill, token-step, and
+finalize boundaries. It does not yet reuse encoded audio or schedule those
+stages independently.
 
 ## M3 — Add the bounded worker
 
@@ -75,8 +83,9 @@ capabilities.
 
 Exit: each backend passes the conformance matrix for every capability it
 declares. Current status: the historical synchronous adapter preserves the
-legacy result mapping inside an immutable, versioned envelope. It declares no
-incremental, batching, streaming, or device-fencing capability.
+legacy result mapping inside an immutable, versioned envelope. The native CPU
+adapter adds cooperative token-step cancellation and a request-local generator.
+Neither adapter declares batching, streaming, or device-fencing capability.
 
 ## M8 — Consider a default change
 

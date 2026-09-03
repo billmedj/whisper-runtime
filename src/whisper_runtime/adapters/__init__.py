@@ -15,6 +15,16 @@ from .legacy_whisper import (
     LegacyWhisperModel,
     ModelIdentityProbe,
 )
+from .native_whisper import (
+    NativeAdapterError,
+    NativeDecodeContractError,
+    NativeDecodeOptions,
+    NativeDecodeRun,
+    NativeDependencyError,
+    NativeExecutionProfile,
+    NativeModelIdentityProbe,
+    NativeWhisperAdapter,
+)
 
 __all__ = [
     "LEGACY_WHISPER_ENVELOPE_VERSION",
@@ -30,4 +40,12 @@ __all__ = [
     "LegacyWhisperAdapter",
     "LegacyWhisperModel",
     "ModelIdentityProbe",
+    "NativeAdapterError",
+    "NativeDecodeContractError",
+    "NativeDecodeOptions",
+    "NativeDecodeRun",
+    "NativeDependencyError",
+    "NativeExecutionProfile",
+    "NativeModelIdentityProbe",
+    "NativeWhisperAdapter",
 ]

@@ -1,0 +1,757 @@
+From 69b4ded0ad2696011031092922cca6dc69b310b6 Mon Sep 17 00:00:00 2001
+From: Bilal Medjani <322728156+billmedj@users.noreply.github.com>
+Date: Thu, 3 Sep 2026 16:41:00 +0800
+Subject: [PATCH 1/7] Make native inference state request-local
+
+---
+ tests/test_concurrency.py | 383 ++++++++++++++++++++++++++++++++++++++
+ whisper/decoding.py       |  15 +-
+ whisper/model.py          | 161 ++++++++++++++--
+ whisper/timing.py         |  54 ++++--
+ 4 files changed, 577 insertions(+), 36 deletions(-)
+ create mode 100644 tests/test_concurrency.py
+
+diff --git a/tests/test_concurrency.py b/tests/test_concurrency.py
+new file mode 100644
+index 0000000..4c0bb42
+--- /dev/null
++++ b/tests/test_concurrency.py
+@@ -0,0 +1,383 @@
++from concurrent.futures import ThreadPoolExecutor
++from threading import Barrier
++from unittest.mock import patch
++
++import pytest
++import torch
++
++from whisper.decoding import PyTorchInference
++from whisper.model import ModelDimensions, MultiHeadAttention, Whisper, disable_sdpa
++from whisper.timing import find_alignment
++
++
++def make_test_model(model_class=Whisper) -> Whisper:
++    torch.manual_seed(0)
++    model = model_class(
++        ModelDimensions(
++            n_mels=4,
++            n_audio_ctx=4,
++            n_audio_state=4,
++            n_audio_head=1,
++            n_audio_layer=1,
++            n_vocab=16,
++            n_text_ctx=8,
++            n_text_state=4,
++            n_text_head=1,
++            n_text_layer=2,
++        )
++    )
++    for parameter in model.parameters():
++        torch.nn.init.uniform_(parameter, -0.1, 0.1)
++    return model.eval()
++
++
++def make_mel(batch_size=1, reverse=False):
++    values = torch.linspace(-1, 1, steps=batch_size * 4 * 8)
++    if reverse:
++        values = values.flip(0)
++    return values.reshape(batch_size, 4, 8)
++
++
++def forward_hook_count(model: Whisper) -> int:
++    return sum(len(module._forward_hooks) for module in model.modules())
++
++
++def self_attention_modules(model):
++    for block in model.decoder.blocks:
++        yield block.attn.key
++        yield block.attn.value
++
++
++def cross_attention_modules(model):
++    for block in model.decoder.blocks:
++        yield block.cross_attn.key
++        yield block.cross_attn.value
++
++
++def remove_hooks(hooks):
++    for hook in hooks:
++        hook.remove()
++
++
++class LegacyMultiHeadAttention(MultiHeadAttention):
++    def forward(self, x, xa=None, mask=None, kv_cache=None):
++        return super().forward(x, xa=xa, mask=mask, kv_cache=kv_cache)
++
++
++class LegacyQKVAttention(MultiHeadAttention):
++    def qkv_attention(self, q, k, v, mask=None):
++        return super().qkv_attention(q, k, v, mask)
++
++
++class HookTrackingWhisper(Whisper):
++    def __init__(self, dims):
++        super().__init__(dims)
++        self.cache_hook_installations = 0
++
++    def install_kv_cache_hooks(self, cache=None):
++        self.cache_hook_installations += 1
++        return super().install_kv_cache_hooks(cache)
++
++
++class LegacyWhisper(Whisper):
++    pass
++
++
++def test_request_local_cache_decodes_and_reorders_beams():
++    model = make_test_model()
++    inference = PyTorchInference(model, initial_token_length=2)
++    tokens = torch.tensor([[1, 2], [3, 4]])
++
++    try:
++        with torch.no_grad():
++            audio_features = model.encoder(make_mel())
++            expected = model.decoder(tokens, audio_features)
++            actual = inference.logits(tokens, audio_features)
++            torch.testing.assert_close(actual, expected)
++
++            cross_cache = {
++                module: inference.kv_cache[module]
++                for module in cross_attention_modules(model)
++            }
++            tokens = torch.tensor([[1, 2, 5], [3, 4, 6]])
++            actual = inference.logits(tokens, audio_features)[:, -1]
++            expected = model.decoder(tokens, audio_features)[:, -1]
++            torch.testing.assert_close(actual, expected, rtol=1e-5, atol=1e-6)
++
++            self_cache = {
++                module: inference.kv_cache[module].clone()
++                for module in self_attention_modules(model)
++            }
++            inference.rearrange_kv_cache([1, 0])
++
++            for module, cached_value in self_cache.items():
++                torch.testing.assert_close(
++                    inference.kv_cache[module], cached_value[[1, 0]]
++                )
++            for module, cached_value in cross_cache.items():
++                assert inference.kv_cache[module] is cached_value
++
++            tokens = torch.tensor([[3, 4, 6, 7], [1, 2, 5, 8]])
++            actual = inference.logits(tokens, audio_features)[:, -1]
++            expected = model.decoder(tokens, audio_features)[:, -1]
++            torch.testing.assert_close(actual, expected, rtol=1e-5, atol=1e-6)
++
++        assert not inference.hooks
++        assert forward_hook_count(model) == 0
++    finally:
++        inference.cleanup_caching()
++
++
++def test_native_inference_is_isolated_during_overlap():
++    model = make_test_model()
++    tokens_a = torch.tensor([[1, 2]])
++    tokens_b = torch.tensor([[4, 5]])
++
++    with torch.no_grad():
++        audio_a = model.encoder(make_mel())
++        audio_b = model.encoder(make_mel(reverse=True))
++        expected_a = model.decoder(tokens_a, audio_a)
++        expected_b = model.decoder(tokens_b, audio_b)
++
++    inference_a = PyTorchInference(model, initial_token_length=2)
++    inference_b = PyTorchInference(model, initial_token_length=2)
++    barrier = Barrier(2)
++    key = model.decoder.blocks[0].attn.key
++    original_forward = key.forward
++
++    def synchronized_forward(x):
++        barrier.wait(timeout=15)
++        return original_forward(x)
++
++    def run(inference, tokens, audio):
++        with torch.no_grad():
++            return inference.logits(tokens, audio)
++
++    try:
++        with patch.object(key, "forward", new=synchronized_forward):
++            with ThreadPoolExecutor(max_workers=2) as executor:
++                future_a = executor.submit(run, inference_a, tokens_a, audio_a)
++                future_b = executor.submit(run, inference_b, tokens_b, audio_b)
++                actual_a = future_a.result(timeout=30)
++                actual_b = future_b.result(timeout=30)
++
++        torch.testing.assert_close(actual_a, expected_a)
++        torch.testing.assert_close(actual_b, expected_b)
++        assert inference_a.kv_cache is not inference_b.kv_cache
++        assert inference_a.kv_cache.keys() == inference_b.kv_cache.keys()
++        assert not inference_a.hooks and not inference_b.hooks
++    finally:
++        inference_a.cleanup_caching()
++        inference_b.cleanup_caching()
++
++
++def test_whisper_subclass_keeps_its_cache_hook_contract():
++    model = make_test_model(HookTrackingWhisper)
++    inference = PyTorchInference(model, initial_token_length=2)
++
++    try:
++        with torch.no_grad():
++            audio_features = model.encoder(make_mel())
++            inference.logits(torch.tensor([[1, 2]]), audio_features)
++
++        assert inference._use_legacy_cache
++        assert model.cache_hook_installations == 1
++        assert inference.hooks
++    finally:
++        inference.cleanup_caching()
++
++
++def test_decoder_with_legacy_attention_uses_legacy_cache_path():
++    model = make_test_model()
++    block = model.decoder.blocks[0]
++    legacy_attention = LegacyMultiHeadAttention(4, 1)
++    legacy_attention.load_state_dict(block.attn.state_dict())
++    block.attn = legacy_attention
++    tokens = torch.tensor([[1, 2, 3]])
++
++    with torch.no_grad():
++        audio_features = model.encoder(make_mel())
++        expected = model.decoder(tokens, audio_features)[:, -1]
++        inference = PyTorchInference(model, initial_token_length=2)
++        try:
++            inference.logits(tokens[:, :2], audio_features)
++            actual = inference.logits(tokens, audio_features)[:, -1]
++            torch.testing.assert_close(actual, expected)
++            assert inference._use_legacy_cache and inference.hooks
++        finally:
++            inference.cleanup_caching()
++
++
++def test_default_attention_call_supports_legacy_qkv_override():
++    reference = MultiHeadAttention(4, 1).eval()
++    legacy = LegacyQKVAttention(4, 1).eval()
++    legacy.load_state_dict(reference.state_dict())
++    x = torch.arange(8, dtype=torch.float32).reshape(1, 2, 4)
++
++    with torch.no_grad():
++        torch.testing.assert_close(legacy(x)[0], reference(x)[0])
++
++
++def test_legacy_hooks_preserve_export_cache_contracts():
++    model = make_test_model()
++    batch_size = 2
++    tokens = torch.tensor([[1, 2, 3], [4, 5, 6]])
++
++    with torch.no_grad():
++        audio_features = model.encoder(make_mel(batch_size=batch_size))
++        expected = model.decoder(tokens, audio_features)
++
++    captured, hooks = model.install_kv_cache_hooks()
++    try:
++        passed_cache = {}
++        with torch.no_grad():
++            actual = model.decoder(tokens, audio_features, kv_cache=passed_cache)
++
++        torch.testing.assert_close(actual, expected)
++        assert passed_cache == {}
++        for module in self_attention_modules(model):
++            assert captured[module].shape == (batch_size, 3, 4)
++        for module in cross_attention_modules(model):
++            assert captured[module].shape == (batch_size, 4, 4)
++
++        captured.clear()
++        past_length = 3
++        past_cache = {}
++        for block in model.decoder.blocks:
++            past_cache[block.attn.key] = torch.randn(batch_size, past_length, 4)
++            past_cache[block.attn.value] = torch.randn(batch_size, past_length, 4)
++            past_cache[block.cross_attn.key] = torch.randn(batch_size, 4, 4)
++            past_cache[block.cross_attn.value] = torch.randn(batch_size, 4, 4)
++        snapshot = {module: value.clone() for module, value in past_cache.items()}
++
++        with torch.no_grad():
++            model.decoder(torch.tensor([[1], [2]]), audio_features, kv_cache=past_cache)
++
++        for module, value in snapshot.items():
++            torch.testing.assert_close(past_cache[module], value)
++        for module in self_attention_modules(model):
++            assert captured[module].shape == (batch_size, 1, 4)
++            present = torch.cat([past_cache[module], captured[module]], dim=1)
++            assert present.shape == (batch_size, past_length + 1, 4)
++        for module in cross_attention_modules(model):
++            assert module not in captured
++    finally:
++        remove_hooks(hooks)
++
++
++def collect_cross_attention(model, mel, tokens):
++    qks = []
++    with torch.no_grad():
++        logits = model(mel, tokens, cross_attention_qks=qks, use_sdpa=False)
++    return logits, qks
++
++
++def collect_cross_attention_with_hooks(model, mel, tokens):
++    qks = [None] * model.dims.n_text_layer
++    hooks = [
++        block.cross_attn.register_forward_hook(
++            lambda _, ins, outs, index=index: qks.__setitem__(index, outs[-1][0])
++        )
++        for index, block in enumerate(model.decoder.blocks)
++    ]
++    try:
++        with torch.no_grad(), disable_sdpa():
++            logits = model(mel, tokens)
++    finally:
++        remove_hooks(hooks)
++    return logits, qks
++
++
++def test_cross_attention_capture_matches_legacy_and_is_isolated():
++    model = make_test_model()
++    tokens_a = torch.tensor([[1, 2, 3], [3, 2, 1]])
++    tokens_b = torch.tensor([[4, 5, 6, 7], [7, 6, 5, 4]])
++    mel_a = make_mel(batch_size=2)
++    mel_b = make_mel(batch_size=2, reverse=True)
++    expected_a = collect_cross_attention(model, mel_a, tokens_a)
++    expected_b = collect_cross_attention(model, mel_b, tokens_b)
++    legacy_logits, legacy_qks = collect_cross_attention_with_hooks(
++        model, mel_a, tokens_a
++    )
++
++    torch.testing.assert_close(expected_a[0], legacy_logits)
++    for qk, legacy_qk in zip(expected_a[1], legacy_qks):
++        torch.testing.assert_close(qk[0], legacy_qk)
++
++    barrier = Barrier(2)
++    cross_attention = model.decoder.blocks[0].cross_attn
++    original_qkv_attention = cross_attention.qkv_attention
++
++    def synchronized_qkv_attention(*args, **kwargs):
++        barrier.wait(timeout=15)
++        return original_qkv_attention(*args, **kwargs)
++
++    with patch.object(cross_attention, "qkv_attention", new=synchronized_qkv_attention):
++        with ThreadPoolExecutor(max_workers=2) as executor:
++            future_a = executor.submit(collect_cross_attention, model, mel_a, tokens_a)
++            future_b = executor.submit(collect_cross_attention, model, mel_b, tokens_b)
++            actual_a = future_a.result(timeout=30)
++            actual_b = future_b.result(timeout=30)
++
++    for actual, expected, token_count in (
++        (actual_a, expected_a, tokens_a.shape[1]),
++        (actual_b, expected_b, tokens_b.shape[1]),
++    ):
++        torch.testing.assert_close(actual[0], expected[0])
++        assert len(actual[1]) == len(expected[1]) == model.dims.n_text_layer
++        for actual_qk, expected_qk in zip(actual[1], expected[1]):
++            assert actual_qk.shape == (
++                2,
++                model.dims.n_text_head,
++                token_count,
++                model.dims.n_audio_ctx,
++            )
++            torch.testing.assert_close(actual_qk, expected_qk)
++
++
++class TestTokenizer:
++    sot_sequence = (0,)
++    no_timestamps = 1
++    eot = 15
++
++    @staticmethod
++    def split_to_word_tokens(tokens):
++        return ["token"], [tokens]
++
++
++def test_native_alignment_preserves_model_forward_hooks():
++    model = make_test_model()
++    calls = []
++    hook = model.register_forward_hook(lambda *_: calls.append(True))
++    try:
++        alignment = find_alignment(
++            model,
++            TestTokenizer(),
++            text_tokens=[2],
++            mel=make_mel()[0],
++            num_frames=8,
++            medfilt_width=3,
++        )
++    finally:
++        hook.remove()
++
++    assert alignment == []
++    assert calls == [True]
++
++
++def test_legacy_alignment_failure_restores_hooks_and_sdpa():
++    model = make_test_model(LegacyWhisper)
++    hook_count = forward_hook_count(model)
++    sdpa_state = MultiHeadAttention.use_sdpa
++
++    with pytest.raises(AssertionError, match="incorrect audio shape"):
++        find_alignment(
++            model,
++            TestTokenizer(),
++            text_tokens=[2],
++            mel=torch.zeros(4, 6),
++            num_frames=8,
++        )
++
++    assert forward_hook_count(model) == hook_count
++    assert MultiHeadAttention.use_sdpa == sdpa_state
+diff --git a/whisper/decoding.py b/whisper/decoding.py
+index 49485d0..94e7d00 100644
+--- a/whisper/decoding.py
++++ b/whisper/decoding.py
+@@ -147,20 +147,31 @@ class PyTorchInference(Inference):
+         self.initial_token_length = initial_token_length
+         self.kv_cache = {}
+         self.hooks = []
++        self._use_legacy_cache = not self._supports_request_local_cache()
+ 
+         key_modules = [block.attn.key for block in self.model.decoder.blocks]
+         value_modules = [block.attn.value for block in self.model.decoder.blocks]
+         self.kv_modules = key_modules + value_modules
+ 
++    def _supports_request_local_cache(self) -> bool:
++        from .model import _uses_request_local_cache
++
++        return _uses_request_local_cache(self.model)
++
+     def logits(self, tokens: Tensor, audio_features: Tensor) -> Tensor:
+-        if not self.kv_cache:
++        if not self.kv_cache and self._use_legacy_cache:
+             self.kv_cache, self.hooks = self.model.install_kv_cache_hooks()
+ 
+         if tokens.shape[-1] > self.initial_token_length:
+             # only need to use the last token except in the first forward pass
+             tokens = tokens[:, -1:]
+ 
+-        return self.model.decoder(tokens, audio_features, kv_cache=self.kv_cache)
++        if self._use_legacy_cache:
++            return self.model.decoder(tokens, audio_features, kv_cache=self.kv_cache)
++
++        return self.model.decoder(
++            tokens, audio_features, kv_cache=self.kv_cache, _update_kv_cache=True
++        )
+ 
+     def cleanup_caching(self):
+         for hook in self.hooks:
+diff --git a/whisper/model.py b/whisper/model.py
+index 1dec35c..f140bb6 100644
+--- a/whisper/model.py
++++ b/whisper/model.py
+@@ -2,7 +2,7 @@ import base64
+ import gzip
+ from contextlib import contextmanager
+ from dataclasses import dataclass
+-from typing import Dict, Iterable, Optional, Tuple
++from typing import Dict, Iterable, List, Optional, Tuple
+ 
+ import numpy as np
+ import torch
+@@ -95,24 +95,49 @@ class MultiHeadAttention(nn.Module):
+         xa: Optional[Tensor] = None,
+         mask: Optional[Tensor] = None,
+         kv_cache: Optional[dict] = None,
++        use_sdpa: Optional[bool] = None,
++        _update_kv_cache: bool = False,
+     ):
+         q = self.query(x)
+ 
+-        if kv_cache is None or xa is None or self.key not in kv_cache:
+-            # hooks, if installed (i.e. kv_cache is not None), will prepend the cached kv tensors;
+-            # otherwise, perform key/value projections for self- or cross-attention as usual.
++        if _update_kv_cache:
++            if kv_cache is not None and xa is not None and self.key in kv_cache:
++                # Cross-attention keys and values do not change during decoding.
++                k = kv_cache[self.key]
++                v = kv_cache[self.value]
++            else:
++                k = self.key(x if xa is None else xa)
++                v = self.value(x if xa is None else xa)
++
++                if kv_cache is not None:
++                    if xa is None and self.key in kv_cache:
++                        # Append the current position to the request-local cache.
++                        k = torch.cat([kv_cache[self.key], k], dim=1).detach()
++                        v = torch.cat([kv_cache[self.value], v], dim=1).detach()
++
++                    kv_cache[self.key] = k
++                    kv_cache[self.value] = v
++        elif kv_cache is None or xa is None or self.key not in kv_cache:
++            # Preserve the hook-based cache path for external integrations.
+             k = self.key(x if xa is None else xa)
+             v = self.value(x if xa is None else xa)
+         else:
+-            # for cross-attention, calculate keys and values once and reuse in subsequent calls.
+             k = kv_cache[self.key]
+             v = kv_cache[self.value]
+ 
+-        wv, qk = self.qkv_attention(q, k, v, mask)
++        if use_sdpa is None:
++            wv, qk = self.qkv_attention(q, k, v, mask)
++        else:
++            wv, qk = self.qkv_attention(q, k, v, mask, use_sdpa=use_sdpa)
+         return self.out(wv), qk
+ 
+     def qkv_attention(
+-        self, q: Tensor, k: Tensor, v: Tensor, mask: Optional[Tensor] = None
++        self,
++        q: Tensor,
++        k: Tensor,
++        v: Tensor,
++        mask: Optional[Tensor] = None,
++        use_sdpa: Optional[bool] = None,
+     ) -> Tuple[torch.Tensor, Optional[torch.Tensor]]:
+         n_batch, n_ctx, n_state = q.shape
+         scale = (n_state // self.n_head) ** -0.25
+@@ -120,7 +145,10 @@ class MultiHeadAttention(nn.Module):
+         k = k.view(*k.shape[:2], self.n_head, -1).permute(0, 2, 1, 3)
+         v = v.view(*v.shape[:2], self.n_head, -1).permute(0, 2, 1, 3)
+ 
+-        if SDPA_AVAILABLE and MultiHeadAttention.use_sdpa:
++        if use_sdpa is None:
++            use_sdpa = MultiHeadAttention.use_sdpa
++
++        if SDPA_AVAILABLE and use_sdpa:
+             if k.shape[0] == 1 and q.shape[0] != 1:
+                 # Cross-attention K/V have batch 1 and broadcast against the
+                 # beam-expanded query; the fused SDPA kernels reject the batch
+@@ -170,10 +198,43 @@ class ResidualAttentionBlock(nn.Module):
+         xa: Optional[Tensor] = None,
+         mask: Optional[Tensor] = None,
+         kv_cache: Optional[dict] = None,
++        cross_attention_qks: Optional[List[Tensor]] = None,
++        use_sdpa: Optional[bool] = None,
++        _update_kv_cache: bool = False,
+     ):
+-        x = x + self.attn(self.attn_ln(x), mask=mask, kv_cache=kv_cache)[0]
++        if use_sdpa is None and not _update_kv_cache:
++            attention_output = self.attn(self.attn_ln(x), mask=mask, kv_cache=kv_cache)[
++                0
++            ]
++        else:
++            attention_output = self.attn(
++                self.attn_ln(x),
++                mask=mask,
++                kv_cache=kv_cache,
++                use_sdpa=use_sdpa,
++                _update_kv_cache=_update_kv_cache,
++            )[0]
++        x = x + attention_output
++
+         if self.cross_attn:
+-            x = x + self.cross_attn(self.cross_attn_ln(x), xa, kv_cache=kv_cache)[0]
++            if use_sdpa is None and not _update_kv_cache:
++                cross_attention_output, cross_attention_qk = self.cross_attn(
++                    self.cross_attn_ln(x), xa, kv_cache=kv_cache
++                )
++            else:
++                cross_attention_output, cross_attention_qk = self.cross_attn(
++                    self.cross_attn_ln(x),
++                    xa,
++                    kv_cache=kv_cache,
++                    use_sdpa=use_sdpa,
++                    _update_kv_cache=_update_kv_cache,
++                )
++            x = x + cross_attention_output
++
++            if cross_attention_qks is not None:
++                if cross_attention_qk is None:
++                    raise RuntimeError("cross-attention weights are unavailable")
++                cross_attention_qks.append(cross_attention_qk)
+         x = x + self.mlp(self.mlp_ln(x))
+         return x
+ 
+@@ -192,7 +253,7 @@ class AudioEncoder(nn.Module):
+         )
+         self.ln_post = LayerNorm(n_state)
+ 
+-    def forward(self, x: Tensor):
++    def forward(self, x: Tensor, use_sdpa: Optional[bool] = None):
+         """
+         x : torch.Tensor, shape = (batch_size, n_mels, n_ctx)
+             the mel spectrogram of the audio
+@@ -205,7 +266,10 @@ class AudioEncoder(nn.Module):
+         x = (x + self.positional_embedding).to(x.dtype)
+ 
+         for block in self.blocks:
+-            x = block(x)
++            if use_sdpa is None:
++                x = block(x)
++            else:
++                x = block(x, use_sdpa=use_sdpa)
+ 
+         x = self.ln_post(x)
+         return x
+@@ -231,7 +295,15 @@ class TextDecoder(nn.Module):
+         mask = torch.empty(n_ctx, n_ctx).fill_(-np.inf).triu_(1)
+         self.register_buffer("mask", mask, persistent=False)
+ 
+-    def forward(self, x: Tensor, xa: Tensor, kv_cache: Optional[dict] = None):
++    def forward(
++        self,
++        x: Tensor,
++        xa: Tensor,
++        kv_cache: Optional[dict] = None,
++        cross_attention_qks: Optional[List[Tensor]] = None,
++        use_sdpa: Optional[bool] = None,
++        _update_kv_cache: bool = False,
++    ):
+         """
+         x : torch.LongTensor, shape = (batch_size, <= n_ctx)
+             the text tokens
+@@ -246,7 +318,22 @@ class TextDecoder(nn.Module):
+         x = x.to(xa.dtype)
+ 
+         for block in self.blocks:
+-            x = block(x, xa, mask=self.mask, kv_cache=kv_cache)
++            if (
++                cross_attention_qks is None
++                and use_sdpa is None
++                and not _update_kv_cache
++            ):
++                x = block(x, xa, mask=self.mask, kv_cache=kv_cache)
++            else:
++                x = block(
++                    x,
++                    xa,
++                    mask=self.mask,
++                    kv_cache=kv_cache,
++                    cross_attention_qks=cross_attention_qks,
++                    use_sdpa=use_sdpa,
++                    _update_kv_cache=_update_kv_cache,
++                )
+ 
+         x = self.ln(x)
+         logits = (
+@@ -298,9 +385,22 @@ class Whisper(nn.Module):
+         return self.decoder(tokens, audio_features)
+ 
+     def forward(
+-        self, mel: torch.Tensor, tokens: torch.Tensor
++        self,
++        mel: torch.Tensor,
++        tokens: torch.Tensor,
++        cross_attention_qks: Optional[List[Tensor]] = None,
++        use_sdpa: Optional[bool] = None,
+     ) -> Dict[str, torch.Tensor]:
+-        return self.decoder(tokens, self.encoder(mel))
++        if cross_attention_qks is None and use_sdpa is None:
++            return self.decoder(tokens, self.encoder(mel))
++
++        audio_features = self.encoder(mel, use_sdpa=use_sdpa)
++        return self.decoder(
++            tokens,
++            audio_features,
++            cross_attention_qks=cross_attention_qks,
++            use_sdpa=use_sdpa,
++        )
+ 
+     @property
+     def device(self):
+@@ -350,3 +450,32 @@ class Whisper(nn.Module):
+     detect_language = detect_language_function
+     transcribe = transcribe_function
+     decode = decode_function
++
++
++def _is_builtin_attention_block(block: nn.Module) -> bool:
++    return (
++        type(block) is ResidualAttentionBlock
++        and type(block.attn) is MultiHeadAttention
++        and (block.cross_attn is None or type(block.cross_attn) is MultiHeadAttention)
++    )
++
++
++def _is_builtin_decoder(decoder: nn.Module) -> bool:
++    return type(decoder) is TextDecoder and all(
++        _is_builtin_attention_block(block) for block in decoder.blocks
++    )
++
++
++def _uses_request_local_cache(model: Whisper) -> bool:
++    """Return whether the decoder accepts Whisper's private cache controls."""
++    return type(model) is Whisper and _is_builtin_decoder(model.decoder)
++
++
++def _uses_request_local_alignment(model: Whisper) -> bool:
++    """Return whether alignment can avoid shared hooks and global SDPA state."""
++    return (
++        type(model) is Whisper
++        and type(model.encoder) is AudioEncoder
++        and all(_is_builtin_attention_block(block) for block in model.encoder.blocks)
++        and _is_builtin_decoder(model.decoder)
++    )
+diff --git a/whisper/timing.py b/whisper/timing.py
+index 2340000..0eed704 100644
+--- a/whisper/timing.py
++++ b/whisper/timing.py
+@@ -182,26 +182,44 @@ def find_alignment(
+         ]
+     ).to(model.device)
+ 
+-    # install hooks on the cross attention layers to retrieve the attention weights
+-    QKs = [None] * model.dims.n_text_layer
+-    hooks = [
+-        block.cross_attn.register_forward_hook(
+-            lambda _, ins, outs, index=i: QKs.__setitem__(index, outs[-1][0])
+-        )
+-        for i, block in enumerate(model.decoder.blocks)
+-    ]
+-
+-    from .model import disable_sdpa
++    from .model import _uses_request_local_alignment
++
++    request_local_alignment = _uses_request_local_alignment(model)
++
++    if request_local_alignment:
++        # Native modules can return attention weights without shared hooks or flags.
++        QKs = []
++        with torch.no_grad():
++            logits = model(
++                mel.unsqueeze(0),
++                tokens.unsqueeze(0),
++                cross_attention_qks=QKs,
++                use_sdpa=False,
++            )[0]
++        QKs = [qk[0] for qk in QKs]
++    else:
++        # Preserve compatibility with custom modules that implement the old API.
++        QKs = [None] * model.dims.n_text_layer
++        hooks = [
++            block.cross_attn.register_forward_hook(
++                lambda _, ins, outs, index=index: QKs.__setitem__(index, outs[-1][0])
++            )
++            for index, block in enumerate(model.decoder.blocks)
++        ]
+ 
+-    with torch.no_grad(), disable_sdpa():
+-        logits = model(mel.unsqueeze(0), tokens.unsqueeze(0))[0]
+-        sampled_logits = logits[len(tokenizer.sot_sequence) :, : tokenizer.eot]
+-        token_probs = sampled_logits.softmax(dim=-1)
+-        text_token_probs = token_probs[np.arange(len(text_tokens)), text_tokens]
+-        text_token_probs = text_token_probs.tolist()
++        from .model import disable_sdpa
+ 
+-    for hook in hooks:
+-        hook.remove()
++        try:
++            with torch.no_grad(), disable_sdpa():
++                logits = model(mel.unsqueeze(0), tokens.unsqueeze(0))[0]
++        finally:
++            for hook in hooks:
++                hook.remove()
++
++    sampled_logits = logits[len(tokenizer.sot_sequence) :, : tokenizer.eot]
++    token_probs = sampled_logits.softmax(dim=-1)
++    text_token_probs = token_probs[np.arange(len(text_tokens)), text_tokens]
++    text_token_probs = text_token_probs.tolist()
+ 
+     # heads * tokens * frames
+     weights = torch.stack([QKs[_l][_h] for _l, _h in model.alignment_heads.indices().T])
+-- 
+2.48.1.windows.1
+
