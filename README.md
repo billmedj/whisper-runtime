@@ -5,8 +5,11 @@ Whisper-compatible inference. It does not change the recognition model. It
 defines how one process admits work, owns mutable state, stops backend work,
 publishes a result, and returns reserved capacity.
 
-The current package is a reference implementation. It is not connected to the
-Whisper decode kernels and is not a production transcription service.
+The current package is a reference implementation. A conservative adapter can
+run the historical `model.transcribe()` API as one transaction. It serializes
+calls to one model object and reserves one complete worker for each call. The
+adapter does not expose Whisper's internal encode, decode-step, or alignment
+stages to the scheduler. This package is not a production transcription service.
 
 ## Implemented model
 
@@ -19,6 +22,8 @@ The Python package defines these ownership boundaries:
 - `WindowTransaction` owns one session transition and one exact resource lease.
 - `ExecutionScope` represents backend work submitted for that transaction.
 - `SubmissionGate` orders backend submission against transaction close.
+- `LegacyWhisperAdapter` places one existing synchronous Whisper transcription
+  behind the same admission, commit, and recovery boundary.
 
 `Budget.acquire()` creates leases. Lease construction is not public. A lease is
 bound to its originating budget and ledger entry. The worker creates
@@ -74,12 +79,22 @@ transaction. A second transaction cannot start with that object, and the claim
 remains until terminal cleanup. The package does not isolate an untrusted
 backend or protect against arbitrary memory writes in the host process.
 
+The legacy adapter uses a stricter profile. One model object is bound to one
+worker with a queue capacity of one. Each call reserves the worker's complete
+resource vector. Adapter objects for that model share the same binding. If
+cleanup cannot prove a safe release, the binding remains closed until the
+retained transaction is recovered. The adapter cannot stop a blocking
+historical `transcribe()` call between decoder tokens; that requires the native
+staged backend described in RFC 0001.
+
 ## Current evidence
 
-The local suite currently contains 54 Python unit tests. They cover resource
+The local suite currently contains 68 Python unit tests. They cover resource
 accounting, queue bounds, stale commits, cancellation races, deadlines,
 submission drain, stop retries, quarantine, cleanup retry, and owner-death
-takeover. One state-machine test executes a deterministic 2,000-step trace.
+takeover. Adapter tests also cover cross-adapter serialization, fixed resource
+profiles, immutable result payloads, retained-result recovery, and provenance
+validation. One state-machine test executes a deterministic 2,000-step trace.
 
 The Lean model currently contains 35 theorem declarations, including helper
 lemmas. It starts from a canonical empty runtime and proves properties for
@@ -141,6 +156,11 @@ src/             Executable reference implementation
 tests/           Unit and deterministic state-machine tests
 tools/           Repository, fixture, and local check commands
 ```
+
+The optional compatibility bridge is under
+`src/whisper_runtime/adapters/`. It imports no Whisper, PyTorch, or NumPy module;
+applications provide the model object, its identity probe, and a fixed execution
+profile. See [the adapter contract](docs/LEGACY_ADAPTER.md).
 
 The upstream request-local cache change that motivated this work remains
 separate in [openai/whisper#2842](https://github.com/openai/whisper/pull/2842).

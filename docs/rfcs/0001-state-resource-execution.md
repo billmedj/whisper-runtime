@@ -36,9 +36,11 @@ The current reference package implements `ModelSnapshot`, `Worker`, `Session`,
 `RequestState`, `WindowTransaction`, `ExecutionScope`, and `SubmissionGate`. It
 provides bounded admission, exact in-process leases, request-local random state,
 versioned session commits, deadlines, cooperative stop, quarantine, recovery,
-and owner-death takeover. It does not yet execute Whisper kernels. Batching,
-streaming, managed key-value caches, optimized backends, and the complete
-conformance matrix remain design targets.
+and owner-death takeover. A legacy adapter executes an unmodified synchronous
+`model.transcribe()` call as one serialized transaction with a full-worker
+reservation. It does not execute individual Whisper kernels through the
+scheduler. Batching, streaming, managed key-value caches, optimized backends,
+and the complete conformance matrix remain design targets.
 
 The current formal model covers abstract lease provenance, lifecycle,
 capacity, stale commits, and independent-session commits. It does not model

@@ -4,9 +4,12 @@ RFC 0001 is the normative architecture and milestone definition. This page is
 a short execution index. It does not define a second milestone scheme.
 
 No milestone is complete. The repository currently provides a transactional
-reference model, a formal lease model, 54 Python tests, and one implemented
-Whisper conformance pair. The transaction work implements part of the M0 and M3
-foundations before integration with the decode kernels.
+reference model, a formal lease model, 68 Python tests, one implemented Whisper
+conformance pair, and a serialized adapter for the historical synchronous API.
+The adapter proves the end-to-end transaction boundary. It does not provide
+stage-level scheduling or token-level cancellation. The transaction work
+implements part of the M0, M3, and M7 foundations before native integration
+with the decode kernels.
 
 ## M0 — Characterize the reference
 
@@ -38,7 +41,9 @@ and typed refusal results.
 
 Exit: declared capacity bounds hold under sustained overload with real backend
 adapters. Current status: bounded admission, exact leases, deadlines,
-quarantine, and recovery are tested in the reference model only.
+quarantine, and recovery are tested in the reference model. The legacy adapter
+uses a conservative full-worker reservation; calibrated stage costs remain
+unimplemented.
 
 ## M4 — Add safe batching
 
@@ -69,7 +74,9 @@ Keep the legacy backend and add optimized or exported backends behind explicit
 capabilities.
 
 Exit: each backend passes the conformance matrix for every capability it
-declares.
+declares. Current status: the historical synchronous adapter preserves the
+legacy result mapping inside an immutable, versioned envelope. It declares no
+incremental, batching, streaming, or device-fencing capability.
 
 ## M8 — Consider a default change
 
