@@ -1,0 +1,13 @@
+* text=auto
+
+*.json text eol=lf
+*.lean text eol=lf
+*.md text eol=lf
+*.ps1 text eol=lf
+*.py text eol=lf
+*.toml text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+
+*.flac binary
+*.pt binary

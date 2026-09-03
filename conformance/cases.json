@@ -1,0 +1,228 @@
+{
+  "schema_version": "1",
+  "cases": [
+    {
+      "id": "jfk-tiny-en-greedy-reference",
+      "model": "tiny.en",
+      "audio_fixture_id": "openai-whisper-jfk-flac",
+      "audio_fixture_class": "short_english_speech",
+      "fixture_records": {
+        "reference": "fixtures/reference/jfk-tiny-en-greedy.json",
+        "candidate": "fixtures/candidate/jfk-tiny-en-greedy-candidate.json"
+      },
+      "options": {
+        "task": "transcribe",
+        "language": "en",
+        "temperature": 0.0,
+        "word_timestamps": false,
+        "seed": 0
+      },
+      "required_profile": "reference",
+      "expected_resource_measurements": [
+        "wall_seconds"
+      ],
+      "status": "implemented"
+    },
+    {
+      "id": "greedy-short-speech",
+      "model": "tiny.en",
+      "audio_fixture_class": "short_english_speech",
+      "options": {
+        "task": "transcribe",
+        "language": "en",
+        "temperature": 0.0,
+        "word_timestamps": false,
+        "seed": 0
+      },
+      "required_profile": "reference",
+      "expected_resource_measurements": [
+        "wall_seconds",
+        "peak_host_memory_bytes",
+        "peak_device_memory_bytes",
+        "encoder_calls",
+        "decoder_steps",
+        "resources_held_after_bytes"
+      ],
+      "status": "planned"
+    },
+    {
+      "id": "sampling-seeded-short-speech",
+      "model": "tiny.en",
+      "audio_fixture_class": "short_english_speech",
+      "options": {
+        "task": "transcribe",
+        "language": "en",
+        "temperature": 0.8,
+        "best_of": 5,
+        "word_timestamps": false,
+        "seed": 7
+      },
+      "required_profile": "reference",
+      "expected_resource_measurements": [
+        "wall_seconds",
+        "peak_host_memory_bytes",
+        "peak_device_memory_bytes",
+        "decoder_steps",
+        "fallback_attempts",
+        "resources_held_after_bytes"
+      ],
+      "status": "planned"
+    },
+    {
+      "id": "beam-search-short-speech",
+      "model": "tiny.en",
+      "audio_fixture_class": "short_english_speech",
+      "options": {
+        "task": "transcribe",
+        "language": "en",
+        "temperature": 0.0,
+        "beam_size": 5,
+        "patience": 1.0,
+        "word_timestamps": false,
+        "seed": 0
+      },
+      "required_profile": "reference",
+      "expected_resource_measurements": [
+        "wall_seconds",
+        "peak_host_memory_bytes",
+        "peak_device_memory_bytes",
+        "decoder_steps",
+        "peak_hypothesis_count",
+        "resources_held_after_bytes"
+      ],
+      "status": "planned"
+    },
+    {
+      "id": "segment-timestamps-short-speech",
+      "model": "tiny.en",
+      "audio_fixture_class": "short_english_speech",
+      "options": {
+        "task": "transcribe",
+        "language": "en",
+        "temperature": 0.0,
+        "without_timestamps": false,
+        "word_timestamps": false,
+        "seed": 0
+      },
+      "required_profile": "reference",
+      "expected_resource_measurements": [
+        "wall_seconds",
+        "peak_host_memory_bytes",
+        "peak_device_memory_bytes",
+        "encoder_calls",
+        "decoder_steps",
+        "resources_held_after_bytes"
+      ],
+      "status": "planned"
+    },
+    {
+      "id": "word-timestamps-short-speech",
+      "model": "tiny.en",
+      "audio_fixture_class": "short_english_speech",
+      "options": {
+        "task": "transcribe",
+        "language": "en",
+        "temperature": 0.0,
+        "word_timestamps": true,
+        "seed": 0
+      },
+      "required_profile": "reference",
+      "expected_resource_measurements": [
+        "wall_seconds",
+        "peak_host_memory_bytes",
+        "peak_device_memory_bytes",
+        "alignment_seconds",
+        "alignment_capture_bytes",
+        "resources_held_after_bytes"
+      ],
+      "status": "planned"
+    },
+    {
+      "id": "batch-two-short-speech",
+      "model": "tiny.en",
+      "audio_fixture_class": "two_short_english_utterances",
+      "options": {
+        "task": "transcribe",
+        "language": "en",
+        "temperature": 0.0,
+        "batch_size": 2,
+        "word_timestamps": false,
+        "seed": 0
+      },
+      "required_profile": "reference",
+      "expected_resource_measurements": [
+        "wall_seconds",
+        "peak_host_memory_bytes",
+        "peak_device_memory_bytes",
+        "encoder_batch_size_peak",
+        "decoder_batch_size_peak",
+        "resources_held_after_bytes"
+      ],
+      "status": "planned"
+    },
+    {
+      "id": "concurrency-two-independent-requests",
+      "model": "tiny.en",
+      "audio_fixture_class": "two_short_english_utterances",
+      "options": {
+        "task": "transcribe",
+        "language": "en",
+        "temperature": 0.0,
+        "concurrent_requests": 2,
+        "word_timestamps": false,
+        "seed": 0
+      },
+      "required_profile": "reference",
+      "expected_resource_measurements": [
+        "wall_seconds",
+        "queue_delay_seconds",
+        "peak_host_memory_bytes",
+        "peak_device_memory_bytes",
+        "active_requests_peak",
+        "state_isolation_failures",
+        "resources_held_after_bytes"
+      ],
+      "status": "planned"
+    },
+    {
+      "id": "error-invalid-audio",
+      "model": "tiny.en",
+      "audio_fixture_class": "invalid_audio_input",
+      "options": {
+        "task": "transcribe",
+        "language": "en",
+        "temperature": 0.0,
+        "seed": 0
+      },
+      "required_profile": "reference",
+      "expected_resource_measurements": [
+        "wall_seconds",
+        "admission_delay_seconds",
+        "resources_held_after_bytes"
+      ],
+      "status": "planned"
+    },
+    {
+      "id": "cancel-active-decode",
+      "model": "tiny.en",
+      "audio_fixture_class": "long_english_speech",
+      "options": {
+        "task": "transcribe",
+        "language": "en",
+        "temperature": 0.0,
+        "cancel_at": "decoder_active",
+        "word_timestamps": false,
+        "seed": 0
+      },
+      "required_profile": "reference",
+      "expected_resource_measurements": [
+        "wall_seconds",
+        "cancellation_delay_seconds",
+        "peak_host_memory_bytes",
+        "peak_device_memory_bytes",
+        "resources_held_after_bytes"
+      ],
+      "status": "planned"
+    }
+  ]
+}

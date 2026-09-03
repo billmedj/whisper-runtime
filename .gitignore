@@ -1,0 +1,16 @@
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.venv/
+.tmp-*/
+build/
+dist/
+
+formal/lean/.lake/
+
+benchmarks/results/
+conformance/fixtures/generated/
+conformance/cache/

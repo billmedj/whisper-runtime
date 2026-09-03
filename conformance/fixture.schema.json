@@ -1,0 +1,222 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/billmedj/whisper-runtime/main/conformance/fixture.schema.json",
+  "title": "Whisper conformance fixture",
+  "$defs": {
+    "word": {
+      "type": "object",
+      "required": ["word", "start", "end", "probability"],
+      "properties": {
+        "word": { "type": "string" },
+        "start": { "type": "number" },
+        "end": { "type": "number" },
+        "probability": { "type": "number" }
+      },
+      "additionalProperties": true
+    },
+    "segment": {
+      "type": "object",
+      "required": [
+        "id",
+        "seek",
+        "start",
+        "end",
+        "text",
+        "tokens",
+        "temperature",
+        "avg_logprob",
+        "compression_ratio",
+        "no_speech_prob"
+      ],
+      "properties": {
+        "id": { "type": "integer" },
+        "seek": { "type": "integer" },
+        "start": { "type": "number" },
+        "end": { "type": "number" },
+        "text": { "type": "string" },
+        "tokens": { "type": "array", "items": { "type": "integer" } },
+        "temperature": { "type": "number" },
+        "avg_logprob": { "type": "number" },
+        "compression_ratio": { "type": "number" },
+        "no_speech_prob": { "type": "number" },
+        "words": { "type": "array", "items": { "$ref": "#/$defs/word" } }
+      },
+      "additionalProperties": true
+    }
+  },
+  "type": "object",
+  "required": [
+    "schema_version",
+    "created_at",
+    "outcome",
+    "profile",
+    "source",
+    "environment",
+    "model",
+    "audio",
+    "options",
+    "comparison",
+    "measurement"
+  ],
+  "properties": {
+    "schema_version": { "const": "1" },
+    "created_at": { "type": "string", "format": "date-time" },
+    "outcome": {
+      "enum": ["success", "error", "cancelled", "deadline_exceeded"]
+    },
+    "profile": { "enum": ["reference", "optimized"] },
+    "source": {
+      "type": "object",
+      "required": ["root", "git_commit", "dirty", "tree_sha256"],
+      "properties": {
+        "root": { "type": "string", "minLength": 1 },
+        "git_commit": {
+          "type": ["string", "null"],
+          "pattern": "^[0-9a-f]{40}$"
+        },
+        "dirty": { "type": ["boolean", "null"] },
+        "tree_sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+      },
+      "additionalProperties": false
+    },
+    "environment": {
+      "type": "object",
+      "required": ["python", "platform", "torch", "whisper_module"],
+      "properties": {
+        "python": { "type": "string" },
+        "platform": { "type": "string" },
+        "torch": { "type": "string" },
+        "whisper_module": { "type": "string" }
+      },
+      "additionalProperties": true
+    },
+    "model": {
+      "type": "object",
+      "required": ["name", "device", "dtype", "checkpoint_sha256", "dimensions"],
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "device": { "type": "string", "minLength": 1 },
+        "dtype": { "type": "string", "minLength": 1 },
+        "checkpoint_sha256": {
+          "type": ["string", "null"],
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "dimensions": { "type": "object" }
+      },
+      "additionalProperties": false
+    },
+    "audio": {
+      "type": "object",
+      "required": [
+        "fixture_id",
+        "path",
+        "sha256",
+        "size_bytes",
+        "sample_rate_hz",
+        "sample_start",
+        "sample_end"
+      ],
+      "properties": {
+        "fixture_id": { "type": "string", "minLength": 1 },
+        "path": { "type": "string", "minLength": 1 },
+        "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+        "size_bytes": { "type": "integer", "minimum": 0 },
+        "sample_rate_hz": { "type": "integer", "minimum": 1 },
+        "sample_start": { "type": "integer", "minimum": 0 },
+        "sample_end": { "type": ["integer", "null"], "minimum": 0 }
+      },
+      "additionalProperties": false
+    },
+    "options": { "type": "object" },
+    "comparison": {
+      "type": "object",
+      "required": ["timestamp_abs_tol", "numeric_abs_tol"],
+      "properties": {
+        "timestamp_abs_tol": { "type": "number", "minimum": 0 },
+        "numeric_abs_tol": { "type": "number", "minimum": 0 }
+      },
+      "additionalProperties": false
+    },
+    "measurement": {
+      "type": "object",
+      "required": [
+        "wall_seconds",
+        "real_time_factor",
+        "peak_host_memory_bytes",
+        "peak_device_memory_bytes",
+        "queue_delay_seconds",
+        "execution_seconds",
+        "encoder_calls",
+        "decoder_steps",
+        "fallback_attempts",
+        "peak_hypothesis_count",
+        "alignment_seconds",
+        "alignment_capture_bytes",
+        "encoder_batch_size_peak",
+        "decoder_batch_size_peak",
+        "active_requests_peak",
+        "state_isolation_failures",
+        "admission_delay_seconds",
+        "cancellation_delay_seconds",
+        "resources_held_after_bytes"
+      ],
+      "properties": {
+        "wall_seconds": { "type": ["number", "null"], "minimum": 0 },
+        "real_time_factor": { "type": ["number", "null"], "minimum": 0 },
+        "peak_host_memory_bytes": { "type": ["integer", "null"], "minimum": 0 },
+        "peak_device_memory_bytes": { "type": ["integer", "null"], "minimum": 0 },
+        "queue_delay_seconds": { "type": ["number", "null"], "minimum": 0 },
+        "execution_seconds": { "type": ["number", "null"], "minimum": 0 },
+        "encoder_calls": { "type": ["integer", "null"], "minimum": 0 },
+        "decoder_steps": { "type": ["integer", "null"], "minimum": 0 },
+        "fallback_attempts": { "type": ["integer", "null"], "minimum": 0 },
+        "peak_hypothesis_count": { "type": ["integer", "null"], "minimum": 0 },
+        "alignment_seconds": { "type": ["number", "null"], "minimum": 0 },
+        "alignment_capture_bytes": { "type": ["integer", "null"], "minimum": 0 },
+        "encoder_batch_size_peak": { "type": ["integer", "null"], "minimum": 0 },
+        "decoder_batch_size_peak": { "type": ["integer", "null"], "minimum": 0 },
+        "active_requests_peak": { "type": ["integer", "null"], "minimum": 0 },
+        "state_isolation_failures": { "type": ["integer", "null"], "minimum": 0 },
+        "admission_delay_seconds": { "type": ["number", "null"], "minimum": 0 },
+        "cancellation_delay_seconds": { "type": ["number", "null"], "minimum": 0 },
+        "resources_held_after_bytes": { "type": ["integer", "null"], "minimum": 0 }
+      },
+      "additionalProperties": false
+    },
+    "result": {
+      "type": "object",
+      "required": ["text", "segments", "language"],
+      "properties": {
+        "text": { "type": "string" },
+        "segments": { "type": "array", "items": { "$ref": "#/$defs/segment" } },
+        "language": { "type": "string" }
+      },
+      "additionalProperties": true
+    },
+    "termination": {
+      "type": "object",
+      "required": ["reason_code", "message"],
+      "properties": {
+        "reason_code": { "type": "string", "minLength": 1 },
+        "message": { "type": "string" },
+        "stage": { "type": ["string", "null"] }
+      },
+      "additionalProperties": true
+    }
+  },
+  "oneOf": [
+    {
+      "properties": { "outcome": { "const": "success" } },
+      "required": ["result"],
+      "not": { "required": ["termination"] }
+    },
+    {
+      "properties": {
+        "outcome": { "enum": ["error", "cancelled", "deadline_exceeded"] }
+      },
+      "required": ["termination"],
+      "not": { "required": ["result"] }
+    }
+  ],
+  "additionalProperties": false
+}

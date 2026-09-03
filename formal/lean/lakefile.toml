@@ -1,0 +1,6 @@
+name = "whisper-runtime-formal"
+version = "0.1.0"
+defaultTargets = ["WhisperRuntimeFormal"]
+
+[[lean_lib]]
+name = "WhisperRuntimeFormal"
