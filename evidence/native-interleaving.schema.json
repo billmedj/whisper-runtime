@@ -1,0 +1,297 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/billmedj/whisper-runtime/blob/main/evidence/native-interleaving.schema.json",
+  "title": "Native same-model interleaving evidence",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "recorded_at",
+    "status",
+    "scope",
+    "runtime",
+    "backend",
+    "environment",
+    "model",
+    "input",
+    "execution",
+    "assertions",
+    "results"
+  ],
+  "properties": {
+    "schema_version": { "const": "1" },
+    "recorded_at": { "type": "string", "format": "date-time" },
+    "status": { "const": "passed" },
+    "scope": { "const": "patched_backend" },
+    "runtime": { "$ref": "#/$defs/runtime" },
+    "backend": { "$ref": "#/$defs/backend" },
+    "environment": { "$ref": "#/$defs/environment" },
+    "model": { "$ref": "#/$defs/model" },
+    "input": { "$ref": "#/$defs/input" },
+    "execution": { "$ref": "#/$defs/execution" },
+    "assertions": { "$ref": "#/$defs/assertions" },
+    "results": { "$ref": "#/$defs/results" }
+  },
+  "$defs": {
+    "sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "prefixed_sha256": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+    "git_object": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{40}$"
+    },
+    "runtime": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["version", "git_commit", "git_tree", "clean"],
+      "properties": {
+        "version": { "type": "string", "minLength": 1 },
+        "git_commit": { "$ref": "#/$defs/git_object" },
+        "git_tree": { "$ref": "#/$defs/git_object" },
+        "clean": { "const": true }
+      }
+    },
+    "backend": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "base_commit",
+        "applied_commit",
+        "git_tree",
+        "clean",
+        "patch_manifest",
+        "patch_manifest_sha256"
+      ],
+      "properties": {
+        "name": { "const": "openai-whisper-suspendable" },
+        "base_commit": {
+          "const": "86098128c0b4f24f0e2aa2994de830614b474227"
+        },
+        "applied_commit": { "$ref": "#/$defs/git_object" },
+        "git_tree": {
+          "const": "c011d2563c26763b5f147026e6b18ef85bccd4fb"
+        },
+        "clean": { "const": true },
+        "patch_manifest": { "const": "patches/openai-whisper/SHA256SUMS" },
+        "patch_manifest_sha256": { "$ref": "#/$defs/sha256" }
+      }
+    },
+    "environment": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "platform",
+        "python",
+        "torch",
+        "numpy",
+        "tiktoken",
+        "numba",
+        "tqdm",
+        "more_itertools",
+        "jsonschema",
+        "ffmpeg",
+        "cpu_threads"
+      ],
+      "properties": {
+        "platform": { "type": "string", "minLength": 1 },
+        "python": { "type": "string", "minLength": 1 },
+        "torch": { "type": "string", "minLength": 1 },
+        "numpy": { "type": "string", "minLength": 1 },
+        "tiktoken": { "type": "string", "minLength": 1 },
+        "numba": { "type": "string", "minLength": 1 },
+        "tqdm": { "type": "string", "minLength": 1 },
+        "more_itertools": { "type": "string", "minLength": 1 },
+        "jsonschema": { "type": "string", "minLength": 1 },
+        "ffmpeg": { "type": "string", "minLength": 1 },
+        "cpu_threads": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "model": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "device",
+        "checkpoint_sha256",
+        "loaded_state_before",
+        "loaded_state_after",
+        "execution_state_before",
+        "execution_state_after"
+      ],
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "device": { "const": "cpu" },
+        "checkpoint_sha256": { "$ref": "#/$defs/sha256" },
+        "loaded_state_before": { "$ref": "#/$defs/prefixed_sha256" },
+        "loaded_state_after": { "$ref": "#/$defs/prefixed_sha256" },
+        "execution_state_before": { "$ref": "#/$defs/prefixed_sha256" },
+        "execution_state_after": { "$ref": "#/$defs/prefixed_sha256" }
+      }
+    },
+    "derived_input": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["sample_start", "sample_end", "pcm_sha256", "mel_sha256"],
+      "properties": {
+        "sample_start": { "type": "integer", "minimum": 0 },
+        "sample_end": { "type": "integer", "minimum": 1 },
+        "pcm_sha256": { "$ref": "#/$defs/sha256" },
+        "mel_sha256": { "$ref": "#/$defs/sha256" }
+      }
+    },
+    "input": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "fixture_id",
+        "path",
+        "file_sha256",
+        "size_bytes",
+        "sample_rate_hz",
+        "source_sample_count",
+        "cancelled",
+        "survivor"
+      ],
+      "properties": {
+        "fixture_id": { "type": "string", "minLength": 1 },
+        "path": { "type": "string", "minLength": 1 },
+        "file_sha256": { "$ref": "#/$defs/sha256" },
+        "size_bytes": { "type": "integer", "minimum": 1 },
+        "sample_rate_hz": { "type": "integer", "minimum": 1 },
+        "source_sample_count": { "type": "integer", "minimum": 2 },
+        "cancelled": { "$ref": "#/$defs/derived_input" },
+        "survivor": { "$ref": "#/$defs/derived_input" }
+      }
+    },
+    "elapsed": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["baseline", "interleaving", "reuse_control", "total"],
+      "properties": {
+        "baseline": { "type": "number", "minimum": 0 },
+        "interleaving": { "type": "number", "minimum": 0 },
+        "reuse_control": { "type": "number", "minimum": 0 },
+        "total": { "type": "number", "minimum": 0 }
+      }
+    },
+    "execution": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "mode",
+        "two_overlapping_run_lifetimes",
+        "parallel_kernels",
+        "cancellation",
+        "schedule",
+        "cancelled_steps",
+        "survivor_steps",
+        "survivor_cache_entries_at_cancellation",
+        "numeric_absolute_tolerance",
+        "elapsed_seconds",
+        "timing_is_benchmark"
+      ],
+      "properties": {
+        "mode": { "const": "deterministic_sequential_interleaving" },
+        "two_overlapping_run_lifetimes": { "const": true },
+        "parallel_kernels": { "const": false },
+        "cancellation": { "const": "explicit_cleanup_after_token_step" },
+        "schedule": {
+          "type": "array",
+          "minItems": 9,
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "cancelled_steps": { "type": "integer", "minimum": 1 },
+        "survivor_steps": { "type": "integer", "minimum": 2 },
+        "survivor_cache_entries_at_cancellation": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "numeric_absolute_tolerance": { "type": "number", "minimum": 0 },
+        "elapsed_seconds": { "$ref": "#/$defs/elapsed" },
+        "timing_is_benchmark": { "const": false }
+      }
+    },
+    "assertions": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "two_live_runs",
+        "request_local_cache_path",
+        "state_objects_distinct",
+        "kv_cache_storage_disjoint",
+        "both_runs_stepped_before_cancellation",
+        "cancelled_cleanup_idempotent",
+        "cancelled_state_released",
+        "cancelled_run_rejects_step",
+        "cancelled_run_rejects_finalize",
+        "survivor_cache_unchanged_by_cancellation",
+        "survivor_matches_isolated_baseline",
+        "survivor_cache_cleanup_complete",
+        "survivor_rejects_second_finalize",
+        "model_reusable_after_cleanup",
+        "model_state_unchanged",
+        "model_hooks_unchanged"
+      ],
+      "properties": {
+        "two_live_runs": { "const": true },
+        "request_local_cache_path": { "const": true },
+        "state_objects_distinct": { "const": true },
+        "kv_cache_storage_disjoint": { "const": true },
+        "both_runs_stepped_before_cancellation": { "const": true },
+        "cancelled_cleanup_idempotent": { "const": true },
+        "cancelled_state_released": { "const": true },
+        "cancelled_run_rejects_step": { "const": true },
+        "cancelled_run_rejects_finalize": { "const": true },
+        "survivor_cache_unchanged_by_cancellation": { "const": true },
+        "survivor_matches_isolated_baseline": { "const": true },
+        "survivor_cache_cleanup_complete": { "const": true },
+        "survivor_rejects_second_finalize": { "const": true },
+        "model_reusable_after_cleanup": { "const": true },
+        "model_state_unchanged": { "const": true },
+        "model_hooks_unchanged": { "const": true }
+      }
+    },
+    "result": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "text",
+        "language",
+        "token_count",
+        "tokens_sha256",
+        "audio_features_sha256",
+        "temperature",
+        "compression_ratio",
+        "avg_logprob",
+        "no_speech_prob"
+      ],
+      "properties": {
+        "text": { "type": "string" },
+        "language": { "type": "string", "minLength": 1 },
+        "token_count": { "type": "integer", "minimum": 0 },
+        "tokens_sha256": { "$ref": "#/$defs/sha256" },
+        "audio_features_sha256": { "$ref": "#/$defs/sha256" },
+        "temperature": { "type": ["number", "null"] },
+        "compression_ratio": { "type": ["number", "null"] },
+        "avg_logprob": { "type": ["number", "null"] },
+        "no_speech_prob": { "type": ["number", "null"] }
+      }
+    },
+    "results": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["isolated_baseline", "survivor", "reuse_control"],
+      "properties": {
+        "isolated_baseline": { "$ref": "#/$defs/result" },
+        "survivor": { "$ref": "#/$defs/result" },
+        "reuse_control": { "$ref": "#/$defs/result" }
+      }
+    }
+  }
+}

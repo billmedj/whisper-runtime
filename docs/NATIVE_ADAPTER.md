@@ -133,3 +133,27 @@ python tools\smoke_native_whisper.py C:\path\to\audio.flac `
 The unit tests use controlled backend doubles to force lifecycle failures and
 race boundaries deterministically. The smoke command is the integration check
 against the patched decoder and a real model checkpoint.
+
+## Same-model interleaving check
+
+`tools/verify_native_interleaving.py` tests the staged decoder below the
+serialized runtime adapter. It loads one model, records an isolated baseline,
+and creates two request-owned decode runs from the same model.
+
+The tool follows a recorded token-step schedule. It cleans one run after one
+decoder step and continues the other to completion. The check requires:
+
+- distinct run, inference, decoder, token-storage, and KV-cache objects;
+- no change to the survivor cache when the other run is cleaned;
+- rejection of further work by the cleaned run;
+- a survivor result that matches the isolated baseline within the recorded
+  scalar tolerance, which is zero in CI;
+- no net change to model state or registered hooks across the full check;
+- a successful control decode after both overlapping lifetimes end.
+
+The tool emits a JSON record and validates every required assertion. The record
+format is defined in `evidence/native-interleaving.schema.json`.
+
+This check does not send two transactions through `NativeWhisperAdapter`. The
+adapter still requires `queue_capacity=1`. The check does not claim parallel
+kernel execution, thread-safe execution, or higher throughput.

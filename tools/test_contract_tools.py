@@ -1,19 +1,33 @@
 from __future__ import annotations
 
 import copy
+import hashlib
 import json
 import subprocess
 import tempfile
 import unittest
 from pathlib import Path
+from types import SimpleNamespace
 
 from capture_whisper_reference import git_metadata
-from check_repository import contains_absolute_user_path, validate_audio_binding
+from check_repository import (
+    contains_absolute_user_path,
+    validate_audio_binding,
+)
 from compare_whisper_fixtures import compare_fixtures
 from smoke_native_whisper import (
     verify_loaded_model_fingerprint,
     verify_source_revision,
     verify_terminal_invariants,
+)
+from validate_interleaving_record import validate_record
+from verify_native_interleaving import (
+    EXPECTED_ASSERTIONS,
+    PINNED_WHISPER_BASE,
+    PINNED_WHISPER_TREE,
+    decode_results_match,
+    verify_audio_manifest_binding,
+    verify_passed_assertions,
 )
 
 from whisper_runtime import ResourceVector
@@ -252,6 +266,207 @@ class NativeSmokeContractTests(unittest.TestCase):
                 arguments = {**defaults, **override}
                 with self.assertRaisesRegex(RuntimeError, message):
                     verify_terminal_invariants(**arguments)
+
+
+class _ComparableFeatures:
+    def __init__(self, value: str) -> None:
+        self.value = value
+
+    def equal(self, other: object) -> bool:
+        return isinstance(other, _ComparableFeatures) and self.value == other.value
+
+
+class NativeInterleavingContractTests(unittest.TestCase):
+    def result(self, *, text: str = "same") -> SimpleNamespace:
+        return SimpleNamespace(
+            text=text,
+            tokens=[1, 2, 3],
+            language="en",
+            temperature=0.0,
+            compression_ratio=1.0,
+            avg_logprob=-0.2,
+            no_speech_prob=float("nan"),
+            audio_features=_ComparableFeatures("features"),
+        )
+
+    def evidence(self) -> dict[str, object]:
+        result = {
+            "text": "same",
+            "language": "en",
+            "token_count": 3,
+            "tokens_sha256": "1" * 64,
+            "audio_features_sha256": "2" * 64,
+            "temperature": 0.0,
+            "compression_ratio": 1.0,
+            "avg_logprob": -0.2,
+            "no_speech_prob": None,
+        }
+        manifest = ROOT / "patches" / "openai-whisper" / "SHA256SUMS"
+        return {
+            "schema_version": "1",
+            "recorded_at": "2026-09-04T00:00:00Z",
+            "status": "passed",
+            "scope": "patched_backend",
+            "runtime": {
+                "version": "0.1.0.dev0",
+                "git_commit": "0" * 40,
+                "git_tree": "1" * 40,
+                "clean": True,
+            },
+            "backend": {
+                "name": "openai-whisper-suspendable",
+                "base_commit": PINNED_WHISPER_BASE,
+                "applied_commit": "3" * 40,
+                "git_tree": PINNED_WHISPER_TREE,
+                "clean": True,
+                "patch_manifest": "patches/openai-whisper/SHA256SUMS",
+                "patch_manifest_sha256": hashlib.sha256(
+                    manifest.read_bytes()
+                ).hexdigest(),
+            },
+            "environment": {
+                "platform": "test",
+                "python": "3.13.1",
+                "torch": "2.6.0+cpu",
+                "numpy": "2.5.2",
+                "tiktoken": "0.14.0",
+                "numba": "0.67.0",
+                "tqdm": "4.70.0",
+                "more_itertools": "11.1.0",
+                "jsonschema": "4.25.1",
+                "ffmpeg": "ffmpeg version test",
+                "cpu_threads": 1,
+            },
+            "model": {
+                "name": "tiny.en",
+                "device": "cpu",
+                "checkpoint_sha256": "7" * 64,
+                "loaded_state_before": "sha256:" + "8" * 64,
+                "loaded_state_after": "sha256:" + "8" * 64,
+                "execution_state_before": "sha256:" + "9" * 64,
+                "execution_state_after": "sha256:" + "9" * 64,
+            },
+            "input": {
+                "fixture_id": "openai-whisper-jfk-flac",
+                "path": "tests/jfk.flac",
+                "file_sha256": (
+                    "63a4b1e4c1dc655ac70961ffbf518acd249df237e5a0152faae9a4a836949715"
+                ),
+                "size_bytes": 1152693,
+                "sample_rate_hz": 16000,
+                "source_sample_count": 176000,
+                "cancelled": {
+                    "sample_start": 0,
+                    "sample_end": 88000,
+                    "pcm_sha256": "3" * 64,
+                    "mel_sha256": "4" * 64,
+                },
+                "survivor": {
+                    "sample_start": 0,
+                    "sample_end": 176000,
+                    "pcm_sha256": "5" * 64,
+                    "mel_sha256": "6" * 64,
+                },
+            },
+            "execution": {
+                "mode": "deterministic_sequential_interleaving",
+                "two_overlapping_run_lifetimes": True,
+                "parallel_kernels": False,
+                "cancellation": "explicit_cleanup_after_token_step",
+                "survivor_steps": 2,
+                "cancelled_steps": 1,
+                "survivor_cache_entries_at_cancellation": 16,
+                "numeric_absolute_tolerance": 0.0,
+                "elapsed_seconds": {
+                    "baseline": 1.0,
+                    "interleaving": 2.0,
+                    "reuse_control": 1.0,
+                    "total": 4.1,
+                },
+                "timing_is_benchmark": False,
+                "schedule": [
+                    "start:cancelled",
+                    "start:survivor",
+                    "prefill:cancelled",
+                    "prefill:survivor",
+                    "step:cancelled:1",
+                    "step:survivor:1",
+                    "cancel:cancelled",
+                    "cleanup:cancelled:idempotent",
+                    "step:survivor:2",
+                    "finalize:survivor",
+                    "cleanup:survivor:idempotent",
+                ],
+            },
+            "assertions": {name: True for name in EXPECTED_ASSERTIONS},
+            "results": {
+                "isolated_baseline": copy.deepcopy(result),
+                "survivor": copy.deepcopy(result),
+                "reuse_control": copy.deepcopy(result),
+            },
+        }
+
+    def test_result_comparison_handles_nan_and_detects_content_changes(self) -> None:
+        self.assertTrue(
+            decode_results_match(self.result(), self.result(), absolute_tolerance=0.0)
+        )
+        self.assertFalse(
+            decode_results_match(
+                self.result(),
+                self.result(text="different"),
+                absolute_tolerance=0.0,
+            )
+        )
+
+    def test_all_named_assertions_must_pass(self) -> None:
+        passed = {name: True for name in EXPECTED_ASSERTIONS}
+        verify_passed_assertions(passed)
+        failed = dict(passed)
+        failed["model_state_unchanged"] = False
+        with self.assertRaisesRegex(RuntimeError, "model_state_unchanged"):
+            verify_passed_assertions(failed)
+        missing = dict(passed)
+        del missing["two_live_runs"]
+        with self.assertRaisesRegex(RuntimeError, "two_live_runs"):
+            verify_passed_assertions(missing)
+
+    def test_audio_bytes_must_match_the_declared_fixture(self) -> None:
+        verify_audio_manifest_binding(
+            fixture_id="openai-whisper-jfk-flac",
+            file_sha256=(
+                "63a4b1e4c1dc655ac70961ffbf518acd249df237e5a0152faae9a4a836949715"
+            ),
+            size_bytes=1152693,
+            sample_rate_hz=16000,
+            sample_count=176000,
+        )
+        with self.assertRaisesRegex(RuntimeError, "does not match"):
+            verify_audio_manifest_binding(
+                fixture_id="openai-whisper-jfk-flac",
+                file_sha256="0" * 64,
+                size_bytes=1152693,
+                sample_rate_hz=16000,
+                sample_count=176000,
+            )
+
+    def test_semantic_validator_rejects_schedule_and_result_changes(self) -> None:
+        evidence = self.evidence()
+        self.assertEqual(
+            validate_record(evidence, "evidence/test.json"),
+            [],
+        )
+
+        evidence["execution"]["schedule"][5] = "step:survivor:2"
+        evidence["results"]["survivor"]["text"] = "different"
+        failures = validate_record(evidence, "evidence/test.json")
+        self.assertTrue(any("schedule" in failure for failure in failures))
+        self.assertTrue(any("survivor differs" in failure for failure in failures))
+
+    def test_record_validator_rejects_non_finite_json_numbers(self) -> None:
+        evidence = self.evidence()
+        evidence["execution"]["elapsed_seconds"]["total"] = float("nan")
+        failures = validate_record(evidence, "evidence/test.json")
+        self.assertTrue(any("non-finite" in failure for failure in failures))
 
 
 if __name__ == "__main__":

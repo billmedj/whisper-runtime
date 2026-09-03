@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import datetime as dt
+import hashlib
 import json
 import math
 import re
@@ -405,10 +406,250 @@ def validate_fixture(fixture: Any, location: str) -> list[str]:
 
 def _read_json(path: Path, failures: list[str]) -> Any | None:
     try:
-        return json.loads(path.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError) as error:
+        return json.loads(
+            path.read_text(encoding="utf-8"),
+            parse_constant=lambda value: (_ for _ in ()).throw(
+                ValueError(f"non-finite JSON number: {value}")
+            ),
+        )
+    except (OSError, json.JSONDecodeError, ValueError) as error:
         failures.append(f"{path.relative_to(ROOT)} is not valid JSON: {error}")
         return None
+
+
+def _same_recorded_result(
+    left: Any,
+    right: Any,
+    *,
+    absolute_tolerance: float,
+) -> bool:
+    if not isinstance(left, dict) or not isinstance(right, dict):
+        return False
+    for field in (
+        "text",
+        "language",
+        "token_count",
+        "tokens_sha256",
+        "audio_features_sha256",
+    ):
+        if left.get(field) != right.get(field):
+            return False
+    for field in (
+        "temperature",
+        "compression_ratio",
+        "avg_logprob",
+        "no_speech_prob",
+    ):
+        left_value = left.get(field)
+        right_value = right.get(field)
+        if left_value is None or right_value is None:
+            if left_value is not right_value:
+                return False
+        elif not _is_number(left_value) or not _is_number(right_value):
+            return False
+        elif not math.isclose(
+            left_value,
+            right_value,
+            rel_tol=0.0,
+            abs_tol=absolute_tolerance,
+        ):
+            return False
+    return True
+
+
+def validate_native_interleaving_evidence(
+    record: Any,
+    location: str,
+) -> list[str]:
+    """Check relations that JSON Schema cannot express by itself."""
+
+    failures: list[str] = []
+    if not isinstance(record, dict):
+        return [f"{location} must be an object"]
+
+    try:
+        dt.datetime.fromisoformat(
+            str(record.get("recorded_at", "")).replace("Z", "+00:00")
+        )
+    except ValueError:
+        failures.append(f"{location}.recorded_at must be an ISO 8601 timestamp")
+
+    input_record = record.get("input", {})
+    if isinstance(input_record, dict):
+        input_path = str(input_record.get("path", ""))
+        input_parts = Path(input_path).parts
+        if (
+            Path(input_path).is_absolute()
+            or re.match(r"^[A-Za-z]:", input_path)
+            or input_path.startswith(("\\\\", "//"))
+            or ".." in input_parts
+        ):
+            failures.append(f"{location}.input.path must be portable")
+        cancelled = input_record.get("cancelled", {})
+        survivor = input_record.get("survivor", {})
+        if isinstance(cancelled, dict) and isinstance(survivor, dict):
+            if cancelled.get("sample_start") != survivor.get("sample_start"):
+                failures.append(
+                    f"{location} derived inputs must use the same sample start"
+                )
+            cancelled_end = cancelled.get("sample_end")
+            survivor_end = survivor.get("sample_end")
+            if not (
+                isinstance(cancelled_end, int)
+                and isinstance(survivor_end, int)
+                and cancelled_end < survivor_end
+                and survivor_end == input_record.get("source_sample_count")
+            ):
+                failures.append(
+                    f"{location} cancelled input must be shorter than the survivor"
+                )
+            for field in ("pcm_sha256", "mel_sha256"):
+                if cancelled.get(field) == survivor.get(field):
+                    failures.append(
+                        f"{location} derived inputs must have distinct {field} values"
+                    )
+
+        manifest_path = ROOT / "conformance" / "audio-manifest.json"
+        try:
+            manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            manifest = {}
+        fixture_id = input_record.get("fixture_id")
+        fixtures = manifest.get("fixtures", []) if isinstance(manifest, dict) else []
+        manifest_record = next(
+            (
+                fixture
+                for fixture in fixtures
+                if isinstance(fixture, dict) and fixture.get("id") == fixture_id
+            ),
+            None,
+        )
+        if manifest_record is None:
+            failures.append(f"{location} uses an unknown audio fixture")
+        else:
+            for evidence_field, manifest_field in (
+                ("file_sha256", "sha256"),
+                ("size_bytes", "size_bytes"),
+                ("sample_rate_hz", "decoded_sample_rate_hz"),
+                ("source_sample_count", "decoded_sample_count"),
+            ):
+                if input_record.get(evidence_field) != manifest_record.get(
+                    manifest_field
+                ):
+                    failures.append(
+                        f"{location}.input.{evidence_field} does not match "
+                        "the audio manifest"
+                    )
+
+    model = record.get("model", {})
+    if isinstance(model, dict) and model.get("loaded_state_before") != model.get(
+        "loaded_state_after"
+    ):
+        failures.append(f"{location} loaded model state changed during the check")
+    if isinstance(model, dict) and model.get("execution_state_before") != model.get(
+        "execution_state_after"
+    ):
+        failures.append(f"{location} model execution state changed during the check")
+
+    execution = record.get("execution", {})
+    if not isinstance(execution, dict):
+        execution = {}
+    survivor_steps = execution.get("survivor_steps")
+    expected_schedule = [
+        "start:cancelled",
+        "start:survivor",
+        "prefill:cancelled",
+        "prefill:survivor",
+        "step:cancelled:1",
+        "step:survivor:1",
+        "cancel:cancelled",
+        "cleanup:cancelled:idempotent",
+    ]
+    if isinstance(survivor_steps, int) and not isinstance(survivor_steps, bool):
+        expected_schedule.extend(
+            f"step:survivor:{step}" for step in range(2, survivor_steps + 1)
+        )
+    expected_schedule.extend(["finalize:survivor", "cleanup:survivor:idempotent"])
+    if execution.get("schedule") != expected_schedule:
+        failures.append(f"{location}.execution.schedule is not the expected schedule")
+    if execution.get("cancelled_steps") != 1:
+        failures.append(f"{location} must cancel after exactly one token step")
+
+    tolerance = execution.get("numeric_absolute_tolerance")
+    if not _is_number(tolerance) or tolerance < 0:
+        tolerance = 0.0
+    results = record.get("results", {})
+    if isinstance(results, dict):
+        baseline = results.get("isolated_baseline")
+        for role in ("survivor", "reuse_control"):
+            if not _same_recorded_result(
+                baseline,
+                results.get(role),
+                absolute_tolerance=tolerance,
+            ):
+                failures.append(
+                    f"{location}.results.{role} differs from isolated_baseline"
+                )
+
+    assertions = record.get("assertions", {})
+    if (
+        not isinstance(assertions, dict)
+        or not assertions
+        or any(value is not True for value in assertions.values())
+    ):
+        failures.append(f"{location} contains a failed or missing assertion")
+
+    manifest_path = ROOT / "patches" / "openai-whisper" / "SHA256SUMS"
+    backend = record.get("backend", {})
+    if isinstance(backend, dict) and manifest_path.is_file():
+        observed_manifest = hashlib.sha256(manifest_path.read_bytes()).hexdigest()
+        if backend.get("patch_manifest_sha256") != observed_manifest:
+            failures.append(f"{location} does not match the current patch manifest")
+    return failures
+
+
+def check_native_interleaving_evidence() -> list[str]:
+    failures: list[str] = []
+    schema_path = ROOT / "evidence" / "native-interleaving.schema.json"
+    schema = _read_json(schema_path, failures)
+    if not isinstance(schema, dict):
+        return failures
+    if schema.get("$schema") != "https://json-schema.org/draft/2020-12/schema":
+        failures.append(
+            "evidence/native-interleaving.schema.json must use JSON Schema 2020-12"
+        )
+    try:
+        from jsonschema import Draft202012Validator, FormatChecker
+        from jsonschema.exceptions import SchemaError
+    except ImportError:
+        failures.append(
+            "JSON Schema validation is unavailable; install the 'validation' extra"
+        )
+        return failures
+
+    try:
+        Draft202012Validator.check_schema(schema)
+    except SchemaError as error:
+        failures.append(
+            f"evidence/native-interleaving.schema.json is not a valid schema: {error}"
+        )
+        return failures
+
+    validator = Draft202012Validator(schema, format_checker=FormatChecker())
+    records = sorted((ROOT / "evidence").glob("native*interleaving*.json"))
+    for path in records:
+        if path.name == "native-interleaving.schema.json":
+            continue
+        record = _read_json(path, failures)
+        if record is None:
+            continue
+        location = path.relative_to(ROOT).as_posix()
+        for error in validator.iter_errors(record):
+            field = ".".join(str(part) for part in error.absolute_path)
+            suffix = f".{field}" if field else ""
+            failures.append(f"{location}{suffix}: {error.message}")
+        failures.extend(validate_native_interleaving_evidence(record, location))
+    return failures
 
 
 def check_fixture_schema() -> list[str]:
@@ -697,6 +938,7 @@ def main() -> int:
         *check_lean_sources(),
         *check_fixture_schema(),
         *check_conformance_cases(),
+        *check_native_interleaving_evidence(),
     ]
     if failures:
         for failure in failures:

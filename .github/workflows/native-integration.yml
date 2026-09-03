@@ -4,19 +4,31 @@ on:
   pull_request:
     paths:
       - ".github/workflows/native-integration.yml"
+      - "conformance/audio-manifest.json"
       - "constraints/native-integration.txt"
       - "patches/openai-whisper/**"
       - "src/whisper_runtime/**"
+      - "evidence/native-interleaving.schema.json"
+      - "pyproject.toml"
+      - "tools/check_repository.py"
       - "tools/smoke_native_whisper.py"
+      - "tools/validate_interleaving_record.py"
+      - "tools/verify_native_interleaving.py"
   push:
     branches:
       - main
     paths:
       - ".github/workflows/native-integration.yml"
+      - "conformance/audio-manifest.json"
       - "constraints/native-integration.txt"
       - "patches/openai-whisper/**"
       - "src/whisper_runtime/**"
+      - "evidence/native-interleaving.schema.json"
+      - "pyproject.toml"
+      - "tools/check_repository.py"
       - "tools/smoke_native_whisper.py"
+      - "tools/validate_interleaving_record.py"
+      - "tools/verify_native_interleaving.py"
   workflow_dispatch:
 
 permissions:
@@ -55,12 +67,14 @@ jobs:
       - name: Build the pinned Whisper backend
         shell: bash
         run: |
-          git clone https://github.com/openai/whisper.git .integration/whisper
-          git -C .integration/whisper checkout 86098128c0b4f24f0e2aa2994de830614b474227
-          git -C .integration/whisper config user.name "Whisper Runtime CI"
-          git -C .integration/whisper config user.email "whisper-runtime-ci@example.invalid"
-          git -C .integration/whisper am "$GITHUB_WORKSPACE"/patches/openai-whisper/*.patch
-          test "$(git -C .integration/whisper rev-parse 'HEAD^{tree}')" = "c011d2563c26763b5f147026e6b18ef85bccd4fb"
+          backend="$RUNNER_TEMP/whisper"
+          git clone https://github.com/openai/whisper.git "$backend"
+          git -C "$backend" checkout 86098128c0b4f24f0e2aa2994de830614b474227
+          git -C "$backend" config user.name "Whisper Runtime CI"
+          git -C "$backend" config user.email "whisper-runtime-ci@example.invalid"
+          git -C "$backend" am "$GITHUB_WORKSPACE"/patches/openai-whisper/*.patch
+          test "$(git -C "$backend" rev-parse 'HEAD^{tree}')" = "c011d2563c26763b5f147026e6b18ef85bccd4fb"
+          echo "WHISPER_BACKEND=$backend" >> "$GITHUB_ENV"
 
       - name: Install runtime and decoder dependencies
         run: |
@@ -72,11 +86,36 @@ jobs:
       - name: Run the real-model transaction smoke test
         shell: bash
         run: |
-          revision="$(git -C .integration/whisper rev-parse HEAD)"
-          PYTHONPATH="$GITHUB_WORKSPACE/.integration/whisper" python -B tools/smoke_native_whisper.py \
-            .integration/whisper/tests/jfk.flac \
+          revision="$(git -C "$WHISPER_BACKEND" rev-parse HEAD)"
+          PYTHONPATH="$WHISPER_BACKEND" python -B tools/smoke_native_whisper.py \
+            "$WHISPER_BACKEND/tests/jfk.flac" \
             --model tiny.en \
             --download-root "$RUNNER_TEMP/whisper-models" \
             --revision "$revision" \
             --expected-model-fingerprint "sha256:8041a80119a588f542472da35e97d0372fce1d9709ed9874475e9c03deac5de6" \
             --expected-text "And so my fellow Americans ask not what your country can do for you, ask what you can do for your country."
+
+      - name: Verify same-model staged-run isolation
+        shell: bash
+        run: |
+          revision="$(git -C "$WHISPER_BACKEND" rev-parse HEAD)"
+          PYTHONPATH="$WHISPER_BACKEND" python -B tools/verify_native_interleaving.py \
+            "$WHISPER_BACKEND/tests/jfk.flac" \
+            --model tiny.en \
+            --fixture-id "openai-whisper-jfk-flac" \
+            --input-label "tests/jfk.flac" \
+            --download-root "$RUNNER_TEMP/whisper-models" \
+            --base-revision "86098128c0b4f24f0e2aa2994de830614b474227" \
+            --revision "$revision" \
+            --expected-model-fingerprint "sha256:8041a80119a588f542472da35e97d0372fce1d9709ed9874475e9c03deac5de6" \
+            --expected-text "And so my fellow Americans ask not what your country can do for you, ask what you can do for your country." \
+            | tee "$RUNNER_TEMP/native-interleaving.json"
+          python -B tools/validate_interleaving_record.py "$RUNNER_TEMP/native-interleaving.json"
+
+      - name: Publish the interleaving evidence
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: native-interleaving-${{ github.sha }}
+          path: ${{ runner.temp }}/native-interleaving.json
+          if-no-files-found: error
+          retention-days: 30

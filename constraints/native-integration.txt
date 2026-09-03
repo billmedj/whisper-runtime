@@ -1,4 +1,5 @@
 more-itertools==11.1.0
+jsonschema==4.25.1
 numba==0.67.0
 numpy==2.5.2
 tiktoken==0.14.0

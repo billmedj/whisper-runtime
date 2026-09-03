@@ -25,6 +25,7 @@ explicit.
 | Legacy adapter | Runs the existing synchronous `model.transcribe()` call as one serialized transaction |
 | Native adapter | Exposes run creation, prefill, token steps, finalization, and cleanup through a patched CPU decoder |
 | Conformance data | Records one pinned `tiny.en` and JFK CPU comparison with source, input, model, and output identities |
+| Isolation evidence | Runs two staged decodes on one loaded model, cleans one early, and checks the survivor against an isolated baseline |
 | Formal model | Proves lease, capacity, lifecycle, and stale-commit properties within an abstract Lean model |
 
 The runtime follows one execution path:
@@ -146,17 +147,22 @@ See the [native adapter contract](https://github.com/billmedj/whisper-runtime/bl
 | Evidence | Scope |
 | --- | --- |
 | 89 runtime tests | Resource accounting, queue bounds, commit races, deadlines, cancellation, quarantine, recovery, and adapter behavior |
-| 15 repository-tool tests | Provenance, source-state, fixture, portability, and native smoke-contract checks |
+| 20 repository-tool tests | Provenance, source state, fixtures, portability, evidence schemas, semantic validation, and native smoke contracts |
 | 2,000-step deterministic state trace | State-machine transitions under generated operations |
 | 35 Lean theorem declarations | Abstract lease provenance, capacity conservation, lifecycle, and stale-commit properties |
 | One recorded native run | Patched `tiny.en` decoder, JFK fixture, CPU, exact transcript, queue returned to zero, declared budget restored |
 | One conformance pair | Pinned greedy CPU reference and candidate records |
 
-The recorded run identifies the imported source tree, checkpoint file, loaded
-model state, audio input, environment, and committed output. The native CI
-workflow is configured to rebuild the pinned backend, verify the patch tree,
-load the same model, check the loaded-state fingerprint, and repeat the smoke
-test.
+The recorded transaction identifies the imported source tree, checkpoint,
+loaded model state, audio input, environment, and committed output. The native
+CI workflow also runs two staged decodes on one loaded model under a fixed
+token-step schedule. It cleans one run after a decoder step and requires the
+survivor to match an isolated baseline. A third decode checks that the model is
+still reusable after cleanup.
+
+The interleaving check is a backend lifecycle test. It does not demonstrate
+simultaneous kernel execution, multi-threaded same-model safety, or throughput.
+The current `NativeWhisperAdapter` still admits one transaction at a time.
 
 These results do not establish CUDA correctness, safe batching, live audio
 streaming, durable mid-window resume, portable worker migration, latency,
@@ -187,9 +193,10 @@ This repository contains the experimental runtime implementation and a
 reproducible backend patch series. It does not claim that those patches are
 accepted by, or part of, OpenAI Whisper.
 
-Upstream contributions remain small and independent. The first request-local
-cache fix is tracked in
-[openai/whisper#2842](https://github.com/openai/whisper/pull/2842). See
+Upstream contributions remain small and independent. Request-local cache state
+is tracked in [openai/whisper#2842](https://github.com/openai/whisper/pull/2842).
+Grouped multi-audio decoding is tracked in
+[openai/whisper#2843](https://github.com/openai/whisper/pull/2843). See
 [the upstream contribution policy](https://github.com/billmedj/whisper-runtime/blob/main/docs/UPSTREAM.md).
 
 ## Contributing and security

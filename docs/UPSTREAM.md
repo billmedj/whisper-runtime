@@ -21,8 +21,10 @@ The first independent change is
 built-in decoder key-value cache local to each decode request. It does not claim
 that all Whisper integrations or model extensions are thread-safe.
 
-Candidate corrections for grouped multi-audio decoding and shared alignment
-capture must be submitted separately. An incremental decode-session API needs
+The grouped multi-audio correction is
+[openai/whisper#2843](https://github.com/openai/whisper/pull/2843). It preserves
+audio-to-group pairing for beam search and best-of decoding. Shared alignment
+capture remains a separate candidate. An incremental decode-session API needs
 maintainer design review before an implementation pull request.
 
 The seven patches in this repository are a reproducible integration series for
