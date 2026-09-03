@@ -67,7 +67,7 @@ The first complete matrix is intended to cover:
 
 ## Compatibility profiles
 
-`reference` targets the current OpenAI Whisper behavior on a fixed environment.
+`reference` targets a pinned OpenAI Whisper revision in a recorded environment.
 `optimized` permits declared numerical differences but must retain public output
 types, option semantics, and error behavior.
 

@@ -1,200 +1,212 @@
-# Whisper execution runtime
+# Whisper Execution Runtime
 
-This repository contains an experimental transaction and resource layer for
-Whisper-compatible inference. It does not change the recognition model. It
-defines how one process admits work, owns mutable state, stops backend work,
-publishes a result, and returns reserved capacity.
+[![CI](https://github.com/billmedj/whisper-runtime/actions/workflows/ci.yml/badge.svg)](https://github.com/billmedj/whisper-runtime/actions/workflows/ci.yml)
+[![Native integration](https://github.com/billmedj/whisper-runtime/actions/workflows/native-integration.yml/badge.svg)](https://github.com/billmedj/whisper-runtime/actions/workflows/native-integration.yml)
+[![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-3776AB)](https://www.python.org/)
+[![License: Apache-2.0 and MIT](https://img.shields.io/badge/license-Apache--2.0%20AND%20MIT-5B5B5B)](#license-and-attribution)
 
-The current package is a reference implementation. A conservative adapter can
-run the historical `model.transcribe()` API as one transaction. An experimental
-native CPU adapter can also expose run creation, prefill, individual token
-steps, and finalization to the transaction boundary. Both adapters serialize
-calls to one model object and reserve one complete worker for each call. This
-package is not a production transcription service.
+Whisper Execution Runtime is an experimental Python runtime for bounded
+admission, cooperative cancellation, and controlled cleanup around OpenAI
+Whisper inference.
 
-## Implemented model
+It does not change the model weights or neural-network architecture. It makes
+request state, declared resource claims, backend work, and result publication
+explicit.
 
-The Python package defines these ownership boundaries:
+> **Status:** pre-alpha research implementation. The current native adapter is
+> CPU-only, handles one unbatched 30-second mel window, and reserves one full
+> worker. This repository is not a production transcription service.
 
-- `ModelSnapshot` identifies one immutable model configuration.
-- `Worker` owns a bounded admission queue and a resource budget.
-- `Session` publishes immutable, versioned state with compare-and-swap commits.
-- `RequestState` owns immutable identity, lifecycle, and random state.
-- `WindowTransaction` owns one session transition and one exact resource lease.
-- `ExecutionScope` represents backend work submitted for that transaction.
-- `SubmissionGate` orders backend submission against transaction close.
-- `LegacyWhisperAdapter` places one existing synchronous Whisper transcription
-  behind the same admission, commit, and recovery boundary.
-- `NativeWhisperAdapter` places each CPU decoder stage and token step behind the
-  submission gate and checks cancellation between them.
+## What it provides
 
-`Budget.acquire()` creates leases. Lease construction is not public. A lease is
-bound to its originating budget and ledger entry. The worker creates
-transactions and checks the request, session, model, queue slot, and resource
-reservation before admission. Each admitted transaction receives a fixed
-expiry time.
+| Component | Current implementation |
+| --- | --- |
+| Runtime core | Bounded admission, exact in-process leases, deadlines, versioned commits, cancellation, quarantine, and cleanup recovery |
+| Legacy adapter | Runs the existing synchronous `model.transcribe()` call as one serialized transaction |
+| Native adapter | Exposes run creation, prefill, token steps, finalization, and cleanup through a patched CPU decoder |
+| Conformance data | Records one pinned `tiny.en` and JFK CPU comparison with source, input, model, and output identities |
+| Formal model | Proves lease, capacity, lifecycle, and stale-commit properties within an abstract Lean model |
 
-## Close protocol
+The runtime follows one execution path:
 
-A running transaction does not return capacity only because its host callback
-has returned. Close follows this order:
-
-1. Seal the `SubmissionGate`. Later submissions fail.
-2. Drain callbacks admitted before the seal. Each callback must register its
-   backend operation in the transaction's `ExecutionScope` before it returns.
-3. For abort, cancellation, or expiry, deliver `request_stop()`. The operation
-   must be idempotent because recovery can retry it.
-4. Ask the scope for one final aggregate `CompletionFence`. The fence is created
-   after the gate drains and must cover all registered backend work.
-5. Wait for the fence.
-6. Close the gate, select the terminal outcome, and release the lease.
-
-Commit uses the same seal, drain, and final-fence sequence without requesting a
-stop. Cancellation, abort, and expiry can replace the pending commit while it
-waits for backend quiescence. The runtime checks them again before one atomic
-publication of the request state, session state, and random state. Publication
-is the revocation boundary; a later stop cannot roll back a committed result.
-
-If the runtime cannot prove backend quiescence, the transaction enters
-`QUARANTINED`. Its lease and queue entry remain held. Recovery retries stop and
-fence completion before it permits release. A cleanup failure after a terminal
-decision also retains the transaction for explicit retry.
-
-## Execution ownership
-
-The thread that starts a transaction is its execution owner. Only that thread
-can cross a cooperative checkpoint or commit. Helper threads can submit work
-through the gate while it remains open. A supervisor can request stop while the
-owner is alive, but it cannot fence or release the owner's work. If the owner
-thread exits, `Worker.stop()` can take over the close protocol. The same
-takeover rule applies to an orphaned quiescing transaction.
-
-A submission callback cannot synchronously close its own transaction. Such a
-close would wait for that callback during drain. A stop requested from the
-callback seals the gate and completes at a later safe point. A direct commit
-from the callback is rejected.
-
-This is a trusted in-process boundary. Correctness depends on an
-`ExecutionScope` adapter that registers all backend work before a submission
-callback returns, provides an aggregate completion fence, and implements an
-idempotent stop request. One scope object can belong to only one live
-transaction. A second transaction cannot start with that object, and the claim
-remains until terminal cleanup. The package does not isolate an untrusted
-backend or protect against arbitrary memory writes in the host process.
-
-The legacy adapter uses a stricter profile. One model object is bound to one
-worker with a queue capacity of one. Each call reserves the worker's complete
-resource vector. Adapter objects for that model share the same binding. If
-cleanup cannot prove a safe release, the binding remains closed until the
-retained transaction is recovered. The adapter cannot stop a blocking
-historical `transcribe()` call between decoder tokens; that requires the native
-staged backend described in RFC 0001.
-
-The native CPU adapter uses the same full-worker restriction. It creates a
-fresh PyTorch generator from a rollback-safe transaction seed, commits one
-result for one exact 30-second mel window, and cleans request-local
-decode state at the completion fence. The native and legacy adapters cannot
-bind the same live model object. PyTorch and Whisper remain optional runtime
-dependencies and are not imported with the package.
-
-## Current evidence
-
-The local suite currently contains 89 Python unit tests. They cover resource
-accounting, queue bounds, stale commits, cancellation races, deadlines,
-submission drain, stop retries, quarantine, cleanup retry, and owner-death
-takeover. Adapter tests also cover cross-adapter serialization, fixed resource
-profiles, immutable result payloads, retained-result recovery, and provenance
-validation. Native adapter tests cover stage submission, token checkpoints,
-rollback-safe generator seeds, cooperative cancellation, exception cleanup,
-model identity changes, and the single-result commit boundary. One state-machine
-test executes a deterministic 2,000-step trace. The native unit tests use
-controlled backend doubles so they can force failure and race paths.
-
-A separate local integration smoke test ran the patched decoder and the real
-`tiny.en` checkpoint on the JFK fixture. It committed the expected transcript,
-returned the worker queue to zero, and restored the complete resource budget.
-The source revision and loaded model weights were verified before the result was
-reported. The versioned [smoke record](evidence/native-cpu-tiny-en-jfk-2026-09-03.json)
-contains the exact revisions, environment, hashes, and result. The native
-integration workflow repeats this check in CI.
-
-The Lean model currently contains 35 theorem declarations, including helper
-lemmas. It starts from a canonical empty runtime and proves properties for
-states produced by its modeled transitions. The proved properties include
-active lease uniqueness, runtime ownership, exact prepare provenance, exact
-capacity conservation, stale-commit rejection, terminal lease reuse rejection,
-and order-independent commits for two independently prepared sessions.
-
-The Lean model does not model Python threads, `ExecutionScope`,
-`SubmissionGate`, backend kernels, or adapter behavior. Those properties are
-covered by the executable tests, not by the current formal model.
-
-The conformance corpus has one implemented pair: OpenAI Whisper `tiny.en`, JFK
-audio, greedy decoding on CPU. The recorded public outputs match. The remaining
-matrix is planned; no latency, memory, or throughput benchmark result is
-published.
-
-## Run the checks
-
-The runtime package uses only the Python standard library. Repository checks
-also validate JSON fixtures and require the optional `validation` extra:
-
-```powershell
-python -m pip install -e ".[validation,quality]"
+```text
+request
+  -> admit and reserve declared capacity
+  -> create a transaction
+  -> submit backend stages through a closing gate
+  -> commit one versioned result, or abort
+  -> wait for backend cleanup
+  -> release the lease, or quarantine it if cleanup is unproven
 ```
 
-Run the Python tests and repository checks from the repository root:
+The declared budget is an admission ledger. It does not enforce operating
+system RAM or device-memory limits. Production enforcement requires a backend
+adapter that measures its work and provides a completion fence for the target
+device.
 
-```powershell
-$env:PYTHONPATH = "src"
+## Why this boundary exists
+
+Whisper inference is a sequence of mutable operations: feature processing,
+encoding, autoregressive decoding, fallback attempts, alignment, and result
+assembly. A synchronous function call hides their ownership and lifetime.
+
+This runtime assigns each mutable object to a request, session, transaction, or
+worker. A transaction cannot return its lease until the submission gate is
+closed and registered backend work has reached a completion fence. A failed
+fence keeps the lease quarantined instead of reporting capacity that may still
+be in use.
+
+The detailed state and close rules are in
+[RFC 0001](https://github.com/billmedj/whisper-runtime/blob/main/docs/rfcs/0001-state-resource-execution.md).
+
+## Quick start
+
+Clone the repository and create an environment:
+
+```sh
+git clone https://github.com/billmedj/whisper-runtime.git
+cd whisper-runtime
+python -m venv .venv
+```
+
+Activate the environment:
+
+```text
+POSIX:              . .venv/bin/activate
+Windows PowerShell: .\.venv\Scripts\Activate.ps1
+```
+
+Install the package and validation tools:
+
+```sh
+python -m pip install -e ".[validation,quality]" "build>=1.2,<2"
+```
+
+Run a minimal transaction. The example uses a synchronous completion fence and
+does not load Whisper:
+
+```sh
+python examples/minimal_transaction.py
+```
+
+The command prints `Example transcript` after it commits session version 1,
+returns the worker queue to zero, and restores the declared budget.
+
+## Development validation
+
+Run the repository checks:
+
+```sh
 python -B -m unittest discover -s tests -v
-python -m ruff check src tests tools
-python -m ruff format --check src tests tools
+python -B -m unittest discover -s tools -p "test_*.py" -v
+python -m ruff check src tests tools examples
+python -m ruff format --check src tests tools examples
 python -m mypy src
 python -B tools/check_repository.py
+python -m build
+python -B tools/check_distribution.py dist
 ```
 
-On Windows, the repository check also compiles Python files and builds the Lean
-model:
+The Windows check command also compiles the Python sources and builds the Lean
+model when the pinned Lean toolchain is available:
 
 ```powershell
 .\tools\run_checks.ps1
 ```
 
-To build only the formal model:
+To build the formal model directly:
 
-```powershell
+```sh
 cd formal/lean
 lake build
 ```
 
+## Adapters
+
+### Historical API
+
+`LegacyWhisperAdapter` places an existing blocking `transcribe()` call behind
+the same admission, publication, and cleanup boundary. It is a migration path;
+it cannot stop a call between decoder tokens.
+
+See the [legacy adapter contract](https://github.com/billmedj/whisper-runtime/blob/main/docs/LEGACY_ADAPTER.md).
+
+### Staged CPU decoder
+
+`NativeWhisperAdapter` checks cancellation between prefill, token steps, and
+finalization. It requires the pinned backend and seven-patch integration series
+under [`patches/openai-whisper`](https://github.com/billmedj/whisper-runtime/tree/main/patches/openai-whisper). The wheel
+contains only the runtime package; the source distribution also contains the
+patch series.
+
+See the [native adapter contract](https://github.com/billmedj/whisper-runtime/blob/main/docs/NATIVE_ADAPTER.md).
+
+## Evidence and limits
+
+| Evidence | Scope |
+| --- | --- |
+| 89 runtime tests | Resource accounting, queue bounds, commit races, deadlines, cancellation, quarantine, recovery, and adapter behavior |
+| 15 repository-tool tests | Provenance, source-state, fixture, portability, and native smoke-contract checks |
+| 2,000-step deterministic state trace | State-machine transitions under generated operations |
+| 35 Lean theorem declarations | Abstract lease provenance, capacity conservation, lifecycle, and stale-commit properties |
+| One recorded native run | Patched `tiny.en` decoder, JFK fixture, CPU, exact transcript, queue returned to zero, declared budget restored |
+| One conformance pair | Pinned greedy CPU reference and candidate records |
+
+The recorded run identifies the imported source tree, checkpoint file, loaded
+model state, audio input, environment, and committed output. The native CI
+workflow is configured to rebuild the pinned backend, verify the patch tree,
+load the same model, check the loaded-state fingerprint, and repeat the smoke
+test.
+
+These results do not establish CUDA correctness, safe batching, live audio
+streaming, durable mid-window resume, portable worker migration, latency,
+throughput, or production readiness. The Lean model does not model Python
+threads, PyTorch kernels, submission gates, or adapter code.
+
+See the [integration record](https://github.com/billmedj/whisper-runtime/blob/main/evidence/native-cpu-tiny-en-jfk-2026-09-03.json),
+[conformance contract](https://github.com/billmedj/whisper-runtime/blob/main/docs/CONFORMANCE.md), and
+[development roadmap](https://github.com/billmedj/whisper-runtime/blob/main/docs/ROADMAP.md).
+
 ## Repository map
 
 ```text
-conformance/     Fixture schema, case matrix, and one implemented fixture pair
-docs/            Architecture, conformance contract, and roadmap
-evidence/        Versioned local integration observations
-formal/lean/     Abstract lease, lifecycle, and capacity model
-patches/         Reviewable patch series for the tested Whisper backend
-src/             Executable reference implementation
-tests/           Unit and deterministic state-machine tests
-tools/           Repository, fixture, and local check commands
+conformance/     Fixture schema, case matrix, and recorded comparison
+docs/            Architecture, adapter contracts, and roadmap
+evidence/        Versioned integration-run records
+examples/        Minimal executable use of the runtime core
+formal/lean/     Abstract state, lease, and capacity model
+patches/         Reproducible integration patches for the pinned backend
+src/             Python reference implementation
+tests/           Runtime and deterministic state-machine tests
+tools/           Validation, fixture, packaging, and smoke commands
 ```
 
-The optional bridges are under `src/whisper_runtime/adapters/`. Importing the
-package loads no Whisper, PyTorch, or NumPy module. Applications provide the
-model object, its identity probe, and a fixed execution profile. See the
-[legacy adapter contract](docs/LEGACY_ADAPTER.md) and the
-[native CPU adapter contract](docs/NATIVE_ADAPTER.md).
+## Relationship to OpenAI Whisper
 
-The tested suspendable backend is reproducible from the pinned base and patch
-series in [`patches/openai-whisper`](patches/openai-whisper/README.md).
+This repository contains the experimental runtime implementation and a
+reproducible backend patch series. It does not claim that those patches are
+accepted by, or part of, OpenAI Whisper.
 
-The upstream request-local cache change that motivated this work remains
-separate in [openai/whisper#2842](https://github.com/openai/whisper/pull/2842).
+Upstream contributions remain small and independent. The first request-local
+cache fix is tracked in
+[openai/whisper#2842](https://github.com/openai/whisper/pull/2842). See
+[the upstream contribution policy](https://github.com/billmedj/whisper-runtime/blob/main/docs/UPSTREAM.md).
 
-## Scope and license
+## Contributing and security
 
-This is an independent project. It is not an OpenAI product and is not endorsed
-by OpenAI. The code is available under the Apache License 2.0. The external
-audio fixture is identified by a pinned URL and digest and is not bundled.
+Read [CONTRIBUTING.md](https://github.com/billmedj/whisper-runtime/blob/main/CONTRIBUTING.md) before sending a change. Report a
+security issue through GitHub private vulnerability reporting as described in
+[SECURITY.md](https://github.com/billmedj/whisper-runtime/blob/main/SECURITY.md).
+
+## License and attribution
+
+The repository and source distribution contain original runtime code and
+patches derived from OpenAI Whisper. The package license expression is
+`Apache-2.0 AND MIT`:
+
+- original repository code is under the [Apache License 2.0](https://github.com/billmedj/whisper-runtime/blob/main/LICENSE);
+- files under `patches/openai-whisper/` modify MIT-licensed OpenAI Whisper
+  source and retain the applicable [MIT license](https://github.com/billmedj/whisper-runtime/blob/main/patches/openai-whisper/LICENSE).
+
+See [THIRD_PARTY_NOTICES.md](https://github.com/billmedj/whisper-runtime/blob/main/THIRD_PARTY_NOTICES.md) for provenance. This is an
+independent project. It is not an OpenAI product and is not endorsed by OpenAI.

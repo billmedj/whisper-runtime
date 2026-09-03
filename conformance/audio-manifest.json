@@ -8,7 +8,8 @@
       "size_bytes": 1152693,
       "decoded_sample_rate_hz": 16000,
       "decoded_sample_count": 176000,
-      "license_context": "OpenAI Whisper test fixture"
+      "source_context": "File tracked in the pinned OpenAI Whisper source tree; not distributed by this repository.",
+      "rights_notice": "This manifest records provenance and does not assert separate rights in the underlying recording. See THIRD_PARTY_NOTICES.md."
     }
   ]
 }

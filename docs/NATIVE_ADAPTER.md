@@ -114,8 +114,11 @@ session version, transcript, elapsed time, queue depth, and resource release.
 It verifies that the imported Whisper worktree is clean and that its full Git
 revision equals `--revision`. It also rejects an ancestor repository, an
 untracked or ignored package file, and an imported module that Git does not
-track. It does not download a checkpoint when `--download-root` already
-contains the selected model.
+track. `--expected-model-fingerprint` binds the loaded state to a recorded
+SHA-256 fingerprint. The command fails unless the request commits, the first
+session version is published, the queue returns to zero, and the declared
+budget is restored. It does not download a checkpoint when `--download-root`
+already contains the selected model.
 
 ```powershell
 $env:PYTHONPATH = "src;C:\path\to\suspendable-whisper"
@@ -123,6 +126,7 @@ python tools\smoke_native_whisper.py C:\path\to\audio.flac `
   --model tiny.en `
   --download-root C:\path\to\model-cache `
   --revision <full-source-commit> `
+  --expected-model-fingerprint "sha256:<loaded-state-digest>" `
   --expected-text "And so my fellow Americans ask not what your country can do for you, ask what you can do for your country."
 ```
 

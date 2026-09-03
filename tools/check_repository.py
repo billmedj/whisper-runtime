@@ -503,7 +503,8 @@ def check_conformance_cases() -> list[str]:
                     "size_bytes",
                     "decoded_sample_rate_hz",
                     "decoded_sample_count",
-                    "license_context",
+                    "source_context",
+                    "rights_notice",
                 },
                 location,
                 failures,
@@ -539,12 +540,9 @@ def check_conformance_cases() -> list[str]:
                     failures.append(
                         f"{location}.{field} must be an integer >= {minimum}"
                     )
-            if not isinstance(item.get("license_context"), str) or not item.get(
-                "license_context"
-            ):
-                failures.append(
-                    f"{location}.license_context must be a non-empty string"
-                )
+            for field in ("source_context", "rights_notice"):
+                if not isinstance(item.get(field), str) or not item.get(field):
+                    failures.append(f"{location}.{field} must be a non-empty string")
 
     cases_path = ROOT / "conformance" / "cases.json"
     document = _read_json(cases_path, failures)

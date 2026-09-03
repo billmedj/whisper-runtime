@@ -72,4 +72,6 @@ The adapter treats one complete historical transcription as one transaction.
 It cannot pause between decoder tokens, reuse encoded windows across fallback
 attempts, form safe decoder batches, or account for individual stages. It also
 cannot protect a model or audio object from unrelated code that mutates it in
-the same process. The native staged backend must provide those properties.
+the same process. These capabilities require native staged support. The current
+native adapter provides token-step boundaries only; it does not yet provide
+batching or encoded-window reuse.

@@ -1,8 +1,11 @@
-# Reproducible Whisper backend
+# Reproducible Whisper integration patches
 
-This patch series builds the suspendable Whisper backend used by the native
-adapter. It applies to OpenAI Whisper commit
+This seven-patch integration series builds the staged Whisper backend used by
+the native adapter. It applies to OpenAI Whisper commit
 `86098128c0b4f24f0e2aa2994de830614b474227`.
+
+The series is part of this repository's integration test. It is not an upstream
+pull-request series and does not represent accepted OpenAI Whisper changes.
 
 Apply the files in numeric order:
 
@@ -16,11 +19,14 @@ Apply the files in numeric order:
 0007-Serialize-legacy-cache-run-lifetimes.patch
 ```
 
-On a POSIX shell:
+On a POSIX shell, verify the patch files before applying them:
 
 ```sh
-git clone https://github.com/openai/whisper.git whisper-transactional
-cd whisper-transactional
+cd /path/to/whisper-runtime/patches/openai-whisper
+sha256sum --check SHA256SUMS
+
+git clone https://github.com/openai/whisper.git whisper-runtime-backend
+cd whisper-runtime-backend
 git checkout 86098128c0b4f24f0e2aa2994de830614b474227
 git am /path/to/whisper-runtime/patches/openai-whisper/*.patch
 python -m pip install -r requirements.txt
@@ -47,3 +53,10 @@ d3c4ca1af1f7d3226c10dd99fe55b14ee02ac7ed34a54f8d301e83c3f5e50468  0005-Fix-group
 85982cfb95e7ad67b2d1c231e0281f3d268f107733bbd76f09c41a3625bb259a  0006-Harden-suspendable-decode-lifecycle.patch
 19c3380c7d8c8a72849bf565b615f1fdc26cb639b83f75b488cf7a9217607460  0007-Serialize-legacy-cache-run-lifetimes.patch
 ```
+
+## License and provenance
+
+The patches contain modified and contextual portions of OpenAI Whisper source.
+That source is Copyright (c) 2022 OpenAI and licensed under the MIT License.
+The [MIT license](LICENSE) applies to the patch series. See
+[`THIRD_PARTY_NOTICES.md`](../../THIRD_PARTY_NOTICES.md) for full provenance.

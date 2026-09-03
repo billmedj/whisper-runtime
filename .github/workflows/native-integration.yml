@@ -72,4 +72,5 @@ jobs:
             --model tiny.en \
             --download-root "$RUNNER_TEMP/whisper-models" \
             --revision "$revision" \
+            --expected-model-fingerprint "sha256:8041a80119a588f542472da35e97d0372fce1d9709ed9874475e9c03deac5de6" \
             --expected-text "And so my fellow Americans ask not what your country can do for you, ask what you can do for your country."

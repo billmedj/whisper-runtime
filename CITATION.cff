@@ -1,0 +1,16 @@
+cff-version: 1.2.0
+message: "If this software supports your work, cite this repository."
+title: "Whisper Execution Runtime"
+type: software
+authors:
+  - family-names: "Medjani"
+    given-names: "Bilal"
+repository-code: "https://github.com/billmedj/whisper-runtime"
+url: "https://github.com/billmedj/whisper-runtime"
+version: "0.1.0.dev0"
+keywords:
+  - "Whisper"
+  - "speech recognition"
+  - "inference runtime"
+  - "resource accounting"
+  - "formal methods"

@@ -36,7 +36,11 @@ def main() -> int:
     args = parse_args()
     record = load_record(args.fixture_id)
     with urllib.request.urlopen(record["source_url"], timeout=30) as response:
-        content = response.read()
+        content = response.read(record["size_bytes"] + 1)
+    if len(content) > record["size_bytes"]:
+        raise RuntimeError(
+            f"fixture exceeds the declared size: expected {record['size_bytes']} bytes"
+        )
     actual_digest = sha256_bytes(content)
     if actual_digest != record["sha256"]:
         raise RuntimeError(

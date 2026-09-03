@@ -1,0 +1,45 @@
+name: Bug report
+description: Report a reproducible runtime, adapter, or validation defect.
+title: "[Bug] "
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: >-
+        Do not disclose an unpatched vulnerability here. Follow SECURITY.md.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Observed behavior
+      description: State what happened and what you expected.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproduction
+      description: Provide the smallest complete example and exact command.
+    validations:
+      required: true
+  - type: input
+    id: revision
+    attributes:
+      label: Repository revision
+      placeholder: Full Git commit identifier
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: Include Python, OS, device, PyTorch, Whisper revision, model, and options as applicable.
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant output
+      description: Remove credentials, private paths, and private input data.
+    validations:
+      required: false

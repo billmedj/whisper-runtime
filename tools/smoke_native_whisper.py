@@ -56,6 +56,47 @@ def fingerprint_loaded_model(model: object) -> str:
     return f"sha256:{digest.hexdigest()}"
 
 
+def verify_loaded_model_fingerprint(observed: str, expected: str | None) -> None:
+    """Reject a loaded model state that differs from the declared identity."""
+
+    if expected is not None and observed != expected:
+        raise RuntimeError(
+            "the loaded model fingerprint does not match "
+            "--expected-model-fingerprint: "
+            f"expected {expected}, observed {observed}"
+        )
+
+
+def verify_terminal_invariants(
+    *,
+    request_status: str,
+    session_version: int,
+    queue_depth: int,
+    available: ResourceVector,
+    capacity: ResourceVector,
+) -> None:
+    """Require one committed publication and complete runtime cleanup."""
+
+    if request_status != "committed":
+        raise RuntimeError(
+            f"the request did not reach committed status: observed {request_status}"
+        )
+    if session_version != 1:
+        raise RuntimeError(
+            f"the first window did not publish session version 1: {session_version}"
+        )
+    if queue_depth != 0:
+        raise RuntimeError(
+            "the worker retained an admission slot after commit: "
+            f"queue depth {queue_depth}"
+        )
+    if available != capacity:
+        raise RuntimeError(
+            "the declared resource budget was not restored after commit: "
+            f"expected {capacity!r}, observed {available!r}"
+        )
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="Decode one local audio file through the native CPU adapter."
@@ -66,6 +107,10 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--revision", required=True)
     parser.add_argument("--rng-seed", type=int, default=7)
     parser.add_argument("--expected-text")
+    parser.add_argument(
+        "--expected-model-fingerprint",
+        help="Expected sha256:<hex> fingerprint of the loaded model state",
+    )
     return parser.parse_args()
 
 
@@ -192,6 +237,7 @@ def main() -> int:
         download_root=args.download_root,
     ).eval()
     fingerprint = fingerprint_loaded_model(model)
+    verify_loaded_model_fingerprint(fingerprint, args.expected_model_fingerprint)
     snapshot = ModelSnapshot(
         model_id=args.model,
         revision=revision,
@@ -263,6 +309,13 @@ def main() -> int:
             f"expected {args.expected_text!r}, observed {result.text!r}"
         )
     available = budget.available
+    verify_terminal_invariants(
+        request_status=request.status.value,
+        session_version=state.version,
+        queue_depth=worker.queue_depth,
+        available=available,
+        capacity=capacity,
+    )
     print(
         json.dumps(
             {
@@ -275,8 +328,8 @@ def main() -> int:
                 "text": result.text,
                 "expected_text_matched": (None if args.expected_text is None else True),
                 "elapsed_seconds": elapsed,
-                "queue_depth_after": worker.queue_depth,
-                "resources_released": available == capacity,
+                "queue_depth_after": 0,
+                "resources_released": True,
             },
             ensure_ascii=False,
             indent=2,

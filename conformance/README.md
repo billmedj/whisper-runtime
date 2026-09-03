@@ -47,5 +47,5 @@ each reference/candidate pair. A missing field, dirty source checkout, output
 difference, or undeclared fixture causes CI to fail.
 
 The first implemented case uses the pinned Whisper JFK sample with `tiny.en`
-and greedy decoding. The remaining cases cover greedy decoding, sampling, beam
-search, timestamps, word timestamps, batching, concurrency, errors, and cancellation.
+and greedy decoding. Planned entries include sampling, beam search, timestamps,
+word timestamps, batching, concurrency, errors, and cancellation.

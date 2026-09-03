@@ -7,9 +7,14 @@ from email.parser import Parser
 from pathlib import Path
 
 SDIST_REQUIRED_SUFFIXES = {
+    "CITATION.cff",
+    "CONTRIBUTING.md",
     "LICENSE",
     "MANIFEST.in",
+    "NOTICE",
     "README.md",
+    "SECURITY.md",
+    "THIRD_PARTY_NOTICES.md",
     "conformance/audio-manifest.json",
     "conformance/cases.json",
     "conformance/fixture.schema.json",
@@ -17,6 +22,7 @@ SDIST_REQUIRED_SUFFIXES = {
     "docs/rfcs/0001-state-resource-execution.md",
     "evidence/README.md",
     "evidence/native-cpu-tiny-en-jfk-2026-09-03.json",
+    "examples/minimal_transaction.py",
     "formal/lean/WhisperRuntimeFormal.lean",
     "patches/openai-whisper/0001-Make-native-inference-state-request-local.patch",
     "patches/openai-whisper/0002-Make-decode-options-request-local.patch",
@@ -25,6 +31,7 @@ SDIST_REQUIRED_SUFFIXES = {
     "patches/openai-whisper/0005-Fix-grouped-decoding-for-audio-batches.patch",
     "patches/openai-whisper/0006-Harden-suspendable-decode-lifecycle.patch",
     "patches/openai-whisper/0007-Serialize-legacy-cache-run-lifetimes.patch",
+    "patches/openai-whisper/LICENSE",
     "patches/openai-whisper/README.md",
     "patches/openai-whisper/SHA256SUMS",
     "pyproject.toml",
@@ -84,14 +91,21 @@ def check_wheel(path: Path) -> list[str]:
             metadata = Parser().parsestr(
                 archive.read(metadata_names[0]).decode("utf-8")
             )
-            if metadata.get("License-Expression") != "Apache-2.0":
-                failures.append("wheel metadata has no Apache-2.0 License-Expression")
+            if metadata.get("License-Expression") != "Apache-2.0 AND MIT":
+                failures.append("wheel metadata has an unexpected License-Expression")
             if metadata.get("Requires-Python") != ">=3.10":
                 failures.append(
                     "wheel metadata has an unexpected Requires-Python value"
                 )
-        if not any(name.endswith(".dist-info/licenses/LICENSE") for name in names):
-            failures.append("wheel is missing the packaged license file")
+        required_licenses = (
+            ".dist-info/licenses/LICENSE",
+            ".dist-info/licenses/NOTICE",
+            ".dist-info/licenses/THIRD_PARTY_NOTICES.md",
+            ".dist-info/licenses/patches/openai-whisper/LICENSE",
+        )
+        for required in required_licenses:
+            if not any(name.endswith(required) for name in names):
+                failures.append(f"wheel is missing packaged license file {required}")
         failures.extend(_check_forbidden(names, "wheel"))
     return failures
 

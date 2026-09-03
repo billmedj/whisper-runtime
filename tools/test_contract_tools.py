@@ -10,7 +10,13 @@ from pathlib import Path
 from capture_whisper_reference import git_metadata
 from check_repository import contains_absolute_user_path, validate_audio_binding
 from compare_whisper_fixtures import compare_fixtures
-from smoke_native_whisper import verify_source_revision
+from smoke_native_whisper import (
+    verify_loaded_model_fingerprint,
+    verify_source_revision,
+    verify_terminal_invariants,
+)
+
+from whisper_runtime import ResourceVector
 
 ROOT = Path(__file__).resolve().parents[1]
 REFERENCE_PATH = (
@@ -197,6 +203,55 @@ class ProvenanceTests(unittest.TestCase):
             )
             self.assertTrue(dirty_with_source)
             self.assertNotEqual(digest, digest_with_source)
+
+
+class NativeSmokeContractTests(unittest.TestCase):
+    def setUp(self) -> None:
+        self.capacity = ResourceVector(
+            memory_bytes=16,
+            compute_units=2,
+            stream_slots=1,
+        )
+
+    def test_loaded_model_fingerprint_must_match_when_declared(self) -> None:
+        verify_loaded_model_fingerprint("sha256:abc", None)
+        verify_loaded_model_fingerprint("sha256:abc", "sha256:abc")
+        with self.assertRaisesRegex(RuntimeError, "fingerprint does not match"):
+            verify_loaded_model_fingerprint("sha256:def", "sha256:abc")
+
+    def test_terminal_invariants_accept_one_clean_commit(self) -> None:
+        verify_terminal_invariants(
+            request_status="committed",
+            session_version=1,
+            queue_depth=0,
+            available=self.capacity,
+            capacity=self.capacity,
+        )
+
+    def test_terminal_invariants_reject_each_failed_postcondition(self) -> None:
+        smaller = ResourceVector(
+            memory_bytes=8,
+            compute_units=1,
+            stream_slots=0,
+        )
+        cases = (
+            ({"request_status": "aborted"}, "committed status"),
+            ({"session_version": 2}, "session version 1"),
+            ({"queue_depth": 1}, "admission slot"),
+            ({"available": smaller}, "budget was not restored"),
+        )
+        defaults = {
+            "request_status": "committed",
+            "session_version": 1,
+            "queue_depth": 0,
+            "available": self.capacity,
+            "capacity": self.capacity,
+        }
+        for override, message in cases:
+            with self.subTest(override=override):
+                arguments = {**defaults, **override}
+                with self.assertRaisesRegex(RuntimeError, message):
+                    verify_terminal_invariants(**arguments)
 
 
 if __name__ == "__main__":

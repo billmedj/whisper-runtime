@@ -5,11 +5,16 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "whisper-execution-runtime"
 version = "0.1.0.dev0"
-description = "A research runtime for explicit state ownership and bounded Whisper execution"
+description = "Experimental runtime for bounded admission and stepwise OpenAI Whisper decoding"
 readme = "README.md"
 requires-python = ">=3.10"
-license = "Apache-2.0"
-license-files = ["LICENSE"]
+license = "Apache-2.0 AND MIT"
+license-files = [
+  "LICENSE",
+  "NOTICE",
+  "THIRD_PARTY_NOTICES.md",
+  "patches/openai-whisper/LICENSE",
+]
 authors = [
   { name = "Bilal Medjani" },
 ]
@@ -20,6 +25,7 @@ classifiers = [
   "Programming Language :: Python :: 3",
   "Programming Language :: Python :: 3 :: Only",
   "Topic :: Scientific/Engineering :: Artificial Intelligence",
+  "Typing :: Typed",
 ]
 keywords = ["whisper", "speech-recognition", "inference", "runtime", "scheduling"]
 

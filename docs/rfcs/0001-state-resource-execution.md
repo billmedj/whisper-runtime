@@ -2,13 +2,15 @@
 
 - Status: Draft
 - Date: 2026-09-03
-- Scope: Whisper-compatible inference runtime
+- Scope: OpenAI Whisper inference runtime
 
 ## Summary
 
-This RFC defines a new execution architecture for Whisper inference.
+This RFC proposes an execution architecture for Whisper inference.
 
-The architecture keeps Whisper model weights, checkpoints, and public results compatible. It changes how the runtime owns mutable state and physical resources.
+The architecture aims to preserve Whisper model weights, checkpoints, and
+public results. It changes how the runtime owns mutable state and physical
+resources.
 
 The design has six primary objects:
 
@@ -21,7 +23,9 @@ The design has six primary objects:
 
 The `Model` is immutable after publication to a worker. All request data is private to a request or to one of its child objects. The `Worker` owns the device, memory pools, queues, and scheduler. The scheduler admits work only when the required resources are available.
 
-The first implementation must preserve the existing synchronous Python API. The new runtime is opt-in until its compatibility suite passes on all supported model families.
+The first implementation must preserve the existing synchronous Python API.
+The new runtime remains opt-in until its compatibility suite covers each model
+and adapter capability that the project declares.
 
 ## Requirements language
 
@@ -78,7 +82,10 @@ Each stage uses mutable state and finite resources. Examples include:
 - CPU threads and decoder processes;
 - RAM, pinned memory, and device memory.
 
-The current library does not define one owner for every state. Some state is carried through hooks, module attributes, shared random number generators, or mutable Python objects. The current API also starts work before it knows the peak resource cost.
+The pinned OpenAI Whisper revision used by this project does not define one
+owner for every state. Some state is carried through hooks, module attributes,
+shared random number generators, or mutable Python objects. Its public API also
+starts work without an admitted peak resource cost.
 
 These properties limit safe concurrency. They also make cancellation, batching, streaming, and device admission difficult.
 
@@ -91,7 +98,7 @@ This RFC has the following goals:
 3. Make each inference transition explicit and testable.
 4. Reserve resources before a transition starts.
 5. Keep all queues and buffers bounded.
-6. Support safe cancellation and deadlines.
+6. Support cooperative cancellation with commit and release guarantees.
 7. Reuse audio computation across language detection, decode attempts, and alignment.
 8. Support encoder batching and incremental decoder scheduling.
 9. Define honest streaming semantics.
@@ -595,7 +602,8 @@ The window pipeline MUST have a fixed maximum depth. Processing a longer file mu
 
 ## Streaming limits
 
-Exact offline output and early immutable streaming output are not both possible with the current model and preprocessing.
+This design does not claim both exact offline output and early immutable
+streaming output for the current model and preprocessing.
 
 There are two causes:
 
@@ -638,7 +646,8 @@ If a caller requires an offline-exact final result, all text that can still chan
 
 ### True causal streaming
 
-A true causal mode requires a different model or new training. It can require:
+A true causal mode can require a different model or additional training. Its
+design can include:
 
 - causal or calibrated feature normalization;
 - chunked encoder attention;
