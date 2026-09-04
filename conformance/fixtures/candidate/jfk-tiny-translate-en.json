@@ -1,0 +1,121 @@
+{
+  "audio": {
+    "fixture_id": "openai-whisper-jfk-flac",
+    "path": "tests/jfk.flac",
+    "sample_end": 176000,
+    "sample_rate_hz": 16000,
+    "sample_start": 0,
+    "sha256": "63a4b1e4c1dc655ac70961ffbf518acd249df237e5a0152faae9a4a836949715",
+    "size_bytes": 1152693
+  },
+  "comparison": {
+    "numeric_abs_tol": 1e-06,
+    "timestamp_abs_tol": 1e-06
+  },
+  "created_at": "2026-09-04T02:03:01.147176+00:00",
+  "environment": {
+    "platform": "Windows-11-10.0.26200-SP0",
+    "python": "3.13.1",
+    "torch": "2.6.0+cpu",
+    "whisper_module": "whisper/__init__.py"
+  },
+  "measurement": {
+    "active_requests_peak": null,
+    "admission_delay_seconds": null,
+    "alignment_capture_bytes": null,
+    "alignment_seconds": null,
+    "cancellation_delay_seconds": null,
+    "decoder_batch_size_peak": null,
+    "decoder_steps": null,
+    "encoder_batch_size_peak": null,
+    "encoder_calls": null,
+    "execution_seconds": 4.096454900000026,
+    "fallback_attempts": null,
+    "peak_device_memory_bytes": null,
+    "peak_host_memory_bytes": null,
+    "peak_hypothesis_count": null,
+    "queue_delay_seconds": 0.0,
+    "real_time_factor": 0.3724049909090933,
+    "resources_held_after_bytes": null,
+    "state_isolation_failures": null,
+    "wall_seconds": 4.096454900000026
+  },
+  "model": {
+    "checkpoint_sha256": "65147644a518d12f04e32d6f3b26facc3f8dd46e5390956a9424a650c0ce22b9",
+    "device": "cpu",
+    "dimensions": {
+      "n_audio_ctx": 1500,
+      "n_audio_head": 6,
+      "n_audio_layer": 4,
+      "n_audio_state": 384,
+      "n_mels": 80,
+      "n_text_ctx": 448,
+      "n_text_head": 6,
+      "n_text_layer": 4,
+      "n_text_state": 384,
+      "n_vocab": 51865
+    },
+    "dtype": "float32",
+    "name": "tiny"
+  },
+  "options": {
+    "language": "en",
+    "seed": 0,
+    "task": "translate",
+    "temperature": 0.0,
+    "word_timestamps": false
+  },
+  "outcome": "success",
+  "profile": "reference",
+  "result": {
+    "language": "en",
+    "segments": [
+      {
+        "avg_logprob": -0.33203942959125227,
+        "compression_ratio": 1.3636363636363635,
+        "end": 11.0,
+        "id": 0,
+        "no_speech_prob": 0.0691208764910698,
+        "seek": 0,
+        "start": 0.0,
+        "temperature": 0.0,
+        "text": " And so my fellow Americans ask not what your country can do for you ask what you can do for your country.",
+        "tokens": [
+          50364,
+          400,
+          370,
+          452,
+          7177,
+          6280,
+          1029,
+          406,
+          437,
+          428,
+          1941,
+          393,
+          360,
+          337,
+          291,
+          1029,
+          437,
+          291,
+          393,
+          360,
+          337,
+          428,
+          1941,
+          13,
+          50914
+        ]
+      }
+    ],
+    "text": " And so my fellow Americans ask not what your country can do for you ask what you can do for your country."
+  },
+  "schema_version": "1",
+  "source": {
+    "dirty": false,
+    "git_commit": "d7ba9a64e93c22a83964045b0ac29ac01c601fc7",
+    "root": ".tmp-patch-verify-v1",
+    "tree_sha256": "99a92181ed748ae85e698fecaa31f7fdd540117614952af6b921e600c625f11f"
+  }
+}

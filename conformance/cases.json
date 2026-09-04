@@ -24,6 +24,73 @@
       "status": "implemented"
     },
     {
+      "id": "jfk-tiny-en-beam-5-reference",
+      "model": "tiny.en",
+      "audio_fixture_id": "openai-whisper-jfk-flac",
+      "audio_fixture_class": "short_english_speech",
+      "fixture_records": {
+        "reference": "fixtures/reference/jfk-tiny-en-beam-5.json",
+        "candidate": "fixtures/candidate/jfk-tiny-en-beam-5.json"
+      },
+      "options": {
+        "task": "transcribe",
+        "language": "en",
+        "temperature": 0.0,
+        "beam_size": 5,
+        "word_timestamps": false,
+        "seed": 0
+      },
+      "required_profile": "reference",
+      "expected_resource_measurements": [
+        "wall_seconds"
+      ],
+      "status": "implemented"
+    },
+    {
+      "id": "jfk-tiny-en-word-timestamps-reference",
+      "model": "tiny.en",
+      "audio_fixture_id": "openai-whisper-jfk-flac",
+      "audio_fixture_class": "short_english_speech",
+      "fixture_records": {
+        "reference": "fixtures/reference/jfk-tiny-en-word-timestamps.json",
+        "candidate": "fixtures/candidate/jfk-tiny-en-word-timestamps.json"
+      },
+      "options": {
+        "task": "transcribe",
+        "language": "en",
+        "temperature": 0.0,
+        "word_timestamps": true,
+        "seed": 0
+      },
+      "required_profile": "reference",
+      "expected_resource_measurements": [
+        "wall_seconds"
+      ],
+      "status": "implemented"
+    },
+    {
+      "id": "jfk-tiny-translate-en-reference",
+      "model": "tiny",
+      "audio_fixture_id": "openai-whisper-jfk-flac",
+      "audio_fixture_class": "short_english_speech",
+      "fixture_records": {
+        "reference": "fixtures/reference/jfk-tiny-translate-en.json",
+        "candidate": "fixtures/candidate/jfk-tiny-translate-en.json"
+      },
+      "options": {
+        "task": "translate",
+        "language": "en",
+        "temperature": 0.0,
+        "word_timestamps": false,
+        "seed": 0
+      },
+      "required_profile": "reference",
+      "expected_resource_measurements": [
+        "wall_seconds"
+      ],
+      "status": "implemented"
+    },
+    {
       "id": "greedy-short-speech",
       "model": "tiny.en",
       "audio_fixture_class": "short_english_speech",

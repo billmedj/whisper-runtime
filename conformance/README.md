@@ -46,6 +46,7 @@ exist for a declared environment.
 each reference/candidate pair. A missing field, dirty source checkout, output
 difference, or undeclared fixture causes CI to fail.
 
-The first implemented case uses the pinned Whisper JFK sample with `tiny.en`
-and greedy decoding. Planned entries include sampling, beam search, timestamps,
-word timestamps, batching, concurrency, errors, and cancellation.
+The implemented cases use the pinned Whisper JFK sample. They cover greedy and
+beam-search decoding with `tiny.en`, word timestamps with `tiny.en`, and the
+translation task with the multilingual `tiny` model. Planned entries include
+seeded sampling, batching, concurrency, errors, and cancellation.
