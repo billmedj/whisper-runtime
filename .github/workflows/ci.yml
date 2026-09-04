@@ -69,8 +69,8 @@ jobs:
 
       - name: Check formatting and imports
         run: |
-          python -m ruff check src tests tools examples
-          python -m ruff format --check src tests tools examples
+          python -m ruff check src tests tools examples infra
+          python -m ruff format --check src tests tools examples infra
 
       - name: Check package types
         run: python -m mypy src
@@ -85,7 +85,7 @@ jobs:
         run: python -B examples/minimal_transaction.py
 
       - name: Compile Python sources
-        run: python -B -m compileall -q src tools examples
+        run: python -B -m compileall -q src tools examples infra
 
       - name: Build source and wheel distributions
         run: python -m build

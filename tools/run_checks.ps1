@@ -18,9 +18,9 @@ try {
     if ($LASTEXITCODE -ne 0) { throw "Runtime tests failed with exit code $LASTEXITCODE." }
     & $runtimePython -B -m unittest discover -s tools -p "test_*.py" -v
     if ($LASTEXITCODE -ne 0) { throw "Tool tests failed with exit code $LASTEXITCODE." }
-    & $runtimePython -m ruff check src tests tools examples
+    & $runtimePython -m ruff check src tests tools examples infra
     if ($LASTEXITCODE -ne 0) { throw "Ruff checks failed with exit code $LASTEXITCODE." }
-    & $runtimePython -m ruff format --check src tests tools examples
+    & $runtimePython -m ruff format --check src tests tools examples infra
     if ($LASTEXITCODE -ne 0) { throw "Ruff format check failed with exit code $LASTEXITCODE." }
     & $runtimePython -m mypy src
     if ($LASTEXITCODE -ne 0) { throw "Mypy checks failed with exit code $LASTEXITCODE." }
@@ -28,7 +28,7 @@ try {
     if ($LASTEXITCODE -ne 0) { throw "Repository checks failed with exit code $LASTEXITCODE." }
     & $runtimePython -B examples/minimal_transaction.py
     if ($LASTEXITCODE -ne 0) { throw "Minimal example failed with exit code $LASTEXITCODE." }
-    & $runtimePython -B -m compileall -q src tools examples
+    & $runtimePython -B -m compileall -q src tools examples infra
     if ($LASTEXITCODE -ne 0) { throw "Python compilation failed with exit code $LASTEXITCODE." }
     Pop-Location
     $locationDepth -= 1

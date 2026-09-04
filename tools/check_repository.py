@@ -1600,6 +1600,40 @@ def check_fixture_schema() -> list[str]:
     return failures
 
 
+def check_modal_cuda_schema() -> list[str]:
+    """Require a valid closed schema for the optional Modal evidence record."""
+
+    failures: list[str] = []
+    path = ROOT / "evidence" / "modal-cuda-readiness.schema.json"
+    schema = _read_json(path, failures)
+    if not isinstance(schema, dict):
+        return failures
+    if schema.get("$schema") != "https://json-schema.org/draft/2020-12/schema":
+        failures.append(
+            "evidence/modal-cuda-readiness.schema.json must use JSON Schema 2020-12"
+        )
+    if schema.get("additionalProperties") is not False:
+        failures.append(
+            "evidence/modal-cuda-readiness.schema.json must close the top-level object"
+        )
+    try:
+        from jsonschema import Draft202012Validator
+        from jsonschema.exceptions import SchemaError
+    except ImportError:
+        failures.append(
+            "JSON Schema validation is unavailable; install the 'validation' extra"
+        )
+    else:
+        try:
+            Draft202012Validator.check_schema(schema)
+        except SchemaError as error:
+            failures.append(
+                "evidence/modal-cuda-readiness.schema.json is not a valid schema: "
+                f"{error}"
+            )
+    return failures
+
+
 def validate_against_json_schema(fixture: dict[str, Any], location: str) -> list[str]:
     return validate_conformance_document(fixture, location)
 
@@ -1846,6 +1880,7 @@ def main() -> int:
         *check_portability(files),
         *check_lean_sources(),
         *check_fixture_schema(),
+        *check_modal_cuda_schema(),
         *check_conformance_cases(),
         *check_native_interleaving_evidence(),
         *check_native_threaded_evidence(),

@@ -1,0 +1,69 @@
+name: Modal GPU readiness
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm_paid_gpu:
+        description: "Confirm that this run may allocate a paid Modal T4"
+        required: true
+        default: false
+        type: boolean
+      modal_environment:
+        description: "Existing Modal environment"
+        required: true
+        default: "main"
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: modal-gpu-readiness
+  cancel-in-progress: false
+
+jobs:
+  cuda-readiness:
+    if: ${{ inputs.confirm_paid_gpu }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      MODAL_TOKEN_ID: ${{ secrets.MODAL_TOKEN_ID }}
+      MODAL_TOKEN_SECRET: ${{ secrets.MODAL_TOKEN_SECRET }}
+      MODAL_ENVIRONMENT_NAME: ${{ inputs.modal_environment }}
+      WHISPER_MODAL_ENABLE_REMOTE_RESOURCES: "1"
+      WHISPER_RUNTIME_COMMIT: ${{ github.sha }}
+    steps:
+      - name: Check out validation source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.13"
+
+      - name: Install pinned validation clients
+        run: python -m pip install ".[validation,modal-validation]"
+
+      - name: Run the bounded T4 check
+        shell: bash
+        run: |
+          output="artifacts/modal/cuda-backend-readiness-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}.json"
+          python -m modal run \
+            --env "$MODAL_ENVIRONMENT_NAME" \
+            -m infra.modal_gpu_validation \
+            --output "$output" \
+            --confirm-paid-gpu
+          python -B tools/validate_modal_cuda_record.py \
+            "$output" \
+            --expected-runtime-commit "$WHISPER_RUNTIME_COMMIT" \
+            --expected-runtime-tree "$(git show -s --format=%T "$WHISPER_RUNTIME_COMMIT")"
+
+      - name: Publish the validation record
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: modal-cuda-readiness-${{ github.run_id }}-${{ github.run_attempt }}
+          path: artifacts/modal/*.json
+          if-no-files-found: error
+          retention-days: 30

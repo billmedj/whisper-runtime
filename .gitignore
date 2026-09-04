@@ -12,5 +12,6 @@ dist/
 formal/lean/.lake/
 
 benchmarks/results/
+artifacts/modal/
 conformance/fixtures/generated/
 conformance/cache/

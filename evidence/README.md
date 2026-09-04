@@ -15,6 +15,13 @@ This directory contains four committed records from real backend runs:
 Each record identifies the runtime revision, backend source tree, model
 checkpoint, input, environment, and observed outcome.
 
+`modal-cuda-readiness.schema.json` defines a separate, version-one T4 record.
+The repository includes the manual harness and validator, but no CUDA record is
+committed yet. A passing record covers the direct patched backend only. It must
+state that no runtime transaction, worker admission, CUDA completion fence, or
+performance benchmark was exercised. See
+[`docs/MODAL_GPU_VALIDATION.md`](../docs/MODAL_GPU_VALIDATION.md).
+
 The native CI workflow repeats the same-model interleaving check and publishes
 its record as a 30-day artifact. The check covers state separation, early
 cleanup, rejection of cancelled-run reuse, and a survivor that matches an

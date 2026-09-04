@@ -1,0 +1,470 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/billmedj/whisper-runtime/blob/main/evidence/modal-cuda-readiness.schema.json",
+  "title": "Modal patched Whisper CUDA-readiness record",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "recorded_at",
+    "status",
+    "scope",
+    "claims",
+    "runtime",
+    "backend",
+    "modal",
+    "environment",
+    "gpu",
+    "model",
+    "input",
+    "decode",
+    "timing",
+    "memory",
+    "adapter_boundary",
+    "assertions"
+  ],
+  "properties": {
+    "schema_version": { "const": "1" },
+    "recorded_at": { "type": "string", "format": "date-time" },
+    "status": { "const": "passed" },
+    "scope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["evidence_kind", "statement", "runtime_adapter_exercised"],
+      "properties": {
+        "evidence_kind": { "const": "patched-whisper-cuda-readiness" },
+        "statement": {
+          "const": "One pinned patched Whisper backend decoded one pinned fixture on one Modal T4. No runtime transaction was admitted or executed."
+        },
+        "runtime_adapter_exercised": { "const": false }
+      }
+    },
+    "claims": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "patched_backend_cuda_decode",
+        "runtime_adapter_exercised",
+        "worker_admission_exercised",
+        "transaction_lifecycle_exercised",
+        "cuda_completion_fence_exercised",
+        "performance_benchmark"
+      ],
+      "properties": {
+        "patched_backend_cuda_decode": { "const": true },
+        "runtime_adapter_exercised": { "const": false },
+        "worker_admission_exercised": { "const": false },
+        "transaction_lifecycle_exercised": { "const": false },
+        "cuda_completion_fence_exercised": { "const": false },
+        "performance_benchmark": { "const": false }
+      }
+    },
+    "runtime": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "repository",
+        "native_adapter_path",
+        "native_adapter_sha256",
+        "git_commit",
+        "git_tree",
+        "clean"
+      ],
+      "properties": {
+        "repository": {
+          "const": "https://github.com/billmedj/whisper-runtime.git"
+        },
+        "native_adapter_path": {
+          "const": "src/whisper_runtime/adapters/native_whisper.py"
+        },
+        "native_adapter_sha256": {
+          "const": "3388992843384d2a4259588e9bc0e22dd971b7fd2fe4162e515330ef8b480d4c"
+        },
+        "git_commit": { "$ref": "#/$defs/git_hash" },
+        "git_tree": { "$ref": "#/$defs/git_hash" },
+        "clean": { "const": true }
+      }
+    },
+    "backend": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "repository",
+        "base_commit",
+        "base_tree",
+        "applied_commit",
+        "git_tree",
+        "clean",
+        "patch_manifest",
+        "patch_manifest_sha256"
+      ],
+      "properties": {
+        "repository": { "const": "https://github.com/openai/whisper.git" },
+        "base_commit": {
+          "const": "86098128c0b4f24f0e2aa2994de830614b474227"
+        },
+        "base_tree": {
+          "const": "f7b3cb8e12a2e84dccacc4c858c33d5a9c114688"
+        },
+        "applied_commit": { "$ref": "#/$defs/git_hash" },
+        "git_tree": {
+          "const": "c011d2563c26763b5f147026e6b18ef85bccd4fb"
+        },
+        "clean": { "const": true },
+        "patch_manifest": { "const": "patches/openai-whisper/SHA256SUMS" },
+        "patch_manifest_sha256": {
+          "const": "0fa1a833b0c489056d77da21188519c7e16fde7825d06bc5b902ba23a01abeb5"
+        }
+      }
+    },
+    "modal": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "sdk_version",
+        "function_call_id",
+        "image_id",
+        "task_id",
+        "environment",
+        "cloud_provider",
+        "region",
+        "network_blocked",
+        "modal_access_restricted",
+        "model_cache",
+        "network_probe"
+      ],
+      "properties": {
+        "sdk_version": { "const": "1.5.5" },
+        "function_call_id": { "$ref": "#/$defs/nullable_identifier" },
+        "image_id": { "$ref": "#/$defs/nullable_identifier" },
+        "task_id": { "$ref": "#/$defs/nullable_identifier" },
+        "environment": { "$ref": "#/$defs/nullable_identifier" },
+        "cloud_provider": { "$ref": "#/$defs/nullable_identifier" },
+        "region": { "$ref": "#/$defs/nullable_identifier" },
+        "network_blocked": { "const": true },
+        "modal_access_restricted": { "const": true },
+        "model_cache": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "name",
+            "generation",
+            "mount_path",
+            "read_only",
+            "write_probe"
+          ],
+          "properties": {
+            "name": { "const": "whisper-runtime-model-cache-v1" },
+            "generation": { "const": 1 },
+            "mount_path": { "const": "/models" },
+            "read_only": { "const": true },
+            "write_probe": { "$ref": "#/$defs/denied_probe" }
+          }
+        },
+        "network_probe": {
+          "allOf": [
+            { "$ref": "#/$defs/denied_probe" },
+            {
+              "type": "object",
+              "properties": { "target": { "const": "1.1.1.1:443" } },
+              "required": ["target"]
+            }
+          ]
+        }
+      }
+    },
+    "environment": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "python",
+        "platform",
+        "torch",
+        "torch_git_version",
+        "cuda_runtime",
+        "cudnn",
+        "nvidia_driver",
+        "ffmpeg",
+        "numpy",
+        "tiktoken",
+        "numba",
+        "tqdm",
+        "more_itertools"
+      ],
+      "properties": {
+        "python": { "type": "string", "pattern": "^3\\.13(?:\\.|$)" },
+        "platform": { "type": "string", "minLength": 1, "maxLength": 256 },
+        "torch": { "type": "string", "pattern": "^2\\.6\\.0(?:\\+cu124)?$" },
+        "torch_git_version": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
+        "cuda_runtime": { "const": "12.4" },
+        "cudnn": { "type": "string", "pattern": "^[1-9][0-9]*$" },
+        "nvidia_driver": { "type": "string", "pattern": "^[0-9]+\\.[0-9.]+$" },
+        "ffmpeg": { "type": "string", "pattern": "^ffmpeg version ", "maxLength": 512 },
+        "numpy": { "const": "2.5.2" },
+        "tiktoken": { "const": "0.14.0" },
+        "numba": { "const": "0.67.0" },
+        "tqdm": { "const": "4.70.0" },
+        "more_itertools": { "const": "11.1.0" }
+      }
+    },
+    "gpu": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "requested",
+        "visible_device_count",
+        "device_index",
+        "name",
+        "capability_major",
+        "capability_minor",
+        "total_memory_bytes"
+      ],
+      "properties": {
+        "requested": { "const": "T4" },
+        "visible_device_count": { "const": 1 },
+        "device_index": { "const": 0 },
+        "name": { "type": "string", "pattern": "T4", "maxLength": 128 },
+        "capability_major": { "const": 7 },
+        "capability_minor": { "const": 5 },
+        "total_memory_bytes": { "type": "integer", "minimum": 10000000000 }
+      }
+    },
+    "model": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "device",
+        "dtype",
+        "checkpoint_path",
+        "checkpoint_sha256",
+        "loaded_state_sha256_before",
+        "loaded_state_sha256_after"
+      ],
+      "properties": {
+        "name": { "const": "tiny.en" },
+        "device": { "const": "cuda:0" },
+        "dtype": { "const": "torch.float32" },
+        "checkpoint_path": { "const": "model-cache-v1/tiny.en.pt" },
+        "checkpoint_sha256": {
+          "const": "d3dd57d32accea0b295c96e26691aa14d8822fac7d9d27d5dc00b4ca2826dd03"
+        },
+        "loaded_state_sha256_before": {
+          "const": "sha256:8041a80119a588f542472da35e97d0372fce1d9709ed9874475e9c03deac5de6"
+        },
+        "loaded_state_sha256_after": {
+          "const": "sha256:8041a80119a588f542472da35e97d0372fce1d9709ed9874475e9c03deac5de6"
+        }
+      }
+    },
+    "input": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "fixture_id",
+        "path",
+        "sha256",
+        "size_bytes",
+        "sample_rate_hz",
+        "sample_count",
+        "decoded_pcm_sha256"
+      ],
+      "properties": {
+        "fixture_id": { "const": "openai-whisper-jfk-flac" },
+        "path": { "const": "openai-whisper/tests/jfk.flac" },
+        "sha256": {
+          "const": "63a4b1e4c1dc655ac70961ffbf518acd249df237e5a0152faae9a4a836949715"
+        },
+        "size_bytes": { "const": 1152693 },
+        "sample_rate_hz": { "const": 16000 },
+        "sample_count": { "const": 176000 },
+        "decoded_pcm_sha256": { "$ref": "#/$defs/sha256" }
+      }
+    },
+    "decode": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "language",
+        "task",
+        "temperature",
+        "without_timestamps",
+        "fp16",
+        "rng_seed",
+        "staged_result_count",
+        "text",
+        "expected_text",
+        "expected_text_matched",
+        "reuse_text",
+        "reuse_matched",
+        "cleanup_calls",
+        "reuse_cleanup_calls"
+      ],
+      "properties": {
+        "language": { "const": "en" },
+        "task": { "const": "transcribe" },
+        "temperature": { "const": 0.0 },
+        "without_timestamps": { "const": true },
+        "fp16": { "const": true },
+        "rng_seed": { "const": 7 },
+        "staged_result_count": { "const": 1 },
+        "text": { "$ref": "#/$defs/expected_text" },
+        "expected_text": { "$ref": "#/$defs/expected_text" },
+        "expected_text_matched": { "const": true },
+        "reuse_text": { "$ref": "#/$defs/expected_text" },
+        "reuse_matched": { "const": true },
+        "cleanup_calls": { "const": 2 },
+        "reuse_cleanup_calls": { "const": 2 }
+      }
+    },
+    "timing": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "staged_decode_seconds",
+        "reuse_decode_seconds",
+        "total_seconds",
+        "synchronized"
+      ],
+      "properties": {
+        "staged_decode_seconds": { "$ref": "#/$defs/nonnegative_number" },
+        "reuse_decode_seconds": { "$ref": "#/$defs/nonnegative_number" },
+        "total_seconds": { "$ref": "#/$defs/nonnegative_number" },
+        "synchronized": { "const": true }
+      }
+    },
+    "memory": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "allocated_before_bytes",
+        "peak_allocated_bytes",
+        "peak_reserved_bytes",
+        "allocated_after_bytes",
+        "measured",
+        "enforced"
+      ],
+      "properties": {
+        "allocated_before_bytes": { "$ref": "#/$defs/nonnegative_integer" },
+        "peak_allocated_bytes": { "$ref": "#/$defs/nonnegative_integer" },
+        "peak_reserved_bytes": { "$ref": "#/$defs/nonnegative_integer" },
+        "allocated_after_bytes": { "$ref": "#/$defs/nonnegative_integer" },
+        "measured": { "const": true },
+        "enforced": { "const": false }
+      }
+    },
+    "adapter_boundary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "adapter",
+        "device",
+        "attempted",
+        "rejected_before_admission",
+        "exception_type",
+        "message",
+        "queue_depth_before",
+        "queue_depth_after",
+        "budget_available_before",
+        "budget_available_after"
+      ],
+      "properties": {
+        "adapter": { "const": "NativeWhisperAdapter" },
+        "device": { "const": "cuda:0" },
+        "attempted": { "const": true },
+        "rejected_before_admission": { "const": true },
+        "exception_type": { "const": "ValueError" },
+        "message": {
+          "const": "the native adapter requires an explicit CPU device for the mel tensor"
+        },
+        "queue_depth_before": { "const": 0 },
+        "queue_depth_after": { "const": 0 },
+        "budget_available_before": { "$ref": "#/$defs/fixed_resource_vector" },
+        "budget_available_after": { "$ref": "#/$defs/fixed_resource_vector" }
+      }
+    },
+    "assertions": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "runtime_source_pinned",
+        "backend_source_pinned",
+        "patch_manifest_verified",
+        "checkpoint_verified_before_load",
+        "input_fixture_verified",
+        "torch_cuda_available",
+        "requested_t4_observed",
+        "model_loaded_on_cuda",
+        "staged_decode_completed",
+        "decode_result_matches_expected",
+        "cleanup_idempotent",
+        "persistent_model_state_unchanged",
+        "model_hooks_unchanged",
+        "model_reusable_after_decode",
+        "cuda_timing_synchronized",
+        "torch_cuda_memory_measured",
+        "native_runtime_adapter_rejected_before_admission",
+        "network_block_configured",
+        "outbound_network_probe_denied",
+        "model_cache_read_only"
+      ],
+      "properties": {
+        "runtime_source_pinned": { "const": true },
+        "backend_source_pinned": { "const": true },
+        "patch_manifest_verified": { "const": true },
+        "checkpoint_verified_before_load": { "const": true },
+        "input_fixture_verified": { "const": true },
+        "torch_cuda_available": { "const": true },
+        "requested_t4_observed": { "const": true },
+        "model_loaded_on_cuda": { "const": true },
+        "staged_decode_completed": { "const": true },
+        "decode_result_matches_expected": { "const": true },
+        "cleanup_idempotent": { "const": true },
+        "persistent_model_state_unchanged": { "const": true },
+        "model_hooks_unchanged": { "const": true },
+        "model_reusable_after_decode": { "const": true },
+        "cuda_timing_synchronized": { "const": true },
+        "torch_cuda_memory_measured": { "const": true },
+        "native_runtime_adapter_rejected_before_admission": { "const": true },
+        "network_block_configured": { "const": true },
+        "outbound_network_probe_denied": { "const": true },
+        "model_cache_read_only": { "const": true }
+      }
+    }
+  },
+  "$defs": {
+    "git_hash": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
+    "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "nullable_identifier": {
+      "type": ["string", "null"],
+      "minLength": 1,
+      "maxLength": 256
+    },
+    "nonnegative_number": { "type": "number", "minimum": 0 },
+    "nonnegative_integer": { "type": "integer", "minimum": 0 },
+    "expected_text": {
+      "const": "And so my fellow Americans ask not what your country can do for you, ask what you can do for your country."
+    },
+    "fixed_resource_vector": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["memory_bytes", "compute_units", "stream_slots"],
+      "properties": {
+        "memory_bytes": { "const": 1000000000 },
+        "compute_units": { "const": 1 },
+        "stream_slots": { "const": 1 }
+      }
+    },
+    "denied_probe": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["denied", "exception_type", "errno"],
+      "properties": {
+        "denied": { "const": true },
+        "exception_type": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "errno": { "type": ["integer", "null"] },
+        "target": { "type": "string", "minLength": 1, "maxLength": 128 }
+      }
+    }
+  }
+}
