@@ -254,7 +254,9 @@ is tracked in [openai/whisper#2842](https://github.com/openai/whisper/pull/2842)
 Grouped multi-audio decoding is tracked in
 [openai/whisper#2843](https://github.com/openai/whisper/pull/2843). Alignment
 hook cleanup after inference errors is tracked in
-[openai/whisper#2844](https://github.com/openai/whisper/pull/2844). See
+[openai/whisper#2844](https://github.com/openai/whisper/pull/2844). Thread-local
+SDPA disable scopes are tracked in
+[openai/whisper#2845](https://github.com/openai/whisper/pull/2845). See
 [the upstream contribution policy](https://github.com/billmedj/whisper-runtime/blob/main/docs/UPSTREAM.md).
 
 ## Contributing and security

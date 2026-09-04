@@ -31,6 +31,11 @@ The alignment error-path cleanup is
 temporary word-alignment hooks when model inference raises. It does not change
 alignment calculations or successful inference behavior.
 
+The SDPA scope-isolation change is
+[openai/whisper#2845](https://github.com/openai/whisper/pull/2845). It prevents
+word-alignment work in one operating-system thread from changing SDPA selection
+in another. It does not make concurrent calls on one model safe.
+
 An incremental decode-session API needs maintainer design review before an
 implementation pull request.
 
