@@ -2199,6 +2199,7 @@ def _define_modal_resources() -> tuple[Any, Any, Any, Any]:
 
     @app.function(
         image=image,
+        serialized=True,
         volumes={MODEL_CACHE_MOUNT: model_cache},
         cpu=2.0,
         memory=4096,
@@ -2217,6 +2218,7 @@ def _define_modal_resources() -> tuple[Any, Any, Any, Any]:
 
     @app.function(
         image=image,
+        serialized=True,
         gpu=GPU_REQUEST,
         cloud="aws",
         region="us-west-2",
