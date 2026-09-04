@@ -82,6 +82,20 @@ def _required_runtime_commit() -> str:
 RUNTIME_COMMIT = _required_runtime_commit()
 
 
+def _git_invocation(root: Path, *arguments: str) -> list[str]:
+    """Build a Git command scoped to the exact validation checkout."""
+
+    checkout = root.resolve()
+    return [
+        "git",
+        "-c",
+        f"safe.directory={checkout.as_posix()}",
+        "-C",
+        str(checkout),
+        *arguments,
+    ]
+
+
 def _require_definition_opt_in() -> None:
     if os.environ.get("WHISPER_MODAL_ENABLE_REMOTE_RESOURCES") != "1":
         raise RuntimeError(
@@ -95,7 +109,7 @@ def _require_matching_clean_checkout() -> None:
 
     def run(*arguments: str) -> str:
         result = subprocess.run(
-            ["git", "-C", str(root), *arguments],
+            _git_invocation(root, *arguments),
             check=False,
             capture_output=True,
             text=True,
@@ -195,7 +209,7 @@ def _sha256_file(path: Path) -> str:
 
 def _git(*arguments: str, root: Path) -> str:
     result = subprocess.run(
-        ["git", "-C", str(root), *arguments],
+        _git_invocation(root, *arguments),
         check=False,
         capture_output=True,
         text=True,
@@ -846,8 +860,15 @@ def main(
     validator = (
         Path(__file__).resolve().parents[1] / "tools/validate_modal_cuda_record.py"
     )
+    checkout = Path(__file__).resolve().parents[1]
     runtime_tree = subprocess.run(
-        ["git", "show", "-s", "--format=%T", RUNTIME_COMMIT],
+        _git_invocation(
+            checkout,
+            "show",
+            "-s",
+            "--format=%T",
+            RUNTIME_COMMIT,
+        ),
         check=True,
         capture_output=True,
         text=True,
