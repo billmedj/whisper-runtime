@@ -42,9 +42,18 @@ class FakeGenerator:
         return self
 
 
+FAKE_FLOAT32 = object()
+
+
 class FakeDevice:
-    def __init__(self, device_type: str) -> None:
+    def __init__(self, device_type: str, index: int | None = None) -> None:
         self.type = device_type
+        self.index = index
+
+    def __str__(self) -> str:
+        if self.index is None:
+            return self.type
+        return f"{self.type}:{self.index}"
 
 
 class FakeMel:
@@ -54,14 +63,155 @@ class FakeMel:
         self,
         device_type: str = "cpu",
         shape: tuple[int, int] = (80, 3_000),
+        *,
+        device_index: int | None = None,
+        dtype: object = FAKE_FLOAT32,
     ) -> None:
-        self.device = FakeDevice(device_type)
+        self.device = FakeDevice(device_type, device_index)
+        self.dtype = dtype
         self.shape = shape
         self.unsqueeze_calls: list[int] = []
 
     def unsqueeze(self, dimension: int) -> tuple[str, "FakeMel"]:
         self.unsqueeze_calls.append(dimension)
         return ("batched", self)
+
+
+class FakeCudaBatchedMel:
+    def __init__(self, source: "FakeCudaMel") -> None:
+        self.source = source
+        self.device = FakeDevice("cpu")
+        self.dtype = source.dtype
+
+    def to(self, *, device: str, non_blocking: bool) -> "FakeCudaBatchedMel":
+        if self.source.runtime.active_stream is None:
+            raise AssertionError("the mel copy did not run on the CUDA stream")
+        self.source.events.append("copy")
+        self.source.copy_arguments.append((device, non_blocking))
+        _, raw_index = device.split(":", maxsplit=1)
+        self.device = FakeDevice("cuda", int(raw_index))
+        return self
+
+
+class FakeCudaMel(FakeMel):
+    def __init__(
+        self,
+        runtime: "FakeCudaRuntime",
+        events: list[str],
+        *,
+        dtype: object = FAKE_FLOAT32,
+    ) -> None:
+        super().__init__(dtype=dtype)
+        self.runtime = runtime
+        self.events = events
+        self.copy_arguments: list[tuple[str, bool]] = []
+
+    def unsqueeze(self, dimension: int) -> FakeCudaBatchedMel:
+        self.unsqueeze_calls.append(dimension)
+        return FakeCudaBatchedMel(self)
+
+    def to(self, *, device: str, non_blocking: bool) -> object:
+        del device, non_blocking
+        raise AssertionError("the adapter must batch the mel before copying it")
+
+
+class FakeCudaContext:
+    def __init__(
+        self,
+        runtime: "FakeCudaRuntime",
+        kind: str,
+        value: object,
+    ) -> None:
+        self.runtime = runtime
+        self.kind = kind
+        self.value = value
+        self.previous: object | None = None
+
+    def __enter__(self) -> object:
+        attribute = f"active_{self.kind}"
+        self.previous = getattr(self.runtime, attribute)
+        setattr(self.runtime, attribute, self.value)
+        return self.value
+
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc: BaseException | None,
+        traceback: object | None,
+    ) -> None:
+        del exc_type, exc, traceback
+        setattr(self.runtime, f"active_{self.kind}", self.previous)
+
+
+class FakeCudaEvent:
+    def __init__(self, runtime: "FakeCudaRuntime") -> None:
+        self.runtime = runtime
+        self.recorded_stream: object | None = None
+
+    def record(self, stream: object) -> None:
+        self.runtime.events.append("event:record")
+        if self.runtime.active_device != "cuda:1":
+            raise AssertionError("the event was recorded on the wrong device")
+        if self.runtime.active_stream is not stream:
+            raise AssertionError("the event was recorded outside its stream")
+        self.recorded_stream = stream
+        if self.runtime.fail_record:
+            raise RuntimeError("event record failed")
+
+    def synchronize(self) -> None:
+        self.runtime.events.append("event:synchronize")
+        if self.runtime.fail_event_synchronize:
+            raise RuntimeError("event synchronize failed")
+
+
+class FakeCudaRuntime:
+    def __init__(self, events: list[str], *, device_count: int = 2) -> None:
+        self.events = events
+        self.visible_device_count = device_count
+        self.available = True
+        self.active_device: object | None = None
+        self.active_stream: object | None = None
+        self.fail_record = False
+        self.fail_event_synchronize = False
+        self.fail_event_creation = False
+        self.streams: list[object] = []
+        self.cuda_events: list[FakeCudaEvent] = []
+
+    def is_available(self) -> bool:
+        return self.available
+
+    def device_count(self) -> int:
+        return self.visible_device_count
+
+    def synchronize(self, device: object | None = None) -> None:
+        self.events.append(f"device:synchronize:{device}")
+
+    def Stream(self, *, device: object | None = None) -> object:
+        stream = object()
+        self.events.append(f"stream:create:{device}")
+        self.streams.append(stream)
+        return stream
+
+    def Event(self, *, enable_timing: bool = False) -> FakeCudaEvent:
+        self.events.append(f"event:create:{enable_timing}")
+        if self.fail_event_creation:
+            raise RuntimeError("event creation failed")
+        event = FakeCudaEvent(self)
+        self.cuda_events.append(event)
+        return event
+
+    def device(self, device: object) -> FakeCudaContext:
+        return FakeCudaContext(self, "device", device)
+
+    def stream(self, stream: object) -> FakeCudaContext:
+        return FakeCudaContext(self, "stream", stream)
+
+
+class FakeTorchModule:
+    float32 = FAKE_FLOAT32
+
+    def __init__(self, cuda: FakeCudaRuntime) -> None:
+        self.cuda = cuda
 
 
 class FakeResult:
@@ -82,16 +232,20 @@ class FakeRun:
         fail_stage: str | None = None,
         result_count: int = 1,
         result_text: object = " decoded text",
+        on_prefill: Callable[[], None] | None = None,
         on_step: Callable[[], None] | None = None,
         on_finalize: Callable[[], None] | None = None,
+        on_cleanup: Callable[[], None] | None = None,
         fail_cleanup: bool = False,
     ) -> None:
         self.complete_after = complete_after
         self.fail_stage = fail_stage
         self.result_count = result_count
         self.result_text = result_text
+        self.on_prefill = on_prefill
         self.on_step = on_step
         self.on_finalize = on_finalize
+        self.on_cleanup = on_cleanup
         self.fail_cleanup = fail_cleanup
         self.prefill_calls = 0
         self.step_calls = 0
@@ -107,6 +261,8 @@ class FakeRun:
 
     def prefill(self) -> None:
         self.prefill_calls += 1
+        if self.on_prefill is not None:
+            self.on_prefill()
         if self.fail_stage == "prefill":
             raise RuntimeError("prefill failed")
 
@@ -129,6 +285,8 @@ class FakeRun:
 
     def cleanup(self) -> None:
         self.cleanup_calls += 1
+        if self.on_cleanup is not None:
+            self.on_cleanup()
         if self.fail_cleanup:
             raise RuntimeError("cleanup failed")
 
@@ -181,11 +339,13 @@ class BackendHarness:
         use_legacy_extension: bool = False,
         use_legacy_cache: bool = False,
         on_start: Callable[[], None] | None = None,
+        torch_module: object | None = None,
     ) -> None:
         self._runs = runs
         self.use_legacy_extension = use_legacy_extension
         self.use_legacy_cache = use_legacy_cache
         self.on_start = on_start
+        self.torch_module = torch_module
         self.generators: list[FakeGenerator] = []
         self.option_kwargs: list[dict[str, object]] = []
         self.models: list[object] = []
@@ -215,13 +375,19 @@ class BackendHarness:
             options_type=self.options_type,
             task_type=self.task_type,
             n_frames=3_000,
+            torch_module=cast(native_whisper._TorchModule, self.torch_module),
         )
 
 
 class FakeNativeModel:
-    def __init__(self, identity: ModelSnapshot) -> None:
+    def __init__(
+        self,
+        identity: ModelSnapshot,
+        *,
+        device: FakeDevice | None = None,
+    ) -> None:
         self.identity = identity
-        self.device = FakeDevice("cpu")
+        self.device = device or FakeDevice("cpu")
         self.dims = type("FakeDimensions", (), {"n_mels": 80})()
 
     def transcribe(
@@ -1229,6 +1395,525 @@ class NativeWhisperAdapterTests(unittest.TestCase):
         self.assertEqual(request.status, RequestStatus.CREATED)
         self.assertEqual(self.worker.queue_depth, 0)
         self.assertEqual(self.budget.available, self.capacity)
+
+
+class NativeWhisperCudaAdapterTests(unittest.TestCase):
+    def setUp(self) -> None:
+        self.identity = ModelSnapshot(
+            model_id="tiny.en",
+            revision="suspendable-cuda-test",
+            backend="pytorch-cuda",
+            fingerprint="sha256:test-native-cuda-checkpoint",
+        )
+        self.capacity = ResourceVector(
+            memory_bytes=4_096,
+            compute_units=1,
+            stream_slots=1,
+        )
+
+    def make_adapter(
+        self,
+        *,
+        model_device: FakeDevice | None = None,
+    ) -> tuple[NativeWhisperAdapter, Worker, Budget, FakeNativeModel]:
+        budget = Budget(self.capacity)
+        worker = Worker(
+            "native-cuda-worker",
+            self.identity,
+            budget,
+            queue_capacity=1,
+        )
+        model = FakeNativeModel(
+            self.identity,
+            device=model_device or FakeDevice("cuda", 1),
+        )
+        adapter = NativeWhisperAdapter(
+            worker,
+            model,
+            probe,
+            NativeExecutionProfile(
+                "tiny.en/cuda-float32",
+                self.capacity,
+                device="cuda:1",
+            ),
+        )
+        return adapter, worker, budget, model
+
+    def request(self, request_id: str = "cuda-request") -> RequestState:
+        return RequestState(
+            request_id,
+            "cuda-session",
+            self.identity,
+            rng_seed=7,
+        )
+
+    def decode(
+        self,
+        adapter: NativeWhisperAdapter,
+        harness: BackendHarness,
+        mel: FakeMel,
+        *,
+        request: RequestState | None = None,
+        session: Session | None = None,
+    ) -> SessionState:
+        with patch.object(
+            native_whisper,
+            "_load_native_components",
+            return_value=harness.components(),
+        ):
+            return adapter.decode_window(
+                session=session or Session("cuda-session"),
+                request=request or self.request(),
+                window_id="cuda-window",
+                mel=mel,
+                start_ms=0,
+                end_ms=30_000,
+            )
+
+    def test_cuda_profile_is_single_lane_and_uses_canonical_device(self) -> None:
+        for device in ("cuda", "cuda:01", "CUDA:0", "cuda:-1", "cuda:0 "):
+            with self.subTest(device=device):
+                with self.assertRaisesRegex(ValueError, "canonical 'cuda:N'"):
+                    NativeExecutionProfile(
+                        "bad-device",
+                        self.capacity,
+                        device=device,
+                    )
+
+        with self.assertRaisesRegex(ValueError, "one concurrent decode"):
+            NativeExecutionProfile(
+                "cuda-dual",
+                self.capacity,
+                max_concurrent_decodes=2,
+                device="cuda:1",
+            )
+
+        invalid_resources = (
+            (
+                ResourceVector(memory_bytes=0, compute_units=1, stream_slots=1),
+                "device memory",
+            ),
+            (
+                ResourceVector(memory_bytes=1, compute_units=0, stream_slots=1),
+                "compute capacity",
+            ),
+            (
+                ResourceVector(memory_bytes=1, compute_units=1, stream_slots=2),
+                "exactly one stream",
+            ),
+        )
+        for resources, message in invalid_resources:
+            with self.subTest(resources=resources):
+                with self.assertRaisesRegex(ValueError, message):
+                    NativeExecutionProfile(
+                        "bad-resources",
+                        resources,
+                        device="cuda:1",
+                    )
+
+    def test_cuda_model_device_is_fixed_when_the_adapter_is_bound(self) -> None:
+        with self.assertRaisesRegex(ValueError, "requires device 'cuda:1'"):
+            self.make_adapter(model_device=FakeDevice("cuda", 0))
+
+    def test_model_binding_rejects_cpu_cuda_rebinding(self) -> None:
+        cases = (
+            (FakeDevice("cpu"), "cpu", FakeDevice("cuda", 0), "cuda:0"),
+            (FakeDevice("cuda", 0), "cuda:0", FakeDevice("cpu"), "cpu"),
+        )
+        for (
+            initial_model_device,
+            initial_profile_device,
+            target_model_device,
+            target_profile_device,
+        ) in cases:
+            with self.subTest(
+                initial=initial_profile_device,
+                target=target_profile_device,
+            ):
+                worker = Worker(
+                    f"binding-{initial_profile_device}-worker",
+                    self.identity,
+                    Budget(self.capacity),
+                    queue_capacity=1,
+                )
+                model = FakeNativeModel(
+                    self.identity,
+                    device=initial_model_device,
+                )
+                NativeWhisperAdapter(
+                    worker,
+                    model,
+                    probe,
+                    NativeExecutionProfile(
+                        "fixed-profile",
+                        self.capacity,
+                        device=initial_profile_device,
+                    ),
+                )
+                model.device = target_model_device
+
+                with self.assertRaisesRegex(
+                    ValueError,
+                    "cannot use multiple execution profiles",
+                ):
+                    NativeWhisperAdapter(
+                        worker,
+                        model,
+                        probe,
+                        NativeExecutionProfile(
+                            "fixed-profile",
+                            self.capacity,
+                            device=target_profile_device,
+                        ),
+                    )
+
+    def test_model_binding_rejects_rebinding_to_another_cuda_device(self) -> None:
+        worker = Worker(
+            "binding-cuda-worker",
+            self.identity,
+            Budget(self.capacity),
+            queue_capacity=1,
+        )
+        model = FakeNativeModel(self.identity, device=FakeDevice("cuda", 0))
+        NativeWhisperAdapter(
+            worker,
+            model,
+            probe,
+            NativeExecutionProfile(
+                "fixed-profile",
+                self.capacity,
+                device="cuda:0",
+            ),
+        )
+        model.device = FakeDevice("cuda", 1)
+
+        with self.assertRaisesRegex(
+            ValueError,
+            "cannot use multiple execution profiles",
+        ):
+            NativeWhisperAdapter(
+                worker,
+                model,
+                probe,
+                NativeExecutionProfile(
+                    "fixed-profile",
+                    self.capacity,
+                    device="cuda:1",
+                ),
+            )
+
+    def test_cuda_rejects_runtime_and_input_mismatches_before_admission(self) -> None:
+        cases = (
+            ("unavailable", "CUDA is not available", "runtime"),
+            ("out-of-range", "not visible", "runtime"),
+            ("cuda-input", "requires device 'cpu'", "input"),
+            ("wrong-dtype", "CPU float32", "input"),
+        )
+        for name, message, kind in cases:
+            with self.subTest(name=name):
+                events: list[str] = []
+                runtime = FakeCudaRuntime(
+                    events,
+                    device_count=1 if name == "out-of-range" else 2,
+                )
+                if name == "unavailable":
+                    runtime.available = False
+                torch_module = FakeTorchModule(runtime)
+                adapter, worker, budget, _ = self.make_adapter()
+                run = FakeRun(complete_after=1)
+                harness = BackendHarness([run], torch_module=torch_module)
+                if name == "cuda-input":
+                    mel: FakeMel = FakeMel("cuda", device_index=1)
+                elif name == "wrong-dtype":
+                    mel = FakeCudaMel(runtime, events, dtype=object())
+                else:
+                    mel = FakeCudaMel(runtime, events)
+
+                with patch.object(
+                    native_whisper,
+                    "_load_native_components",
+                    return_value=harness.components(),
+                ):
+                    error = NativeDependencyError if kind == "runtime" else ValueError
+                    with self.assertRaisesRegex(error, message):
+                        adapter.decode_window(
+                            session=Session("cuda-session"),
+                            request=self.request(name),
+                            window_id="cuda-window",
+                            mel=mel,
+                            start_ms=0,
+                            end_ms=30_000,
+                        )
+
+                self.assertEqual(worker.queue_depth, 0)
+                self.assertEqual(budget.available, self.capacity)
+                self.assertEqual(events, [])
+
+    def test_cpu_default_does_not_call_cuda(self) -> None:
+        events: list[str] = []
+        runtime = FakeCudaRuntime(events)
+        identity = ModelSnapshot(
+            model_id="tiny.en",
+            revision="cpu-no-cuda",
+            backend="pytorch-cpu",
+            fingerprint="sha256:cpu-no-cuda",
+        )
+        capacity = ResourceVector(memory_bytes=1, compute_units=1, stream_slots=1)
+        adapter = NativeWhisperAdapter(
+            Worker("cpu-worker", identity, Budget(capacity), queue_capacity=1),
+            FakeNativeModel(identity),
+            probe,
+            NativeExecutionProfile("cpu-default", capacity),
+        )
+        harness = BackendHarness(
+            [FakeRun(complete_after=1)],
+            torch_module=FakeTorchModule(runtime),
+        )
+        with patch.object(
+            native_whisper,
+            "_load_native_components",
+            return_value=harness.components(),
+        ):
+            adapter.decode_window(
+                session=Session("cpu-session"),
+                request=RequestState(
+                    "cpu-request",
+                    "cpu-session",
+                    identity,
+                    rng_seed=7,
+                ),
+                window_id="cpu-window",
+                mel=FakeMel(),
+                start_ms=0,
+                end_ms=30_000,
+            )
+        self.assertEqual(events, [])
+
+    def test_cuda_work_is_admitted_copied_and_fenced_before_commit(self) -> None:
+        events: list[str] = []
+        runtime = FakeCudaRuntime(events)
+        torch_module = FakeTorchModule(runtime)
+        adapter, worker, budget, _ = self.make_adapter()
+
+        def require_stream(stage: str) -> None:
+            self.assertEqual(runtime.active_device, "cuda:1")
+            self.assertIs(runtime.active_stream, runtime.streams[0])
+            events.append(stage)
+
+        run = FakeRun(
+            complete_after=1,
+            on_prefill=lambda: require_stream("prefill"),
+            on_step=lambda: require_stream("step"),
+            on_finalize=lambda: require_stream("finalize"),
+            on_cleanup=lambda: require_stream("cleanup"),
+        )
+        harness = BackendHarness(
+            [run],
+            on_start=lambda: require_stream("start"),
+            torch_module=torch_module,
+        )
+        mel = FakeCudaMel(runtime, events)
+        session = Session("cuda-session")
+        scopes: list[native_whisper._CudaDecodeScope] = []
+        original_scope = native_whisper._CudaDecodeScope
+        original_acquire = Budget.acquire
+        original_release = Budget._release
+        original_commit = Session._commit
+
+        class RecordingScope(original_scope):
+            def __init__(self, *args: object, **kwargs: object) -> None:
+                super().__init__(*args, **kwargs)
+                scopes.append(self)
+
+        def tracked_acquire(
+            target: Budget,
+            resources: ResourceVector,
+        ) -> object:
+            events.append("lease:acquire")
+            return original_acquire(target, resources)
+
+        def tracked_commit(
+            target: Session,
+            expected_version: int,
+            record: object,
+        ) -> SessionState:
+            events.append("session:commit")
+            return original_commit(target, expected_version, record)
+
+        def tracked_release(target: Budget, lease: object) -> None:
+            events.append("lease:release")
+            original_release(target, lease)
+
+        with (
+            patch.object(native_whisper, "_CudaDecodeScope", RecordingScope),
+            patch.object(Budget, "acquire", new=tracked_acquire),
+            patch.object(Budget, "_release", new=tracked_release),
+            patch.object(Session, "_commit", new=tracked_commit),
+        ):
+            committed = self.decode(adapter, harness, mel, session=session)
+
+        ordered = (
+            "lease:acquire",
+            "device:synchronize:cuda:1",
+            "stream:create:cuda:1",
+            "copy",
+            "start",
+            "prefill",
+            "step",
+            "finalize",
+            "cleanup",
+            "event:create:False",
+            "event:record",
+            "event:synchronize",
+            "session:commit",
+            "lease:release",
+        )
+        self.assertEqual(
+            [events.index(item) for item in ordered],
+            sorted(events.index(item) for item in ordered),
+        )
+        self.assertEqual(harness.generators[0].device, "cuda:1")
+        self.assertEqual(mel.copy_arguments, [("cuda:1", False)])
+        self.assertIs(runtime.cuda_events[0].recorded_stream, runtime.streams[0])
+        self.assertEqual(committed.version, 1)
+        self.assertEqual(worker.queue_depth, 0)
+        self.assertEqual(budget.available, self.capacity)
+        self.assertEqual(len(scopes), 1)
+        self.assertIsNone(scopes[0]._run)
+        self.assertIsNone(scopes[0]._stream)
+        self.assertIsNone(scopes[0]._event)
+
+    def test_cuda_cancellation_still_waits_for_the_event(self) -> None:
+        events: list[str] = []
+        runtime = FakeCudaRuntime(events)
+        adapter, worker, budget, _ = self.make_adapter()
+        request = self.request("cancelled")
+        run = FakeRun(
+            complete_after=2,
+            on_step=request.cancel,
+            on_cleanup=lambda: events.append("cleanup"),
+        )
+        harness = BackendHarness(
+            [run],
+            torch_module=FakeTorchModule(runtime),
+        )
+        session = Session("cuda-session")
+
+        with self.assertRaises(RequestCancelledError):
+            self.decode(
+                adapter,
+                harness,
+                FakeCudaMel(runtime, events),
+                request=request,
+                session=session,
+            )
+
+        self.assertLess(events.index("cleanup"), events.index("event:record"))
+        self.assertLess(events.index("event:record"), events.index("event:synchronize"))
+        self.assertEqual(session.snapshot().version, 0)
+        self.assertEqual(request.status, RequestStatus.CANCELLED)
+        self.assertEqual(worker.queue_depth, 0)
+        self.assertEqual(budget.available, self.capacity)
+
+    def test_request_stop_never_calls_cuda(self) -> None:
+        events: list[str] = []
+        runtime = FakeCudaRuntime(events)
+        adapter, _, _, _ = self.make_adapter()
+        scope = native_whisper._CudaDecodeScope(
+            adapter._model_binding,
+            FakeTorchModule(runtime),
+            "cuda:1",
+        )
+        scope.request_stop()
+        self.assertEqual(events, [])
+        self.assertIsNone(scope._stream)
+
+    def test_cuda_generator_must_use_the_profile_device(self) -> None:
+        events: list[str] = []
+        runtime = FakeCudaRuntime(events)
+        adapter, worker, budget, _ = self.make_adapter()
+        harness = BackendHarness(
+            [FakeRun(complete_after=1)],
+            torch_module=FakeTorchModule(runtime),
+        )
+        components = harness.components()
+        mismatched = native_whisper._NativeComponents(
+            generator_type=lambda **kwargs: FakeGenerator("cuda:0"),
+            options_type=components.options_type,
+            task_type=components.task_type,
+            n_frames=components.n_frames,
+            torch_module=components.torch_module,
+        )
+        request = self.request("wrong-generator")
+        with patch.object(
+            native_whisper,
+            "_load_native_components",
+            return_value=mismatched,
+        ):
+            with self.assertRaisesRegex(NativeDependencyError, "profile device"):
+                adapter.decode_window(
+                    session=Session("cuda-session"),
+                    request=request,
+                    window_id="cuda-window",
+                    mel=FakeCudaMel(runtime, events),
+                    start_ms=0,
+                    end_ms=30_000,
+                )
+
+        self.assertEqual(request.status, RequestStatus.ABORTED)
+        self.assertEqual(worker.queue_depth, 0)
+        self.assertEqual(budget.available, self.capacity)
+        self.assertIn("event:synchronize", events)
+
+    def test_cuda_fence_failures_quarantine_until_recovery(self) -> None:
+        for failure in ("cleanup", "create", "record", "synchronize"):
+            with self.subTest(failure=failure):
+                events: list[str] = []
+                runtime = FakeCudaRuntime(events)
+                adapter, worker, budget, _ = self.make_adapter()
+                run = FakeRun(complete_after=1, fail_cleanup=failure == "cleanup")
+                runtime.fail_event_creation = failure == "create"
+                runtime.fail_record = failure == "record"
+                runtime.fail_event_synchronize = failure == "synchronize"
+                harness = BackendHarness(
+                    [run],
+                    torch_module=FakeTorchModule(runtime),
+                )
+                session = Session("cuda-session")
+
+                with self.assertRaises(TransactionRetainedError) as raised:
+                    self.decode(
+                        adapter,
+                        harness,
+                        FakeCudaMel(runtime, events),
+                        request=self.request(failure),
+                        session=session,
+                    )
+
+                retained = raised.exception
+                scope = cast(
+                    native_whisper._CudaDecodeScope,
+                    retained.transaction._execution,
+                )
+                self.assertEqual(
+                    retained.transaction.status,
+                    TransactionStatus.QUARANTINED,
+                )
+                self.assertIs(scope._run, run)
+                self.assertEqual(session.snapshot().version, 0)
+                self.assertEqual(worker.queue_depth, 1)
+                self.assertEqual(budget.lease_count, 1)
+
+                run.fail_cleanup = False
+                runtime.fail_event_creation = False
+                runtime.fail_record = False
+                runtime.fail_event_synchronize = False
+                self.assertTrue(worker.recover(retained.transaction))
+                self.assertIsNone(scope._run)
+                self.assertIsNone(scope._stream)
+                self.assertIsNone(scope._event)
+                self.assertEqual(worker.queue_depth, 0)
+                self.assertEqual(budget.available, self.capacity)
 
 
 if __name__ == "__main__":

@@ -1,8 +1,10 @@
-# Native CPU adapter
+# Native adapter
 
 `NativeWhisperAdapter` connects one suspendable Whisper decode run to one
-runtime transaction. It is an experimental, CPU-only boundary for a single
-unbatched 30-second mel window. The package requires Python 3.10 or later.
+runtime transaction. It is an experimental boundary for a single unbatched
+30-second mel window. CPU is the default and validated path. A strict
+single-lane CUDA path is implemented for testing. The package requires Python
+3.10 or later.
 
 The adapter requires a Whisper build that provides:
 
@@ -29,11 +31,14 @@ PyTorch and Whisper are loaded when `decode_window()` starts. Importing
 
 ## Transaction boundary
 
-`NativeExecutionProfile.resources` is the fixed cost of one transaction. The
-default profile admits one transaction and requires `queue_capacity=1`. An
-experimental profile can set `max_concurrent_decodes=2`. That profile requires
-`queue_capacity=2` and a worker capacity equal to twice the per-transaction
-resource vector. Admission fails before inference when either bound is wrong.
+`NativeExecutionProfile.device` fixes the execution device. It defaults to
+`cpu`. CUDA profiles require a canonical `cuda:N` value; bare `cuda` is
+rejected. `NativeExecutionProfile.resources` is the fixed declared cost of one
+transaction. The default profile admits one transaction and requires
+`queue_capacity=1`. An experimental CPU profile can set
+`max_concurrent_decodes=2`. That profile requires `queue_capacity=2` and a
+worker capacity equal to twice the per-transaction resource vector. Admission
+fails before inference when either bound is wrong.
 
 One model object is bound to one adapter kind, worker, profile, and concurrency
 limit for that object's lifetime. Load a new model object when migrating
@@ -42,17 +47,17 @@ between profiles or adapters.
 One call performs these operations:
 
 1. Draw a seed from the transaction-local random stream.
-2. Create a new CPU `torch.Generator` from that seed.
+2. Create a new `torch.Generator` on the profile device from that seed.
 3. Submit run creation and encoder work.
 4. Submit prefill.
 5. Submit each token step separately, with a checkpoint after every step.
 6. Submit finalization and require exactly one decode result.
 7. Commit one `WindowResult` containing its text and declared time span.
 
-The CPU execution scope owns the decode handle. Its completion fence calls
+The execution scope owns the decode handle. Its completion fence calls
 `cleanup()` before the runtime releases the lease. Cancellation is cooperative:
 it takes effect at the checkpoint after a submitted stage or token step. It
-does not interrupt a CPU kernel that is already running.
+does not interrupt work that is already running.
 
 An aborted attempt does not publish its transaction-local random state. A new
 request with the same `rng_seed` recreates the same generator seed and restarts
@@ -114,8 +119,66 @@ The adapter adds the batch dimension. The identity probe must bind the loaded
 weights to the declared `ModelSnapshot`; metadata alone is not a strong
 checkpoint identity.
 
-This adapter does not yet support audio batches, CUDA fences, stage-specific
-resource costs, durable mid-window checkpoints, alignment, or streaming.
+This adapter does not yet support audio batches, stage-specific resource costs,
+durable mid-window checkpoints, alignment, or streaming. No committed record
+establishes CUDA correctness, memory bounds, latency, or throughput.
+
+## Strict CUDA profile
+
+The CUDA profile is deliberately narrow:
+
+- `device` must be an exact `cuda:N` value;
+- `max_concurrent_decodes` must be `1`;
+- one transaction must reserve positive memory and compute values and exactly
+  one stream slot;
+- the model must already be on that exact device;
+- the input mel must remain a CPU `float32` tensor.
+
+The adapter creates the CUDA stream only after the worker admits the
+transaction. It copies the batched mel to the selected device on that stream.
+Task construction, run creation, prefill, token steps, finalization, the final
+model identity check, and cleanup use the same stream. The task and run must use
+the patched built-in request-local cache path. Extensions and legacy cache
+fallbacks are rejected.
+
+After the submission gate drains, the scope runs cleanup, records one CUDA
+event on the stream, and waits for the event. The session cannot commit and the
+worker cannot release its lease before that wait succeeds. A cleanup, event
+record, or event synchronization failure quarantines the transaction. Recovery
+retries idempotent cleanup and records a new event. `request_stop()` only sets a
+host-side latch; it does not call CUDA from the cancelling thread.
+
+The first stream use performs a conservative device synchronization after
+admission. This establishes a boundary with model initialization before the
+private stream starts. This path does not support CUDA concurrency, word
+alignment, or external mutation of the bound model. The resource vector remains
+trusted configuration rather than measured GPU memory.
+
+```python
+cuda_cost = ResourceVector(
+    memory_bytes=2_000_000_000,
+    compute_units=1,
+    stream_slots=1,
+)
+cuda_worker = Worker(
+    "tiny-en-cuda-0",
+    cuda_snapshot,
+    Budget(cuda_cost),
+    queue_capacity=1,
+)
+cuda_adapter = NativeWhisperAdapter(
+    cuda_worker,
+    cuda_model,
+    identity_probe,
+    NativeExecutionProfile(
+        "tiny.en/cuda-0-float32",
+        cuda_cost,
+        device="cuda:0",
+    ),
+)
+```
+
+The memory value above is illustrative. It is not a published profile.
 
 ## Experimental two-lane CPU profile
 

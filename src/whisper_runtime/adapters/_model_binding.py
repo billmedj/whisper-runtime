@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from threading import Lock, RLock
+from threading import RLock
 from weakref import ReferenceType, ref
 
 from ..errors import RuntimeStateError
@@ -10,7 +10,8 @@ from ..resources import ResourceVector
 from ..transaction import TransactionStatus, WindowTransaction
 from ..worker import Worker
 
-_MODEL_BINDINGS_GUARD = Lock()
+# A weak-reference callback can run during an allocation made under this guard.
+_MODEL_BINDINGS_GUARD = RLock()
 
 
 class ModelBinding:
@@ -28,7 +29,9 @@ class ModelBinding:
     def __init__(self) -> None:
         self.lock = RLock()
         self.worker: Worker | None = None
-        self.execution_profile: tuple[str, ResourceVector, int] | None = None
+        self.execution_profile: tuple[str, ResourceVector, int, str | None] | None = (
+            None
+        )
         self.adapter_kind: str | None = None
         self._cleanup_failures: set[int] = set()
         self._retained_errors: dict[int, BaseException] = {}
@@ -137,8 +140,13 @@ def bind_model(
     resources: ResourceVector,
     subject: str,
     concurrency: int = 1,
+    device: str | None = None,
 ) -> None:
-    """Bind one model to one adapter kind, worker, and fixed profile."""
+    """Bind one model to one adapter kind, worker, device, and fixed profile.
+
+    ``device=None`` preserves compatibility adapters that do not enforce a
+    device contract. Device-aware adapters must pass their canonical device.
+    """
 
     if binding.adapter_kind is not None and binding.adapter_kind != adapter_kind:
         raise ValueError(
@@ -146,7 +154,7 @@ def bind_model(
         )
     if binding.worker is not None and binding.worker is not worker:
         raise ValueError(f"one {subject} cannot use multiple workers")
-    profile = (profile_id, resources, concurrency)
+    profile = (profile_id, resources, concurrency, device)
     if binding.execution_profile is not None and binding.execution_profile != profile:
         raise ValueError(f"one {subject} cannot use multiple execution profiles")
     binding.adapter_kind = adapter_kind

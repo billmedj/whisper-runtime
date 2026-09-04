@@ -13,10 +13,10 @@ It does not change the model weights or neural-network architecture. It makes
 request state, declared resource claims, backend work, and result publication
 explicit.
 
-> **Status:** pre-alpha research implementation. The current native adapter is
-> CPU-only and handles one unbatched 30-second mel window per transaction. Its
-> default profile admits one transaction; an experimental profile admits two.
-> This repository is not a production transcription service.
+> **Status:** pre-alpha research implementation. The native adapter handles one
+> unbatched 30-second mel window per transaction. CPU remains the default. A
+> strict single-lane CUDA path is implemented but has no real-GPU evidence in
+> this repository. This is not a production transcription service.
 
 ## What it provides
 
@@ -24,7 +24,7 @@ explicit.
 | --- | --- |
 | Runtime core | Bounded admission, exact in-process leases, deadlines, versioned commits, cancellation, quarantine, and cleanup recovery |
 | Legacy adapter | Runs the existing synchronous `model.transcribe()` call as one serialized transaction |
-| Native adapter | Exposes run creation, prefill, token steps, finalization, and cleanup through a patched CPU decoder |
+| Native adapter | Exposes run creation, prefill, token steps, finalization, and cleanup through the patched decoder; CPU is the validated path |
 | Conformance data | Records four pinned JFK CPU comparisons: greedy, beam search, word timestamps, and translation |
 | Isolation checks | Exercises two staged decodes under a fixed schedule and in two operating-system threads, cleans one early, and checks the survivor against an isolated baseline |
 | Formal model | Proves lease, capacity, lifecycle, and stale-commit properties within an abstract Lean model |
@@ -42,9 +42,8 @@ request
 ```
 
 The declared budget is an admission ledger. It does not enforce operating
-system RAM or device-memory limits. Production enforcement requires a backend
-adapter that measures its work and provides a completion fence for the target
-device.
+system RAM or device-memory limits. The CUDA path has an event-backed completion
+fence, but its declared memory cost is not a measured or enforced device limit.
 
 ## Why this boundary exists
 
@@ -166,7 +165,7 @@ it cannot stop a call between decoder tokens.
 
 See the [legacy adapter contract](https://github.com/billmedj/whisper-runtime/blob/main/docs/LEGACY_ADAPTER.md).
 
-### Staged CPU decoder
+### Staged native decoder
 
 `NativeWhisperAdapter` checks cancellation between prefill, token steps, and
 finalization. It requires the pinned backend and seven-patch integration series
@@ -176,13 +175,18 @@ patch series. The default profile admits one transaction. An experimental CPU
 profile admits two transactions, serializes encoder preparation, and permits
 only verified request-local decoder runs to overlap.
 
+An explicit `cuda:N` profile admits one transaction, copies one CPU `float32`
+mel tensor after admission, and waits on a CUDA event before commit or resource
+release. This code path has unit coverage with a controlled CUDA double. It has
+not yet been validated on a real GPU.
+
 See the [native adapter contract](https://github.com/billmedj/whisper-runtime/blob/main/docs/NATIVE_ADAPTER.md).
 
 ## Evidence and limits
 
 | Evidence | Scope |
 | --- | --- |
-| 94 runtime tests | Resource accounting, queue bounds, commit races, deadlines, cancellation, quarantine, recovery, and adapter behavior |
+| 105 runtime tests | Resource accounting, queue bounds, commit races, deadlines, cancellation, quarantine, recovery, and adapter behavior |
 | 53 repository-tool tests | Provenance, source state, fixtures, portability, setup contracts, evidence schemas, semantic validation, and native smoke contracts |
 | 2,000-step deterministic state trace | State-machine transitions under generated operations |
 | 35 Lean theorem declarations | Abstract lease provenance, capacity conservation, lifecycle, and stale-commit properties |

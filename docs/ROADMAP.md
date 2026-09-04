@@ -12,11 +12,12 @@ evidence is committed to the repository.
   inputs and model sizes.
 - Maintain the pinned CPU backend checks for deterministic interleaving and
   overlapping outer decoder calls in two operating-system threads.
-- Maintain the adapter-level two-lane record and add CUDA coverage.
+- Maintain the adapter-level two-lane CPU record.
 - Select and document one random-generator contract.
 - Validate the native path on CUDA with source, model, input, environment,
   output, latency, and memory records.
-- Add device completion fences and measured resource profiles.
+- Validate the single-lane CUDA completion fence on a real device and add
+  measured resource profiles.
 
 Exit condition: the recorded compatibility matrix covers the declared adapter
 capabilities, and admitted work does not exceed its measured profile under the

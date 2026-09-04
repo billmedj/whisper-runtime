@@ -2,20 +2,22 @@
 
 This adapter targets the opt-in ``DecodingTask._start_run`` API implemented by
 the companion Whisper prototype. PyTorch and Whisper are loaded only when a
-decode starts. The adapter is deliberately CPU-only and accepts one unbatched
-30-second mel window. Its default profile remains single-lane. An explicit
-two-lane profile admits two request-local decoder runs while serializing their
-encoder preparation.
+decode starts. The adapter accepts one unbatched 30-second mel window. CPU is
+the default. An explicit CUDA profile uses one transaction-owned stream and an
+event-backed completion fence. The experimental two-lane profile remains CPU
+only.
 """
 
 from __future__ import annotations
 
 import math
+import re
 from collections.abc import Callable
+from contextlib import AbstractContextManager
 from dataclasses import dataclass
 from importlib import import_module
 from threading import Condition, RLock
-from typing import Protocol, cast, runtime_checkable
+from typing import Protocol, TypeVar, cast, runtime_checkable
 
 from ..errors import ModelMismatchError, RuntimeStateError, TransactionRetainedError
 from ..model import ModelSnapshot
@@ -65,6 +67,8 @@ class NativeDecodeRun(Protocol):
 
 
 class _TorchGenerator(Protocol):
+    device: object
+
     def manual_seed(self, seed: int) -> object:
         """Seed this generator and return an implementation-defined value."""
 
@@ -74,12 +78,49 @@ class _NativeDecodingTask(Protocol):
         """Start one request-local suspendable decode run."""
 
 
+class _CudaEvent(Protocol):
+    def record(self, stream: object) -> None:
+        """Record this event on ``stream``."""
+
+    def synchronize(self) -> None:
+        """Wait until all work before this event has completed."""
+
+
+class _CudaRuntime(Protocol):
+    def is_available(self) -> bool:
+        """Return whether CUDA is available in this process."""
+
+    def device_count(self) -> int:
+        """Return the number of visible CUDA devices."""
+
+    def synchronize(self, device: object | None = None) -> None:
+        """Wait for prior work while establishing the initial stream boundary."""
+
+    def Stream(self, *, device: object | None = None) -> object:
+        """Create a CUDA stream."""
+
+    def Event(self, *, enable_timing: bool = False) -> _CudaEvent:
+        """Create a CUDA event."""
+
+    def device(self, device: object) -> AbstractContextManager[object]:
+        """Select one CUDA device for the current host thread."""
+
+    def stream(self, stream: object) -> AbstractContextManager[object]:
+        """Select one CUDA stream for the current host thread."""
+
+
+class _TorchModule(Protocol):
+    cuda: _CudaRuntime
+    float32: object
+
+
 @dataclass(frozen=True, slots=True)
 class _NativeComponents:
     generator_type: Callable[..., _TorchGenerator]
     options_type: Callable[..., object]
     task_type: Callable[[object, object], object]
     n_frames: int
+    torch_module: _TorchModule | None = None
 
 
 def _load_native_components() -> _NativeComponents:
@@ -115,6 +156,7 @@ def _load_native_components() -> _NativeComponents:
         options_type=cast(Callable[..., object], options_type),
         task_type=cast(Callable[[object, object], object], task_type),
         n_frames=n_frames,
+        torch_module=cast(_TorchModule, torch_module),
     )
 
 
@@ -157,6 +199,97 @@ def _require_cpu_device(value: object, *, subject: str) -> None:
         )
 
 
+_CUDA_DEVICE_PATTERN = re.compile(r"cuda:(0|[1-9][0-9]*)\Z")
+
+
+def _validate_profile_device(device: str) -> None:
+    if not isinstance(device, str):
+        raise TypeError("device must be a string")
+    if device == "cpu" or _CUDA_DEVICE_PATTERN.fullmatch(device) is not None:
+        return
+    raise ValueError("device must be 'cpu' or a canonical 'cuda:N' value")
+
+
+def _value_device_name(value: object) -> str | None:
+    device = getattr(value, "device", None)
+    device_type = getattr(device, "type", None)
+    device_index = getattr(device, "index", None)
+    if device_type == "cpu" and device_index is None:
+        return "cpu"
+    if (
+        device_type == "cuda"
+        and not isinstance(device_index, bool)
+        and isinstance(device_index, int)
+        and device_index >= 0
+    ):
+        return f"cuda:{device_index}"
+    return None
+
+
+def _require_exact_device(value: object, *, subject: str, expected: str) -> None:
+    observed = _value_device_name(value)
+    if observed != expected:
+        raise ValueError(
+            f"the native adapter requires device {expected!r} for {subject}; "
+            f"received {observed!r}"
+        )
+
+
+def _cuda_device_index(device: str) -> int:
+    match = _CUDA_DEVICE_PATTERN.fullmatch(device)
+    if match is None:
+        raise ValueError("a CUDA profile requires a canonical 'cuda:N' device")
+    return int(match.group(1))
+
+
+def _require_cuda_runtime(
+    components: _NativeComponents,
+    *,
+    device: str,
+) -> _TorchModule:
+    torch_module = components.torch_module
+    if torch_module is None:
+        raise NativeDependencyError("the loaded native components omit PyTorch")
+    cuda = getattr(torch_module, "cuda", None)
+    required = (
+        "is_available",
+        "device_count",
+        "synchronize",
+        "Stream",
+        "Event",
+        "device",
+        "stream",
+    )
+    if cuda is None or any(
+        not callable(getattr(cuda, name, None)) for name in required
+    ):
+        raise NativeDependencyError("PyTorch does not expose the required CUDA API")
+    runtime = cast(_CudaRuntime, cuda)
+    try:
+        available = runtime.is_available()
+        count = runtime.device_count()
+    except (RuntimeError, TypeError) as exc:
+        raise NativeDependencyError(
+            "PyTorch could not inspect the CUDA runtime"
+        ) from exc
+    index = _cuda_device_index(device)
+    if available is not True or isinstance(count, bool) or not isinstance(count, int):
+        raise NativeDependencyError("CUDA is not available in this process")
+    if index >= count:
+        raise NativeDependencyError(
+            f"CUDA device index {index} is not visible; device_count is {count}"
+        )
+    return torch_module
+
+
+def _require_cuda_input_mel(mel: object, torch_module: _TorchModule) -> None:
+    _require_exact_device(mel, subject="the mel tensor", expected="cpu")
+    if getattr(mel, "dtype", None) != torch_module.float32:
+        raise ValueError("a CUDA profile requires a CPU float32 mel tensor")
+    if not callable(getattr(mel, "to", None)):
+        raise TypeError("a CUDA mel tensor must expose a callable to method")
+
+
 def _require_mel_shape(mel: object, model: object, *, n_frames: int) -> None:
     dims = getattr(model, "dims", None)
     n_mels = getattr(dims, "n_mels", None)
@@ -180,7 +313,7 @@ def _require_mel_shape(mel: object, model: object, *, n_frames: int) -> None:
 
 @dataclass(frozen=True, slots=True)
 class NativeDecodeOptions:
-    """Dependency-free options for one CPU decode window.
+    """Dependency-free options for one native decode window.
 
     The adapter fixes ``fp16`` to ``False`` and creates the PyTorch generator.
     Callers cannot supply shared random state.
@@ -261,11 +394,12 @@ class NativeDecodeOptions:
 
 @dataclass(frozen=True, slots=True)
 class NativeExecutionProfile:
-    """Fixed per-transaction resources and native decode concurrency."""
+    """Fixed device, resources, and concurrency for native decoding."""
 
     profile_id: str
     resources: ResourceVector
     max_concurrent_decodes: int = 1
+    device: str = "cpu"
 
     def __post_init__(self) -> None:
         if not self.profile_id or self.profile_id.isspace():
@@ -280,6 +414,16 @@ class NativeExecutionProfile:
             raise TypeError("max_concurrent_decodes must be an integer")
         if self.max_concurrent_decodes not in (1, 2):
             raise ValueError("max_concurrent_decodes must be 1 or 2")
+        _validate_profile_device(self.device)
+        if self.device != "cpu":
+            if self.max_concurrent_decodes != 1:
+                raise ValueError("a CUDA profile must use one concurrent decode")
+            if self.resources.memory_bytes <= 0:
+                raise ValueError("a CUDA profile must reserve device memory")
+            if self.resources.compute_units <= 0:
+                raise ValueError("a CUDA profile must reserve compute capacity")
+            if self.resources.stream_slots != 1:
+                raise ValueError("a CUDA profile must reserve exactly one stream")
 
     @property
     def worker_capacity(self) -> ResourceVector:
@@ -293,33 +437,36 @@ class NativeExecutionProfile:
         )
 
 
-def _require_dual_lane_task(task: object) -> None:
+def _require_isolated_task(task: object) -> None:
     """Require the patched built-in path with request-local decoder cache."""
 
     extension_probe = getattr(task, "_uses_legacy_extension", None)
     if not callable(extension_probe) or extension_probe() is not False:
         raise NativeDependencyError(
-            "dual-lane decoding requires the built-in suspendable decoder path"
+            "this execution profile requires the built-in suspendable decoder path"
         )
     inference = getattr(task, "inference", None)
     if getattr(inference, "_use_legacy_cache", None) is not False:
         raise NativeDependencyError(
-            "dual-lane decoding requires request-local decoder cache support"
+            "this execution profile requires request-local decoder cache support"
         )
 
 
-def _require_dual_lane_run(run: object) -> None:
+def _require_isolated_run(run: object) -> None:
     """Reject a run that fell back to shared hook-based cache state."""
 
     inference = getattr(run, "inference", None)
     if getattr(inference, "_use_legacy_cache", None) is not False:
         raise NativeDecodeContractError(
-            "a dual-lane run must own request-local decoder cache state"
+            "this execution profile requires request-local decoder cache state"
         )
     if getattr(run, "_legacy_cache_lock", None) is not None:
         raise NativeDecodeContractError(
-            "a dual-lane run cannot use the legacy decoder cache lock"
+            "this execution profile cannot use the legacy decoder cache lock"
         )
+
+
+_ResultT = TypeVar("_ResultT")
 
 
 class _CpuDecodeScope:
@@ -357,6 +504,11 @@ class _CpuDecodeScope:
 
     def completion_fence(self) -> _CpuDecodeScope:
         return self
+
+    def invoke(self, operation: Callable[[], _ResultT]) -> _ResultT:
+        """Run one synchronous CPU operation."""
+
+        return operation()
 
     def wait(self) -> None:
         """Clean the bound run once after admitted callbacks have drained."""
@@ -409,6 +561,144 @@ class _CpuDecodeScope:
             raise
         else:
             with self._condition:
+                self._run = None
+                self._cleaned = True
+                self._cleanup_in_flight = False
+                self._condition.notify_all()
+
+
+class _CudaDecodeScope:
+    """Own one CUDA stream and fence it before releasing its lease."""
+
+    def __init__(
+        self,
+        model_binding: ModelBinding,
+        torch_module: _TorchModule,
+        device: str,
+    ) -> None:
+        self._condition = Condition(RLock())
+        self._model_binding = model_binding
+        self._torch_module = torch_module
+        self._device = device
+        self._stream: object | None = None
+        self._event: _CudaEvent | None = None
+        self._run: object | None = None
+        self._bound = False
+        self._cleanup_in_flight = False
+        self._cleaned = False
+        self._stop_requested = False
+
+    def bind(self, run: object) -> None:
+        """Register the run before its creating submission returns."""
+
+        with self._condition:
+            if self._bound:
+                raise NativeDecodeContractError(
+                    "an execution scope cannot bind multiple decode runs"
+                )
+            if self._cleaned:
+                raise NativeDecodeContractError(
+                    "a closed execution scope cannot bind a decode run"
+                )
+            self._run = run
+            self._bound = True
+
+    def request_stop(self) -> None:
+        """Latch a stop without calling CUDA from the cancelling thread."""
+
+        with self._condition:
+            self._stop_requested = True
+
+    def completion_fence(self) -> _CudaDecodeScope:
+        return self
+
+    def _require_stream(self) -> object:
+        with self._condition:
+            if self._cleaned:
+                raise NativeDecodeContractError(
+                    "a closed execution scope cannot submit CUDA work"
+                )
+            stream = self._stream
+        if stream is not None:
+            return stream
+
+        cuda = self._torch_module.cuda
+        # This first-use barrier gives the private stream a conservative view
+        # of model initialization without adding CUDA work before admission.
+        with cuda.device(self._device):
+            cuda.synchronize(self._device)
+            created = cuda.Stream(device=self._device)
+        with self._condition:
+            if self._stream is None:
+                self._stream = created
+            return self._stream
+
+    def invoke(self, operation: Callable[[], _ResultT]) -> _ResultT:
+        """Run one operation on this transaction's exact CUDA stream."""
+
+        cuda = self._torch_module.cuda
+        stream = self._require_stream()
+        with cuda.device(self._device), cuda.stream(stream):
+            return operation()
+
+    def wait(self) -> None:
+        """Clean the run, record its final event, and wait for device completion."""
+
+        with self._condition:
+            while self._cleanup_in_flight:
+                self._condition.wait()
+            if self._cleaned:
+                return
+            run = self._run
+            stream = self._stream
+            self._cleanup_in_flight = True
+
+        try:
+            with self._model_binding.lock:
+                try:
+                    if self._bound:
+                        if run is None or stream is None:
+                            raise NativeDecodeContractError(
+                                "the CUDA decode handle cannot be fenced"
+                            )
+                        cleanup = getattr(run, "cleanup", None)
+                        if not callable(cleanup):
+                            raise NativeDecodeContractError(
+                                "the decode handle has no callable cleanup method; "
+                                "quiescence cannot be proven"
+                            )
+                        cleanup_result = self.invoke(cleanup)
+                        if cleanup_result is not None:
+                            close = getattr(cleanup_result, "close", None)
+                            if callable(close):
+                                close()
+                            raise NativeDecodeContractError(
+                                "decode cleanup did not complete synchronously; "
+                                "quiescence cannot be proven"
+                            )
+
+                    if stream is not None:
+                        cuda = self._torch_module.cuda
+                        with cuda.device(self._device), cuda.stream(stream):
+                            event = cuda.Event(enable_timing=False)
+                            self._event = event
+                            event.record(stream)
+                        event.synchronize()
+                except BaseException:
+                    self._model_binding.record_cleanup_failure(self)
+                    raise
+                else:
+                    self._model_binding.clear_cleanup_failure(self)
+        except BaseException:
+            with self._condition:
+                self._cleanup_in_flight = False
+                self._condition.notify_all()
+            raise
+        else:
+            with self._condition:
+                self._run = None
+                self._event = None
+                self._stream = None
                 self._cleaned = True
                 self._cleanup_in_flight = False
                 self._condition.notify_all()
@@ -419,7 +709,7 @@ NativeModelIdentityProbe = Callable[[object], ModelSnapshot]
 
 @dataclass(frozen=True, slots=True, init=False)
 class NativeWhisperAdapter:
-    """Bind a suspendable CPU decoder to one transactional worker."""
+    """Bind a suspendable native decoder to one transactional worker."""
 
     worker: Worker
     execution_profile: NativeExecutionProfile
@@ -449,6 +739,12 @@ class NativeWhisperAdapter:
                 "the worker capacity must equal the per-transaction resources "
                 "times max_concurrent_decodes"
             )
+        if execution_profile.device != "cpu":
+            _require_exact_device(
+                model,
+                subject="the model",
+                expected=execution_profile.device,
+            )
 
         binding = get_model_binding(model, subject="native model")
         with binding.lock:
@@ -468,6 +764,7 @@ class NativeWhisperAdapter:
                 resources=execution_profile.resources,
                 subject="native model object",
                 concurrency=concurrency,
+                device=execution_profile.device,
             )
 
         object.__setattr__(self, "worker", worker)
@@ -494,7 +791,7 @@ class NativeWhisperAdapter:
         end_ms: int,
         options: NativeDecodeOptions | None = None,
     ) -> SessionState:
-        """Decode and atomically commit one unbatched 30-second CPU window."""
+        """Decode and atomically commit one unbatched 30-second mel window."""
 
         if request.model != self._model_identity:
             raise ModelMismatchError(
@@ -514,15 +811,40 @@ class NativeWhisperAdapter:
         unsqueeze = getattr(mel, "unsqueeze", None)
         if ndim != 2 or not callable(unsqueeze):
             raise TypeError("mel must be one unbatched two-dimensional tensor")
-        _require_cpu_device(mel, subject="the mel tensor")
-        _require_cpu_device(self._model, subject="the model")
+
+        cuda_profile = self.execution_profile.device != "cpu"
+        if not cuda_profile:
+            _require_cpu_device(mel, subject="the mel tensor")
+            _require_cpu_device(self._model, subject="the model")
 
         components = _load_native_components()
+        if cuda_profile:
+            torch_module = _require_cuda_runtime(
+                components,
+                device=self.execution_profile.device,
+            )
+            _require_exact_device(
+                self._model,
+                subject="the model",
+                expected=self.execution_profile.device,
+            )
+            _require_cuda_input_mel(mel, torch_module)
+            execution: _CpuDecodeScope | _CudaDecodeScope = _CudaDecodeScope(
+                self._model_binding,
+                torch_module,
+                self.execution_profile.device,
+            )
+        else:
+            execution = _CpuDecodeScope(self._model_binding)
         _require_mel_shape(mel, self._model, n_frames=components.n_frames)
-        execution = _CpuDecodeScope(self._model_binding)
 
         def operation(transaction: WindowTransaction) -> WindowResult:
             seed = transaction.randrange(1 << 63)
+
+            def submit_native(callback: Callable[[], _ResultT]) -> _ResultT:
+                if cuda_profile:
+                    return transaction.submit(lambda: execution.invoke(callback))
+                return transaction.submit(callback)
 
             def start_run() -> NativeDecodeRun:
                 # _start_run performs encoder preparation. Keep that stage
@@ -535,31 +857,52 @@ class NativeWhisperAdapter:
                         decode_options,
                         seed=seed,
                     )
-                    if self.execution_profile.max_concurrent_decodes == 2:
-                        _require_dual_lane_task(task)
+                    if (
+                        cuda_profile
+                        or self.execution_profile.max_concurrent_decodes == 2
+                    ):
+                        _require_isolated_task(task)
                     batched_mel = unsqueeze(0)
+                    if cuda_profile:
+                        to_device = getattr(batched_mel, "to", None)
+                        if not callable(to_device):
+                            raise NativeDecodeContractError(
+                                "the batched mel tensor cannot be copied to CUDA"
+                            )
+                        batched_mel = to_device(
+                            device=self.execution_profile.device,
+                            non_blocking=False,
+                        )
+                        _require_exact_device(
+                            batched_mel,
+                            subject="the copied mel tensor",
+                            expected=self.execution_profile.device,
+                        )
                     run_value = start(batched_mel)
                     execution.bind(run_value)
                     if not isinstance(run_value, NativeDecodeRun):
                         raise NativeDecodeContractError(
                             "_start_run returned an incompatible decode handle"
                         )
-                    if self.execution_profile.max_concurrent_decodes == 2:
-                        _require_dual_lane_run(run_value)
+                    if (
+                        cuda_profile
+                        or self.execution_profile.max_concurrent_decodes == 2
+                    ):
+                        _require_isolated_run(run_value)
                     return run_value
 
-            run = transaction.submit(start_run)
+            run = submit_native(start_run)
             transaction.checkpoint()
             if run.complete:
                 raise NativeDecodeContractError(
                     "the decode run completed before its prefill stage"
                 )
 
-            transaction.submit(run.prefill)
+            submit_native(run.prefill)
             transaction.checkpoint()
 
             while not run.complete:
-                reported_complete = transaction.submit(run.step)
+                reported_complete = submit_native(run.step)
                 if not isinstance(reported_complete, bool):
                     raise NativeDecodeContractError("decode step must return a boolean")
                 if reported_complete != run.complete:
@@ -568,7 +911,7 @@ class NativeWhisperAdapter:
                     )
                 transaction.checkpoint()
 
-            results = transaction.submit(run.finalize)
+            results = submit_native(run.finalize)
             transaction.checkpoint()
             if not isinstance(results, list) or len(results) != 1:
                 raise NativeDecodeContractError(
@@ -579,8 +922,12 @@ class NativeWhisperAdapter:
                 raise NativeDecodeContractError(
                     "the native decode result must contain text"
                 )
-            with self._model_binding.lock:
-                self._require_model_identity()
+            if cuda_profile:
+                submit_native(self._require_model_identity)
+                transaction.checkpoint()
+            else:
+                with self._model_binding.lock:
+                    self._require_model_identity()
             return WindowResult(
                 window_id=window_id,
                 text=text,
@@ -605,8 +952,15 @@ class NativeWhisperAdapter:
         if self.execution_profile.max_concurrent_decodes == 1:
             with self._model_binding.lock:
                 require_model_available(self._model_binding)
-                self._require_model_identity()
-                self._preflight_native_backend(components, decode_options)
+                if cuda_profile:
+                    _require_exact_device(
+                        self._model,
+                        subject="the model",
+                        expected=self.execution_profile.device,
+                    )
+                else:
+                    self._require_model_identity()
+                    self._preflight_native_backend(components, decode_options)
                 return execute_admitted()
 
         with self._model_binding.lock:
@@ -616,7 +970,14 @@ class NativeWhisperAdapter:
         return execute_admitted()
 
     def _require_model_identity(self) -> None:
-        _require_cpu_device(self._model, subject="the model")
+        if self.execution_profile.device == "cpu":
+            _require_cpu_device(self._model, subject="the model")
+        else:
+            _require_exact_device(
+                self._model,
+                subject="the model",
+                expected=self.execution_profile.device,
+            )
         identity = self._identity_probe(self._model)
         if not isinstance(identity, ModelSnapshot):
             raise TypeError("identity_probe must return ModelSnapshot")
@@ -632,7 +993,7 @@ class NativeWhisperAdapter:
 
         task, _ = self._build_native_task(components, options, seed=0)
         if self.execution_profile.max_concurrent_decodes == 2:
-            _require_dual_lane_task(task)
+            _require_isolated_task(task)
 
     def _build_native_task(
         self,
@@ -642,7 +1003,12 @@ class NativeWhisperAdapter:
         seed: int,
     ) -> tuple[_NativeDecodingTask, Callable[[object], object]]:
         try:
-            generator = components.generator_type(device="cpu")
+            generator = components.generator_type(device=self.execution_profile.device)
+            generator_device = str(getattr(generator, "device", ""))
+            if generator_device != self.execution_profile.device:
+                raise NativeDependencyError(
+                    "torch.Generator did not use the execution profile device"
+                )
             manual_seed = getattr(generator, "manual_seed", None)
             if not callable(manual_seed):
                 raise TypeError("torch.Generator has no callable manual_seed")
