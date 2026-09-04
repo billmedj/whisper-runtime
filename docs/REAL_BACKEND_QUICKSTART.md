@@ -124,6 +124,7 @@ file contents.
 
 The example handles one unbatched window of at most 30 seconds with the default
 single-lane profile. The runtime also contains an experimental two-lane CPU
-profile. This quick start does not exercise it, and the repository does not yet
-contain a real-model adapter-boundary record for that profile. CUDA, live audio
-streaming, and durable resume remain outside this example.
+profile. This quick start does not exercise it. The repository includes one
+real-model adapter-boundary record for that profile at
+`evidence/native-cpu-tiny-en-jfk-runtime-concurrency-2026-09-04.json`. CUDA,
+live audio streaming, and durable resume remain outside this example.

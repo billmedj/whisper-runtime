@@ -185,7 +185,7 @@ See the [native adapter contract](https://github.com/billmedj/whisper-runtime/bl
 | One recorded native run | Patched `tiny.en` decoder, JFK fixture, CPU, exact transcript, queue returned to zero, declared budget restored |
 | One recorded staged-run isolation check | One loaded `tiny.en` model, two overlapping run lifetimes, early cleanup, unchanged survivor, and successful model reuse |
 | One recorded OS-thread isolation check | Two native worker threads, overlapping outer decoder-call intervals, owner-thread cleanup, unchanged survivor, and model reuse |
-| Adapter-level real-model verifier | Two runtime-admitted transactions, serialized encoder preparation, cooperative cancellation, isolated commit, and exact budget restoration |
+| One recorded adapter-level concurrency check | Two runtime-admitted transactions, serialized encoder preparation, cooperative cancellation, isolated commit, and exact budget restoration |
 | Four conformance pairs | Pinned greedy, beam-search, word-timestamp, and translation reference/candidate records |
 
 The recorded transaction identifies the imported source tree, checkpoint,
@@ -208,7 +208,7 @@ decoder calls have overlapping recorded lifetimes. The controller cancels one
 request after both first token steps. That request does not commit, its lease is
 released after cleanup, and the other request commits the isolated-baseline
 text. A final adapter call checks reuse and complete budget restoration. Native
-CI validates and publishes this record as a 30-day artifact.
+CI validates and publishes a fresh record as a 30-day artifact.
 
 The adapter check does not exercise a runtime-owned thread scheduler or
 concurrent encoder calls. The resource vectors are declared admission units,
@@ -224,6 +224,7 @@ threads, PyTorch kernels, submission gates, or adapter code.
 
 See the [transaction record](https://github.com/billmedj/whisper-runtime/blob/main/evidence/native-cpu-tiny-en-jfk-2026-09-03.json),
 [staged-run isolation record](https://github.com/billmedj/whisper-runtime/blob/main/evidence/native-cpu-tiny-en-jfk-interleaving-2026-09-03.json),
+[adapter concurrency record](https://github.com/billmedj/whisper-runtime/blob/main/evidence/native-cpu-tiny-en-jfk-runtime-concurrency-2026-09-04.json),
 [assurance map](https://github.com/billmedj/whisper-runtime/blob/main/docs/ASSURANCE.md),
 [conformance contract](https://github.com/billmedj/whisper-runtime/blob/main/docs/CONFORMANCE.md), and
 [development roadmap](https://github.com/billmedj/whisper-runtime/blob/main/docs/ROADMAP.md).

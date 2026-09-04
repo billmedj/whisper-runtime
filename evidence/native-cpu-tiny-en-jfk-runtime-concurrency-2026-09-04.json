@@ -1,0 +1,536 @@
+{
+  "schema_version": "1",
+  "recorded_at": "2026-09-04T03:07:13.538360Z",
+  "status": "passed",
+  "scope": "native_runtime_adapter",
+  "subject": {
+    "layer": "whisper_runtime.adapters.NativeWhisperAdapter",
+    "entrypoint": "NativeWhisperAdapter.decode_window",
+    "runtime_adapter_exercised": true,
+    "worker_admission_exercised": true,
+    "transaction_lifecycle_exercised": true,
+    "scheduler_exercised": false,
+    "caller_threads": 2,
+    "encoder_concurrency_exercised": false
+  },
+  "runtime": {
+    "version": "0.1.0.dev0",
+    "git_commit": "d4218c9e2356b5ff06c4fde11d67c57d90b48d20",
+    "git_tree": "6e6b87f5071814ec908e1af282b0285cb6482676",
+    "clean": true
+  },
+  "backend": {
+    "name": "openai-whisper-suspendable",
+    "base_commit": "86098128c0b4f24f0e2aa2994de830614b474227",
+    "applied_commit": "d7ba9a64e93c22a83964045b0ac29ac01c601fc7",
+    "git_tree": "c011d2563c26763b5f147026e6b18ef85bccd4fb",
+    "clean": true,
+    "patch_manifest": "patches/openai-whisper/SHA256SUMS",
+    "patch_manifest_sha256": "0fa1a833b0c489056d77da21188519c7e16fde7825d06bc5b902ba23a01abeb5"
+  },
+  "environment": {
+    "platform": "Windows-11-10.0.26200-SP0",
+    "python": "3.13.1",
+    "process_id": 47364,
+    "torch": "2.6.0+cpu",
+    "numpy": "2.5.2",
+    "tiktoken": "0.14.0",
+    "numba": "0.67.0",
+    "tqdm": "4.70.0",
+    "more_itertools": "11.1.0",
+    "jsonschema": "4.25.1",
+    "ffmpeg": "ffmpeg version 2025-09-28-git-0fdb5829e3-essentials_build-www.gyan.dev Copyright (c) 2000-2025 the FFmpeg developers",
+    "torch_cpu_threads": 1,
+    "torch_interop_threads": 1
+  },
+  "model": {
+    "name": "tiny.en",
+    "device": "cpu",
+    "checkpoint_sha256": "d3dd57d32accea0b295c96e26691aa14d8822fac7d9d27d5dc00b4ca2826dd03",
+    "loaded_state_before": "sha256:8041a80119a588f542472da35e97d0372fce1d9709ed9874475e9c03deac5de6",
+    "loaded_state_after": "sha256:8041a80119a588f542472da35e97d0372fce1d9709ed9874475e9c03deac5de6",
+    "execution_state_before": "sha256:85b949d56f851277e274d3c03ed513546739b090d7309e197b4b551b8c91b74b",
+    "execution_state_after": "sha256:85b949d56f851277e274d3c03ed513546739b090d7309e197b4b551b8c91b74b"
+  },
+  "explicit_decode_options": {
+    "language": "en",
+    "temperature": 0,
+    "without_timestamps": true,
+    "fp16": false
+  },
+  "input": {
+    "fixture_id": "openai-whisper-jfk-flac",
+    "path": "tests/jfk.flac",
+    "file_sha256": "63a4b1e4c1dc655ac70961ffbf518acd249df237e5a0152faae9a4a836949715",
+    "size_bytes": 1152693,
+    "sample_rate_hz": 16000,
+    "source_sample_count": 176000,
+    "cancelled": {
+      "sample_start": 0,
+      "sample_end": 88000,
+      "pcm_sha256": "a00f67fa06fd383bf1f8b55263f4424748e0630378b5afcc497bcc9dbed6be9c",
+      "mel_sha256": "7bf72ca97247365d85b3b673005321a9770e07344a13070bd65e03b3ad7938b2",
+      "observed_runtime_features_sha256": "ad5f6cd112ad084f468a3809db94af69c3c14bd56f530d3eb00ac2735b58e749"
+    },
+    "survivor": {
+      "sample_start": 0,
+      "sample_end": 176000,
+      "pcm_sha256": "59be237a0814faee9f1279bc54c8a482fa7edc09a640ff0fdd18d14d41519065",
+      "mel_sha256": "183f80f82524811b3f528f58b9d380aa2ea1ea126c9aff58f47f8666a89a04e6",
+      "observed_runtime_features_sha256": "f27ef911bcbc5ef287297ae66297b55b05ecf79face108f7c260a0cbf0138f8a"
+    }
+  },
+  "resources": {
+    "accounting": "declared_in_process_admission_ledger",
+    "per_transaction": {
+      "memory_bytes": 1000000000,
+      "compute_units": 1,
+      "stream_slots": 1
+    },
+    "capacity": {
+      "memory_bytes": 2000000000,
+      "compute_units": 2,
+      "stream_slots": 2
+    },
+    "os_memory_enforced": false,
+    "device_memory_measured": false,
+    "snapshots": [
+      {
+        "label": "initial",
+        "at_ns": 10188408082400,
+        "queue_depth": 0,
+        "lease_count": 0,
+        "capacity": {
+          "memory_bytes": 2000000000,
+          "compute_units": 2,
+          "stream_slots": 2
+        },
+        "available": {
+          "memory_bytes": 2000000000,
+          "compute_units": 2,
+          "stream_slots": 2
+        },
+        "in_use": {
+          "memory_bytes": 0,
+          "compute_units": 0,
+          "stream_slots": 0
+        },
+        "cancelled": {
+          "request_status": "created",
+          "session_version": 0,
+          "window_count": 0
+        },
+        "survivor": {
+          "request_status": "created",
+          "session_version": 0,
+          "window_count": 0
+        }
+      },
+      {
+        "label": "both_admitted",
+        "at_ns": 10191791448300,
+        "queue_depth": 2,
+        "lease_count": 2,
+        "capacity": {
+          "memory_bytes": 2000000000,
+          "compute_units": 2,
+          "stream_slots": 2
+        },
+        "available": {
+          "memory_bytes": 0,
+          "compute_units": 0,
+          "stream_slots": 0
+        },
+        "in_use": {
+          "memory_bytes": 2000000000,
+          "compute_units": 2,
+          "stream_slots": 2
+        },
+        "cancelled": {
+          "request_status": "running",
+          "session_version": 0,
+          "window_count": 0
+        },
+        "survivor": {
+          "request_status": "running",
+          "session_version": 0,
+          "window_count": 0
+        }
+      },
+      {
+        "label": "cancelled_released",
+        "at_ns": 10191802850600,
+        "queue_depth": 1,
+        "lease_count": 1,
+        "capacity": {
+          "memory_bytes": 2000000000,
+          "compute_units": 2,
+          "stream_slots": 2
+        },
+        "available": {
+          "memory_bytes": 1000000000,
+          "compute_units": 1,
+          "stream_slots": 1
+        },
+        "in_use": {
+          "memory_bytes": 1000000000,
+          "compute_units": 1,
+          "stream_slots": 1
+        },
+        "cancelled": {
+          "request_status": "cancelled",
+          "session_version": 0,
+          "window_count": 0
+        },
+        "survivor": {
+          "request_status": "running",
+          "session_version": 0,
+          "window_count": 0
+        }
+      },
+      {
+        "label": "final",
+        "at_ns": 10194860813200,
+        "queue_depth": 0,
+        "lease_count": 0,
+        "capacity": {
+          "memory_bytes": 2000000000,
+          "compute_units": 2,
+          "stream_slots": 2
+        },
+        "available": {
+          "memory_bytes": 2000000000,
+          "compute_units": 2,
+          "stream_slots": 2
+        },
+        "in_use": {
+          "memory_bytes": 0,
+          "compute_units": 0,
+          "stream_slots": 0
+        },
+        "cancelled": {
+          "request_status": "cancelled",
+          "session_version": 0,
+          "window_count": 0
+        },
+        "survivor": {
+          "request_status": "committed",
+          "session_version": 1,
+          "window_count": 1
+        }
+      }
+    ]
+  },
+  "execution": {
+    "mode": "two_runtime_admitted_transactions",
+    "thread_count": 2,
+    "worker_queue_capacity": 2,
+    "max_concurrent_decodes": 2,
+    "encoder_policy": "serialized_start_run",
+    "decoder_overlap_observation": "outer_call_lifetimes",
+    "kernel_overlap_measured": false,
+    "parallel_kernel_execution_claimed": false,
+    "throughput_measured": false,
+    "timing_is_benchmark": false,
+    "cancellation": "external_request_cancel_after_both_first_steps_before_cancelled_checkpoint",
+    "cancelled_steps": 1,
+    "survivor_steps": 25,
+    "survivor_cache_entries_at_cancellation": 16,
+    "worker_timeout_seconds": 120,
+    "process_timeout_seconds": 300,
+    "elapsed_seconds": {
+      "input_preparation": 0.07061930000054417,
+      "baseline": 2.189252899999701,
+      "concurrent_adapter": 4.287491600000067,
+      "reuse_control": 2.165041199999905,
+      "total": 10.068182999999408
+    },
+    "controller": {
+      "cancel_started_ns": 10191802277300,
+      "cancel_finished_ns": 10191802353600,
+      "cancel_accepted": true
+    },
+    "threads": [
+      {
+        "role": "cancelled",
+        "python_thread_id": 29692,
+        "native_thread_id": 29692,
+        "started_ns": 10188409062300,
+        "finished_ns": 10191802757400,
+        "events": [
+          {
+            "name": "adapter:enter",
+            "at_ns": 10188409079300
+          },
+          {
+            "name": "start_run:begin",
+            "at_ns": 10189580000100
+          },
+          {
+            "name": "start_run:end",
+            "at_ns": 10190504478200
+          },
+          {
+            "name": "prefill:begin",
+            "at_ns": 10190509455800
+          },
+          {
+            "name": "prefill:end",
+            "at_ns": 10191787551800
+          },
+          {
+            "name": "step:1",
+            "at_ns": 10191791223400
+          },
+          {
+            "name": "cleanup:begin",
+            "at_ns": 10191802539700
+          },
+          {
+            "name": "cleanup:end",
+            "at_ns": 10191802625800
+          },
+          {
+            "name": "adapter:cancelled",
+            "at_ns": 10191802754100
+          }
+        ]
+      },
+      {
+        "role": "survivor",
+        "python_thread_id": 52380,
+        "native_thread_id": 52380,
+        "started_ns": 10188410262500,
+        "finished_ns": 10192687825200,
+        "events": [
+          {
+            "name": "adapter:enter",
+            "at_ns": 10188410279600
+          },
+          {
+            "name": "start_run:begin",
+            "at_ns": 10190819199000
+          },
+          {
+            "name": "start_run:end",
+            "at_ns": 10191648439200
+          },
+          {
+            "name": "prefill:begin",
+            "at_ns": 10191653039600
+          },
+          {
+            "name": "prefill:end",
+            "at_ns": 10191785082200
+          },
+          {
+            "name": "step:1",
+            "at_ns": 10191789217500
+          },
+          {
+            "name": "step:2",
+            "at_ns": 10191839255900
+          },
+          {
+            "name": "step:3",
+            "at_ns": 10191859656000
+          },
+          {
+            "name": "step:4",
+            "at_ns": 10191886666900
+          },
+          {
+            "name": "step:5",
+            "at_ns": 10191906637600
+          },
+          {
+            "name": "step:6",
+            "at_ns": 10191934215800
+          },
+          {
+            "name": "step:7",
+            "at_ns": 10191957365800
+          },
+          {
+            "name": "step:8",
+            "at_ns": 10191980981100
+          },
+          {
+            "name": "step:9",
+            "at_ns": 10192005396300
+          },
+          {
+            "name": "step:10",
+            "at_ns": 10192029934100
+          },
+          {
+            "name": "step:11",
+            "at_ns": 10192054088700
+          },
+          {
+            "name": "step:12",
+            "at_ns": 10192079791200
+          },
+          {
+            "name": "step:13",
+            "at_ns": 10192101080100
+          },
+          {
+            "name": "step:14",
+            "at_ns": 10192123672900
+          },
+          {
+            "name": "step:15",
+            "at_ns": 10192145985700
+          },
+          {
+            "name": "step:16",
+            "at_ns": 10192168588000
+          },
+          {
+            "name": "step:17",
+            "at_ns": 10192191222700
+          },
+          {
+            "name": "step:18",
+            "at_ns": 10192216434100
+          },
+          {
+            "name": "step:19",
+            "at_ns": 10192237514400
+          },
+          {
+            "name": "step:20",
+            "at_ns": 10192260126200
+          },
+          {
+            "name": "step:21",
+            "at_ns": 10192285450000
+          },
+          {
+            "name": "step:22",
+            "at_ns": 10192306385200
+          },
+          {
+            "name": "step:23",
+            "at_ns": 10192327409800
+          },
+          {
+            "name": "step:24",
+            "at_ns": 10192347758300
+          },
+          {
+            "name": "step:25",
+            "at_ns": 10192368518200
+          },
+          {
+            "name": "finalize",
+            "at_ns": 10192369168600
+          },
+          {
+            "name": "cleanup:begin",
+            "at_ns": 10192687477800
+          },
+          {
+            "name": "cleanup:end",
+            "at_ns": 10192687497600
+          },
+          {
+            "name": "adapter:committed",
+            "at_ns": 10192687816000
+          }
+        ]
+      }
+    ],
+    "start_run_intervals": [
+      {
+        "role": "cancelled",
+        "python_thread_id": 29692,
+        "native_thread_id": 29692,
+        "started_ns": 10189580003600,
+        "finished_ns": 10190504458100
+      },
+      {
+        "role": "survivor",
+        "python_thread_id": 52380,
+        "native_thread_id": 52380,
+        "started_ns": 10190819201800,
+        "finished_ns": 10191648423300
+      }
+    ],
+    "maximum_start_run_calls_live": 1,
+    "controlled_forward_lifetimes": [
+      {
+        "role": "cancelled",
+        "python_thread_id": 29692,
+        "native_thread_id": 29692,
+        "inner_barrier_entered_ns": 10190509891300,
+        "forward_started_ns": 10190509553000,
+        "forward_finished_ns": 10191786709800
+      },
+      {
+        "role": "survivor",
+        "python_thread_id": 52380,
+        "native_thread_id": 52380,
+        "inner_barrier_entered_ns": 10191653396800,
+        "forward_started_ns": 10191653142300,
+        "forward_finished_ns": 10191784770500
+      }
+    ],
+    "maximum_instrumented_forward_calls_live": 2
+  },
+  "assertions": {
+    "two_distinct_caller_threads": true,
+    "runtime_adapter_exercised": true,
+    "two_transactions_admitted": true,
+    "full_declared_capacity_reserved_at_overlap": true,
+    "start_run_serialized": true,
+    "instrumented_forwards_ran_on_owner_threads": true,
+    "decoder_forward_lifetimes_overlap": true,
+    "request_local_cache_path": true,
+    "state_objects_distinct": true,
+    "kv_cache_storage_disjoint": true,
+    "both_runs_stepped_before_cancellation": true,
+    "cancel_request_accepted": true,
+    "cancelled_request_did_not_commit": true,
+    "cancelled_state_released": true,
+    "cancelled_lease_released_after_cleanup": true,
+    "survivor_cache_unchanged_by_cancelled_cleanup": true,
+    "survivor_committed_once": true,
+    "survivor_matches_isolated_baseline": true,
+    "final_queue_empty": true,
+    "final_budget_restored": true,
+    "model_state_unchanged": true,
+    "model_execution_hooks_unchanged": true,
+    "instrumentation_restored": true,
+    "model_reusable_after_transactions": true,
+    "input_unchanged": true,
+    "mel_inputs_unchanged": true,
+    "no_unexpected_worker_errors": true
+  },
+  "results": {
+    "isolated_baseline": {
+      "text": "And so my fellow Americans ask not what your country can do for you, ask what you can do for your country."
+    },
+    "cancelled": {
+      "error_type": "RequestCancelledError",
+      "request_status": "cancelled",
+      "session_version": 0,
+      "window_count": 0
+    },
+    "survivor": {
+      "text": "And so my fellow Americans ask not what your country can do for you, ask what you can do for your country.",
+      "request_status": "committed",
+      "session_version": 1,
+      "window_count": 1,
+      "window_id": "window-survivor"
+    },
+    "reuse_control": {
+      "text": "And so my fellow Americans ask not what your country can do for you, ask what you can do for your country.",
+      "request_status": "committed",
+      "session_version": 1,
+      "window_count": 1,
+      "window_id": "window-reuse"
+    }
+  }
+}

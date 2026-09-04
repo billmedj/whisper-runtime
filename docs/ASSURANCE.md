@@ -28,14 +28,15 @@ integration records are not general correctness or performance claims.
 | Failure to prove backend quiescence retains the reservation. | Not modeled. | Persistent-fence and quarantine-recovery tests in `tests/test_runtime.py` and adapter tests | Not forced in a real PyTorch run. | Recovery is in-process and backend-specific. |
 | Two patched decoder runs on one loaded model keep request cache state separate in the recorded CPU case. | Not modeled. | Backend contract tests and evidence validators in `tools/test_contract_tools.py` | Staged and operating-system-thread records compare the surviving run with an isolated baseline and verify model reuse. | One pinned `tiny.en` greedy CPU case. No CUDA, extension, word-timestamp, or throughput claim. |
 | Two outer decoder calls can have overlapping lifetimes in two operating-system threads in the recorded case. | Not modeled. | The verifier requires two owner threads, controlled rendezvous, interval overlap, and cleanup ownership. | `native-cpu-tiny-en-jfk-threaded-2026-09-04.json` | Overlapping Python call lifetimes do not prove simultaneous kernels or improved throughput. |
-| The experimental adapter profile admits two request-local decoder runs while serializing run construction and encoder preparation. | Not modeled. | Controlled adapter tests in `tests/test_native_adapter.py` require exact queue and budget capacity, overlap two fake decoder runs, isolate cancellation, and retain independent cleanup failures. | Not yet recorded with the real Whisper backend. | The tests use controlled fakes. They do not establish PyTorch behavior, kernel overlap, or throughput. |
+| The experimental adapter profile admits two request-local decoder runs while serializing run construction and encoder preparation. | Not modeled. | Controlled adapter tests in `tests/test_native_adapter.py` require exact queue and budget capacity, overlap two fake decoder runs, isolate cancellation, and retain independent cleanup failures. | One pinned Windows `tiny.en` greedy CPU record checks two admitted adapter transactions, cancellation, one isolated survivor commit, and restored ledger capacity. | The caller threads belong to the verifier. The record does not establish runtime scheduling, PyTorch kernel overlap, throughput, or behavior beyond its stated configuration. |
 
 ## Properties not yet established
 
 The repository does not yet establish:
 
-- concurrent `NativeWhisperAdapter` transactions with the real Whisper
-  backend;
+- two concurrent successful `NativeWhisperAdapter` commits with the real
+  Whisper backend;
+- runtime-owned scheduling of concurrent native transactions;
 - safe concurrent encoder calls;
 - CUDA correctness or device-memory enforcement;
 - batching, fairness, or bounded streaming;

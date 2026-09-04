@@ -23,6 +23,7 @@ SDIST_REQUIRED_SUFFIXES = {
     "evidence/README.md",
     "evidence/native-cpu-tiny-en-jfk-2026-09-03.json",
     "evidence/native-cpu-tiny-en-jfk-interleaving-2026-09-03.json",
+    "evidence/native-cpu-tiny-en-jfk-runtime-concurrency-2026-09-04.json",
     "evidence/native-cpu-tiny-en-jfk-threaded-2026-09-04.json",
     "evidence/native-interleaving.schema.json",
     "evidence/native-runtime-concurrency.schema.json",

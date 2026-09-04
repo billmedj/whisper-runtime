@@ -1,6 +1,6 @@
 # Integration evidence
 
-This directory contains three committed records from real backend runs:
+This directory contains four committed records from real backend runs:
 
 - `native-cpu-tiny-en-jfk-2026-09-03.json` records one
   `NativeWhisperAdapter` transaction.
@@ -9,6 +9,8 @@ This directory contains three committed records from real backend runs:
   the other.
 - `native-cpu-tiny-en-jfk-threaded-2026-09-04.json` records the same isolation
   case across two operating-system threads in the patched decoder backend.
+- `native-cpu-tiny-en-jfk-runtime-concurrency-2026-09-04.json` records two
+  transactions through the experimental two-lane runtime adapter.
 
 Each record identifies the runtime revision, backend source tree, model
 checkpoint, input, environment, and observed outcome.
@@ -36,8 +38,8 @@ transaction, and requires the other request to commit the isolated-baseline
 text. The cancelled session stays empty. The queue and declared budget must be
 fully restored, and a later adapter call must succeed. The CI artifact is
 validated against `native-runtime-concurrency.schema.json` and by
-`tools/validate_runtime_concurrency_record.py`. This adapter-level record is not
-yet committed to this directory.
+`tools/validate_runtime_concurrency_record.py`. The committed record captures
+the same contract on one Windows CPU configuration.
 
 Each record applies only to its stated configuration. The records are not
 performance benchmarks. The committed two-thread check exercises the patched

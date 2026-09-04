@@ -167,9 +167,9 @@ not clear another.
 
 The resource vector is trusted configuration, not a measurement. Two admitted
 transactions do not prove that PyTorch kernels overlap or improve throughput.
-The repository includes a real-model verifier for this adapter boundary. CI
-publishes its result as a temporary artifact; no adapter-concurrency record is
-committed yet. Use the profile for controlled CPU experiments only.
+The repository includes a real-model verifier and one committed record for this
+adapter boundary. CI also publishes each result as a temporary artifact. Use
+the profile for controlled CPU experiments only.
 
 ## Local smoke test
 
@@ -261,12 +261,11 @@ by the decoder.
 The check exercises `whisper.decoding.DecodingTask._start_run` in the patched
 Whisper backend. It runs below `NativeWhisperAdapter`; it does not exercise
 concurrent encoder calls, the runtime scheduler, or adapter concurrency.
-Overlapping decoder-call bodies do not show that PyTorch kernels execute
-simultaneously. The check makes no claim about kernel overlap, throughput,
-CUDA, production readiness, or general thread safety across other models,
-devices, operating systems, or dependency versions. The default adapter
-profile remains serialized; the experimental two-lane profile has not yet
-produced a committed real-model evidence record.
+Overlapping recorded outer decoder-call intervals do not show that PyTorch
+kernels execute simultaneously. The check makes no claim about kernel overlap,
+throughput, CUDA, production readiness, or general thread safety across other
+models, devices, operating systems, or dependency versions. The default
+adapter profile remains serialized.
 
 ## Runtime adapter concurrency check
 
@@ -296,6 +295,8 @@ The tool emits JSON. `tools/validate_runtime_concurrency_record.py` validates
 it against `evidence/native-runtime-concurrency.schema.json` and enforces event,
 ownership, cancellation, queue, lease, budget, session, and result relations.
 Native CI publishes the validated record as a 30-day artifact.
+The repository also includes one validated Windows CPU record at
+`evidence/native-cpu-tiny-en-jfk-runtime-concurrency-2026-09-04.json`.
 
 This is an integration check, not a benchmark. The caller threads are created
 by the verifier; the current worker does not schedule them. Encoder preparation
