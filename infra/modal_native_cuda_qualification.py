@@ -2164,6 +2164,29 @@ def _run_bound_worker(runtime_commit: str, *, modal_module: Any) -> dict[str, An
     )
 
 
+def _modal_main(
+    output: str = "",
+    skip_cache_prime: bool = False,
+    confirm_paid_gpu: bool = False,
+) -> None:
+    """Run the one registered campaign from Modal's local process."""
+
+    _require_paid_confirmation(confirm_paid_gpu)
+    if prime_model_cache is None or run_native_cuda_qualification is None:
+        raise RuntimeError("Modal resources are not defined")
+    destination = _output_path(output)
+    manifest = _read_registration()
+    _execute_registered_attempt(
+        destination,
+        runtime_commit=_required_runtime_commit(),
+        manifest=manifest,
+        manifest_sha256=_sha256_file(ROOT / QUALIFICATION_MANIFEST_PATH),
+        prime_cache=(None if skip_cache_prime else prime_model_cache.remote),
+        run_campaign=run_native_cuda_qualification.remote,
+    )
+    print(f"Wrote validated qualification evidence to {destination}")
+
+
 def _define_modal_resources() -> tuple[Any, Any, Any, Any]:
     modal = importlib.import_module("modal")
     runtime_commit = _required_runtime_commit()
@@ -2243,25 +2266,7 @@ def _define_modal_resources() -> tuple[Any, Any, Any, Any]:
             )
         return _run_bound_worker(runtime_commit, modal_module=modal)
 
-    @app.local_entrypoint()
-    def main(
-        output: str = "",
-        skip_cache_prime: bool = False,
-        confirm_paid_gpu: bool = False,
-    ) -> None:
-        _require_paid_confirmation(confirm_paid_gpu)
-        destination = _output_path(output)
-        manifest = _read_registration()
-        _execute_registered_attempt(
-            destination,
-            runtime_commit=runtime_commit,
-            manifest=manifest,
-            manifest_sha256=_sha256_file(ROOT / QUALIFICATION_MANIFEST_PATH),
-            prime_cache=(None if skip_cache_prime else prime_model_cache.remote),
-            run_campaign=run_native_cuda_qualification.remote,
-        )
-        print(f"Wrote validated qualification evidence to {destination}")
-
+    main = app.local_entrypoint(name="main")(_modal_main)
     return app, prime_model_cache, run_native_cuda_qualification, main
 
 
