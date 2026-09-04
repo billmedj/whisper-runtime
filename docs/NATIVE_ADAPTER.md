@@ -120,8 +120,9 @@ weights to the declared `ModelSnapshot`; metadata alone is not a strong
 checkpoint identity.
 
 This adapter does not yet support audio batches, stage-specific resource costs,
-durable mid-window checkpoints, alignment, or streaming. No committed record
-establishes CUDA correctness, memory bounds, latency, or throughput.
+durable mid-window checkpoints, alignment, or streaming. The committed CUDA
+records cover only the pinned single-lane case described below. They do not
+establish general CUDA compatibility, memory bounds, latency, or throughput.
 
 ## Strict CUDA profile
 
@@ -144,9 +145,10 @@ fallbacks are rejected.
 After the submission gate drains, the scope runs cleanup, records one CUDA
 event on the stream, and waits for the event. The session cannot commit and the
 worker cannot release its lease before that wait succeeds. A cleanup, event
-record, or event synchronization failure quarantines the transaction. Recovery
-retries idempotent cleanup and records a new event. `request_stop()` only sets a
-host-side latch; it does not call CUDA from the cancelling thread.
+creation, event record, or event synchronization failure quarantines the
+transaction. Recovery retries idempotent cleanup and records a new event.
+`request_stop()` only sets a host-side latch; it does not call CUDA from the
+cancelling thread.
 
 The first stream use performs a conservative device synchronization after
 admission. This establishes a boundary with model initialization before the

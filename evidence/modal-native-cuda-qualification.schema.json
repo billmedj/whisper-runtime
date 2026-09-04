@@ -1,0 +1,835 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/billmedj/whisper-runtime/blob/main/evidence/modal-native-cuda-qualification.schema.json",
+  "title": "Draft native CUDA qualification evidence record",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "recorded_at",
+    "status",
+    "outcome",
+    "qualification_registration",
+    "scope",
+    "runtime",
+    "backend",
+    "producer",
+    "worker",
+    "environment",
+    "gpu",
+    "clock",
+    "workload",
+    "warmup_runs",
+    "control_warmup_runs",
+    "control_runs",
+    "measured_runs",
+    "cancellation_runs",
+    "fault_runs",
+    "events",
+    "summaries",
+    "derived_invariants"
+  ],
+  "properties": {
+    "schema_version": { "const": "1-draft" },
+    "recorded_at": { "type": "string", "format": "date-time" },
+    "status": { "enum": ["passed", "failed"] },
+    "outcome": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "registered_cell_id",
+        "exclusion_rule_id",
+        "result",
+        "failure_class",
+        "failure_summary"
+      ],
+      "properties": {
+        "registered_cell_id": { "$ref": "#/$defs/id" },
+        "exclusion_rule_id": { "$ref": "#/$defs/id" },
+        "result": { "enum": ["passed", "failed"] },
+        "failure_class": {
+          "enum": ["none", "derived-invariant", "qualification-gate"]
+        },
+        "failure_summary": {
+          "anyOf": [
+            { "type": "null" },
+            { "$ref": "#/$defs/nonempty_string" }
+          ]
+        }
+      }
+    },
+    "qualification_registration": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "manifest_id",
+        "manifest_path",
+        "manifest_sha256",
+        "runtime_commit"
+      ],
+      "properties": {
+        "manifest_id": { "$ref": "#/$defs/id" },
+        "manifest_path": { "$ref": "#/$defs/repository_path" },
+        "manifest_sha256": { "$ref": "#/$defs/sha256" },
+        "runtime_commit": { "$ref": "#/$defs/git_hash" }
+      }
+    },
+    "scope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "evidence_kind",
+        "evidence_tier",
+        "fault_matrix_scope",
+        "statement",
+        "hardware_execution",
+        "fault_injection_used",
+        "performance_benchmark",
+        "production_readiness"
+      ],
+      "properties": {
+        "evidence_kind": { "const": "native-whisper-cuda-qualification" },
+        "evidence_tier": { "const": "qualification" },
+        "fault_matrix_scope": {
+          "const": "completion-boundary-qualification-subset"
+        },
+        "statement": {
+          "const": "A fixed CUDA qualification cell with raw diagnostic observations."
+        },
+        "hardware_execution": { "const": true },
+        "fault_injection_used": { "const": true },
+        "performance_benchmark": { "const": false },
+        "production_readiness": { "const": false }
+      }
+    },
+    "runtime": { "$ref": "#/$defs/source_identity" },
+    "backend": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "repository",
+        "git_commit",
+        "git_tree",
+        "clean",
+        "patch_manifest_path",
+        "patch_manifest_sha256"
+      ],
+      "properties": {
+        "repository": { "type": "string", "format": "uri", "maxLength": 512 },
+        "git_commit": { "$ref": "#/$defs/git_hash" },
+        "git_tree": { "$ref": "#/$defs/git_hash" },
+        "clean": { "const": true },
+        "patch_manifest_path": { "$ref": "#/$defs/repository_path" },
+        "patch_manifest_sha256": { "$ref": "#/$defs/sha256" }
+      }
+    },
+    "producer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "repository",
+        "git_commit",
+        "git_tree",
+        "clean",
+        "script_path",
+        "script_sha256",
+        "schema_path",
+        "schema_sha256",
+        "validator_path",
+        "validator_sha256",
+        "dependency_inventory_path",
+        "dependency_inventory_sha256",
+        "container_image_digest"
+      ],
+      "properties": {
+        "repository": { "type": "string", "format": "uri", "maxLength": 512 },
+        "git_commit": { "$ref": "#/$defs/git_hash" },
+        "git_tree": { "$ref": "#/$defs/git_hash" },
+        "clean": { "const": true },
+        "script_path": { "$ref": "#/$defs/repository_path" },
+        "script_sha256": { "$ref": "#/$defs/sha256" },
+        "schema_path": { "$ref": "#/$defs/repository_path" },
+        "schema_sha256": { "$ref": "#/$defs/sha256" },
+        "validator_path": { "$ref": "#/$defs/repository_path" },
+        "validator_sha256": { "$ref": "#/$defs/sha256" },
+        "dependency_inventory_path": { "$ref": "#/$defs/repository_path" },
+        "dependency_inventory_sha256": { "$ref": "#/$defs/sha256" },
+        "container_image_digest": {
+          "type": "string",
+          "pattern": "^sha256:[0-9a-f]{64}$"
+        }
+      }
+    },
+    "worker": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "campaign_id",
+        "worker_id",
+        "worker_ordinal",
+        "expected_worker_count",
+        "single_use"
+      ],
+      "properties": {
+        "campaign_id": { "$ref": "#/$defs/id" },
+        "worker_id": { "$ref": "#/$defs/sha256" },
+        "worker_ordinal": { "const": 0 },
+        "expected_worker_count": { "const": 1 },
+        "single_use": { "const": true }
+      }
+    },
+    "environment": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "python",
+        "platform",
+        "torch",
+        "cuda_runtime",
+        "cudnn",
+        "driver",
+        "modal_sdk"
+      ],
+      "properties": {
+        "python": { "$ref": "#/$defs/nonempty_string" },
+        "platform": { "$ref": "#/$defs/nonempty_string" },
+        "torch": { "$ref": "#/$defs/nonempty_string" },
+        "cuda_runtime": { "$ref": "#/$defs/nonempty_string" },
+        "cudnn": { "$ref": "#/$defs/nonempty_string" },
+        "driver": { "$ref": "#/$defs/nonempty_string" },
+        "modal_sdk": { "$ref": "#/$defs/nonempty_string" }
+      }
+    },
+    "gpu": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "cloud_provider",
+        "region",
+        "visible_device_count",
+        "device_index",
+        "name",
+        "compute_capability",
+        "total_memory_bytes"
+      ],
+      "properties": {
+        "cloud_provider": { "$ref": "#/$defs/nonempty_string" },
+        "region": { "$ref": "#/$defs/nonempty_string" },
+        "visible_device_count": { "$ref": "#/$defs/positive_integer" },
+        "device_index": { "$ref": "#/$defs/nonnegative_integer" },
+        "name": { "$ref": "#/$defs/nonempty_string" },
+        "compute_capability": {
+          "type": "string",
+          "pattern": "^[0-9]+\\.[0-9]+$",
+          "maxLength": 16
+        },
+        "total_memory_bytes": { "$ref": "#/$defs/positive_integer" }
+      }
+    },
+    "clock": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["source", "unit", "origin", "resolution_ns"],
+      "properties": {
+        "source": { "const": "time.monotonic_ns" },
+        "unit": { "const": "nanosecond" },
+        "origin": { "const": "worker-qualification-start" },
+        "resolution_ns": { "$ref": "#/$defs/positive_integer" }
+      }
+    },
+    "workload": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "profile_id",
+        "model",
+        "checkpoint_source",
+        "checkpoint_sha256",
+        "fixture_id",
+        "input_manifest_source",
+        "input_manifest_sha256",
+        "input_source",
+        "input_sha256",
+        "decoded_pcm_sha256",
+        "preprocessing_options",
+        "preprocessing_options_sha256",
+        "input_bytes",
+        "input_duration_ns",
+        "sample_rate_hz",
+        "channel_count",
+        "language",
+        "task",
+        "numeric_precision",
+        "compatibility_rule",
+        "result_digest_encoding",
+        "expected_result_sha256",
+        "decode_options",
+        "decode_options_sha256",
+        "seed",
+        "seed_reset_each_run",
+        "device",
+        "execution_mode",
+        "pair_order",
+        "comparison_backend_mode",
+        "fault_backend_mode",
+        "network_access_during_measured_work",
+        "model_loaded_before_timing",
+        "peak_stats_reset_each_run",
+        "runtime_measurement_start",
+        "runtime_measurement_end",
+        "control_measurement_start",
+        "control_measurement_end",
+        "warmup_iterations",
+        "control_iterations",
+        "measured_iterations",
+        "cancellation_iterations",
+        "fault_repetitions_per_point",
+        "resource_capacity",
+        "resource_reservation",
+        "allocation_tolerance_bytes",
+        "reserved_tolerance_bytes"
+      ],
+      "properties": {
+        "profile_id": { "$ref": "#/$defs/id" },
+        "model": { "$ref": "#/$defs/nonempty_string" },
+        "checkpoint_source": { "type": "string", "format": "uri", "maxLength": 512 },
+        "checkpoint_sha256": { "$ref": "#/$defs/sha256" },
+        "fixture_id": { "$ref": "#/$defs/id" },
+        "input_manifest_source": { "type": "string", "format": "uri", "maxLength": 512 },
+        "input_manifest_sha256": { "$ref": "#/$defs/sha256" },
+        "input_source": { "type": "string", "format": "uri", "maxLength": 512 },
+        "input_sha256": { "$ref": "#/$defs/sha256" },
+        "decoded_pcm_sha256": { "$ref": "#/$defs/sha256" },
+        "preprocessing_options": { "$ref": "#/$defs/preprocessing_options" },
+        "preprocessing_options_sha256": { "$ref": "#/$defs/sha256" },
+        "input_bytes": { "$ref": "#/$defs/positive_integer" },
+        "input_duration_ns": { "$ref": "#/$defs/positive_integer" },
+        "sample_rate_hz": { "$ref": "#/$defs/positive_integer" },
+        "channel_count": { "$ref": "#/$defs/positive_integer" },
+        "language": { "$ref": "#/$defs/nonempty_string" },
+        "task": { "enum": ["transcribe", "translate"] },
+        "numeric_precision": { "enum": ["float16", "float32", "bfloat16"] },
+        "compatibility_rule": { "const": "exact-result-sha256" },
+        "result_digest_encoding": { "const": "utf8-transcript-v1" },
+        "expected_result_sha256": { "$ref": "#/$defs/sha256" },
+        "decode_options": { "$ref": "#/$defs/decode_options" },
+        "decode_options_sha256": { "$ref": "#/$defs/sha256" },
+        "seed": { "$ref": "#/$defs/nonnegative_integer" },
+        "seed_reset_each_run": { "const": true },
+        "device": { "type": "string", "pattern": "^cuda:[0-9]+$" },
+        "execution_mode": { "const": "single-lane" },
+        "pair_order": { "enum": ["control-first", "runtime-first"] },
+        "comparison_backend_mode": { "const": "native-unproxied" },
+        "fault_backend_mode": { "const": "scoped-harness-injector" },
+        "network_access_during_measured_work": { "const": false },
+        "model_loaded_before_timing": { "const": true },
+        "peak_stats_reset_each_run": { "const": true },
+        "runtime_measurement_start": { "const": "before-admission" },
+        "runtime_measurement_end": { "const": "after-budget-restored" },
+        "control_measurement_start": { "const": "before-backend-call" },
+        "control_measurement_end": { "const": "after-backend-quiescent" },
+        "warmup_iterations": { "const": 2 },
+        "control_iterations": { "const": 5 },
+        "measured_iterations": { "const": 5 },
+        "cancellation_iterations": { "const": 3 },
+        "fault_repetitions_per_point": { "const": 2 },
+        "resource_capacity": { "$ref": "#/$defs/positive_resource_vector" },
+        "resource_reservation": { "$ref": "#/$defs/positive_resource_vector" },
+        "allocation_tolerance_bytes": { "$ref": "#/$defs/nonnegative_integer" },
+        "reserved_tolerance_bytes": { "$ref": "#/$defs/nonnegative_integer" }
+      }
+    },
+    "warmup_runs": {
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 2,
+      "items": { "$ref": "#/$defs/success_run" }
+    },
+    "control_warmup_runs": {
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 2,
+      "items": { "$ref": "#/$defs/control_run" }
+    },
+    "control_runs": {
+      "type": "array",
+      "minItems": 5,
+      "maxItems": 5,
+      "items": { "$ref": "#/$defs/control_run" }
+    },
+    "measured_runs": {
+      "type": "array",
+      "minItems": 5,
+      "maxItems": 5,
+      "items": { "$ref": "#/$defs/success_run" }
+    },
+    "cancellation_runs": {
+      "type": "array",
+      "minItems": 3,
+      "maxItems": 3,
+      "items": { "$ref": "#/$defs/cancellation_run" }
+    },
+    "fault_runs": {
+      "type": "array",
+      "minItems": 8,
+      "maxItems": 8,
+      "items": { "$ref": "#/$defs/fault_run" }
+    },
+    "events": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 100000,
+      "items": {
+        "oneOf": [
+          { "$ref": "#/$defs/transaction_event" },
+          { "$ref": "#/$defs/control_event" }
+        ]
+      }
+    },
+    "summaries": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "quantile_method",
+        "p99_minimum_sample_count",
+        "warmups_excluded",
+        "control_wall_ns",
+        "success_wall_ns",
+        "cancellation_to_quiescence_ns",
+        "success_peak_allocated_delta_bytes",
+        "success_peak_reserved_delta_bytes",
+        "control_peak_allocated_delta_bytes",
+        "control_peak_reserved_delta_bytes",
+        "fault_recovery_ns",
+        "fault_injection_to_quiescence_ns"
+      ],
+      "properties": {
+        "quantile_method": { "const": "nearest-rank" },
+        "p99_minimum_sample_count": { "const": 1000 },
+        "warmups_excluded": { "const": true },
+        "control_wall_ns": { "$ref": "#/$defs/distribution" },
+        "success_wall_ns": { "$ref": "#/$defs/distribution" },
+        "cancellation_to_quiescence_ns": { "$ref": "#/$defs/distribution" },
+        "success_peak_allocated_delta_bytes": { "$ref": "#/$defs/distribution" },
+        "success_peak_reserved_delta_bytes": { "$ref": "#/$defs/distribution" },
+        "control_peak_allocated_delta_bytes": { "$ref": "#/$defs/distribution" },
+        "control_peak_reserved_delta_bytes": { "$ref": "#/$defs/distribution" },
+        "fault_recovery_ns": { "$ref": "#/$defs/fault_distributions" },
+        "fault_injection_to_quiescence_ns": { "$ref": "#/$defs/fault_distributions" }
+      }
+    },
+    "derived_invariants": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "event_stream_globally_ordered",
+        "control_and_runtime_results_stable",
+        "success_published_once_after_fence",
+        "cancellation_after_incomplete_step_never_published",
+        "fault_exactly_injected_never_published",
+        "fault_blocked_new_work",
+        "post_recovery_reuse_committed",
+        "leases_held_until_quiescence",
+        "budgets_retained_until_quiescence",
+        "budgets_restored_after_release",
+        "device_and_allocator_samples_within_bounds"
+      ],
+      "properties": {
+        "event_stream_globally_ordered": { "type": "boolean" },
+        "control_and_runtime_results_stable": { "type": "boolean" },
+        "success_published_once_after_fence": { "type": "boolean" },
+        "cancellation_after_incomplete_step_never_published": { "type": "boolean" },
+        "fault_exactly_injected_never_published": { "type": "boolean" },
+        "fault_blocked_new_work": { "type": "boolean" },
+        "post_recovery_reuse_committed": { "type": "boolean" },
+        "leases_held_until_quiescence": { "type": "boolean" },
+        "budgets_retained_until_quiescence": { "type": "boolean" },
+        "budgets_restored_after_release": { "type": "boolean" },
+        "device_and_allocator_samples_within_bounds": { "type": "boolean" }
+      }
+    }
+  },
+  "$defs": {
+    "git_hash": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
+    "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+    },
+    "repository_path": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._/-]{0,511}$"
+    },
+    "nonempty_string": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 512
+    },
+    "nonnegative_integer": { "type": "integer", "minimum": 0 },
+    "positive_integer": { "type": "integer", "minimum": 1 },
+    "nullable_positive_integer": {
+      "anyOf": [
+        { "type": "null" },
+        { "type": "integer", "minimum": 1 }
+      ]
+    },
+    "nullable_number": {
+      "anyOf": [
+        { "type": "null" },
+        { "type": "number" }
+      ]
+    },
+    "source_identity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["repository", "git_commit", "git_tree", "clean"],
+      "properties": {
+        "repository": { "type": "string", "format": "uri", "maxLength": 512 },
+        "git_commit": { "$ref": "#/$defs/git_hash" },
+        "git_tree": { "$ref": "#/$defs/git_hash" },
+        "clean": { "const": true }
+      }
+    },
+    "decode_options": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "temperature",
+        "beam_size",
+        "best_of",
+        "patience",
+        "length_penalty",
+        "sample_len",
+        "without_timestamps",
+        "fp16",
+        "condition_on_previous_text"
+      ],
+      "properties": {
+        "temperature": { "type": "number", "minimum": 0, "maximum": 2 },
+        "beam_size": { "$ref": "#/$defs/nullable_positive_integer" },
+        "best_of": { "$ref": "#/$defs/nullable_positive_integer" },
+        "patience": { "$ref": "#/$defs/nullable_number" },
+        "length_penalty": { "$ref": "#/$defs/nullable_number" },
+        "sample_len": { "$ref": "#/$defs/nullable_positive_integer" },
+        "without_timestamps": { "type": "boolean" },
+        "fp16": { "type": "boolean" },
+        "condition_on_previous_text": { "type": "boolean" }
+      }
+    },
+    "preprocessing_options": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["loader", "sample_rate_hz", "pad_or_trim_samples", "mel_bins"],
+      "properties": {
+        "loader": { "const": "whisper.load_audio" },
+        "sample_rate_hz": { "$ref": "#/$defs/positive_integer" },
+        "pad_or_trim_samples": { "$ref": "#/$defs/positive_integer" },
+        "mel_bins": { "$ref": "#/$defs/positive_integer" }
+      }
+    },
+    "positive_resource_vector": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["memory_bytes", "compute_units", "stream_slots"],
+      "properties": {
+        "memory_bytes": { "$ref": "#/$defs/positive_integer" },
+        "compute_units": { "$ref": "#/$defs/positive_integer" },
+        "stream_slots": { "$ref": "#/$defs/positive_integer" }
+      }
+    },
+    "available_resource_vector": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["memory_bytes", "compute_units", "stream_slots"],
+      "properties": {
+        "memory_bytes": { "$ref": "#/$defs/nonnegative_integer" },
+        "compute_units": { "$ref": "#/$defs/nonnegative_integer" },
+        "stream_slots": { "$ref": "#/$defs/nonnegative_integer" }
+      }
+    },
+    "budget_observation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "available_before",
+        "available_while_held",
+        "available_at_quiescence",
+        "available_after_release"
+      ],
+      "properties": {
+        "available_before": { "$ref": "#/$defs/available_resource_vector" },
+        "available_while_held": { "$ref": "#/$defs/available_resource_vector" },
+        "available_at_quiescence": { "$ref": "#/$defs/available_resource_vector" },
+        "available_after_release": { "$ref": "#/$defs/available_resource_vector" }
+      }
+    },
+    "memory_sample": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "baseline_allocated_bytes",
+        "final_allocated_bytes",
+        "peak_allocated_bytes",
+        "baseline_reserved_bytes",
+        "final_reserved_bytes",
+        "peak_reserved_bytes",
+        "peak_allocated_delta_bytes",
+        "peak_reserved_delta_bytes"
+      ],
+      "properties": {
+        "baseline_allocated_bytes": { "$ref": "#/$defs/nonnegative_integer" },
+        "final_allocated_bytes": { "$ref": "#/$defs/nonnegative_integer" },
+        "peak_allocated_bytes": { "$ref": "#/$defs/nonnegative_integer" },
+        "baseline_reserved_bytes": { "$ref": "#/$defs/nonnegative_integer" },
+        "final_reserved_bytes": { "$ref": "#/$defs/nonnegative_integer" },
+        "peak_reserved_bytes": { "$ref": "#/$defs/nonnegative_integer" },
+        "peak_allocated_delta_bytes": { "$ref": "#/$defs/nonnegative_integer" },
+        "peak_reserved_delta_bytes": { "$ref": "#/$defs/nonnegative_integer" }
+      }
+    },
+    "run_identity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["run_id", "session_id", "request_id", "transaction_id", "lease_id"],
+      "properties": {
+        "run_id": { "$ref": "#/$defs/id" },
+        "session_id": { "$ref": "#/$defs/id" },
+        "request_id": { "$ref": "#/$defs/id" },
+        "transaction_id": { "$ref": "#/$defs/id" },
+        "lease_id": { "$ref": "#/$defs/id" }
+      }
+    },
+    "success_run": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "run_id",
+        "session_id",
+        "request_id",
+        "transaction_id",
+        "lease_id",
+        "iteration",
+        "wall_ns",
+        "session_version_before",
+        "session_version_after",
+        "result_sha256",
+        "memory",
+        "budget"
+      ],
+      "properties": {
+        "run_id": { "$ref": "#/$defs/id" },
+        "session_id": { "$ref": "#/$defs/id" },
+        "request_id": { "$ref": "#/$defs/id" },
+        "transaction_id": { "$ref": "#/$defs/id" },
+        "lease_id": { "$ref": "#/$defs/id" },
+        "iteration": { "$ref": "#/$defs/nonnegative_integer" },
+        "wall_ns": { "$ref": "#/$defs/positive_integer" },
+        "session_version_before": { "$ref": "#/$defs/nonnegative_integer" },
+        "session_version_after": { "$ref": "#/$defs/positive_integer" },
+        "result_sha256": { "$ref": "#/$defs/sha256" },
+        "memory": { "$ref": "#/$defs/memory_sample" },
+        "budget": { "$ref": "#/$defs/budget_observation" }
+      }
+    },
+    "control_run": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["run_id", "iteration", "wall_ns", "result_sha256", "memory"],
+      "properties": {
+        "run_id": { "$ref": "#/$defs/id" },
+        "iteration": { "$ref": "#/$defs/nonnegative_integer" },
+        "wall_ns": { "$ref": "#/$defs/positive_integer" },
+        "result_sha256": { "$ref": "#/$defs/sha256" },
+        "memory": { "$ref": "#/$defs/memory_sample" }
+      }
+    },
+    "cancellation_run": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "run_id",
+        "session_id",
+        "request_id",
+        "transaction_id",
+        "lease_id",
+        "iteration",
+        "wall_ns",
+        "cancel_to_quiescence_ns",
+        "session_version_before",
+        "session_version_after",
+        "memory",
+        "budget"
+      ],
+      "properties": {
+        "run_id": { "$ref": "#/$defs/id" },
+        "session_id": { "$ref": "#/$defs/id" },
+        "request_id": { "$ref": "#/$defs/id" },
+        "transaction_id": { "$ref": "#/$defs/id" },
+        "lease_id": { "$ref": "#/$defs/id" },
+        "iteration": { "$ref": "#/$defs/nonnegative_integer" },
+        "wall_ns": { "$ref": "#/$defs/positive_integer" },
+        "cancel_to_quiescence_ns": { "$ref": "#/$defs/positive_integer" },
+        "session_version_before": { "$ref": "#/$defs/nonnegative_integer" },
+        "session_version_after": { "$ref": "#/$defs/nonnegative_integer" },
+        "memory": { "$ref": "#/$defs/memory_sample" },
+        "budget": { "$ref": "#/$defs/budget_observation" }
+      }
+    },
+    "fault_run": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "run_id",
+        "session_id",
+        "request_id",
+        "transaction_id",
+        "lease_id",
+        "fault_point",
+        "repetition",
+        "fault_origin",
+        "planned_injection_count",
+        "backend_call_relation",
+        "blocked_request_id",
+        "wall_ns",
+        "injection_to_quiescence_ns",
+        "recovery_ns",
+        "session_version_before",
+        "session_version_after",
+        "memory",
+        "budget",
+        "post_recovery_reuse"
+      ],
+      "properties": {
+        "run_id": { "$ref": "#/$defs/id" },
+        "session_id": { "$ref": "#/$defs/id" },
+        "request_id": { "$ref": "#/$defs/id" },
+        "transaction_id": { "$ref": "#/$defs/id" },
+        "lease_id": { "$ref": "#/$defs/id" },
+        "fault_point": {
+          "enum": ["cleanup", "event-create", "event-record", "event-synchronize"]
+        },
+        "repetition": { "$ref": "#/$defs/nonnegative_integer" },
+        "fault_origin": { "const": "harness-injected" },
+        "planned_injection_count": { "const": 2 },
+        "backend_call_relation": {
+          "enum": ["before-backend-call", "after-backend-call"]
+        },
+        "blocked_request_id": { "$ref": "#/$defs/id" },
+        "wall_ns": { "$ref": "#/$defs/positive_integer" },
+        "injection_to_quiescence_ns": { "$ref": "#/$defs/positive_integer" },
+        "recovery_ns": { "$ref": "#/$defs/positive_integer" },
+        "session_version_before": { "$ref": "#/$defs/nonnegative_integer" },
+        "session_version_after": { "$ref": "#/$defs/nonnegative_integer" },
+        "memory": { "$ref": "#/$defs/memory_sample" },
+        "budget": { "$ref": "#/$defs/budget_observation" },
+        "post_recovery_reuse": { "$ref": "#/$defs/success_run" }
+      }
+    },
+    "transaction_event": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "sequence",
+        "offset_ns",
+        "worker_id",
+        "run_id",
+        "run_kind",
+        "session_id",
+        "request_id",
+        "transaction_id",
+        "lease_id",
+        "event"
+      ],
+      "properties": {
+        "sequence": { "$ref": "#/$defs/nonnegative_integer" },
+        "offset_ns": { "$ref": "#/$defs/nonnegative_integer" },
+        "worker_id": { "$ref": "#/$defs/sha256" },
+        "run_id": { "$ref": "#/$defs/id" },
+        "run_kind": {
+          "enum": ["warmup", "measured", "cancellation", "fault", "reuse"]
+        },
+        "session_id": { "$ref": "#/$defs/id" },
+        "request_id": { "$ref": "#/$defs/id" },
+        "transaction_id": { "$ref": "#/$defs/id" },
+        "lease_id": { "$ref": "#/$defs/id" },
+        "event": {
+          "enum": [
+            "run-start",
+            "lease-acquired",
+            "decoder-step-incomplete",
+            "cancel-requested",
+            "fault-armed",
+            "fault-triggered",
+            "transaction-retained",
+            "new-work-rejected",
+            "recovery-started",
+            "backend-quiescent",
+            "completion-fence",
+            "result-published",
+            "transaction-committed",
+            "transaction-aborted",
+            "lease-released",
+            "budget-restored",
+            "run-complete"
+          ]
+        },
+        "decoder_step": { "$ref": "#/$defs/positive_integer" },
+        "fault_point": {
+          "enum": ["cleanup", "event-create", "event-record", "event-synchronize"]
+        },
+        "operation_ordinal": { "$ref": "#/$defs/positive_integer" },
+        "error_type": { "$ref": "#/$defs/nonempty_string" },
+        "error_sha256": { "$ref": "#/$defs/sha256" },
+        "blocked_request_id": { "$ref": "#/$defs/id" },
+        "backend_call_relation": {
+          "enum": ["before-backend-call", "after-backend-call"]
+        },
+        "planned_injection_count": { "const": 2 }
+      }
+    },
+    "control_event": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "sequence",
+        "offset_ns",
+        "worker_id",
+        "run_id",
+        "run_kind",
+        "event"
+      ],
+      "properties": {
+        "sequence": { "$ref": "#/$defs/nonnegative_integer" },
+        "offset_ns": { "$ref": "#/$defs/nonnegative_integer" },
+        "worker_id": { "$ref": "#/$defs/sha256" },
+        "run_id": { "$ref": "#/$defs/id" },
+        "run_kind": { "const": "control" },
+        "event": { "enum": ["run-start", "backend-quiescent", "run-complete"] }
+      }
+    },
+    "distribution": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["sample_count", "min", "p50", "p95", "p99", "max"],
+      "properties": {
+        "sample_count": { "$ref": "#/$defs/positive_integer" },
+        "min": { "$ref": "#/$defs/nonnegative_integer" },
+        "p50": { "$ref": "#/$defs/nonnegative_integer" },
+        "p95": { "$ref": "#/$defs/nonnegative_integer" },
+        "p99": { "const": "not_estimated" },
+        "max": { "$ref": "#/$defs/nonnegative_integer" }
+      }
+    },
+    "fault_distributions": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["cleanup", "event-create", "event-record", "event-synchronize"],
+      "properties": {
+        "cleanup": { "$ref": "#/$defs/distribution" },
+        "event-create": { "$ref": "#/$defs/distribution" },
+        "event-record": { "$ref": "#/$defs/distribution" },
+        "event-synchronize": { "$ref": "#/$defs/distribution" }
+      }
+    }
+  }
+}

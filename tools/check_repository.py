@@ -9,6 +9,7 @@ from pathlib import Path, PurePosixPath
 from typing import Any
 
 from compare_whisper_fixtures import compare_fixtures, validate_conformance_document
+from validate_modal_native_cuda_qualification import validate_qualification_manifest
 
 ROOT = Path(__file__).resolve().parents[1]
 IGNORED_PARTS = {
@@ -1615,6 +1616,7 @@ def check_modal_cuda_schema() -> list[str]:
 
     for name in (
         "modal-cuda-readiness.schema.json",
+        "modal-native-cuda-qualification.schema.json",
         "modal-native-cuda-transaction.schema.json",
     ):
         path = ROOT / "evidence" / name
@@ -1629,6 +1631,16 @@ def check_modal_cuda_schema() -> list[str]:
             Draft202012Validator.check_schema(schema)
         except SchemaError as error:
             failures.append(f"evidence/{name} is not a valid schema: {error}")
+
+    manifest_path = ROOT / "experiments" / "native-cuda-qualification-v1.json"
+    manifest = _read_json(manifest_path, failures)
+    if manifest is not None:
+        failures.extend(
+            validate_qualification_manifest(
+                manifest,
+                "experiments/native-cuda-qualification-v1.json",
+            )
+        )
     return failures
 
 

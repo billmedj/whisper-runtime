@@ -23,6 +23,21 @@ This directory contains eight committed records from real backend runs:
 Each record identifies the runtime revision, backend source tree, model
 checkpoint, input, environment, and observed outcome.
 
+`modal-native-cuda-qualification.schema.json` defines the draft record for one
+fixed native CUDA qualification cell. The cell uses one worker, two warm-up pairs, five
+measured pairs, three cancellation runs, and two repetitions at each of four
+fault points. Its p50 and p95 summaries are diagnostic; p99 is
+`not_estimated`. No committed record currently satisfies this contract.
+
+The fixed registration is
+[`experiments/native-cuda-qualification-v1.json`](../experiments/native-cuda-qualification-v1.json).
+A record binds its path, digest, and runtime commit. The local validator cannot
+prove that the registration was public before execution; that requires an
+external public timestamp. A future performance campaign requires a new schema
+or version, full performance metrics, and matched control/runtime probes. See
+[`docs/CUDA_QUALIFICATION_CONTRACT.md`](../docs/CUDA_QUALIFICATION_CONTRACT.md) and
+[`docs/EXPERIMENT_PROTOCOL.md`](../docs/EXPERIMENT_PROTOCOL.md).
+
 `modal-cuda-readiness.schema.json` defines the version-one T4 record. Both
 committed records passed its schema and semantic validator. They bind the same
 runtime commit, backend tree, patch manifest, model checkpoint, decoded PCM,

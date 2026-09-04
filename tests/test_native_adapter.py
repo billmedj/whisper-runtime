@@ -1865,7 +1865,7 @@ class NativeWhisperCudaAdapterTests(unittest.TestCase):
         self.assertEqual(budget.available, self.capacity)
         self.assertIn("event:synchronize", events)
 
-    def test_cuda_fence_failures_quarantine_until_recovery(self) -> None:
+    def test_cuda_fence_fault_matrix_blocks_reuse_until_exact_recovery(self) -> None:
         for failure in ("cleanup", "create", "record", "synchronize"):
             with self.subTest(failure=failure):
                 events: list[str] = []
@@ -1880,13 +1880,14 @@ class NativeWhisperCudaAdapterTests(unittest.TestCase):
                     torch_module=FakeTorchModule(runtime),
                 )
                 session = Session("cuda-session")
+                request = self.request(failure)
 
                 with self.assertRaises(TransactionRetainedError) as raised:
                     self.decode(
                         adapter,
                         harness,
                         FakeCudaMel(runtime, events),
-                        request=self.request(failure),
+                        request=request,
                         session=session,
                     )
 
@@ -1901,6 +1902,32 @@ class NativeWhisperCudaAdapterTests(unittest.TestCase):
                 )
                 self.assertIs(scope._run, run)
                 self.assertEqual(session.snapshot().version, 0)
+                self.assertEqual(request.status, RequestStatus.RUNNING)
+                self.assertEqual(worker.queue_depth, 1)
+                self.assertEqual(budget.lease_count, 1)
+                self.assertEqual(
+                    budget.available,
+                    ResourceVector(memory_bytes=0, compute_units=0, stream_slots=0),
+                )
+                self.assertEqual(worker.quarantined_count, 1)
+                self.assertEqual(run.cleanup_calls, 2)
+
+                blocked_request = self.request(f"blocked-{failure}")
+                blocked_session = Session("cuda-session")
+                events_before_blocked_attempt = tuple(events)
+                with self.assertRaises(TransactionRetainedError) as blocked:
+                    self.decode(
+                        adapter,
+                        harness,
+                        FakeCudaMel(runtime, events),
+                        request=blocked_request,
+                        session=blocked_session,
+                    )
+
+                self.assertIs(blocked.exception, retained)
+                self.assertEqual(blocked_request.status, RequestStatus.CREATED)
+                self.assertEqual(blocked_session.snapshot().version, 0)
+                self.assertEqual(tuple(events), events_before_blocked_attempt)
                 self.assertEqual(worker.queue_depth, 1)
                 self.assertEqual(budget.lease_count, 1)
 
@@ -1909,10 +1936,35 @@ class NativeWhisperCudaAdapterTests(unittest.TestCase):
                 runtime.fail_record = False
                 runtime.fail_event_synchronize = False
                 self.assertTrue(worker.recover(retained.transaction))
+                self.assertEqual(run.cleanup_calls, 3)
                 self.assertIsNone(scope._run)
                 self.assertIsNone(scope._stream)
                 self.assertIsNone(scope._event)
+                self.assertEqual(request.status, RequestStatus.ABORTED)
+                self.assertEqual(session.snapshot().version, 0)
                 self.assertEqual(worker.queue_depth, 0)
+                self.assertEqual(worker.quarantined_count, 0)
+                self.assertEqual(budget.lease_count, 0)
+                self.assertEqual(budget.available, self.capacity)
+
+                reuse_run = FakeRun(complete_after=1, result_text=f"reused-{failure}")
+                harness.runs.append(reuse_run)
+                reuse_request = self.request(f"reuse-{failure}")
+                reuse_session = Session("cuda-session")
+                state = self.decode(
+                    adapter,
+                    harness,
+                    FakeCudaMel(runtime, events),
+                    request=reuse_request,
+                    session=reuse_session,
+                )
+
+                self.assertEqual(state.version, 1)
+                self.assertEqual(state.windows[-1].result.text, f"reused-{failure}")
+                self.assertEqual(reuse_request.status, RequestStatus.COMMITTED)
+                self.assertEqual(worker.queue_depth, 0)
+                self.assertEqual(worker.quarantined_count, 0)
+                self.assertEqual(budget.lease_count, 0)
                 self.assertEqual(budget.available, self.capacity)
 
 

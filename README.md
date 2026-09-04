@@ -28,7 +28,7 @@ explicit.
 | Native adapter | Exposes run creation, prefill, token steps, finalization, and cleanup through the patched decoder; CPU and one strict single-lane T4 profile have recorded integration cases |
 | Conformance data | Records four pinned JFK CPU comparisons: greedy, beam search, word timestamps, and translation |
 | Isolation checks | Exercises two staged decodes under a fixed schedule and in two operating-system threads, cleans one early, and checks the survivor against an isolated baseline |
-| Formal model | Proves lease, capacity, lifecycle, and stale-commit properties within an abstract Lean model |
+| Formal model | Proves abstract lease, capacity, lifecycle, stale-commit, completion-fence, quarantine, and release properties in Lean |
 
 The runtime follows one execution path:
 
@@ -37,9 +37,9 @@ request
   -> admit and reserve declared capacity
   -> create a transaction
   -> submit backend stages through a closing gate
-  -> commit one versioned result, or abort
-  -> wait for backend cleanup
-  -> release the lease, or quarantine it if cleanup is unproven
+  -> seal the gate, clean up, and wait for the completion fence
+  -> publish one versioned result, or discard it
+  -> release the lease, or quarantine it if quiescence is unproven
 ```
 
 The declared budget is an admission ledger. It does not enforce operating
@@ -194,9 +194,9 @@ See the [native adapter contract](https://github.com/billmedj/whisper-runtime/bl
 | Evidence | Scope |
 | --- | --- |
 | 105 runtime tests | Resource accounting, queue bounds, commit races, deadlines, cancellation, quarantine, recovery, and adapter behavior |
-| 94 repository-tool tests | Provenance, source state, fixtures, portability, setup contracts, evidence schemas, semantic validation, and native smoke contracts |
+| 125 repository-tool tests | Provenance, source state, fixtures, portability, setup contracts, evidence schemas, semantic validation, qualification relations, and native smoke contracts |
 | 2,000-step deterministic state trace | State-machine transitions under generated operations |
-| 35 Lean theorem declarations | Abstract lease provenance, capacity conservation, lifecycle, and stale-commit properties |
+| 51 Lean theorem declarations | Abstract lease provenance, capacity conservation, lifecycle, stale-commit properties, completion-fence publication, quarantine, and recovery |
 | One recorded native run | Patched `tiny.en` decoder, JFK fixture, CPU, exact transcript, queue returned to zero, declared budget restored |
 | One recorded staged-run isolation check | One loaded `tiny.en` model, two overlapping run lifetimes, early cleanup, unchanged survivor, and successful model reuse |
 | One recorded OS-thread isolation check | Two native worker threads, overlapping outer decoder-call intervals, owner-thread cleanup, unchanged survivor, and model reuse |
@@ -240,8 +240,18 @@ transaction boundary. All four records cover one `tiny.en` FP32 fixture. They
 do not establish other models or devices, safe batching, live audio streaming,
 durable mid-window resume, portable worker migration, latency, throughput, or
 production readiness. The injected synchronization failure is a harness fault,
-not a physical driver fault. The Lean model does not model Python threads,
-PyTorch kernels, submission gates, or adapter code.
+not a physical driver fault. The Lean completion-boundary model proves an
+abstract release and publication protocol. It does not prove Python threads,
+PyTorch kernels, the concrete submission gate, CUDA events, or adapter code.
+
+The next fixed CUDA qualification cell is defined by the
+[versioned registration](https://github.com/billmedj/whisper-runtime/blob/main/experiments/native-cuda-qualification-v1.json)
+and the [qualification evidence contract](https://github.com/billmedj/whisper-runtime/blob/main/docs/CUDA_QUALIFICATION_CONTRACT.md).
+It uses one worker and a small diagnostic sample. It does not make a latency or
+throughput claim. The broader
+[experiment protocol](https://github.com/billmedj/whisper-runtime/blob/main/docs/EXPERIMENT_PROTOCOL.md)
+defines requirements for a future performance campaign, which will require a
+new evidence schema or version.
 
 See the [transaction record](https://github.com/billmedj/whisper-runtime/blob/main/evidence/native-cpu-tiny-en-jfk-2026-09-03.json),
 [staged-run isolation record](https://github.com/billmedj/whisper-runtime/blob/main/evidence/native-cpu-tiny-en-jfk-interleaving-2026-09-03.json),
@@ -260,6 +270,7 @@ See the [transaction record](https://github.com/billmedj/whisper-runtime/blob/ma
 conformance/     Fixture schema, case matrix, and recorded comparison
 docs/            Architecture, adapter contracts, and roadmap
 evidence/        Versioned integration-run records
+experiments/     Versioned experiment registrations
 examples/        Minimal runtime-core and native-backend programs
 formal/lean/     Abstract state, lease, and capacity model
 patches/         Reproducible integration patches for the pinned backend
