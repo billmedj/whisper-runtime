@@ -29,14 +29,23 @@ measured pairs, three cancellation runs, and two repetitions at each of four
 fault points. Its p50 and p95 summaries are diagnostic; p99 is
 `not_estimated`. No committed record currently satisfies this contract.
 
-The fixed registration is
-[`experiments/native-cuda-qualification-v1.json`](../experiments/native-cuda-qualification-v1.json).
+The active registration is
+[`experiments/native-cuda-qualification-v2.json`](../experiments/native-cuda-qualification-v2.json).
 A record binds its path, digest, and runtime commit. The local validator cannot
 prove that the registration was public before execution; that requires an
 external public timestamp. A future performance campaign requires a new schema
 or version, full performance metrics, and matched control/runtime probes. See
 [`docs/CUDA_QUALIFICATION_CONTRACT.md`](../docs/CUDA_QUALIFICATION_CONTRACT.md) and
 [`docs/EXPERIMENT_PROTOCOL.md`](../docs/EXPERIMENT_PROTOCOL.md).
+
+During the version-one dispatch, the operator observed repeated Modal
+deserialization errors and stopped the run before any inference. Its
+append-only
+[`attempt-started` receipt](modal-native-cuda-qualification-v1-attempt-2026-09-04.jsonl)
+is retained without a synthetic terminal event. The receipt alone proves the
+local dispatch boundary, not the remote worker state or the reported cause.
+Version two requires the canonical module invocation and rejects a file-path
+invocation before dispatch.
 
 `modal-cuda-readiness.schema.json` defines the version-one T4 record. Both
 committed records passed its schema and semantic validator. They bind the same

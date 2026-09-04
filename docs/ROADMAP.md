@@ -5,7 +5,7 @@ page records implementation order. A target is incomplete until its stated
 evidence is committed to the repository.
 
 The next Modal step is the single-worker cell in the
-[versioned CUDA qualification registration](../experiments/native-cuda-qualification-v1.json).
+[versioned CUDA qualification registration](../experiments/native-cuda-qualification-v2.json).
 Its evidence contract is qualification-only. A later performance matrix follows
 the fixed comparison, cost order, metrics, falsifiers, and publication rules in
 the [CUDA experiment protocol](EXPERIMENT_PROTOCOL.md) under a new evidence

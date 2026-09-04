@@ -13,11 +13,10 @@ from types import SimpleNamespace
 from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[1]
-INFRA = ROOT / "infra"
-if str(INFRA) not in sys.path:
-    sys.path.insert(0, str(INFRA))
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
 
-import modal_native_cuda_qualification as producer  # noqa: E402
+from infra import modal_native_cuda_qualification as producer  # noqa: E402
 
 
 def _manifest() -> dict[str, object]:
@@ -36,13 +35,13 @@ class _Distribution:
 class ModalNativeCudaQualificationProducerTests(unittest.TestCase):
     def test_fresh_import_does_not_load_remote_dependencies(self) -> None:
         script = f"""
+import importlib
 import os
-import runpy
 import sys
 os.environ.pop('WHISPER_MODAL_ENABLE_REMOTE_RESOURCES', None)
 os.environ.pop('MODAL_IS_REMOTE', None)
-sys.path.insert(0, {str(INFRA)!r})
-runpy.run_path({str(INFRA / "modal_native_cuda_qualification.py")!r})
+sys.path.insert(0, {str(ROOT)!r})
+importlib.import_module('infra.modal_native_cuda_qualification')
 assert 'modal' not in sys.modules
 assert 'torch' not in sys.modules
 assert 'whisper' not in sys.modules
@@ -55,6 +54,46 @@ assert 'whisper' not in sys.modules
             check=False,
         )
         self.assertEqual(result.returncode, 0, result.stderr)
+
+    def test_modal_invocation_must_use_the_canonical_module_name(self) -> None:
+        producer._require_canonical_modal_invocation()
+        invalid_identities = (
+            ("modal_native_cuda_qualification", "", "modal_native_cuda_qualification"),
+            ("__main__", "infra", "infra.modal_native_cuda_qualification"),
+            (
+                producer.CANONICAL_MODULE_NAME,
+                "infra",
+                "modal_native_cuda_qualification",
+            ),
+        )
+        for name, package, spec_name in invalid_identities:
+            with (
+                self.subTest(name=name, package=package, spec_name=spec_name),
+                patch.dict(
+                    producer.__dict__,
+                    {
+                        "__name__": name,
+                        "__package__": package,
+                        "__spec__": SimpleNamespace(name=spec_name),
+                    },
+                    clear=False,
+                ),
+                self.assertRaisesRegex(SystemExit, "modal run -m"),
+            ):
+                producer._require_canonical_modal_invocation()
+
+    def test_invalid_invocation_stops_before_attempt_creation(self) -> None:
+        with (
+            patch.object(
+                producer,
+                "_require_canonical_modal_invocation",
+                side_effect=SystemExit("invalid module identity"),
+            ),
+            patch.object(producer, "_execute_registered_attempt") as execute,
+            self.assertRaisesRegex(SystemExit, "invalid module identity"),
+        ):
+            producer._modal_main(confirm_paid_gpu=True)
+        execute.assert_not_called()
 
     def test_paid_dispatch_requires_explicit_confirmation(self) -> None:
         with self.assertRaisesRegex(SystemExit, "No cache or GPU function"):

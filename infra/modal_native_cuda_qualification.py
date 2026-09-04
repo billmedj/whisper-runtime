@@ -57,7 +57,8 @@ except ImportError:  # pragma: no cover - direct ``modal run`` script loading
     )
 
 ROOT = Path(__file__).resolve().parents[1]
-APP_NAME = "whisper-runtime-native-cuda-qualification"
+APP_NAME = "whisper-runtime-native-cuda-qualification-v2"
+CANONICAL_MODULE_NAME = "infra.modal_native_cuda_qualification"
 SCHEMA_VERSION = "1-draft"
 ATTEMPT_RECEIPT_VERSION = "1"
 MODAL_SDK_VERSION = "1.5.5"
@@ -68,11 +69,11 @@ BACKEND_BASE_TREE = "f7b3cb8e12a2e84dccacc4c858c33d5a9c114688"
 BACKEND_COMMIT = "a0b9695ae1cc52bad4b8626fe9fb6ea4ac0ee650"
 BACKEND_TREE = "c011d2563c26763b5f147026e6b18ef85bccd4fb"
 PATCH_MANIFEST_PATH = "patches/openai-whisper/SHA256SUMS"
-QUALIFICATION_MANIFEST_PATH = "experiments/native-cuda-qualification-v1.json"
+QUALIFICATION_MANIFEST_PATH = "experiments/native-cuda-qualification-v2.json"
 PRODUCER_PATH = "infra/modal_native_cuda_qualification.py"
 TRACE_PATH = "infra/native_cuda_trace.py"
 IMAGE_INPUTS_PATH = "infra/modal-native-cuda-image-inputs.lock"
-REGISTERED_OUTPUT_PATH = "artifacts/modal/native-cuda-qualification-v1.json"
+REGISTERED_OUTPUT_PATH = "artifacts/modal/native-cuda-qualification-v2.json"
 SCHEMA_PATH = "evidence/modal-native-cuda-qualification.schema.json"
 VALIDATOR_PATH = "tools/validate_modal_native_cuda_qualification.py"
 MODEL_CACHE_NAME = "whisper-runtime-model-cache-v1"
@@ -465,6 +466,19 @@ def _require_paid_confirmation(confirm_paid_gpu: bool) -> None:
         raise SystemExit(
             "No cache or GPU function was dispatched. Pass --confirm-paid-gpu "
             "to allocate the registered T4 cell."
+        )
+
+
+def _require_canonical_modal_invocation() -> None:
+    spec_name = getattr(globals().get("__spec__"), "name", None)
+    if (
+        __name__ != CANONICAL_MODULE_NAME
+        or __package__ != "infra"
+        or spec_name != CANONICAL_MODULE_NAME
+    ):
+        raise SystemExit(
+            "Run this campaign as a module: "
+            "python -m modal run -m infra.modal_native_cuda_qualification"
         )
 
 
@@ -1813,9 +1827,7 @@ def _run_qualification_worker(
             ),
         ]
     ):
-        raise RuntimeError(
-            "the registration does not describe the version-one campaign"
-        )
+        raise RuntimeError("the registration does not describe this campaign")
     if (
         _sha256_file(RUNTIME_ROOT / PATCH_MANIFEST_PATH)
         != bindings[PATCH_MANIFEST_PATH][1]
@@ -2082,7 +2094,7 @@ def _run_qualification_worker(
             "container_image_id": _required_modal_image_id(),
         },
         "worker": {
-            "campaign_id": "native-cuda-qualification-v1",
+            "campaign_id": manifest["manifest_id"],
             "worker_id": worker_id,
             "worker_ordinal": 0,
             "expected_worker_count": 1,
@@ -2171,6 +2183,7 @@ def _modal_main(
 ) -> None:
     """Run the one registered campaign from Modal's local process."""
 
+    _require_canonical_modal_invocation()
     _require_paid_confirmation(confirm_paid_gpu)
     if prime_model_cache is None or run_native_cuda_qualification is None:
         raise RuntimeError("Modal resources are not defined")

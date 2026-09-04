@@ -1,7 +1,8 @@
 # Draft native CUDA qualification contract
 
-`evidence/modal-native-cuda-qualification.schema.json` defines the version-one
-record for one fixed native CUDA qualification cell. This schema is not a
+`evidence/modal-native-cuda-qualification.schema.json` defines the
+`1-draft` record format for one fixed native CUDA qualification cell. Version
+two is the second registered campaign under this format. This schema is not a
 performance-benchmark schema, and no committed evidence record currently
 satisfies it.
 
@@ -20,7 +21,7 @@ Provider logs and independent review remain necessary.
 ## Registered cell
 
 The versioned registration is
-[`experiments/native-cuda-qualification-v1.json`](../experiments/native-cuda-qualification-v1.json).
+[`experiments/native-cuda-qualification-v2.json`](../experiments/native-cuda-qualification-v2.json).
 It fixes the source policy, backend revision, T4 worker profile, model,
 checkpoint, input, decode options, resource contract, measurement boundaries,
 sample counts, fault points, exclusion rule, and required invariants.
@@ -173,8 +174,8 @@ registration, schema, validator, trace layer, and image-input file:
 ```powershell
 $env:WHISPER_RUNTIME_COMMIT = git rev-parse HEAD
 $env:WHISPER_MODAL_ENABLE_REMOTE_RESOURCES = "1"
-python -m modal run infra/modal_native_cuda_qualification.py `
-  --output artifacts/modal/native-cuda-qualification-v1.json `
+python -m modal run -m infra.modal_native_cuda_qualification `
+  --output artifacts/modal/native-cuda-qualification-v2.json `
   --confirm-paid-gpu
 ```
 
@@ -185,13 +186,17 @@ Before it dispatches remote work, it creates the attempt receipt. The producer
 accepts only the registered output path shown above and refuses to overwrite
 its record or receipt.
 
+The module form is mandatory. A file-path invocation changes the local module
+identity and can make Modal unable to deserialize the remote function. The
+producer rejects that form before it creates an attempt receipt.
+
 ## Validate a record
 
 ```powershell
 python -B tools/validate_modal_native_cuda_qualification.py <record.json> `
   --runtime-checkout . `
   --backend-checkout <clean-patched-whisper-checkout> `
-  --qualification-manifest experiments/native-cuda-qualification-v1.json `
+  --qualification-manifest experiments/native-cuda-qualification-v2.json `
   --patch-manifest patches/openai-whisper/SHA256SUMS `
   --producer-script infra/modal_native_cuda_qualification.py `
   --image-inputs infra/modal-native-cuda-image-inputs.lock

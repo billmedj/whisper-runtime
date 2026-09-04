@@ -1,0 +1,133 @@
+{
+  "manifest_version": "2",
+  "manifest_id": "native-cuda-qualification-v2",
+  "state": "preregistered",
+  "purpose": "Qualify the native Whisper CUDA transaction boundary on one fixed T4 cell.",
+  "claim_boundary": {
+    "evidence_tier": "qualification",
+    "performance_benchmark": false,
+    "production_readiness": false
+  },
+  "source_policy": {
+    "runtime": "clean-head-containing-validator-and-manifest",
+    "runtime_repository": "https://github.com/billmedj/whisper-runtime",
+    "backend": "clean-head",
+    "backend_repository": "https://github.com/openai/whisper",
+    "backend_commit": "a0b9695ae1cc52bad4b8626fe9fb6ea4ac0ee650",
+    "backend_tree": "c011d2563c26763b5f147026e6b18ef85bccd4fb",
+    "artifacts": "tracked-at-runtime-head",
+    "producer_script_path": "infra/modal_native_cuda_qualification.py",
+    "container_image": "modal-object-id-required",
+    "dependencies": "tracked-image-inputs-and-observed-resolved-inventory-required"
+  },
+  "cell": {
+    "registered_cell_id": "t4-tiny-en-jfk-qualification-v2",
+    "profile_id": "tiny.en-cuda0-float32-v1",
+    "cloud_selector": "aws",
+    "region_selector": "us-west",
+    "cloud_provider": "CLOUD_PROVIDER_AWS",
+    "region": "us-west-2",
+    "gpu_name": "Tesla T4",
+    "model": "tiny.en",
+    "checkpoint_source": "https://openaipublic.azureedge.net/main/whisper/models/d3dd57d32accea0b295c96e26691aa14d8822fac7d9d27d5dc00b4ca2826dd03/tiny.en.pt",
+    "checkpoint_sha256": "d3dd57d32accea0b295c96e26691aa14d8822fac7d9d27d5dc00b4ca2826dd03",
+    "fixture_id": "openai-whisper-jfk-flac",
+    "input_manifest_source": "https://github.com/billmedj/whisper-runtime/blob/3ea09422106615b12a01ffe118fea57c10ab1050/conformance/audio-manifest.json",
+    "input_manifest_sha256": "4be9e19aa78bf09159183b136896569c6603ecb9decd7537ded14c911d8bfd06",
+    "input_source": "https://raw.githubusercontent.com/openai/whisper/86098128c0b4f24f0e2aa2994de830614b474227/tests/jfk.flac",
+    "input_sha256": "63a4b1e4c1dc655ac70961ffbf518acd249df237e5a0152faae9a4a836949715",
+    "decoded_pcm_sha256": "59be237a0814faee9f1279bc54c8a482fa7edc09a640ff0fdd18d14d41519065",
+    "input_bytes": 1152693,
+    "input_duration_ns": 11000000000,
+    "sample_rate_hz": 16000,
+    "channel_count": 1,
+    "language": "en",
+    "task": "transcribe",
+    "numeric_precision": "float32",
+    "device": "cuda:0",
+    "execution_mode": "single-lane",
+    "pair_order": "control-first",
+    "seed": 7,
+    "seed_reset_each_run": true,
+    "compatibility_rule": "exact-result-sha256",
+    "result_digest_encoding": "utf8-transcript-v1",
+    "expected_result_sha256": "dfe1af694958a82c9d89d31bf0378075a10d40f715e670b6e5169042c8680cec",
+    "preprocessing_options": {
+      "loader": "whisper.load_audio",
+      "sample_rate_hz": 16000,
+      "pad_or_trim_samples": 480000,
+      "mel_bins": 80
+    },
+    "preprocessing_options_sha256": "aa14e36e3d6bc2afa425440390be07b56e586546bfabc3d0e350f8e3e3233f43",
+    "decode_options": {
+      "temperature": 0,
+      "beam_size": null,
+      "best_of": null,
+      "patience": null,
+      "length_penalty": null,
+      "sample_len": null,
+      "without_timestamps": false,
+      "fp16": false,
+      "condition_on_previous_text": true
+    },
+    "decode_options_sha256": "680ac733b3435beaa18df41fe499173c9aa15d950c312e175124a52e494b0f0d"
+  },
+  "resource_contract": {
+    "capacity": {
+      "memory_bytes": 2147483648,
+      "compute_units": 1,
+      "stream_slots": 1
+    },
+    "reservation": {
+      "memory_bytes": 2147483648,
+      "compute_units": 1,
+      "stream_slots": 1
+    },
+    "allocation_tolerance_bytes": 67108864,
+    "reserved_tolerance_bytes": 67108864
+  },
+  "measurement_boundaries": {
+    "runtime_start": "before-admission",
+    "runtime_end": "after-budget-restored",
+    "control_start": "before-backend-call",
+    "control_end": "after-backend-quiescent"
+  },
+  "sampling": {
+    "warmup_pairs": 2,
+    "measured_pairs": 5,
+    "cancellation_runs": 3,
+    "fault_repetitions_per_point": 2
+  },
+  "faults": {
+    "points": [
+      "cleanup",
+      "event-create",
+      "event-record",
+      "event-synchronize"
+    ],
+    "planned_injections_per_run": 2
+  },
+  "exclusion_rule": {
+    "id": "no-exclusions-v1",
+    "allowed_classes": [],
+    "max_attempts": 1,
+    "publish_all_attempts": true
+  },
+  "required_invariants": [
+    "event_stream_globally_ordered",
+    "control_and_runtime_results_stable",
+    "success_published_once_after_fence",
+    "cancellation_after_incomplete_step_never_published",
+    "fault_exactly_injected_never_published",
+    "fault_blocked_new_work",
+    "post_recovery_reuse_committed",
+    "leases_held_until_quiescence",
+    "budgets_retained_until_quiescence",
+    "budgets_restored_after_release",
+    "device_and_allocator_samples_within_bounds"
+  ],
+  "timestamp_evidence": {
+    "local_validator_proves_prior_publication": false,
+    "external_public_timestamp_required": true
+  }
+}

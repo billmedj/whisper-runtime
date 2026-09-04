@@ -24,7 +24,7 @@ from urllib.parse import unquote, urlsplit
 
 ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_SCHEMA = ROOT / "evidence/modal-native-cuda-qualification.schema.json"
-DEFAULT_QUALIFICATION_MANIFEST = ROOT / "experiments/native-cuda-qualification-v1.json"
+DEFAULT_QUALIFICATION_MANIFEST = ROOT / "experiments/native-cuda-qualification-v2.json"
 FAULT_POINTS = (
     "cleanup",
     "event-create",
@@ -760,7 +760,7 @@ def validate_qualification_manifest(
     manifest: Any,
     location: str = "qualification manifest",
 ) -> list[str]:
-    """Validate the closed version-one qualification registration."""
+    """Validate a closed qualification registration."""
 
     failures: list[str] = []
     top = _closed_manifest_object(
@@ -786,13 +786,19 @@ def validate_qualification_manifest(
     )
     if top is None:
         return failures
-    for field, expected in (
-        ("manifest_version", "1"),
-        ("manifest_id", "native-cuda-qualification-v1"),
-        ("state", "preregistered"),
-    ):
-        if top.get(field) != expected:
-            failures.append(f"{location}.{field} must be {expected!r}")
+    manifest_version = top.get("manifest_version")
+    manifest_ids = {
+        "1": "native-cuda-qualification-v1",
+        "2": "native-cuda-qualification-v2",
+    }
+    if manifest_version not in manifest_ids:
+        failures.append(f"{location}.manifest_version must be '1' or '2'")
+    elif top.get("manifest_id") != manifest_ids[manifest_version]:
+        failures.append(
+            f"{location}.manifest_id must be {manifest_ids[manifest_version]!r}"
+        )
+    if top.get("state") != "preregistered":
+        failures.append(f"{location}.state must be 'preregistered'")
     if not isinstance(top.get("purpose"), str) or not top["purpose"].strip():
         failures.append(f"{location}.purpose must be a non-empty string")
 
@@ -842,7 +848,9 @@ def validate_qualification_manifest(
             ),
         }
         if source_policy != expected_policy:
-            failures.append(f"{location}.source_policy does not match version 1")
+            failures.append(
+                f"{location}.source_policy does not match the qualification contract"
+            )
 
     cell_fields = {
         "registered_cell_id",
@@ -914,6 +922,13 @@ def validate_qualification_manifest(
             )
         if cell.get("region") != "us-west-2":
             failures.append(f"{location}.cell.region must be us-west-2")
+        if manifest_version in manifest_ids:
+            expected_cell_id = f"t4-tiny-en-jfk-qualification-v{manifest_version}"
+            if cell.get("registered_cell_id") != expected_cell_id:
+                failures.append(
+                    f"{location}.cell.registered_cell_id must be "
+                    f"{expected_cell_id!r}"
+                )
         for field in (
             "checkpoint_sha256",
             "input_sha256",
@@ -974,7 +989,9 @@ def validate_qualification_manifest(
             "reserved_tolerance_bytes": 67_108_864,
         }
         if resource != expected_resource:
-            failures.append(f"{location}.resource_contract does not match version 1")
+            failures.append(
+                f"{location}.resource_contract does not match the qualification contract"
+            )
 
     boundaries = _closed_manifest_object(
         top.get("measurement_boundaries"),
@@ -989,7 +1006,9 @@ def validate_qualification_manifest(
         "control_end": "after-backend-quiescent",
     }
     if boundaries is not None and boundaries != expected_boundaries:
-        failures.append(f"{location}.measurement_boundaries do not match version 1")
+        failures.append(
+            f"{location}.measurement_boundaries do not match the qualification contract"
+        )
 
     sampling = _closed_manifest_object(
         top.get("sampling"),
@@ -1009,7 +1028,9 @@ def validate_qualification_manifest(
         "fault_repetitions_per_point": 2,
     }
     if sampling is not None and sampling != expected_sampling:
-        failures.append(f"{location}.sampling does not match qualification version 1")
+        failures.append(
+            f"{location}.sampling does not match the qualification contract"
+        )
 
     faults = _closed_manifest_object(
         top.get("faults"),
@@ -1021,7 +1042,7 @@ def validate_qualification_manifest(
         "points": list(FAULT_POINTS),
         "planned_injections_per_run": 2,
     }:
-        failures.append(f"{location}.faults does not match qualification version 1")
+        failures.append(f"{location}.faults does not match the qualification contract")
 
     exclusion = _closed_manifest_object(
         top.get("exclusion_rule"),
@@ -1035,10 +1056,14 @@ def validate_qualification_manifest(
         "max_attempts": 1,
         "publish_all_attempts": True,
     }:
-        failures.append(f"{location}.exclusion_rule does not match version 1")
+        failures.append(
+            f"{location}.exclusion_rule does not match the qualification contract"
+        )
 
     if top.get("required_invariants") != list(REQUIRED_INVARIANTS):
-        failures.append(f"{location}.required_invariants does not match version 1")
+        failures.append(
+            f"{location}.required_invariants does not match the qualification contract"
+        )
     timestamp = _closed_manifest_object(
         top.get("timestamp_evidence"),
         {
@@ -1096,8 +1121,11 @@ def _validate_registration_binding(
         )
     workload = record["workload"]
     outcome = record["outcome"]
+    worker = record["worker"]
     gpu = record["gpu"]
     cell = manifest["cell"]
+    if worker["campaign_id"] != manifest["manifest_id"]:
+        failures.append("worker.campaign_id does not match manifest")
     for record_value, manifest_value, label in (
         (outcome["registered_cell_id"], cell["registered_cell_id"], "cell id"),
         (workload["profile_id"], cell["profile_id"], "profile"),

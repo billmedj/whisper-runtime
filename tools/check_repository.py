@@ -1632,15 +1632,16 @@ def check_modal_cuda_schema() -> list[str]:
         except SchemaError as error:
             failures.append(f"evidence/{name} is not a valid schema: {error}")
 
-    manifest_path = ROOT / "experiments" / "native-cuda-qualification-v1.json"
-    manifest = _read_json(manifest_path, failures)
-    if manifest is not None:
-        failures.extend(
-            validate_qualification_manifest(
-                manifest,
-                "experiments/native-cuda-qualification-v1.json",
+    for name in (
+        "native-cuda-qualification-v1.json",
+        "native-cuda-qualification-v2.json",
+    ):
+        manifest_path = ROOT / "experiments" / name
+        manifest = _read_json(manifest_path, failures)
+        if manifest is not None:
+            failures.extend(
+                validate_qualification_manifest(manifest, f"experiments/{name}")
             )
-        )
     return failures
 
 
