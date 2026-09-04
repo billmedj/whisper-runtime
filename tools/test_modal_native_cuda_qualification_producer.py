@@ -146,17 +146,23 @@ assert 'whisper' not in sys.modules
         manifest = _manifest()
         with patch.dict(
             os.environ,
-            {"MODAL_CLOUD_PROVIDER": "aws", "MODAL_REGION": "us-west-2"},
+            {
+                "MODAL_CLOUD_PROVIDER": "CLOUD_PROVIDER_AWS",
+                "MODAL_REGION": "us-west-2",
+            },
             clear=False,
         ):
             self.assertEqual(
                 producer._required_modal_location(manifest),
-                ("aws", "us-west-2"),
+                ("CLOUD_PROVIDER_AWS", "us-west-2"),
             )
         with (
             patch.dict(
                 os.environ,
-                {"MODAL_CLOUD_PROVIDER": "gcp", "MODAL_REGION": "us-west-2"},
+                {
+                    "MODAL_CLOUD_PROVIDER": "CLOUD_PROVIDER_GCP",
+                    "MODAL_REGION": "us-west-2",
+                },
                 clear=False,
             ),
             self.assertRaisesRegex(RuntimeError, "differs from the registration"),

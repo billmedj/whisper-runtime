@@ -178,10 +178,12 @@ python -m modal run infra/modal_native_cuda_qualification.py `
   --confirm-paid-gpu
 ```
 
-The command primes the pinned model cache, starts one AWS `us-west-2` T4
-worker, and writes one record. It creates the attempt receipt before it
-dispatches remote work. The producer accepts only the registered output path
-shown above and refuses to overwrite its record or receipt.
+The command primes the pinned model cache and requests one T4 with the Modal
+selectors `aws` and `us-west`. The worker must report
+`CLOUD_PROVIDER_AWS` and `us-west-2`. The command then writes one record.
+Before it dispatches remote work, it creates the attempt receipt. The producer
+accepts only the registered output path shown above and refuses to overwrite
+its record or receipt.
 
 ## Validate a record
 

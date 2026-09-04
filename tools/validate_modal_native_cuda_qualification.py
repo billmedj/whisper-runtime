@@ -847,6 +847,8 @@ def validate_qualification_manifest(
     cell_fields = {
         "registered_cell_id",
         "profile_id",
+        "cloud_selector",
+        "region_selector",
         "cloud_provider",
         "region",
         "gpu_name",
@@ -902,6 +904,16 @@ def validate_qualification_manifest(
         }:
             if not isinstance(cell.get(field), str) or not cell[field]:
                 failures.append(f"{location}.cell.{field} must be a non-empty string")
+        if cell.get("cloud_selector") != "aws":
+            failures.append(f"{location}.cell.cloud_selector must be aws")
+        if cell.get("region_selector") != "us-west":
+            failures.append(f"{location}.cell.region_selector must be us-west")
+        if cell.get("cloud_provider") != "CLOUD_PROVIDER_AWS":
+            failures.append(
+                f"{location}.cell.cloud_provider must be CLOUD_PROVIDER_AWS"
+            )
+        if cell.get("region") != "us-west-2":
+            failures.append(f"{location}.cell.region must be us-west-2")
         for field in (
             "checkpoint_sha256",
             "input_sha256",

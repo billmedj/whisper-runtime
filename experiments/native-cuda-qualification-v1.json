@@ -23,7 +23,9 @@
   "cell": {
     "registered_cell_id": "t4-tiny-en-jfk-qualification-v1",
     "profile_id": "tiny.en-cuda0-float32-v1",
-    "cloud_provider": "aws",
+    "cloud_selector": "aws",
+    "region_selector": "us-west",
+    "cloud_provider": "CLOUD_PROVIDER_AWS",
     "region": "us-west-2",
     "gpu_name": "Tesla T4",
     "model": "tiny.en",

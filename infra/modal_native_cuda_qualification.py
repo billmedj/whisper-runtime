@@ -2192,6 +2192,9 @@ def _define_modal_resources() -> tuple[Any, Any, Any, Any]:
     runtime_commit = _required_runtime_commit()
     if os.environ.get("MODAL_IS_REMOTE") != "1":
         _require_definition_checkout(runtime_commit)
+    manifest = _read_registration()
+    cloud_selector = manifest["cell"]["cloud_selector"]
+    region_selector = manifest["cell"]["region_selector"]
     _locked_image_inputs()
     image = (
         modal.Image.debian_slim(python_version="3.13")
@@ -2243,8 +2246,8 @@ def _define_modal_resources() -> tuple[Any, Any, Any, Any]:
         image=image,
         serialized=True,
         gpu=GPU_REQUEST,
-        cloud="aws",
-        region="us-west-2",
+        cloud=cloud_selector,
+        region=region_selector,
         volumes={MODEL_CACHE_MOUNT: model_cache.with_mount_options(read_only=True)},
         cpu=2.0,
         memory=4096,

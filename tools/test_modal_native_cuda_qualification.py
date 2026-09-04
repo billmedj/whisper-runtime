@@ -402,7 +402,7 @@ def valid_record() -> dict[str, Any]:
             "modal_sdk": "1.5.5",
         },
         "gpu": {
-            "cloud_provider": "aws",
+            "cloud_provider": "CLOUD_PROVIDER_AWS",
             "region": "us-west-2",
             "visible_device_count": 1,
             "device_index": 0,
