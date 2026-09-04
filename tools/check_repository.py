@@ -5,7 +5,7 @@ import hashlib
 import json
 import math
 import re
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 from typing import Any
 
 from compare_whisper_fixtures import compare_fixtures, validate_conformance_document
@@ -652,6 +652,393 @@ def check_native_interleaving_evidence() -> list[str]:
     return failures
 
 
+def validate_native_threaded_evidence(record: Any, location: str) -> list[str]:
+    """Check cross-field relations in one OS-thread isolation record."""
+
+    failures: list[str] = []
+    if not isinstance(record, dict):
+        return [f"{location} must be an object"]
+    try:
+        recorded_at = dt.datetime.fromisoformat(
+            str(record.get("recorded_at", "")).replace("Z", "+00:00")
+        )
+        if recorded_at.tzinfo is None or recorded_at.utcoffset() is None:
+            raise ValueError("timestamp has no UTC offset")
+    except ValueError:
+        failures.append(
+            f"{location}.recorded_at must be an ISO 8601 timestamp with an offset"
+        )
+
+    input_record = record.get("input", {})
+    if isinstance(input_record, dict):
+        input_path = str(input_record.get("path", ""))
+        posix_path = PurePosixPath(input_path)
+        path_parts = input_path.split("/")
+        if (
+            not input_path
+            or "\\" in input_path
+            or ":" in input_path
+            or posix_path.is_absolute()
+            or posix_path.as_posix() != input_path
+            or any(part in {"", ".", ".."} for part in path_parts)
+        ):
+            failures.append(
+                f"{location}.input.path must be a normalized relative POSIX path"
+            )
+        cancelled = input_record.get("cancelled", {})
+        survivor = input_record.get("survivor", {})
+        source_count = input_record.get("source_sample_count")
+        if isinstance(cancelled, dict) and isinstance(survivor, dict):
+            if cancelled.get("sample_start") != 0 or survivor.get("sample_start") != 0:
+                failures.append(f"{location} derived inputs must start at sample zero")
+            if (
+                not isinstance(source_count, int)
+                or isinstance(source_count, bool)
+                or cancelled.get("sample_end") != source_count // 2
+                or survivor.get("sample_end") != source_count
+            ):
+                failures.append(f"{location} derived input ranges are inconsistent")
+            for field in ("pcm_sha256", "mel_sha256", "encoded_features_sha256"):
+                if cancelled.get(field) == survivor.get(field):
+                    failures.append(
+                        f"{location} derived inputs must have distinct {field} values"
+                    )
+
+        manifest_path = ROOT / "conformance" / "audio-manifest.json"
+        try:
+            manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            manifest = {}
+        fixtures = manifest.get("fixtures", []) if isinstance(manifest, dict) else []
+        manifest_record = next(
+            (
+                fixture
+                for fixture in fixtures
+                if isinstance(fixture, dict)
+                and fixture.get("id") == input_record.get("fixture_id")
+            ),
+            None,
+        )
+        if manifest_record is None:
+            failures.append(f"{location} uses an unknown audio fixture")
+        else:
+            for evidence_field, manifest_field in (
+                ("file_sha256", "sha256"),
+                ("size_bytes", "size_bytes"),
+                ("sample_rate_hz", "decoded_sample_rate_hz"),
+                ("source_sample_count", "decoded_sample_count"),
+            ):
+                if input_record.get(evidence_field) != manifest_record.get(
+                    manifest_field
+                ):
+                    failures.append(
+                        f"{location}.input.{evidence_field} does not match "
+                        "the audio manifest"
+                    )
+
+    model = record.get("model", {})
+    if isinstance(model, dict):
+        if model.get("loaded_state_before") != model.get("loaded_state_after"):
+            failures.append(f"{location} loaded model state changed during the check")
+        if model.get("execution_state_before") != model.get("execution_state_after"):
+            failures.append(
+                f"{location} model execution state changed during the check"
+            )
+
+    execution = record.get("execution", {})
+    if not isinstance(execution, dict):
+        execution = {}
+    threads = execution.get("threads", [])
+    calls = execution.get("controlled_forward_lifetimes", [])
+    event_times: dict[str, dict[str, int]] = {}
+    if isinstance(threads, list) and len(threads) == 2:
+        by_role = {
+            role: thread
+            for thread in threads
+            if isinstance(thread, dict)
+            and isinstance((role := thread.get("role")), str)
+        }
+        if set(by_role) != {"cancelled", "survivor"}:
+            failures.append(f"{location}.execution.threads must contain both roles")
+        else:
+            if len({item.get("python_thread_id") for item in by_role.values()}) != 2:
+                failures.append(f"{location} Python worker thread IDs are not distinct")
+            if len({item.get("native_thread_id") for item in by_role.values()}) != 2:
+                failures.append(f"{location} native worker thread IDs are not distinct")
+            survivor_steps = execution.get("survivor_steps")
+            expected_events = {
+                "cancelled": [
+                    "start",
+                    "prefill",
+                    "step:1",
+                    "cleanup",
+                    "cleanup:idempotent",
+                    "step:rejected",
+                    "finalize:rejected",
+                ],
+                "survivor": [
+                    "start",
+                    "prefill",
+                    *(
+                        [f"step:{index}" for index in range(1, survivor_steps + 1)]
+                        if isinstance(survivor_steps, int)
+                        and not isinstance(survivor_steps, bool)
+                        else []
+                    ),
+                    "finalize",
+                    "finalize:rejected",
+                    "cleanup:idempotent",
+                ],
+            }
+            for role, thread in by_role.items():
+                events = thread.get("events", [])
+                started = thread.get("started_ns")
+                finished = thread.get("finished_ns")
+                if not (
+                    isinstance(started, int)
+                    and isinstance(finished, int)
+                    and started < finished
+                ):
+                    failures.append(f"{location} {role} worker interval is invalid")
+                    continue
+                if not isinstance(events, list) or not all(
+                    isinstance(event, dict) for event in events
+                ):
+                    failures.append(f"{location} {role} worker events are invalid")
+                    continue
+                names = [event.get("name") for event in events]
+                times = [event.get("at_ns") for event in events]
+                if names != expected_events[role]:
+                    failures.append(
+                        f"{location} {role} worker event sequence is invalid"
+                    )
+                if not all(
+                    isinstance(at_ns, int) and not isinstance(at_ns, bool)
+                    for at_ns in times
+                ):
+                    failures.append(
+                        f"{location} {role} worker event timestamps are invalid"
+                    )
+                elif not (
+                    all(started <= at_ns <= finished for at_ns in times)
+                    and all(
+                        earlier <= later
+                        for earlier, later in zip(times, times[1:], strict=False)
+                    )
+                ):
+                    failures.append(
+                        f"{location} {role} worker event timestamps are unordered"
+                    )
+                elif all(isinstance(name, str) for name in names):
+                    event_times[role] = dict(zip(names, times, strict=True))
+    else:
+        by_role = {}
+
+    if set(event_times) == {"cancelled", "survivor"}:
+        cleanup_ns = event_times["cancelled"].get("cleanup")
+        cancelled_step_ns = event_times["cancelled"].get("step:1")
+        survivor_step_ns = event_times["survivor"].get("step:1")
+        if not (
+            isinstance(cleanup_ns, int)
+            and isinstance(cancelled_step_ns, int)
+            and isinstance(survivor_step_ns, int)
+            and max(cancelled_step_ns, survivor_step_ns) < cleanup_ns
+        ):
+            failures.append(
+                f"{location} cancellation must follow both first token steps"
+            )
+
+    if isinstance(calls, list) and len(calls) == 2:
+        call_by_role = {
+            role: call
+            for call in calls
+            if isinstance(call, dict) and isinstance((role := call.get("role")), str)
+        }
+        if set(call_by_role) != {"cancelled", "survivor"}:
+            failures.append(
+                f"{location}.execution.controlled_forward_lifetimes must contain both roles"
+            )
+        else:
+            barriers: list[int] = []
+            started_calls: list[int] = []
+            finished_calls: list[int] = []
+            for role, call in call_by_role.items():
+                values = (
+                    call.get("inner_barrier_entered_ns"),
+                    call.get("forward_started_ns"),
+                    call.get("forward_finished_ns"),
+                )
+                if not all(
+                    isinstance(value, int) and not isinstance(value, bool)
+                    for value in values
+                ):
+                    failures.append(f"{location} {role} forward interval is invalid")
+                    continue
+                inner_barrier, call_started, call_finished = values
+                if not call_started <= inner_barrier < call_finished:
+                    failures.append(f"{location} {role} forward interval is unordered")
+                barriers.append(inner_barrier)
+                started_calls.append(call_started)
+                finished_calls.append(call_finished)
+                owner = by_role.get(role)
+                if isinstance(owner, dict) and (
+                    call.get("python_thread_id") != owner.get("python_thread_id")
+                    or call.get("native_thread_id") != owner.get("native_thread_id")
+                    or not owner.get("started_ns")
+                    <= call_started
+                    <= inner_barrier
+                    < call_finished
+                    <= owner.get("finished_ns")
+                ):
+                    failures.append(
+                        f"{location} {role} forward call has the wrong owner"
+                    )
+                role_events = event_times.get(role)
+                if isinstance(role_events, dict):
+                    start_event = role_events.get("start")
+                    prefill_event = role_events.get("prefill")
+                    if not (
+                        isinstance(start_event, int)
+                        and isinstance(prefill_event, int)
+                        and start_event
+                        <= call_started
+                        <= inner_barrier
+                        < call_finished
+                        <= prefill_event
+                    ):
+                        failures.append(
+                            f"{location} {role} forward call is outside its prefill"
+                        )
+            if len(barriers) == 2 and not (
+                max(started_calls) < min(finished_calls)
+                and max(barriers) < min(finished_calls)
+            ):
+                failures.append(
+                    f"{location} decoder forward-call bodies do not overlap"
+                )
+
+    if execution.get("cancelled_steps") != 1:
+        failures.append(f"{location} must cancel after exactly one token step")
+    elapsed = execution.get("elapsed_seconds", {})
+    if isinstance(elapsed, dict) and all(
+        _is_number(elapsed.get(field))
+        for field in (
+            "encoder_preparation",
+            "baseline",
+            "threaded",
+            "reuse_control",
+            "total",
+        )
+    ):
+        measured_phases = sum(
+            elapsed[field]
+            for field in (
+                "encoder_preparation",
+                "baseline",
+                "threaded",
+                "reuse_control",
+            )
+        )
+        if elapsed["total"] < measured_phases:
+            failures.append(
+                f"{location}.execution.elapsed_seconds.total is shorter than "
+                "its measured phases"
+            )
+    tolerance = execution.get("numeric_absolute_tolerance")
+    if not _is_number(tolerance) or tolerance < 0:
+        tolerance = 0.0
+    results = record.get("results", {})
+    if isinstance(results, dict):
+        baseline = results.get("isolated_baseline")
+        for role in ("survivor", "reuse_control"):
+            if not _same_recorded_result(
+                baseline,
+                results.get(role),
+                absolute_tolerance=tolerance,
+            ):
+                failures.append(
+                    f"{location}.results.{role} differs from isolated_baseline"
+                )
+        input_record = record.get("input", {})
+        survivor_input = (
+            input_record.get("survivor", {}) if isinstance(input_record, dict) else {}
+        )
+        prepared_survivor_sha256 = (
+            survivor_input.get("encoded_features_sha256")
+            if isinstance(survivor_input, dict)
+            else None
+        )
+        for role in ("isolated_baseline", "survivor", "reuse_control"):
+            result = results.get(role)
+            if (
+                not isinstance(result, dict)
+                or result.get("audio_features_sha256") != prepared_survivor_sha256
+            ):
+                failures.append(
+                    f"{location}.results.{role}.audio_features_sha256 does not "
+                    "match input.survivor.encoded_features_sha256"
+                )
+
+    assertions = record.get("assertions", {})
+    if (
+        not isinstance(assertions, dict)
+        or not assertions
+        or any(value is not True for value in assertions.values())
+    ):
+        failures.append(f"{location} contains a failed or missing assertion")
+
+    manifest_path = ROOT / "patches" / "openai-whisper" / "SHA256SUMS"
+    backend = record.get("backend", {})
+    if isinstance(backend, dict) and manifest_path.is_file():
+        observed_manifest = hashlib.sha256(manifest_path.read_bytes()).hexdigest()
+        if backend.get("patch_manifest_sha256") != observed_manifest:
+            failures.append(f"{location} does not match the current patch manifest")
+    return failures
+
+
+def check_native_threaded_evidence() -> list[str]:
+    failures: list[str] = []
+    schema_path = ROOT / "evidence" / "native-threaded.schema.json"
+    schema = _read_json(schema_path, failures)
+    if not isinstance(schema, dict):
+        return failures
+    if schema.get("$schema") != "https://json-schema.org/draft/2020-12/schema":
+        failures.append(
+            "evidence/native-threaded.schema.json must use JSON Schema 2020-12"
+        )
+    try:
+        from jsonschema import Draft202012Validator, FormatChecker
+        from jsonschema.exceptions import SchemaError
+    except ImportError:
+        failures.append(
+            "JSON Schema validation is unavailable; install the 'validation' extra"
+        )
+        return failures
+    try:
+        Draft202012Validator.check_schema(schema)
+    except SchemaError as error:
+        failures.append(
+            f"evidence/native-threaded.schema.json is not a valid schema: {error}"
+        )
+        return failures
+    validator = Draft202012Validator(schema, format_checker=FormatChecker())
+    for path in sorted((ROOT / "evidence").glob("native*threaded*.json")):
+        if path.name == "native-threaded.schema.json":
+            continue
+        record = _read_json(path, failures)
+        if record is None:
+            continue
+        location = path.relative_to(ROOT).as_posix()
+        schema_errors = list(validator.iter_errors(record))
+        for error in schema_errors:
+            field = ".".join(str(part) for part in error.absolute_path)
+            suffix = f".{field}" if field else ""
+            failures.append(f"{location}{suffix}: {error.message}")
+        if not schema_errors:
+            failures.extend(validate_native_threaded_evidence(record, location))
+    return failures
+
+
 def check_fixture_schema() -> list[str]:
     failures: list[str] = []
     path = ROOT / "conformance" / "fixture.schema.json"
@@ -939,6 +1326,7 @@ def main() -> int:
         *check_fixture_schema(),
         *check_conformance_cases(),
         *check_native_interleaving_evidence(),
+        *check_native_threaded_evidence(),
     ]
     if failures:
         for failure in failures:

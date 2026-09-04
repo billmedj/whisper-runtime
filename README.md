@@ -25,7 +25,7 @@ explicit.
 | Legacy adapter | Runs the existing synchronous `model.transcribe()` call as one serialized transaction |
 | Native adapter | Exposes run creation, prefill, token steps, finalization, and cleanup through a patched CPU decoder |
 | Conformance data | Records one pinned `tiny.en` and JFK CPU comparison with source, input, model, and output identities |
-| Isolation evidence | Runs two staged decodes on one loaded model, cleans one early, and checks the survivor against an isolated baseline |
+| Isolation checks | Exercises two staged decodes under a fixed schedule and in two operating-system threads, cleans one early, and checks the survivor against an isolated baseline |
 | Formal model | Proves lease, capacity, lifecycle, and stale-commit properties within an abstract Lean model |
 
 The runtime follows one execution path:
@@ -147,23 +147,32 @@ See the [native adapter contract](https://github.com/billmedj/whisper-runtime/bl
 | Evidence | Scope |
 | --- | --- |
 | 89 runtime tests | Resource accounting, queue bounds, commit races, deadlines, cancellation, quarantine, recovery, and adapter behavior |
-| 20 repository-tool tests | Provenance, source state, fixtures, portability, evidence schemas, semantic validation, and native smoke contracts |
+| 31 repository-tool tests | Provenance, source state, fixtures, portability, evidence schemas, semantic validation, and native smoke contracts |
 | 2,000-step deterministic state trace | State-machine transitions under generated operations |
 | 35 Lean theorem declarations | Abstract lease provenance, capacity conservation, lifecycle, and stale-commit properties |
 | One recorded native run | Patched `tiny.en` decoder, JFK fixture, CPU, exact transcript, queue returned to zero, declared budget restored |
 | One recorded staged-run isolation check | One loaded `tiny.en` model, two overlapping run lifetimes, early cleanup, unchanged survivor, and successful model reuse |
+| OS-thread backend check | Two native worker threads, overlapping outer decoder-call intervals, owner-thread cleanup, unchanged survivor, and model reuse |
 | One conformance pair | Pinned greedy CPU reference and candidate records |
 
 The recorded transaction identifies the imported source tree, checkpoint,
 loaded model state, audio input, environment, and committed output. The native
 CI workflow also runs two staged decodes on one loaded model under a fixed
-token-step schedule. It cleans one run after a decoder step and requires the
-survivor to match an isolated baseline. A third decode checks that the model is
-still reusable after cleanup.
+token-step schedule. It then repeats the decoder isolation case with two native
+worker threads after preparing both encoder outputs sequentially. Each thread
+enters its first outer decoder call. A barrier in the first decoder block holds
+both calls before either continues. The evidence records
+the start and end of each outer call and requires the two intervals to overlap.
+It also records the explicit decode options. In both checks, one run is cleaned
+after a decoder step, the survivor must match an isolated baseline, and a final
+decode must show that the model remains usable.
 
-The interleaving check is a backend lifecycle test. It does not demonstrate
-simultaneous kernel execution, multi-threaded same-model safety, or throughput.
-The current `NativeWhisperAdapter` still admits one transaction at a time.
+These checks exercise the patched Whisper backend below the runtime adapter.
+The threaded check does not exercise concurrent encoder calls, the scheduler,
+or concurrent `NativeWhisperAdapter` transactions. It does not measure kernel
+overlap or throughput. It covers one pinned CPU configuration and is not a
+general thread-safety guarantee. The current adapter still admits one
+transaction at a time.
 
 These results do not establish CUDA correctness, safe batching, live audio
 streaming, durable mid-window resume, portable worker migration, latency,

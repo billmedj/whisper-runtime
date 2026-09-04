@@ -9,11 +9,14 @@ on:
       - "patches/openai-whisper/**"
       - "src/whisper_runtime/**"
       - "evidence/native-interleaving.schema.json"
+      - "evidence/native-threaded.schema.json"
       - "pyproject.toml"
       - "tools/check_repository.py"
       - "tools/smoke_native_whisper.py"
       - "tools/validate_interleaving_record.py"
+      - "tools/validate_threaded_record.py"
       - "tools/verify_native_interleaving.py"
+      - "tools/verify_native_threaded.py"
   push:
     branches:
       - main
@@ -24,11 +27,14 @@ on:
       - "patches/openai-whisper/**"
       - "src/whisper_runtime/**"
       - "evidence/native-interleaving.schema.json"
+      - "evidence/native-threaded.schema.json"
       - "pyproject.toml"
       - "tools/check_repository.py"
       - "tools/smoke_native_whisper.py"
       - "tools/validate_interleaving_record.py"
+      - "tools/validate_threaded_record.py"
       - "tools/verify_native_interleaving.py"
+      - "tools/verify_native_threaded.py"
   workflow_dispatch:
 
 permissions:
@@ -117,5 +123,30 @@ jobs:
         with:
           name: native-interleaving-${{ github.sha }}
           path: ${{ runner.temp }}/native-interleaving.json
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Verify same-model OS-thread isolation
+        shell: bash
+        run: |
+          revision="$(git -C "$WHISPER_BACKEND" rev-parse HEAD)"
+          PYTHONPATH="$WHISPER_BACKEND" python -B tools/verify_native_threaded.py \
+            "$WHISPER_BACKEND/tests/jfk.flac" \
+            --model tiny.en \
+            --fixture-id "openai-whisper-jfk-flac" \
+            --input-label "tests/jfk.flac" \
+            --download-root "$RUNNER_TEMP/whisper-models" \
+            --base-revision "86098128c0b4f24f0e2aa2994de830614b474227" \
+            --revision "$revision" \
+            --expected-model-fingerprint "sha256:8041a80119a588f542472da35e97d0372fce1d9709ed9874475e9c03deac5de6" \
+            --expected-text "And so my fellow Americans ask not what your country can do for you, ask what you can do for your country." \
+            | tee "$RUNNER_TEMP/native-threaded.json"
+          python -B tools/validate_threaded_record.py "$RUNNER_TEMP/native-threaded.json"
+
+      - name: Publish the OS-thread evidence
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: native-threaded-${{ github.sha }}
+          path: ${{ runner.temp }}/native-threaded.json
           if-no-files-found: error
           retention-days: 30

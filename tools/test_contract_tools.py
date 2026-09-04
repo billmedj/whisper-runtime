@@ -5,6 +5,7 @@ import hashlib
 import json
 import subprocess
 import tempfile
+import threading
 import unittest
 from pathlib import Path
 from types import SimpleNamespace
@@ -21,6 +22,7 @@ from smoke_native_whisper import (
     verify_terminal_invariants,
 )
 from validate_interleaving_record import validate_record
+from validate_threaded_record import validate_threaded_record
 from verify_native_interleaving import (
     EXPECTED_ASSERTIONS,
     PINNED_WHISPER_BASE,
@@ -28,6 +30,15 @@ from verify_native_interleaving import (
     decode_results_match,
     verify_audio_manifest_binding,
     verify_passed_assertions,
+)
+from verify_native_threaded import (
+    EXPECTED_THREADED_ASSERTIONS,
+    ControlledForwardGate,
+    callable_fingerprint,
+    controlled_decoder_forward,
+    forward_lifetimes_overlap,
+    verified_child_mode,
+    verify_passed_threaded_assertions,
 )
 
 from whisper_runtime import ResourceVector
@@ -467,6 +478,320 @@ class NativeInterleavingContractTests(unittest.TestCase):
         evidence["execution"]["elapsed_seconds"]["total"] = float("nan")
         failures = validate_record(evidence, "evidence/test.json")
         self.assertTrue(any("non-finite" in failure for failure in failures))
+
+
+class NativeThreadedContractTests(unittest.TestCase):
+    def test_child_mode_requires_matching_nonce(self) -> None:
+        self.assertFalse(verified_child_mode(None, None))
+        self.assertTrue(verified_child_mode("nonce", "nonce"))
+        with self.assertRaisesRegex(RuntimeError, "token is invalid"):
+            verified_child_mode("nonce", "different")
+
+    def evidence(self) -> dict[str, object]:
+        record = NativeInterleavingContractTests().evidence()
+        record["subject"] = {
+            "layer": "patched_openai_whisper_backend",
+            "entrypoint": "whisper.decoding.DecodingTask._start_run",
+            "runtime_adapter_exercised": False,
+            "scheduler_exercised": False,
+            "encoder_concurrency_exercised": False,
+        }
+        record["explicit_decode_options"] = {
+            "language": "en",
+            "temperature": 0.0,
+            "without_timestamps": True,
+            "fp16": False,
+        }
+        environment = record["environment"]
+        del environment["cpu_threads"]
+        environment.update(
+            {
+                "process_id": 123,
+                "torch_cpu_threads": 1,
+                "torch_interop_threads": 1,
+            }
+        )
+        record["input"]["cancelled"]["encoded_features_sha256"] = "a" * 64
+        record["input"]["survivor"]["encoded_features_sha256"] = "2" * 64
+        record["execution"] = {
+            "mode": "two_os_threads_decoder_body_overlap",
+            "thread_count": 2,
+            "synchronization": "first_decoder_block_barrier_and_events",
+            "encoder_preparation": "sequential_encoder_passes",
+            "controlled_forward_calls": 2,
+            "maximum_instrumented_forward_calls_live": 2,
+            "kernel_overlap_measured": False,
+            "parallel_kernel_execution_claimed": False,
+            "cancellation": "owner_thread_cleanup_after_first_step",
+            "cancelled_steps": 1,
+            "survivor_steps": 2,
+            "survivor_cache_entries_at_cancellation": 16,
+            "numeric_absolute_tolerance": 0.0,
+            "worker_timeout_seconds": 120.0,
+            "process_timeout_seconds": 300.0,
+            "timing_is_benchmark": False,
+            "elapsed_seconds": {
+                "encoder_preparation": 0.1,
+                "baseline": 1.0,
+                "threaded": 2.0,
+                "reuse_control": 1.0,
+                "total": 4.2,
+            },
+            "threads": [
+                {
+                    "role": "cancelled",
+                    "python_thread_id": 11,
+                    "native_thread_id": 21,
+                    "started_ns": 100,
+                    "finished_ns": 600,
+                    "events": [
+                        {"name": "start", "at_ns": 120},
+                        {"name": "prefill", "at_ns": 270},
+                        {"name": "step:1", "at_ns": 320},
+                        {"name": "cleanup", "at_ns": 360},
+                        {"name": "cleanup:idempotent", "at_ns": 370},
+                        {"name": "step:rejected", "at_ns": 380},
+                        {"name": "finalize:rejected", "at_ns": 390},
+                    ],
+                },
+                {
+                    "role": "survivor",
+                    "python_thread_id": 12,
+                    "native_thread_id": 22,
+                    "started_ns": 110,
+                    "finished_ns": 700,
+                    "events": [
+                        {"name": "start", "at_ns": 130},
+                        {"name": "prefill", "at_ns": 280},
+                        {"name": "step:1", "at_ns": 330},
+                        {"name": "step:2", "at_ns": 450},
+                        {"name": "finalize", "at_ns": 500},
+                        {"name": "finalize:rejected", "at_ns": 510},
+                        {"name": "cleanup:idempotent", "at_ns": 520},
+                    ],
+                },
+            ],
+            "controlled_forward_lifetimes": [
+                {
+                    "role": "cancelled",
+                    "python_thread_id": 11,
+                    "native_thread_id": 21,
+                    "forward_started_ns": 150,
+                    "inner_barrier_entered_ns": 180,
+                    "forward_finished_ns": 250,
+                },
+                {
+                    "role": "survivor",
+                    "python_thread_id": 12,
+                    "native_thread_id": 22,
+                    "forward_started_ns": 160,
+                    "inner_barrier_entered_ns": 190,
+                    "forward_finished_ns": 260,
+                },
+            ],
+        }
+        record["assertions"] = {name: True for name in EXPECTED_THREADED_ASSERTIONS}
+        return record
+
+    def test_forward_gate_uses_two_native_threads_and_records_overlap(self) -> None:
+        role_context = threading.local()
+        gate: ControlledForwardGate
+
+        def decoder_forward(value: str) -> str:
+            return gate.first_block_forward(value)
+
+        gate = ControlledForwardGate(
+            decoder_forward,
+            lambda value: value,
+            role_context,
+            2.0,
+        )
+        results: list[str] = []
+
+        def call(role: str) -> None:
+            role_context.role = role
+            results.append(gate(role))
+
+        workers = [
+            threading.Thread(target=call, args=("cancelled",)),
+            threading.Thread(target=call, args=("survivor",)),
+        ]
+        for worker in workers:
+            worker.start()
+        for worker in workers:
+            worker.join(2.0)
+        self.assertFalse(any(worker.is_alive() for worker in workers))
+        self.assertEqual(set(results), {"cancelled", "survivor"})
+        self.assertEqual(gate.max_active, 2)
+        self.assertTrue(forward_lifetimes_overlap(gate.records))
+        self.assertEqual(
+            len({record["native_thread_id"] for record in gate.records}),
+            2,
+        )
+
+    def test_forward_instrumentation_is_removed(self) -> None:
+        class Block:
+            def forward(self, value: str) -> str:
+                return value
+
+        class Decoder:
+            def __init__(self) -> None:
+                self.blocks = [Block()]
+
+            def forward(self, value: str) -> str:
+                return self.blocks[0].forward(value)
+
+        decoder = Decoder()
+        decoder_before = callable_fingerprint(decoder.forward)
+        block_before = callable_fingerprint(decoder.blocks[0].forward)
+        role_context = threading.local()
+        with controlled_decoder_forward(decoder, role_context, 1.0):
+            self.assertNotEqual(callable_fingerprint(decoder.forward), decoder_before)
+            self.assertNotEqual(
+                callable_fingerprint(decoder.blocks[0].forward), block_before
+            )
+        self.assertEqual(callable_fingerprint(decoder.forward), decoder_before)
+        self.assertEqual(callable_fingerprint(decoder.blocks[0].forward), block_before)
+        self.assertNotIn("forward", vars(decoder))
+        self.assertNotIn("forward", vars(decoder.blocks[0]))
+
+    def test_all_threaded_assertions_must_pass(self) -> None:
+        passed = {name: True for name in EXPECTED_THREADED_ASSERTIONS}
+        verify_passed_threaded_assertions(passed)
+        failed = dict(passed)
+        failed["decoder_forward_lifetimes_overlap"] = False
+        with self.assertRaisesRegex(RuntimeError, "decoder_forward_lifetimes_overlap"):
+            verify_passed_threaded_assertions(failed)
+
+    def test_threaded_record_validator_checks_ownership_and_results(self) -> None:
+        evidence = self.evidence()
+        self.assertEqual(
+            validate_threaded_record(evidence, "evidence/threaded-test.json"),
+            [],
+        )
+        execution = evidence["execution"]
+        execution["controlled_forward_lifetimes"][0]["native_thread_id"] = 99
+        evidence["results"]["survivor"]["text"] = "different"
+        failures = validate_threaded_record(
+            evidence,
+            "evidence/threaded-test.json",
+        )
+        self.assertTrue(any("wrong owner" in failure for failure in failures))
+        self.assertTrue(any("survivor differs" in failure for failure in failures))
+
+        evidence = self.evidence()
+        evidence["input"]["survivor"]["encoded_features_sha256"] = "c" * 64
+        failures = validate_threaded_record(
+            evidence,
+            "evidence/threaded-test.json",
+        )
+        self.assertTrue(
+            any("does not match input.survivor" in failure for failure in failures)
+        )
+
+        evidence = self.evidence()
+        evidence["input"]["cancelled"]["encoded_features_sha256"] = "2" * 64
+        failures = validate_threaded_record(
+            evidence,
+            "evidence/threaded-test.json",
+        )
+        self.assertTrue(
+            any("distinct encoded_features_sha256" in failure for failure in failures)
+        )
+
+    def test_threaded_record_validator_rejects_non_finite_numbers(self) -> None:
+        evidence = self.evidence()
+        evidence["execution"]["worker_timeout_seconds"] = float("nan")
+        failures = validate_threaded_record(
+            evidence,
+            "evidence/threaded-test.json",
+        )
+        self.assertTrue(any("non-finite" in failure for failure in failures))
+
+    def test_threaded_record_validator_rejects_event_contract_changes(self) -> None:
+        reordered = self.evidence()
+        events = reordered["execution"]["threads"][0]["events"]
+        events[2], events[3] = events[3], events[2]
+        failures = validate_threaded_record(reordered, "evidence/threaded-test.json")
+        self.assertTrue(any("event sequence" in failure for failure in failures))
+
+        early_cleanup = self.evidence()
+        early_cleanup["execution"]["threads"][0]["events"][3]["at_ns"] = 325
+        failures = validate_threaded_record(
+            early_cleanup,
+            "evidence/threaded-test.json",
+        )
+        self.assertTrue(
+            any("cancellation must follow" in failure for failure in failures)
+        )
+
+    def test_threaded_record_validator_rejects_false_overlap(self) -> None:
+        evidence = self.evidence()
+        calls = evidence["execution"]["controlled_forward_lifetimes"]
+        calls[0].update(
+            {
+                "forward_started_ns": 140,
+                "inner_barrier_entered_ns": 170,
+                "forward_finished_ns": 180,
+            }
+        )
+        calls[1].update(
+            {
+                "forward_started_ns": 190,
+                "inner_barrier_entered_ns": 210,
+                "forward_finished_ns": 230,
+            }
+        )
+        failures = validate_threaded_record(evidence, "evidence/threaded-test.json")
+        self.assertTrue(any("bodies do not overlap" in failure for failure in failures))
+
+    def test_threaded_record_validator_binds_forwards_to_prefill(self) -> None:
+        evidence = self.evidence()
+        calls = evidence["execution"]["controlled_forward_lifetimes"]
+        calls[0].update(
+            {
+                "forward_started_ns": 300,
+                "inner_barrier_entered_ns": 320,
+                "forward_finished_ns": 340,
+            }
+        )
+        calls[1].update(
+            {
+                "forward_started_ns": 310,
+                "inner_barrier_entered_ns": 330,
+                "forward_finished_ns": 350,
+            }
+        )
+        failures = validate_threaded_record(evidence, "evidence/threaded-test.json")
+        self.assertTrue(any("outside its prefill" in failure for failure in failures))
+
+    def test_threaded_record_validator_returns_schema_errors_for_bad_roles(
+        self,
+    ) -> None:
+        bad_thread = self.evidence()
+        bad_thread["execution"]["threads"][0]["role"] = []
+        failures = validate_threaded_record(
+            bad_thread,
+            "evidence/threaded-test.json",
+        )
+        self.assertTrue(failures)
+
+        bad_call = self.evidence()
+        bad_call["execution"]["controlled_forward_lifetimes"][0]["role"] = {}
+        failures = validate_threaded_record(bad_call, "evidence/threaded-test.json")
+        self.assertTrue(failures)
+
+    def test_threaded_record_validator_requires_portable_time_and_path(self) -> None:
+        evidence = self.evidence()
+        evidence["recorded_at"] = "2026-09-04T00:00:00"
+        evidence["input"]["path"] = "C:\\tests\\jfk.flac"
+        evidence["execution"]["elapsed_seconds"]["total"] = 3.0
+        failures = validate_threaded_record(evidence, "evidence/threaded-test.json")
+        self.assertTrue(any("with an offset" in failure for failure in failures))
+        self.assertTrue(any("relative POSIX path" in failure for failure in failures))
+        self.assertTrue(
+            any("shorter than its measured phases" in failure for failure in failures)
+        )
 
 
 if __name__ == "__main__":

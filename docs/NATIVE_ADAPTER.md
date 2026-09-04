@@ -157,3 +157,44 @@ format is defined in `evidence/native-interleaving.schema.json`.
 This check does not send two transactions through `NativeWhisperAdapter`. The
 adapter still requires `queue_capacity=1`. The check does not claim parallel
 kernel execution, thread-safe execution, or higher throughput.
+
+## Same-model OS-thread isolation check
+
+`tools/verify_native_threaded.py` repeats the decoder isolation case in two
+worker threads. It prepares both encoder outputs sequentially and creates a
+separate `DecodingTask` for each worker. Each worker creates and operates its
+own run. Barriers and events fix the test order. Each thread enters its first
+outer `decoder.forward` call. A barrier in the first decoder block holds both
+outer calls before either continues. Temporary instrumentation records the
+owning Python and native thread identifiers and the start and end of each outer
+call. The check requires those two intervals to overlap.
+
+The cancelled worker cleans its run after one token step. The other worker
+continues to completion. The check requires:
+
+- two distinct Python and native worker thread identifiers;
+- both instrumented decoder calls to run on their recorded owner threads;
+- overlapping intervals for the two outer decoder calls;
+- separate request state and disjoint KV-cache storage;
+- unchanged survivor cache across cancellation of the other run;
+- a survivor result equal to the isolated baseline within the recorded scalar
+  tolerance, which is zero in CI;
+- restoration of the instrumented decoder and first-block methods and no net
+  change to model state or execution-hook registries;
+- successful model reuse after both worker runs end.
+
+The tool emits JSON. `tools/validate_threaded_record.py` validates the record
+against `evidence/native-threaded.schema.json` and checks relations that JSON
+Schema cannot express, including thread ownership, interval overlap, fixture
+identity, result equality, and patch-manifest identity. The record also binds
+the language, temperature, timestamp mode, and numeric precision options used
+by the decoder.
+
+The check exercises `whisper.decoding.DecodingTask._start_run` in the patched
+Whisper backend. It runs below `NativeWhisperAdapter`; it does not exercise
+concurrent encoder calls, the runtime scheduler, or adapter concurrency.
+Overlapping decoder-call bodies do not show that PyTorch kernels execute
+simultaneously. The check makes no claim about kernel overlap, throughput,
+CUDA, production readiness, or general thread safety across other models,
+devices, operating systems, or dependency versions. The adapter remains
+serialized.

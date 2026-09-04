@@ -9,10 +9,10 @@ evidence is committed to the repository.
 - Expand the conformance corpus beyond one greedy CPU case.
 - Record sampling, beam search, translation, timestamps, word timestamps,
   multiple inputs, cancellation, and failure behavior.
-- Maintain the CPU check for deterministic same-model interleaving, early
-  cleanup of one run, and isolated-baseline equality for the survivor.
-- Extend request-isolation evidence to two admitted runtime transactions,
-  operating-system threads, and CUDA.
+- Maintain the pinned CPU backend checks for deterministic interleaving and
+  overlapping outer decoder calls in two operating-system threads.
+- Extend request-isolation evidence to two transactions admitted by the
+  runtime scheduler, then add CUDA coverage.
 - Select and document one random-generator contract.
 - Validate the native path on CUDA with source, model, input, environment,
   output, latency, and memory records.
