@@ -30,7 +30,7 @@ fault points. Its p50 and p95 summaries are diagnostic; p99 is
 `not_estimated`. No committed record currently satisfies this contract.
 
 The active registration is
-[`experiments/native-cuda-qualification-v2.json`](../experiments/native-cuda-qualification-v2.json).
+[`experiments/native-cuda-qualification-v3.json`](../experiments/native-cuda-qualification-v3.json).
 A record binds its path, digest, and runtime commit. The local validator cannot
 prove that the registration was public before execution; that requires an
 external public timestamp. A future performance campaign requires a new schema
@@ -44,8 +44,19 @@ append-only
 [`attempt-started` receipt](modal-native-cuda-qualification-v1-attempt-2026-09-04.jsonl)
 is retained without a synthetic terminal event. The receipt alone proves the
 local dispatch boundary, not the remote worker state or the reported cause.
-Version two requires the canonical module invocation and rejects a file-path
-invocation before dispatch.
+The version-two producer required the canonical module invocation and rejected
+a file-path invocation before dispatch.
+
+For version two, the operator observed that the worker reached the registered
+T4 cell and stopped during its first control decode because the transcript
+digest did not match the registration. Its
+[`attempt-failed` receipt](modal-native-cuda-qualification-v2-attempt-2026-09-04.jsonl)
+is retained. The receipt itself records the `gpu-campaign` stage, exception
+type, and message digest; it does not independently prove the allocated GPU or
+preserve the observed transcript. The earlier passing AWS record used
+timestamp-free decoding. Version two registered timestamp-token decoding with
+the timestamp-free transcript digest. Version three aligns
+`without_timestamps` with that digest and remains unexecuted.
 
 `modal-cuda-readiness.schema.json` defines the version-one T4 record. Both
 committed records passed its schema and semantic validator. They bind the same

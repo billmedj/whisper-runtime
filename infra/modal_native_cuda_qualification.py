@@ -57,7 +57,7 @@ except ImportError:  # pragma: no cover - direct ``modal run`` script loading
     )
 
 ROOT = Path(__file__).resolve().parents[1]
-APP_NAME = "whisper-runtime-native-cuda-qualification-v2"
+APP_NAME = "whisper-runtime-native-cuda-qualification-v3"
 CANONICAL_MODULE_NAME = "infra.modal_native_cuda_qualification"
 SCHEMA_VERSION = "1-draft"
 ATTEMPT_RECEIPT_VERSION = "1"
@@ -69,11 +69,12 @@ BACKEND_BASE_TREE = "f7b3cb8e12a2e84dccacc4c858c33d5a9c114688"
 BACKEND_COMMIT = "a0b9695ae1cc52bad4b8626fe9fb6ea4ac0ee650"
 BACKEND_TREE = "c011d2563c26763b5f147026e6b18ef85bccd4fb"
 PATCH_MANIFEST_PATH = "patches/openai-whisper/SHA256SUMS"
-QUALIFICATION_MANIFEST_PATH = "experiments/native-cuda-qualification-v2.json"
+QUALIFICATION_MANIFEST_PATH = "experiments/native-cuda-qualification-v3.json"
 PRODUCER_PATH = "infra/modal_native_cuda_qualification.py"
 TRACE_PATH = "infra/native_cuda_trace.py"
 IMAGE_INPUTS_PATH = "infra/modal-native-cuda-image-inputs.lock"
-REGISTERED_OUTPUT_PATH = "artifacts/modal/native-cuda-qualification-v2.json"
+INPUT_MANIFEST_PATH = "conformance/audio-manifest.json"
+REGISTERED_OUTPUT_PATH = "artifacts/modal/native-cuda-qualification-v3.json"
 SCHEMA_PATH = "evidence/modal-native-cuda-qualification.schema.json"
 VALIDATOR_PATH = "tools/validate_modal_native_cuda_qualification.py"
 MODEL_CACHE_NAME = "whisper-runtime-model-cache-v1"
@@ -144,6 +145,38 @@ def _sha256_file(path: Path) -> str:
         for chunk in iter(lambda: stream.read(1024 * 1024), b""):
             digest.update(chunk)
     return digest.hexdigest()
+
+
+def _verify_input_manifest(path: Path, cell: Mapping[str, Any]) -> None:
+    if _sha256_file(path) != cell["input_manifest_sha256"]:
+        raise RuntimeError("the input manifest differs from the registration")
+    value = json.loads(path.read_text(encoding="utf-8"))
+    if not isinstance(value, dict):
+        raise RuntimeError("the input manifest has an invalid structure")
+    fixtures = value.get("fixtures")
+    if value.get("schema_version") != "1" or not isinstance(fixtures, list):
+        raise RuntimeError("the input manifest has an invalid structure")
+    matches = [
+        fixture
+        for fixture in fixtures
+        if isinstance(fixture, dict) and fixture.get("id") == cell["fixture_id"]
+    ]
+    expected_sample_count = (
+        int(cell["sample_rate_hz"]) * int(cell["input_duration_ns"])
+    ) // 1_000_000_000
+    expected = {
+        "source_url": cell["input_source"],
+        "sha256": cell["input_sha256"],
+        "size_bytes": cell["input_bytes"],
+        "decoded_sample_rate_hz": cell["sample_rate_hz"],
+        "decoded_sample_count": expected_sample_count,
+    }
+    fixture_differs = len(matches) != 1 or any(
+        matches[0].get(key) != expected_value
+        for key, expected_value in expected.items()
+    )
+    if fixture_differs:
+        raise RuntimeError("the input manifest fixture differs from the registration")
 
 
 def _sha256_text(value: str) -> str:
@@ -294,6 +327,7 @@ def _require_definition_checkout(runtime_commit: str) -> None:
         SCHEMA_PATH,
         VALIDATOR_PATH,
         IMAGE_INPUTS_PATH,
+        INPUT_MANIFEST_PATH,
     ):
         validator.bind_tracked_artifact(ROOT / relative, identity)
 
@@ -961,6 +995,7 @@ def _bind_provenance(
         SCHEMA_PATH,
         VALIDATOR_PATH,
         IMAGE_INPUTS_PATH,
+        INPUT_MANIFEST_PATH,
     )
     bindings = {
         relative: validator.bind_tracked_artifact(runtime_root / relative, runtime)
@@ -1269,7 +1304,12 @@ class _QualificationRunner:
             patience=options["patience"],
             length_penalty=options["length_penalty"],
             sample_len=options["sample_len"],
+            prompt=options["prompt"],
+            prefix=options["prefix"],
+            suppress_tokens=options["suppress_tokens"],
+            suppress_blank=bool(options["suppress_blank"]),
             without_timestamps=bool(options["without_timestamps"]),
+            max_initial_timestamp=options["max_initial_timestamp"],
         )
 
     def _control_options(self) -> object:
@@ -1287,7 +1327,12 @@ class _QualificationRunner:
             patience=options["patience"],
             length_penalty=options["length_penalty"],
             sample_len=options["sample_len"],
+            prompt=options["prompt"],
+            prefix=options["prefix"],
+            suppress_tokens=options["suppress_tokens"],
+            suppress_blank=bool(options["suppress_blank"]),
             without_timestamps=bool(options["without_timestamps"]),
+            max_initial_timestamp=options["max_initial_timestamp"],
             fp16=bool(options["fp16"]),
             generator=generator,
         )
@@ -1833,6 +1878,9 @@ def _run_qualification_worker(
         != bindings[PATCH_MANIFEST_PATH][1]
     ):
         raise RuntimeError("the patch manifest changed after provenance binding")
+    if bindings[INPUT_MANIFEST_PATH][1] != cell["input_manifest_sha256"]:
+        raise RuntimeError("the bound input manifest differs from the registration")
+    _verify_input_manifest(RUNTIME_ROOT / INPUT_MANIFEST_PATH, cell)
     if _sha256_file(MODEL_CHECKPOINT_PATH) != cell["checkpoint_sha256"]:
         raise RuntimeError("the cached checkpoint differs from the registration")
     if _sha256_file(AUDIO_PATH) != cell["input_sha256"]:

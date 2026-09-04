@@ -8,7 +8,7 @@ The current
 [`modal-native-cuda-qualification.schema.json`](../evidence/modal-native-cuda-qualification.schema.json)
 is qualification-only despite its historical filename. Its fixed cell is
 registered in
-[`experiments/native-cuda-qualification-v2.json`](../experiments/native-cuda-qualification-v2.json).
+[`experiments/native-cuda-qualification-v3.json`](../experiments/native-cuda-qualification-v3.json).
 The local validator binds that tracked file by path, digest, and runtime commit,
 but cannot prove that it was public before execution. A public Git host or
 another independent service must supply that timestamp.

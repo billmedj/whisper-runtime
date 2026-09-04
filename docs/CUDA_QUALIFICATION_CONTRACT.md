@@ -2,8 +2,8 @@
 
 `evidence/modal-native-cuda-qualification.schema.json` defines the
 `1-draft` record format for one fixed native CUDA qualification cell. Version
-two is the second registered campaign under this format. This schema is not a
-performance-benchmark schema, and no committed evidence record currently
+three is the active preregistered campaign under this format. This schema is
+not a performance-benchmark schema, and no committed evidence record currently
 satisfies it.
 
 The contract has two purposes:
@@ -21,7 +21,7 @@ Provider logs and independent review remain necessary.
 ## Registered cell
 
 The versioned registration is
-[`experiments/native-cuda-qualification-v2.json`](../experiments/native-cuda-qualification-v2.json).
+[`experiments/native-cuda-qualification-v3.json`](../experiments/native-cuda-qualification-v3.json).
 It fixes the source policy, backend revision, T4 worker profile, model,
 checkpoint, input, decode options, resource contract, measurement boundaries,
 sample counts, fault points, exclusion rule, and required invariants.
@@ -147,8 +147,8 @@ The record binds:
 - clean runtime and backend repositories, commits, and trees;
 - the qualification registration path and digest;
 - the backend patch manifest path and digest;
-- producer script, schema, validator, and direct image-input paths and
-  digests;
+- producer script, trace layer, schema, validator, and direct image-input paths
+  and digests;
 - the Modal image object identifier, a sorted resolved Python distribution
   inventory and its canonical digest, and exact environment versions;
 - the worker, provider, region, GPU, and monotonic clock;
@@ -165,17 +165,21 @@ Caller-supplied Git identity strings are not accepted.
 The validator also requires each artifact to be tracked at the runtime
 checkout's `HEAD`. It compares the repository-relative path and the SHA-256
 digest with the record. A matching digest at another path is not sufficient.
+Before GPU work begins, the producer also binds the tracked input manifest to
+that `HEAD`, verifies its digest, and checks its registered fixture fields
+against the cell.
 
 ## Run the registered cell
 
 Run this command only from the clean public commit that contains the producer,
-registration, schema, validator, trace layer, and image-input file:
+registration, schema, validator, trace layer, image-input file, and input
+manifest:
 
 ```powershell
 $env:WHISPER_RUNTIME_COMMIT = git rev-parse HEAD
 $env:WHISPER_MODAL_ENABLE_REMOTE_RESOURCES = "1"
 python -m modal run -m infra.modal_native_cuda_qualification `
-  --output artifacts/modal/native-cuda-qualification-v2.json `
+  --output artifacts/modal/native-cuda-qualification-v3.json `
   --confirm-paid-gpu
 ```
 
@@ -196,7 +200,7 @@ producer rejects that form before it creates an attempt receipt.
 python -B tools/validate_modal_native_cuda_qualification.py <record.json> `
   --runtime-checkout . `
   --backend-checkout <clean-patched-whisper-checkout> `
-  --qualification-manifest experiments/native-cuda-qualification-v2.json `
+  --qualification-manifest experiments/native-cuda-qualification-v3.json `
   --patch-manifest patches/openai-whisper/SHA256SUMS `
   --producer-script infra/modal_native_cuda_qualification.py `
   --image-inputs infra/modal-native-cuda-image-inputs.lock

@@ -24,7 +24,7 @@ from urllib.parse import unquote, urlsplit
 
 ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_SCHEMA = ROOT / "evidence/modal-native-cuda-qualification.schema.json"
-DEFAULT_QUALIFICATION_MANIFEST = ROOT / "experiments/native-cuda-qualification-v2.json"
+DEFAULT_QUALIFICATION_MANIFEST = ROOT / "experiments/native-cuda-qualification-v3.json"
 FAULT_POINTS = (
     "cleanup",
     "event-create",
@@ -790,9 +790,10 @@ def validate_qualification_manifest(
     manifest_ids = {
         "1": "native-cuda-qualification-v1",
         "2": "native-cuda-qualification-v2",
+        "3": "native-cuda-qualification-v3",
     }
     if manifest_version not in manifest_ids:
-        failures.append(f"{location}.manifest_version must be '1' or '2'")
+        failures.append(f"{location}.manifest_version must be '1', '2', or '3'")
     elif top.get("manifest_id") != manifest_ids[manifest_version]:
         failures.append(
             f"{location}.manifest_id must be {manifest_ids[manifest_version]!r}"
@@ -961,6 +962,29 @@ def validate_qualification_manifest(
                 failures.append(f"{location}.cell.{field} must be an object")
             elif cell.get(f"{field}_sha256") != canonical_sha256(cell[field]):
                 failures.append(f"{location}.cell.{field}_sha256 is not canonical")
+        if manifest_version == "3" and isinstance(cell.get("decode_options"), dict):
+            expected_decode_options = {
+                "temperature": 0,
+                "beam_size": None,
+                "best_of": None,
+                "patience": None,
+                "length_penalty": None,
+                "sample_len": None,
+                "prompt": None,
+                "prefix": None,
+                "suppress_tokens": "-1",
+                "suppress_blank": True,
+                "without_timestamps": True,
+                "max_initial_timestamp": 1.0,
+                "fp16": False,
+            }
+            if canonical_sha256(cell["decode_options"]) != canonical_sha256(
+                expected_decode_options
+            ):
+                failures.append(
+                    f"{location}.cell.decode_options must match the version 3 "
+                    "registered configuration"
+                )
 
     resource = _closed_manifest_object(
         top.get("resource_contract"),

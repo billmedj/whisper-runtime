@@ -522,9 +522,13 @@
         "patience",
         "length_penalty",
         "sample_len",
+        "prompt",
+        "prefix",
+        "suppress_tokens",
+        "suppress_blank",
         "without_timestamps",
-        "fp16",
-        "condition_on_previous_text"
+        "max_initial_timestamp",
+        "fp16"
       ],
       "properties": {
         "temperature": { "type": "number", "minimum": 0, "maximum": 2 },
@@ -533,9 +537,31 @@
         "patience": { "$ref": "#/$defs/nullable_number" },
         "length_penalty": { "$ref": "#/$defs/nullable_number" },
         "sample_len": { "$ref": "#/$defs/nullable_positive_integer" },
+        "prompt": {
+          "anyOf": [
+            { "type": "null" },
+            { "type": "string" },
+            { "type": "array", "items": { "type": "integer" } }
+          ]
+        },
+        "prefix": {
+          "anyOf": [
+            { "type": "null" },
+            { "type": "string" },
+            { "type": "array", "items": { "type": "integer" } }
+          ]
+        },
+        "suppress_tokens": {
+          "anyOf": [
+            { "type": "null" },
+            { "type": "string" },
+            { "type": "array", "items": { "type": "integer" } }
+          ]
+        },
+        "suppress_blank": { "type": "boolean" },
         "without_timestamps": { "type": "boolean" },
-        "fp16": { "type": "boolean" },
-        "condition_on_previous_text": { "type": "boolean" }
+        "max_initial_timestamp": { "$ref": "#/$defs/nullable_number" },
+        "fp16": { "type": "boolean" }
       }
     },
     "preprocessing_options": {

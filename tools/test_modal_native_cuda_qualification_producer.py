@@ -260,6 +260,22 @@ assert 'whisper' not in sys.modules
         self.assertIn("modal==1.5.5", values)
         self.assertIn("torch==2.6.0", values)
 
+    def test_input_manifest_is_content_bound_to_the_registered_fixture(self) -> None:
+        cell = _manifest()["cell"]
+        producer._verify_input_manifest(ROOT / producer.INPUT_MANIFEST_PATH, cell)
+
+        with tempfile.TemporaryDirectory() as directory:
+            altered_path = Path(directory) / "audio-manifest.json"
+            altered = json.loads(
+                (ROOT / producer.INPUT_MANIFEST_PATH).read_text(encoding="utf-8")
+            )
+            altered["fixtures"][0]["source_url"] = "https://example.invalid/audio.flac"
+            altered_path.write_text(json.dumps(altered), encoding="utf-8")
+            altered_cell = dict(cell)
+            altered_cell["input_manifest_sha256"] = producer._sha256_file(altered_path)
+            with self.assertRaisesRegex(RuntimeError, "fixture differs"):
+                producer._verify_input_manifest(altered_path, altered_cell)
+
     def test_resolved_inventory_is_sorted_normalized_and_complete(self) -> None:
         distributions = [
             _Distribution("Torch", "2.6.0"),
