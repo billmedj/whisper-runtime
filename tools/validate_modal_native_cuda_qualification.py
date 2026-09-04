@@ -932,8 +932,7 @@ def validate_qualification_manifest(
             expected_cell_id = f"t4-tiny-en-jfk-qualification-v{manifest_version}"
             if cell.get("registered_cell_id") != expected_cell_id:
                 failures.append(
-                    f"{location}.cell.registered_cell_id must be "
-                    f"{expected_cell_id!r}"
+                    f"{location}.cell.registered_cell_id must be {expected_cell_id!r}"
                 )
         for field in (
             "checkpoint_sha256",
