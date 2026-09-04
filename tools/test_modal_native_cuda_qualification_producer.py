@@ -310,9 +310,24 @@ assert 'whisper' not in sys.modules
             _Distribution("Torch", "2.6.0"),
             _Distribution("example_pkg", "1.0"),
             _Distribution("Modal", "1.5.5"),
+            _Distribution("Example-Pkg", "0.9-shadowed"),
         ]
-        with patch.object(
-            producer.importlib.metadata, "distributions", return_value=distributions
+        selected = {
+            "example-pkg": _Distribution("example_pkg", "1.0"),
+            "modal": _Distribution("Modal", "1.5.5"),
+            "torch": _Distribution("Torch", "2.6.0"),
+        }
+        with (
+            patch.object(
+                producer.importlib.metadata,
+                "distributions",
+                return_value=distributions,
+            ),
+            patch.object(
+                producer.importlib.metadata,
+                "distribution",
+                side_effect=selected.__getitem__,
+            ) as resolve,
         ):
             self.assertEqual(
                 producer._resolved_dependencies(),
@@ -322,6 +337,69 @@ assert 'whisper' not in sys.modules
                     {"name": "torch", "version": "2.6.0"},
                 ],
             )
+        self.assertEqual(
+            [call.args[0] for call in resolve.call_args_list],
+            ["example-pkg", "modal", "torch"],
+        )
+
+    def test_resolved_inventory_uses_the_resolver_selected_version(self) -> None:
+        visible = [
+            _Distribution("idna", "3.10"),
+            _Distribution("IDNA", "3.11-shadowed"),
+        ]
+        with (
+            patch.object(
+                producer.importlib.metadata, "distributions", return_value=visible
+            ),
+            patch.object(
+                producer.importlib.metadata,
+                "distribution",
+                return_value=_Distribution("idna", "3.10"),
+            ) as resolve,
+        ):
+            self.assertEqual(
+                producer._resolved_dependencies(),
+                [{"name": "idna", "version": "3.10"}],
+            )
+        resolve.assert_called_once_with("idna")
+
+    def test_resolved_inventory_rejects_a_disappearing_distribution(self) -> None:
+        with (
+            patch.object(
+                producer.importlib.metadata,
+                "distributions",
+                return_value=[_Distribution("idna", "3.10")],
+            ),
+            patch.object(
+                producer.importlib.metadata,
+                "distribution",
+                side_effect=producer.importlib.metadata.PackageNotFoundError("idna"),
+            ),
+            self.assertRaisesRegex(RuntimeError, "disappeared during inventory"),
+        ):
+            producer._resolved_dependencies()
+
+    def test_resolved_inventory_rejects_invalid_selected_metadata(self) -> None:
+        cases = (
+            (_Distribution("other", "3.10"), "different package"),
+            (_Distribution("idna", ""), "no version"),
+        )
+        for selected, message in cases:
+            with (
+                self.subTest(message=message),
+                patch.object(
+                    producer.importlib.metadata,
+                    "distributions",
+                    return_value=[_Distribution("idna", "3.10")],
+                ),
+                patch.object(
+                    producer.importlib.metadata,
+                    "distribution",
+                    return_value=selected,
+                ),
+                self.assertRaisesRegex(RuntimeError, message),
+            ):
+                producer._resolved_dependencies()
 
     def test_record_write_is_atomic_and_never_overwrites(self) -> None:
         with tempfile.TemporaryDirectory() as directory:

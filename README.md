@@ -245,14 +245,19 @@ abstract release and publication protocol. It does not prove Python threads,
 PyTorch kernels, the concrete submission gate, CUDA events, or adapter code.
 
 The next fixed CUDA qualification cell is defined by the
-[versioned registration](https://github.com/billmedj/whisper-runtime/blob/main/experiments/native-cuda-qualification-v4.json)
+[versioned registration](https://github.com/billmedj/whisper-runtime/blob/main/experiments/native-cuda-qualification-v5.json)
 and the [qualification evidence contract](https://github.com/billmedj/whisper-runtime/blob/main/docs/CUDA_QUALIFICATION_CONTRACT.md).
 The contract includes the exact Modal command, an append-only attempt receipt,
 and an offline validator. The cell uses one worker and a small diagnostic
 sample. It does not make a latency or throughput claim. The broader
 [experiment protocol](https://github.com/billmedj/whisper-runtime/blob/main/docs/EXPERIMENT_PROTOCOL.md)
 defines requirements for a future performance campaign, which will require a
-new evidence schema or version.
+new evidence schema or version. Modal logs show that the single version-four
+attempt completed the registered GPU campaign on a T4, then failed while
+collecting dependency metadata because more than one `idna` version was
+visible. It published no qualification record and supports no passing
+qualification claim. Version five records the resolver-selected active
+distribution version for each normalized package name and remains unexecuted.
 
 See the [transaction record](https://github.com/billmedj/whisper-runtime/blob/main/evidence/native-cpu-tiny-en-jfk-2026-09-03.json),
 [staged-run isolation record](https://github.com/billmedj/whisper-runtime/blob/main/evidence/native-cpu-tiny-en-jfk-interleaving-2026-09-03.json),

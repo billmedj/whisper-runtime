@@ -2,7 +2,7 @@
 
 `evidence/modal-native-cuda-qualification.schema.json` defines the
 `1-draft` record format for one fixed native CUDA qualification cell. Version
-four is the active preregistered campaign under this format. This schema is
+five is the active preregistered campaign under this format. This schema is
 not a performance-benchmark schema, and no committed evidence record currently
 satisfies it.
 
@@ -21,10 +21,16 @@ Provider logs and independent review remain necessary.
 ## Registered cell
 
 The versioned registration is
-[`experiments/native-cuda-qualification-v4.json`](../experiments/native-cuda-qualification-v4.json).
+[`experiments/native-cuda-qualification-v5.json`](../experiments/native-cuda-qualification-v5.json).
 It fixes the source policy, backend revision, T4 worker profile, model,
 checkpoint, input, decode options, resource contract, measurement boundaries,
 sample counts, fault points, exclusion rule, and required invariants.
+
+Modal logs show that the single version-four attempt completed the registered
+GPU campaign on a T4. It then reached dependency inventory and failed because
+the environment exposed more than one visible metadata version for `idna`. It
+published no qualification record and supports no passing qualification claim.
+Version five remains unexecuted.
 
 The record must bind the registration by repository-relative path, SHA-256
 digest, and runtime commit. These fields prove which tracked registration was
@@ -150,8 +156,9 @@ The record binds:
 - the backend patch manifest path and digest;
 - producer script, trace layer, schema, validator, and direct image-input paths
   and digests;
-- the Modal image object identifier, a sorted resolved Python distribution
-  inventory and its canonical digest, and exact environment versions;
+- the Modal image object identifier, a sorted inventory of resolver-selected
+  Python distribution versions and its canonical digest, and exact environment
+  versions;
 - the worker, provider, region, GPU, and monotonic clock;
 - checkpoint, input manifest, input bytes, decoded PCM, preprocessing options,
   decode options, and their digests; and
@@ -180,7 +187,7 @@ manifest:
 $env:WHISPER_RUNTIME_COMMIT = git rev-parse HEAD
 $env:WHISPER_MODAL_ENABLE_REMOTE_RESOURCES = "1"
 python -m modal run -m infra.modal_native_cuda_qualification `
-  --output artifacts/modal/native-cuda-qualification-v4.json `
+  --output artifacts/modal/native-cuda-qualification-v5.json `
   --confirm-paid-gpu
 ```
 
@@ -201,7 +208,7 @@ producer rejects that form before it creates an attempt receipt.
 python -B tools/validate_modal_native_cuda_qualification.py <record.json> `
   --runtime-checkout . `
   --backend-checkout <clean-patched-whisper-checkout> `
-  --qualification-manifest experiments/native-cuda-qualification-v4.json `
+  --qualification-manifest experiments/native-cuda-qualification-v5.json `
   --patch-manifest patches/openai-whisper/SHA256SUMS `
   --producer-script infra/modal_native_cuda_qualification.py `
   --image-inputs infra/modal-native-cuda-image-inputs.lock
@@ -213,8 +220,11 @@ must be repository-relative.
 Modal exposes an opaque `im-...` image object identifier, not an OCI content
 digest. The record therefore stores that identifier. The tracked producer and
 direct image-input file bind the build recipe. The observed, sorted Python
-distribution inventory binds the resolved environment. These fields do not
-turn the Modal identifier into a content digest.
+distribution inventory records one actively resolved version for each
+normalized package name. It is a resolver-selected metadata inventory, not
+proof of imported module bytes. Source and build-input hashes remain the
+integrity anchors. These fields do not turn the Modal identifier into a content
+digest.
 
 The resource contract is the logical capacity of this one-lane runtime
 profile. It equals the per-run reservation, so the available logical vector is

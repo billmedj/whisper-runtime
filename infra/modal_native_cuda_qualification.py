@@ -57,7 +57,7 @@ except ImportError:  # pragma: no cover - direct ``modal run`` script loading
     )
 
 ROOT = Path(__file__).resolve().parents[1]
-APP_NAME = "whisper-runtime-native-cuda-qualification-v4"
+APP_NAME = "whisper-runtime-native-cuda-qualification-v5"
 CANONICAL_MODULE_NAME = "infra.modal_native_cuda_qualification"
 SCHEMA_VERSION = "1-draft"
 ATTEMPT_RECEIPT_VERSION = "1"
@@ -69,12 +69,12 @@ BACKEND_BASE_TREE = "f7b3cb8e12a2e84dccacc4c858c33d5a9c114688"
 BACKEND_COMMIT = "a0b9695ae1cc52bad4b8626fe9fb6ea4ac0ee650"
 BACKEND_TREE = "c011d2563c26763b5f147026e6b18ef85bccd4fb"
 PATCH_MANIFEST_PATH = "patches/openai-whisper/SHA256SUMS"
-QUALIFICATION_MANIFEST_PATH = "experiments/native-cuda-qualification-v4.json"
+QUALIFICATION_MANIFEST_PATH = "experiments/native-cuda-qualification-v5.json"
 PRODUCER_PATH = "infra/modal_native_cuda_qualification.py"
 TRACE_PATH = "infra/native_cuda_trace.py"
 IMAGE_INPUTS_PATH = "infra/modal-native-cuda-image-inputs.lock"
 INPUT_MANIFEST_PATH = "conformance/audio-manifest.json"
-REGISTERED_OUTPUT_PATH = "artifacts/modal/native-cuda-qualification-v4.json"
+REGISTERED_OUTPUT_PATH = "artifacts/modal/native-cuda-qualification-v5.json"
 SCHEMA_PATH = "evidence/modal-native-cuda-qualification.schema.json"
 VALIDATOR_PATH = "tools/validate_modal_native_cuda_qualification.py"
 MODEL_CACHE_NAME = "whisper-runtime-model-cache-v1"
@@ -301,20 +301,43 @@ def _verify_module_origins(
     )
 
 
-def _resolved_dependencies() -> list[dict[str, str]]:
-    """Return the canonical installed Python distribution inventory."""
+def _normalized_distribution_name(distribution: object) -> str:
+    """Return one distribution name in Python package-index form."""
 
-    versions: dict[str, str] = {}
-    for distribution in importlib.metadata.distributions():
-        raw_name = distribution.metadata.get("Name") or distribution.name
-        name = re.sub(r"[-_.]+", "-", str(raw_name)).lower()
-        version = str(distribution.version)
-        if not name or not version:
-            raise RuntimeError("an installed distribution has no name or version")
-        previous = versions.setdefault(name, version)
-        if previous != version:
-            raise RuntimeError(f"multiple installed versions found for {name!r}")
-    return [{"name": name, "version": versions[name]} for name in sorted(versions)]
+    metadata = getattr(distribution, "metadata", {})
+    raw_name = metadata.get("Name") or getattr(distribution, "name", "")
+    name = re.sub(r"[-_.]+", "-", str(raw_name).strip()).lower()
+    if not name:
+        raise RuntimeError("an installed distribution has no name")
+    return name
+
+
+def _resolved_dependencies() -> list[dict[str, str]]:
+    """Return the distributions selected by the standard metadata resolver."""
+
+    names = {
+        _normalized_distribution_name(distribution)
+        for distribution in importlib.metadata.distributions()
+    }
+    resolved: list[dict[str, str]] = []
+    for name in sorted(names):
+        try:
+            distribution = importlib.metadata.distribution(name)
+        except importlib.metadata.PackageNotFoundError as error:
+            raise RuntimeError(
+                f"installed distribution disappeared during inventory: {name!r}"
+            ) from error
+        resolved_name = _normalized_distribution_name(distribution)
+        version = str(distribution.version).strip()
+        if resolved_name != name:
+            raise RuntimeError(
+                "distribution resolver returned a different package: "
+                f"requested {name!r}, received {resolved_name!r}"
+            )
+        if not version:
+            raise RuntimeError(f"installed distribution has no version: {name!r}")
+        resolved.append({"name": name, "version": version})
+    return resolved
 
 
 def _git_invocation(root: Path, *arguments: str) -> list[str]:

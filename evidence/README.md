@@ -30,7 +30,7 @@ fault points. Its p50 and p95 summaries are diagnostic; p99 is
 `not_estimated`. No committed record currently satisfies this contract.
 
 The active registration is
-[`experiments/native-cuda-qualification-v4.json`](../experiments/native-cuda-qualification-v4.json).
+[`experiments/native-cuda-qualification-v5.json`](../experiments/native-cuda-qualification-v5.json).
 A record binds its path, digest, and runtime commit. The local validator cannot
 prove that the registration was public before execution; that requires an
 external public timestamp. A future performance campaign requires a new schema
@@ -68,8 +68,20 @@ contain the transient event trace, and no qualification record was published.
 This was a harness assertion failure, not a Whisper, CUDA, driver, or hardware
 failure. Version four records `fault-armed` only after the injection plan exists
 and before the protected operation acquires its lease. It also records that
-harness faults occur before the named delegate call. Version four remains
-unexecuted.
+harness faults occur before the named delegate call.
+
+For version four, Modal logs show that the single attempt completed the
+registered GPU campaign on a T4 and reached the post-campaign dependency
+inventory. Inventory then failed because the environment exposed more than one
+visible metadata version for `idna`. The
+[`attempt-failed` receipt](modal-native-cuda-qualification-v4-attempt-2026-09-04.jsonl)
+records the `gpu-campaign` stage, exception type, and message digest. The
+receipt does not contain the transient GPU observations, and no qualification
+record was published. The attempt supports no passing qualification claim.
+Version five records one resolver-selected active distribution version for each
+normalized package name and remains unexecuted. This inventory describes
+resolved distribution metadata; it does not prove the bytes of imported
+modules. Source and build-input hashes remain the integrity anchors.
 
 `modal-cuda-readiness.schema.json` defines the version-one T4 record. Both
 committed records passed its schema and semantic validator. They bind the same
