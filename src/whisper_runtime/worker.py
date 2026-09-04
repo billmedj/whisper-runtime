@@ -232,48 +232,64 @@ class Worker:
                 result = operation(transaction)
                 committed_state = transaction.commit(result)
             except BaseException as operation_error:
-                close_error: BaseException | None = None
-                try:
-                    if transaction.status in (
-                        TransactionStatus.PREPARED,
-                        TransactionStatus.RUNNING,
-                    ):
-                        transaction.abort()
-                    elif transaction.status is TransactionStatus.QUIESCING:
-                        transaction._supervisor_stop()
-                except BaseException as exc:
-                    close_error = exc
-
-                retained, recovery_error = self._recover_retained_once(transaction)
-                if retained:
-                    retention_error = (
-                        recovery_error
-                        or transaction.cleanup_error
-                        or close_error
-                        or TransactionStateError(
-                            "the transaction remained admitted after recovery"
-                        )
-                    )
-                    raise TransactionRetainedError(
-                        transaction,
-                        operation_error=operation_error,
-                        retention_error=retention_error,
-                        committed_state=committed_state,
-                    ) from retention_error
+                self._finish_execution(
+                    transaction,
+                    operation_error=operation_error,
+                    committed_state=committed_state,
+                )
                 raise
 
-            retained, success_retention_error = self._recover_retained_once(transaction)
-            if retained:
-                assert success_retention_error is not None
-                raise TransactionRetainedError(
-                    transaction,
-                    operation_error=None,
-                    retention_error=success_retention_error,
-                    committed_state=committed_state,
-                ) from success_retention_error
+            self._finish_execution(
+                transaction,
+                operation_error=None,
+                committed_state=committed_state,
+            )
             return committed_state
         finally:
             transaction._owner_departed()
+
+    def _finish_execution(
+        self,
+        transaction: WindowTransaction,
+        *,
+        operation_error: BaseException | None,
+        committed_state: SessionState | None,
+    ) -> None:
+        """Close or recover one owner-driven execution.
+
+        ``execute`` and adapter-managed run handles share this path so they
+        cannot diverge on lease retention or backend quiescence.
+        """
+
+        close_error: BaseException | None = None
+        if operation_error is not None:
+            try:
+                if transaction.status in (
+                    TransactionStatus.PREPARED,
+                    TransactionStatus.RUNNING,
+                ):
+                    transaction.abort()
+                elif transaction.status is TransactionStatus.QUIESCING:
+                    transaction._supervisor_stop()
+            except BaseException as exc:
+                close_error = exc
+
+        retained, recovery_error = self._recover_retained_once(transaction)
+        if not retained:
+            return
+
+        retention_error = (
+            recovery_error
+            or transaction.cleanup_error
+            or close_error
+            or TransactionStateError("the transaction remained admitted after recovery")
+        )
+        raise TransactionRetainedError(
+            transaction,
+            operation_error=operation_error,
+            retention_error=retention_error,
+            committed_state=committed_state,
+        ) from retention_error
 
     def _recover_retained_once(
         self,

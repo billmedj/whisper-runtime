@@ -30,6 +30,10 @@ class WindowResult:
     def __post_init__(self) -> None:
         if not self.window_id or self.window_id.isspace():
             raise ValueError("window_id must not be empty")
+        if isinstance(self.start_ms, bool) or not isinstance(self.start_ms, int):
+            raise TypeError("start_ms must be an integer")
+        if isinstance(self.end_ms, bool) or not isinstance(self.end_ms, int):
+            raise TypeError("end_ms must be an integer")
         if self.start_ms < 0:
             raise ValueError("start_ms must not be negative")
         if self.end_ms < self.start_ms:
@@ -38,26 +42,32 @@ class WindowResult:
 
 @dataclass(frozen=True, slots=True)
 class WindowRecord:
-    """A result bound to its request and model snapshot."""
+    """A result and optional committed prefix bound to one request."""
 
     request_id: str
     model: ModelSnapshot
     result: WindowResult
+    committed_through_ms: int | None = None
+
+    def __post_init__(self) -> None:
+        _validate_committed_through(self.committed_through_ms)
 
 
 @dataclass(frozen=True, slots=True)
 class SessionState:
-    """An immutable, versioned snapshot of a speech session."""
+    """An immutable, versioned snapshot with a committed audio prefix."""
 
     session_id: str
     version: int = 0
     windows: tuple[WindowRecord, ...] = ()
+    committed_through_ms: int | None = None
 
     def __post_init__(self) -> None:
         if not self.session_id or self.session_id.isspace():
             raise ValueError("session_id must not be empty")
         if self.version < 0:
             raise ValueError("version must not be negative")
+        _validate_committed_through(self.committed_through_ms)
 
 
 class Session:
@@ -95,6 +105,25 @@ class Session:
                     f"current version is {current.version}"
                 )
 
+            committed_through = current.committed_through_ms
+            if (
+                committed_through is not None
+                and record.result.start_ms < committed_through
+            ):
+                raise ValueError("a result cannot overlap committed audio")
+
+            if record.committed_through_ms is not None:
+                if (
+                    committed_through is not None
+                    and record.committed_through_ms < committed_through
+                ):
+                    raise ValueError("committed_through_ms must not regress")
+                if record.committed_through_ms > record.result.end_ms:
+                    raise ValueError(
+                        "committed_through_ms cannot exceed the result end"
+                    )
+                committed_through = record.committed_through_ms
+
             retained = current.windows
             if len(retained) >= self._history_limit:
                 if self._history_limit == 1:
@@ -106,9 +135,19 @@ class Session:
                 session_id=current.session_id,
                 version=current.version + 1,
                 windows=retained + (record,),
+                committed_through_ms=committed_through,
             )
             self._state = next_state
             return next_state
+
+
+def _validate_committed_through(value: int | None) -> None:
+    if value is None:
+        return
+    if isinstance(value, bool) or not isinstance(value, int):
+        raise TypeError("committed_through_ms must be an integer or None")
+    if value < 0:
+        raise ValueError("committed_through_ms must not be negative")
 
 
 class RequestStatus(str, Enum):

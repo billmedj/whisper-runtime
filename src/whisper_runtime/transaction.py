@@ -25,7 +25,14 @@ from .execution import (
 )
 from .model import ModelSnapshot
 from .resources import Lease
-from .state import RequestState, Session, SessionState, WindowRecord, WindowResult
+from .state import (
+    RequestState,
+    Session,
+    SessionState,
+    WindowRecord,
+    WindowResult,
+    _validate_committed_through,
+)
 
 
 class TransactionStatus(str, Enum):
@@ -122,6 +129,7 @@ class WindowTransaction:
         self._status = TransactionStatus.PREPARED
         self._close_outcome: _CloseOutcome | None = None
         self._committed_result: WindowResult | None = None
+        self._committed_through_ms: int | None = None
         self._committed_state: SessionState | None = None
         self._cleanup_error: BaseException | None = None
         self._stop_signal_error: BaseException | None = None
@@ -209,6 +217,13 @@ class WindowTransaction:
 
         with self._lock:
             return self._cleanup_error
+
+    @property
+    def capacity_released(self) -> bool:
+        """Return whether cleanup and lease retirement completed."""
+
+        with self._lock:
+            return self._closed
 
     @property
     def stop_signal_error(self) -> BaseException | None:
@@ -324,19 +339,33 @@ class WindowTransaction:
         with self._lock:
             return self._require_running_rng_locked().randrange(stop)
 
-    def commit(self, result: WindowResult) -> SessionState:
-        """Publish one result after backend work is quiescent."""
-
-        with self._lock:
-            if self._status is TransactionStatus.COMMITTED:
-                if result == self._committed_result:
-                    assert self._committed_state is not None
-                    return self._committed_state
-                raise TransactionStateError(
-                    "the transaction already committed a different result"
-                )
+    def commit(
+        self,
+        result: WindowResult,
+        *,
+        committed_through_ms: int | None = None,
+    ) -> SessionState:
+        """Publish one result and an optional committed-prefix boundary."""
 
         try:
+            _validate_committed_through(committed_through_ms)
+            with self._lock:
+                if self._status is TransactionStatus.COMMITTED:
+                    if (
+                        result == self._committed_result
+                        and committed_through_ms == self._committed_through_ms
+                    ):
+                        assert self._committed_state is not None
+                        return self._committed_state
+                    raise TransactionStateError(
+                        "the transaction already committed a different result or "
+                        "committed prefix"
+                    )
+            if (
+                committed_through_ms is not None
+                and committed_through_ms > result.end_ms
+            ):
+                raise ValueError("committed_through_ms cannot exceed the result end")
             with self._lock:
                 self._require_running_owner_locked()
                 if result.window_id != self._window_id:
@@ -355,6 +384,7 @@ class WindowTransaction:
                         request_id=self._admission_key,
                         model=self._model,
                         result=result,
+                        committed_through_ms=committed_through_ms,
                     )
                     random_state = generator.getstate()
                 execution = self._begin_quiescence_locked(close_outcome)
@@ -413,6 +443,7 @@ class WindowTransaction:
                 raise
 
             self._committed_result = result
+            self._committed_through_ms = committed_through_ms
             self._committed_state = committed_state
             self._status = TransactionStatus.COMMITTED
             self._finish_locked()

@@ -16,14 +16,26 @@ from collections.abc import Callable
 from contextlib import AbstractContextManager
 from dataclasses import dataclass
 from importlib import import_module
-from threading import Condition, RLock
+from threading import Condition, RLock, current_thread
 from typing import Protocol, TypeVar, cast, runtime_checkable
 
-from ..errors import ModelMismatchError, RuntimeStateError, TransactionRetainedError
+from ..errors import (
+    ModelMismatchError,
+    QueueFullError,
+    RuntimeStateError,
+    TransactionRetainedError,
+    TransactionStateError,
+)
 from ..model import ModelSnapshot
 from ..resources import ResourceVector
-from ..state import RequestState, Session, SessionState, WindowResult
-from ..transaction import WindowTransaction
+from ..state import (
+    RequestState,
+    Session,
+    SessionState,
+    WindowResult,
+    _validate_committed_through,
+)
+from ..transaction import TransactionStatus, WindowTransaction
 from ..worker import Worker
 from ._model_binding import (
     ModelBinding,
@@ -466,6 +478,34 @@ def _require_isolated_run(run: object) -> None:
         )
 
 
+def _require_run_complete(run: NativeDecodeRun) -> bool:
+    """Read the backend completion flag without accepting truthy substitutes."""
+
+    value: object = run.complete
+    if type(value) is not bool:
+        raise NativeDecodeContractError("decode run complete must be a boolean")
+    return value
+
+
+def _validate_committed_boundary(value: int | None, *, end_ms: int) -> None:
+    """Validate one caller-supplied finality boundary for a known window."""
+
+    _validate_committed_through(value)
+    if value is not None and value > end_ms:
+        raise ValueError("committed_through_ms cannot exceed the result end")
+
+
+def _require_model_available_without_wait(binding: ModelBinding) -> None:
+    """Report retained work when visible without waiting behind live work."""
+
+    if not binding.lock.acquire(blocking=False):
+        return
+    try:
+        require_model_available(binding)
+    finally:
+        binding.lock.release()
+
+
 _ResultT = TypeVar("_ResultT")
 
 
@@ -707,6 +747,265 @@ class _CudaDecodeScope:
 NativeModelIdentityProbe = Callable[[object], ModelSnapshot]
 
 
+class NativeWindowRun:
+    """A transaction-owned native decode that advances one token at a time.
+
+    The thread that calls :meth:`NativeWhisperAdapter.start_window` owns the
+    run and must call ``step()``, ``finish()``, and ``close()``. ``cancel()``
+    and ``stop()`` may be called from another thread. ``cancel()`` records
+    cooperative intent. ``stop()`` also reclaims the transaction when its
+    owner has exited. Use the run as a context manager so an unfinished
+    transaction is normally closed by its owner.
+    """
+
+    def __init__(
+        self,
+        *,
+        worker: Worker,
+        model_binding: ModelBinding,
+        transaction: WindowTransaction,
+        execution: _CpuDecodeScope | _CudaDecodeScope,
+        backend_run: NativeDecodeRun,
+        cuda_profile: bool,
+        require_model_identity: Callable[[], None],
+        complete: bool,
+        window_id: str,
+        start_ms: int,
+        end_ms: int,
+    ) -> None:
+        self._worker = worker
+        self._model_binding = model_binding
+        self._transaction = transaction
+        self._execution = execution
+        self._backend_run = backend_run
+        self._cuda_profile = cuda_profile
+        self._require_model_identity = require_model_identity
+        self._window_id = window_id
+        self._start_ms = start_ms
+        self._end_ms = end_ms
+        self._step_count = 0
+        self._complete = complete
+        self._closed = False
+        self._owner_thread = current_thread()
+
+    def __enter__(self) -> NativeWindowRun:
+        return self
+
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_value: BaseException | None,
+        traceback: object | None,
+    ) -> None:
+        del exc_type, traceback
+        if self.closed:
+            return
+        self._require_owner()
+        if exc_value is None:
+            self.close()
+        else:
+            self._close_owner(
+                operation_error=exc_value,
+                committed_state=None,
+            )
+
+    @property
+    def request_id(self) -> str:
+        """Return the request that owns this run."""
+
+        return self._transaction.request_id
+
+    @property
+    def complete(self) -> bool:
+        """Return whether the backend has produced its final token."""
+
+        return self._complete
+
+    @property
+    def closed(self) -> bool:
+        """Return whether driver methods can no longer advance this run."""
+
+        if self._closed:
+            return True
+        return self._transaction.status in (
+            TransactionStatus.COMMITTED,
+            TransactionStatus.ABORTED,
+            TransactionStatus.EXPIRED,
+        )
+
+    @property
+    def capacity_released(self) -> bool:
+        """Return whether this run no longer owns worker capacity."""
+
+        return self._transaction.capacity_released
+
+    @property
+    def step_count(self) -> int:
+        """Return the number of token steps submitted through this handle."""
+
+        return self._step_count
+
+    def step(self) -> bool:
+        """Run at most one token-generation step and stop at a safe boundary."""
+
+        self._require_open()
+        if self.complete:
+            return True
+        try:
+            # A caller can pause the run until the transaction deadline.
+            # Recheck cancellation and expiry before admitting new work.
+            self._transaction.checkpoint()
+            reported_value: object = self._submit(self._backend_run.step)
+            if type(reported_value) is not bool:
+                raise NativeDecodeContractError("decode step must return a boolean")
+            reported_complete = reported_value
+            actual_complete = _require_run_complete(self._backend_run)
+            if reported_complete is not actual_complete:
+                raise NativeDecodeContractError(
+                    "decode step completion disagrees with the run state"
+                )
+            self._step_count += 1
+            self._complete = actual_complete
+            self._transaction.checkpoint()
+            return actual_complete
+        except BaseException as operation_error:
+            self._close_owner(
+                operation_error=operation_error,
+                committed_state=None,
+            )
+            raise
+
+    def cancel(self) -> bool:
+        """Return whether cancellation changed state or delivered its signal."""
+
+        if self.closed:
+            return False
+        return self._worker.cancel(self._transaction)
+
+    def stop(self) -> bool:
+        """Return whether stop changed state, delivered a signal, or recovered."""
+
+        if self.capacity_released:
+            return False
+        changed = self._worker.stop(self._transaction)
+        if not self.capacity_released:
+            changed = self._worker.recover(self._transaction) or changed
+        return changed
+
+    def finish(
+        self,
+        *,
+        committed_through_ms: int | None = None,
+    ) -> SessionState:
+        """Finalize and commit a complete run without adding hidden steps."""
+
+        self._require_open()
+        _validate_committed_boundary(committed_through_ms, end_ms=self._end_ms)
+        try:
+            self._transaction.checkpoint()
+        except BaseException as operation_error:
+            self._close_owner(
+                operation_error=operation_error,
+                committed_state=None,
+            )
+            raise
+        if not self.complete:
+            raise NativeDecodeContractError(
+                "a native window cannot finish before token generation completes"
+            )
+
+        committed_state: SessionState | None = None
+        try:
+            results = self._submit(self._backend_run.finalize)
+            self._transaction.checkpoint()
+            if not isinstance(results, list) or len(results) != 1:
+                raise NativeDecodeContractError(
+                    "native decoding must return exactly one result"
+                )
+            text = getattr(results[0], "text", None)
+            if not isinstance(text, str):
+                raise NativeDecodeContractError(
+                    "the native decode result must contain text"
+                )
+            if self._cuda_profile:
+                self._submit(self._require_model_identity)
+                self._transaction.checkpoint()
+            else:
+                with self._model_binding.lock:
+                    self._require_model_identity()
+            committed_state = self._transaction.commit(
+                WindowResult(
+                    window_id=self._window_id,
+                    text=text,
+                    start_ms=self._start_ms,
+                    end_ms=self._end_ms,
+                ),
+                committed_through_ms=committed_through_ms,
+            )
+        except BaseException as operation_error:
+            self._close_owner(
+                operation_error=operation_error,
+                committed_state=committed_state,
+            )
+            raise
+
+        self._close_owner(
+            operation_error=None,
+            committed_state=committed_state,
+        )
+        return committed_state
+
+    def close(self) -> bool:
+        """Abort an unfinished run and release its resources after fencing."""
+
+        if self.closed:
+            return False
+        self._require_owner()
+        try:
+            changed = self._transaction.abort()
+        except BaseException as operation_error:
+            self._close_owner(
+                operation_error=operation_error,
+                committed_state=None,
+            )
+            raise
+        self._close_owner(operation_error=None, committed_state=None)
+        return changed
+
+    def _submit(self, operation: Callable[[], _ResultT]) -> _ResultT:
+        return self._transaction.submit(lambda: self._execution.invoke(operation))
+
+    def _require_open(self) -> None:
+        if self.closed:
+            raise NativeDecodeContractError("the native window run is closed")
+        self._require_owner()
+
+    def _require_owner(self) -> None:
+        if current_thread() is not self._owner_thread:
+            raise TransactionStateError(
+                "the native window run must be driven by its starting thread"
+            )
+
+    def _close_owner(
+        self,
+        *,
+        operation_error: BaseException | None,
+        committed_state: SessionState | None,
+    ) -> None:
+        try:
+            self._worker._finish_execution(
+                self._transaction,
+                operation_error=operation_error,
+                committed_state=committed_state,
+            )
+        except TransactionRetainedError as retained:
+            self._model_binding.record_retained_error(retained)
+            raise
+        finally:
+            self._closed = True
+            self._transaction._owner_departed()
+
+
 @dataclass(frozen=True, slots=True, init=False)
 class NativeWhisperAdapter:
     """Bind a suspendable native decoder to one transactional worker."""
@@ -780,7 +1079,7 @@ class NativeWhisperAdapter:
 
         return self._model_identity
 
-    def decode_window(
+    def start_window(
         self,
         *,
         session: Session,
@@ -790,8 +1089,13 @@ class NativeWhisperAdapter:
         start_ms: int,
         end_ms: int,
         options: NativeDecodeOptions | None = None,
-    ) -> SessionState:
-        """Decode and atomically commit one unbatched 30-second mel window."""
+    ) -> NativeWindowRun:
+        """Start one native window and return after decoder prefill.
+
+        The returned handle owns the admitted transaction. Drive and close it
+        from this thread. Another thread may call ``cancel()`` for cooperative
+        cancellation or ``stop()`` to fence and reclaim an orphaned run.
+        """
 
         if request.model != self._model_identity:
             raise ModelMismatchError(
@@ -838,17 +1142,30 @@ class NativeWhisperAdapter:
             execution = _CpuDecodeScope(self._model_binding)
         _require_mel_shape(mel, self._model, n_frames=components.n_frames)
 
-        def operation(transaction: WindowTransaction) -> WindowResult:
-            seed = transaction.randrange(1 << 63)
+        _require_model_available_without_wait(self._model_binding)
+        try:
+            transaction = self.worker.prepare(
+                session=session,
+                request=request,
+                window_id=window_id,
+                resources=self.execution_profile.resources,
+            )
+        except QueueFullError:
+            # A quarantined model carries a more useful recovery handle than a
+            # generic full-queue error. Never wait behind admitted model work
+            # merely to refine this rejection.
+            _require_model_available_without_wait(self._model_binding)
+            raise
+        owner_transferred = False
+        try:
+            transaction.start(execution)
 
             def submit_native(callback: Callable[[], _ResultT]) -> _ResultT:
-                if cuda_profile:
-                    return transaction.submit(lambda: execution.invoke(callback))
-                return transaction.submit(callback)
+                return transaction.submit(lambda: execution.invoke(callback))
 
-            def start_run() -> NativeDecodeRun:
-                # _start_run performs encoder preparation. Keep that stage
-                # serialized even when request-local decoder runs may overlap.
+            seed = transaction.randrange(1 << 63)
+
+            def prepare_run() -> tuple[Callable[[object], object], object]:
                 with self._model_binding.lock:
                     require_model_available(self._model_binding)
                     self._require_model_identity()
@@ -878,6 +1195,16 @@ class NativeWhisperAdapter:
                             subject="the copied mel tensor",
                             expected=self.execution_profile.device,
                         )
+                    return start, batched_mel
+
+            start, batched_mel = submit_native(prepare_run)
+            transaction.checkpoint()
+
+            def start_run() -> NativeDecodeRun:
+                # _start_run performs encoder preparation. Keep that stage
+                # serialized even when request-local decoder runs may overlap.
+                with self._model_binding.lock:
+                    require_model_available(self._model_binding)
                     run_value = start(batched_mel)
                     execution.bind(run_value)
                     if not isinstance(run_value, NativeDecodeRun):
@@ -893,81 +1220,72 @@ class NativeWhisperAdapter:
 
             run = submit_native(start_run)
             transaction.checkpoint()
-            if run.complete:
+            if _require_run_complete(run):
                 raise NativeDecodeContractError(
                     "the decode run completed before its prefill stage"
                 )
 
             submit_native(run.prefill)
             transaction.checkpoint()
-
-            while not run.complete:
-                reported_complete = submit_native(run.step)
-                if not isinstance(reported_complete, bool):
-                    raise NativeDecodeContractError("decode step must return a boolean")
-                if reported_complete != run.complete:
-                    raise NativeDecodeContractError(
-                        "decode step completion disagrees with the run state"
-                    )
-                transaction.checkpoint()
-
-            results = submit_native(run.finalize)
-            transaction.checkpoint()
-            if not isinstance(results, list) or len(results) != 1:
-                raise NativeDecodeContractError(
-                    "native decoding must return exactly one result"
-                )
-            text = getattr(results[0], "text", None)
-            if not isinstance(text, str):
-                raise NativeDecodeContractError(
-                    "the native decode result must contain text"
-                )
-            if cuda_profile:
-                submit_native(self._require_model_identity)
-                transaction.checkpoint()
-            else:
-                with self._model_binding.lock:
-                    self._require_model_identity()
-            return WindowResult(
+            complete = _require_run_complete(run)
+            handle = NativeWindowRun(
+                worker=self.worker,
+                model_binding=self._model_binding,
+                transaction=transaction,
+                execution=execution,
+                backend_run=run,
+                cuda_profile=cuda_profile,
+                require_model_identity=self._require_model_identity,
+                complete=complete,
                 window_id=window_id,
-                text=text,
                 start_ms=start_ms,
                 end_ms=end_ms,
             )
-
-        def execute_admitted() -> SessionState:
+            owner_transferred = True
+            return handle
+        except BaseException as operation_error:
             try:
-                return self.worker.execute(
-                    session=session,
-                    request=request,
-                    window_id=window_id,
-                    resources=self.execution_profile.resources,
-                    execution=execution,
-                    operation=operation,
+                self.worker._finish_execution(
+                    transaction,
+                    operation_error=operation_error,
+                    committed_state=None,
                 )
             except TransactionRetainedError as retained:
                 self._model_binding.record_retained_error(retained)
                 raise
+            raise
+        finally:
+            if not owner_transferred:
+                transaction._owner_departed()
 
-        if self.execution_profile.max_concurrent_decodes == 1:
-            with self._model_binding.lock:
-                require_model_available(self._model_binding)
-                if cuda_profile:
-                    _require_exact_device(
-                        self._model,
-                        subject="the model",
-                        expected=self.execution_profile.device,
-                    )
-                else:
-                    self._require_model_identity()
-                    self._preflight_native_backend(components, decode_options)
-                return execute_admitted()
+    def decode_window(
+        self,
+        *,
+        session: Session,
+        request: RequestState,
+        window_id: str,
+        mel: object,
+        start_ms: int,
+        end_ms: int,
+        options: NativeDecodeOptions | None = None,
+        committed_through_ms: int | None = None,
+    ) -> SessionState:
+        """Decode and atomically commit one unbatched 30-second mel window."""
 
-        with self._model_binding.lock:
-            require_model_available(self._model_binding)
-            self._require_model_identity()
-            self._preflight_native_backend(components, decode_options)
-        return execute_admitted()
+        WindowResult(window_id=window_id, text="", start_ms=start_ms, end_ms=end_ms)
+        _validate_committed_boundary(committed_through_ms, end_ms=end_ms)
+        with self.start_window(
+            session=session,
+            request=request,
+            window_id=window_id,
+            mel=mel,
+            start_ms=start_ms,
+            end_ms=end_ms,
+            options=options,
+        ) as run:
+            while not run.complete:
+                run.step()
+            return run.finish(committed_through_ms=committed_through_ms)
 
     def _require_model_identity(self) -> None:
         if self.execution_profile.device == "cpu":
@@ -983,17 +1301,6 @@ class NativeWhisperAdapter:
             raise TypeError("identity_probe must return ModelSnapshot")
         if identity != self._model_identity:
             raise ModelMismatchError("the loaded native model changed during decoding")
-
-    def _preflight_native_backend(
-        self,
-        components: _NativeComponents,
-        options: NativeDecodeOptions,
-    ) -> None:
-        """Validate the staged API without starting encoder or decoder kernels."""
-
-        task, _ = self._build_native_task(components, options, seed=0)
-        if self.execution_profile.max_concurrent_decodes == 2:
-            _require_isolated_task(task)
 
     def _build_native_task(
         self,

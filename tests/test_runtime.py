@@ -171,6 +171,19 @@ class RuntimeTransactionTests(unittest.TestCase):
             end_ms=1_000,
         )
 
+    def test_window_timestamps_require_non_boolean_integers(self) -> None:
+        for field, value in (("start_ms", True), ("end_ms", 1.5)):
+            with self.subTest(field=field):
+                arguments: dict[str, object] = {
+                    "window_id": "window",
+                    "text": "text",
+                    "start_ms": 0,
+                    "end_ms": 1_000,
+                }
+                arguments[field] = value
+                with self.assertRaisesRegex(TypeError, f"{field} must be an integer"):
+                    WindowResult(**arguments)  # type: ignore[arg-type]
+
     def test_stale_commit_is_rejected_and_releases_resources(self) -> None:
         budget = Budget(self.capacity)
         worker = Worker("gpu-0", self.model, budget, queue_capacity=2)
@@ -500,6 +513,290 @@ class RuntimeTransactionTests(unittest.TestCase):
             [record.result.window_id for record in state.windows],
             ["window-3", "window-4"],
         )
+
+    def test_committed_prefix_advances_atomically_and_never_implicitly(self) -> None:
+        budget = Budget(self.capacity)
+        worker = Worker("gpu-0", self.model, budget, queue_capacity=1)
+        session = Session("session")
+
+        first = worker.prepare(
+            session=session,
+            request=self.request("request-0", "session", 0),
+            window_id="window-0",
+            resources=self.cost,
+        )
+        first.start(ImmediateFence())
+        initial = first.commit(
+            self.result("window-0", "first"),
+            committed_through_ms=750,
+        )
+
+        self.assertEqual(initial.version, 1)
+        self.assertEqual(initial.committed_through_ms, 750)
+        self.assertEqual(initial.windows[0].committed_through_ms, 750)
+
+        second = worker.prepare(
+            session=session,
+            request=self.request("request-1", "session", 1),
+            window_id="window-1",
+            resources=self.cost,
+        )
+        second.start(ImmediateFence())
+        unchanged = second.commit(
+            WindowResult(
+                window_id="window-1",
+                text="second",
+                start_ms=750,
+                end_ms=1_000,
+            )
+        )
+
+        self.assertEqual(unchanged.version, 2)
+        self.assertEqual(unchanged.committed_through_ms, 750)
+        self.assertIsNone(unchanged.windows[-1].committed_through_ms)
+
+    def test_committed_prefix_regression_aborts_without_publication(self) -> None:
+        budget = Budget(self.capacity)
+        worker = Worker("gpu-0", self.model, budget, queue_capacity=1)
+        session = Session("session")
+
+        first = worker.prepare(
+            session=session,
+            request=self.request("request-0", "session", 0),
+            window_id="window-0",
+            resources=self.cost,
+        )
+        first.start(ImmediateFence())
+        first.commit(
+            self.result("window-0", "first"),
+            committed_through_ms=1_000,
+        )
+
+        regressing = worker.prepare(
+            session=session,
+            request=self.request("request-1", "session", 1),
+            window_id="window-1",
+            resources=self.cost,
+        )
+        regressing.start(ImmediateFence())
+        with self.assertRaisesRegex(ValueError, "must not regress"):
+            regressing.commit(
+                WindowResult(
+                    window_id="window-1",
+                    text="regression",
+                    start_ms=1_000,
+                    end_ms=2_000,
+                ),
+                committed_through_ms=999,
+            )
+
+        state = session.snapshot()
+        self.assertEqual(state.version, 1)
+        self.assertEqual(state.committed_through_ms, 1_000)
+        self.assertEqual(len(state.windows), 1)
+        self.assertIs(regressing.status, TransactionStatus.ABORTED)
+        self.assertEqual(budget.available, self.capacity)
+
+    def test_history_eviction_does_not_erase_the_committed_prefix(self) -> None:
+        budget = Budget(self.capacity)
+        worker = Worker("gpu-0", self.model, budget, queue_capacity=1)
+        session = Session("session", history_limit=1)
+
+        for index in range(3):
+            transaction = worker.prepare(
+                session=session,
+                request=self.request(f"request-{index}", "session", index),
+                window_id=f"window-{index}",
+                resources=self.cost,
+            )
+            transaction.start(ImmediateFence())
+            transaction.commit(
+                WindowResult(
+                    window_id=f"window-{index}",
+                    text=f"result-{index}",
+                    start_ms=index * 1_000,
+                    end_ms=(index + 1) * 1_000,
+                ),
+                committed_through_ms=1_000 if index == 0 else None,
+            )
+
+        state = session.snapshot()
+        self.assertEqual(state.version, 3)
+        self.assertEqual(len(state.windows), 1)
+        self.assertEqual(state.windows[0].result.window_id, "window-2")
+        self.assertEqual(state.committed_through_ms, 1_000)
+
+    def test_committed_prefix_rejects_a_later_overlapping_result(self) -> None:
+        budget = Budget(self.capacity)
+        worker = Worker("gpu-0", self.model, budget, queue_capacity=1)
+        session = Session("session")
+
+        first = worker.prepare(
+            session=session,
+            request=self.request("request-0", "session", 0),
+            window_id="window-0",
+            resources=self.cost,
+        )
+        first.start(ImmediateFence())
+        first.commit(
+            self.result("window-0", "first"),
+            committed_through_ms=1_000,
+        )
+
+        overlapping = worker.prepare(
+            session=session,
+            request=self.request("request-1", "session", 1),
+            window_id="window-1",
+            resources=self.cost,
+        )
+        overlapping.start(ImmediateFence())
+        with self.assertRaisesRegex(ValueError, "overlap committed audio"):
+            overlapping.commit(
+                WindowResult(
+                    window_id="window-1",
+                    text="replacement",
+                    start_ms=500,
+                    end_ms=1_500,
+                )
+            )
+
+        state = session.snapshot()
+        self.assertEqual(state.version, 1)
+        self.assertEqual(state.windows[0].result.text, "first")
+        self.assertEqual(state.committed_through_ms, 1_000)
+        self.assertIs(overlapping.status, TransactionStatus.ABORTED)
+
+    def test_competing_commits_cannot_both_advance_the_committed_prefix(self) -> None:
+        budget = Budget(self.capacity)
+        worker = Worker("gpu-0", self.model, budget, queue_capacity=2)
+        session = Session("session")
+        first = worker.prepare(
+            session=session,
+            request=self.request("request-0", "session", 0),
+            window_id="window-0",
+            resources=self.cost,
+        )
+        competing = worker.prepare(
+            session=session,
+            request=self.request("request-1", "session", 1),
+            window_id="window-1",
+            resources=self.cost,
+        )
+        first.start(ImmediateFence())
+        competing.start(ImmediateFence())
+
+        first.commit(
+            self.result("window-0", "winner"),
+            committed_through_ms=500,
+        )
+        with self.assertRaises(StaleSessionError):
+            competing.commit(
+                self.result("window-1", "stale"),
+                committed_through_ms=900,
+            )
+
+        state = session.snapshot()
+        self.assertEqual(state.version, 1)
+        self.assertEqual(state.committed_through_ms, 500)
+        self.assertEqual(state.windows[0].result.text, "winner")
+        self.assertIs(competing.status, TransactionStatus.ABORTED)
+        self.assertEqual(budget.available, self.capacity)
+
+    def test_committed_prefix_cannot_exceed_its_result(self) -> None:
+        budget = Budget(self.capacity)
+        worker = Worker("gpu-0", self.model, budget, queue_capacity=1)
+        session = Session("session")
+        transaction = worker.prepare(
+            session=session,
+            request=self.request("request", "session", 0),
+            window_id="window",
+            resources=self.cost,
+        )
+        transaction.start(ImmediateFence())
+
+        with self.assertRaisesRegex(ValueError, "cannot exceed the result end"):
+            transaction.commit(
+                self.result("window", "invalid"),
+                committed_through_ms=1_001,
+            )
+
+        self.assertEqual(session.snapshot().version, 0)
+        self.assertIs(transaction.status, TransactionStatus.ABORTED)
+        self.assertEqual(budget.available, self.capacity)
+
+    def test_windows_remain_revisable_until_a_prefix_is_committed(self) -> None:
+        budget = Budget(self.capacity)
+        worker = Worker("gpu-0", self.model, budget, queue_capacity=1)
+        session = Session("session")
+        later = worker.prepare(
+            session=session,
+            request=self.request("request-0", "session", 0),
+            window_id="window-later",
+            resources=self.cost,
+        )
+        later.start(ImmediateFence())
+        later.commit(
+            WindowResult(
+                window_id="window-later",
+                text="later hypothesis",
+                start_ms=1_000,
+                end_ms=2_000,
+            )
+        )
+
+        earlier = worker.prepare(
+            session=session,
+            request=self.request("request-1", "session", 1),
+            window_id="window-earlier",
+            resources=self.cost,
+        )
+        earlier.start(ImmediateFence())
+        state = earlier.commit(
+            WindowResult(
+                window_id="window-earlier",
+                text="earlier revision",
+                start_ms=0,
+                end_ms=1_500,
+            )
+        )
+
+        self.assertEqual(state.version, 2)
+        self.assertIsNone(state.committed_through_ms)
+        self.assertEqual(
+            [record.result.window_id for record in state.windows],
+            ["window-later", "window-earlier"],
+        )
+        self.assertEqual(budget.available, self.capacity)
+
+    def test_committed_transaction_rejects_a_different_prefix(self) -> None:
+        budget = Budget(self.capacity)
+        worker = Worker("gpu-0", self.model, budget, queue_capacity=1)
+        session = Session("session")
+        transaction = worker.prepare(
+            session=session,
+            request=self.request("request", "session", 0),
+            window_id="window",
+            resources=self.cost,
+        )
+        result = self.result("window", "result")
+
+        transaction.start(ImmediateFence())
+        first = transaction.commit(result, committed_through_ms=500)
+        self.assertIs(
+            transaction.commit(result, committed_through_ms=500),
+            first,
+        )
+        with self.assertRaisesRegex(TransactionStateError, "different result"):
+            transaction.commit(result, committed_through_ms=501)
+
+        for invalid in (True, 500.0):
+            with self.subTest(invalid=invalid):
+                with self.assertRaises(TypeError):
+                    transaction.commit(
+                        result,
+                        committed_through_ms=invalid,  # type: ignore[arg-type]
+                    )
+        self.assertEqual(session.snapshot().committed_through_ms, 500)
 
     def test_expiry_reaps_a_lost_transaction(self) -> None:
         now = [100.0]

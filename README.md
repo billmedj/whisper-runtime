@@ -24,12 +24,12 @@ explicit.
 
 | Component | Current implementation |
 | --- | --- |
-| Runtime core | Bounded admission, exact in-process leases, deadlines, versioned commits, cancellation, quarantine, and cleanup recovery |
+| Runtime core | Bounded admission, exact in-process leases, deadlines, versioned commits, an immutable committed-prefix boundary, cancellation, quarantine, and cleanup recovery |
 | Legacy adapter | Runs the existing synchronous `model.transcribe()` call as one serialized transaction |
-| Native adapter | Exposes run creation, prefill, token steps, finalization, and cleanup through the patched decoder; CPU and one strict single-lane T4 profile have recorded integration cases |
+| Native adapter | Provides a managed, token-step run handle over the patched decoder; CPU and one strict single-lane T4 profile have recorded integration cases |
 | Conformance data | Records four pinned JFK CPU comparisons: greedy, beam search, word timestamps, and translation |
 | Isolation checks | Exercises two staged decodes under a fixed schedule and in two operating-system threads, cleans one early, and checks the survivor against an isolated baseline |
-| Formal model | Proves abstract lease, capacity, lifecycle, stale-commit, completion-fence, quarantine, and release properties in Lean |
+| Formal model | Proves abstract lease, capacity, lifecycle, stale-commit, committed-prefix, completion-fence, quarantine, and release properties in Lean |
 
 The runtime follows one execution path:
 
@@ -188,16 +188,26 @@ release. This code path has unit coverage with a controlled CUDA double. Two
 validated records also exercise the pinned `tiny.en` FP32 case on separate Modal
 T4 workers in AWS and GCP.
 
+Call `start_window()` when a scheduler must control each decoder step. It
+returns after encoder preparation and prefill. The owner can then run one token
+step, pause until the transaction deadline, request cancellation from another
+thread, and commit only when the run is complete. A supervisor can call
+`stop()` to fence an abandoned run and reclaim it after its owner exits. A live
+owner retains the lease until it reaches a safe boundary. Read
+`capacity_released` when a scheduler must know whether that capacity can be
+assigned again. `decode_window()` uses this same handle internally and remains
+the blocking convenience API.
+
 See the [native adapter contract](https://github.com/billmedj/whisper-runtime/blob/main/docs/NATIVE_ADAPTER.md).
 
 ## Evidence and limits
 
 | Evidence | Scope |
 | --- | --- |
-| 105 runtime tests | Resource accounting, queue bounds, commit races, deadlines, cancellation, quarantine, recovery, and adapter behavior |
+| 130 runtime tests | Resource accounting, queue bounds, commit races, committed-prefix enforcement, deadlines, cancellation, quarantine, recovery, and adapter behavior |
 | 191 repository-tool tests | Provenance, source state, fixtures, portability, setup contracts, evidence schemas, semantic validation, qualification relations, and native smoke contracts |
 | 2,000-step deterministic state trace | State-machine transitions under generated operations |
-| 51 Lean theorem declarations | Abstract lease provenance, capacity conservation, lifecycle, stale-commit properties, completion-fence publication, quarantine, and recovery |
+| 55 Lean theorem declarations | Abstract lease provenance, capacity conservation, lifecycle, stale-commit and committed-prefix properties, completion-fence publication, quarantine, and recovery |
 | One recorded native run | Patched `tiny.en` decoder, JFK fixture, CPU, exact transcript, queue returned to zero, declared budget restored |
 | One recorded staged-run isolation check | One loaded `tiny.en` model, two overlapping run lifetimes, early cleanup, unchanged survivor, and successful model reuse |
 | One recorded OS-thread isolation check | Two native worker threads, overlapping outer decoder-call intervals, owner-thread cleanup, unchanged survivor, and model reuse |

@@ -24,6 +24,7 @@ from .native_whisper import (
     NativeExecutionProfile,
     NativeModelIdentityProbe,
     NativeWhisperAdapter,
+    NativeWindowRun,
 )
 
 __all__ = [
@@ -47,5 +48,6 @@ __all__ = [
     "NativeDependencyError",
     "NativeExecutionProfile",
     "NativeModelIdentityProbe",
+    "NativeWindowRun",
     "NativeWhisperAdapter",
 ]

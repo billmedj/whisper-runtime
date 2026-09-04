@@ -1,2 +1,3 @@
 import WhisperRuntimeFormal.StateResource
 import WhisperRuntimeFormal.CompletionFence
+import WhisperRuntimeFormal.CommittedPrefix

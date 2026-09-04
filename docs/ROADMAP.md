@@ -49,7 +49,8 @@ isolate requests, and remain within the measured resource bound.
 ## Later: bounded streaming and backend coverage
 
 - Add bounded audio ingestion and client flow control.
-- Publish versioned provisional segments and immutable commit watermarks.
+- Publish versioned provisional segments against the existing immutable
+  committed-prefix boundary.
 - Keep offline-compatible and stable-streaming profiles separate.
 - Add compiled or exported backends behind declared capabilities.
 - Apply the same ownership and close rules to every added backend.

@@ -652,7 +652,7 @@ The event protocol is:
 ```text
 provisional(segment_id, revision, span, text)
 replace(segment_id, old_revision, new_revision, span, text)
-commit(segment_id, revision, watermark)
+commit(segment_id, revision, committed_through_ms)
 final(session_version)
 ```
 
@@ -723,7 +723,10 @@ supported_dtypes
 supported_export_formats
 ```
 
-The runtime rejects an unsupported option before admission. It does not emulate a missing feature without an explicit compatibility rule.
+The runtime rejects options outside the public request contract before
+admission. A compatibility check that must construct a model-bound backend task
+runs after the execution scope starts and through its submission gate. It does
+not emulate a missing feature without an explicit compatibility rule.
 
 ### Compilation and export
 
@@ -757,9 +760,12 @@ Bitwise identity across devices and backends is not required. Each profile MUST 
 
 ## Failure handling
 
-Validation failures before admission acquire no lease. An idle `PREPARED`
-transaction can release directly because no backend execution scope has
-started.
+Pure request-validation failures before admission acquire no lease. An idle
+`PREPARED` transaction can release directly because no backend execution scope
+has started. Model identity and model-bound task validation MUST run only in a
+`RUNNING` transaction and through its submission gate. Cancellation cannot
+release that transaction until the admitted callback returns and the completion
+fence establishes quiescence.
 
 A running transaction releases its lease only after the close protocol proves
 backend quiescence. Success, cancellation, expiry, and runtime failure select a
@@ -891,7 +897,8 @@ Exit condition: measured peak memory stays within the admitted bound.
 
 - Add bounded audio ingestion.
 - Add provisional and commit events.
-- Add watermarks, revision rules, and client credits.
+- Extend the current committed-prefix boundary with input and event-time
+  watermarks, revision rules, and client credits.
 - Keep offline and streaming profiles separate.
 
 Exit condition: committed text never changes and session memory does not grow with total stream duration.

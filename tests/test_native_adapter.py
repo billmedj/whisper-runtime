@@ -9,6 +9,7 @@ from whisper_runtime import (
     Budget,
     ModelMismatchError,
     ModelSnapshot,
+    QueueFullError,
     RequestCancelledError,
     RequestState,
     RequestStatus,
@@ -16,6 +17,7 @@ from whisper_runtime import (
     Session,
     SessionState,
     TransactionRetainedError,
+    TransactionStateError,
     TransactionStatus,
     WindowTransaction,
     Worker,
@@ -291,6 +293,18 @@ class FakeRun:
             raise RuntimeError("cleanup failed")
 
 
+class NonBooleanCompleteRun(FakeRun):
+    @property
+    def complete(self) -> object:
+        return 0
+
+
+class NonBooleanStepRun(FakeRun):
+    def step(self) -> object:
+        super().step()
+        return 1
+
+
 class InvalidCleanableRun:
     def __init__(self) -> None:
         self.cleanup_calls = 0
@@ -540,15 +554,20 @@ class NativeWhisperAdapterTests(unittest.TestCase):
             events,
             [
                 "checkpoint",
-                "submit:start_run",
+                "submit:<lambda>",
                 "checkpoint",
-                "submit:prefill",
+                "submit:<lambda>",
                 "checkpoint",
-                "submit:step",
+                "submit:<lambda>",
                 "checkpoint",
-                "submit:step",
                 "checkpoint",
-                "submit:finalize",
+                "submit:<lambda>",
+                "checkpoint",
+                "checkpoint",
+                "submit:<lambda>",
+                "checkpoint",
+                "checkpoint",
+                "submit:<lambda>",
                 "checkpoint",
             ],
         )
@@ -562,13 +581,579 @@ class NativeWhisperAdapterTests(unittest.TestCase):
         self.assertEqual(run.cleanup_calls, 1)
         self.assertEqual(mel.unsqueeze_calls, [0])
         self.assertEqual(harness.batched_mels, [("batched", mel)])
-        self.assertEqual(len(harness.generators), 2)
+        self.assertEqual(len(harness.generators), 1)
         expected_seed = random.Random(7).randrange(1 << 63)
-        self.assertEqual(harness.generators[0].seed, 0)
-        self.assertEqual(harness.generators[1].seed, expected_seed)
-        self.assertEqual(harness.generators[1].device, "cpu")
-        self.assertIs(harness.option_kwargs[1]["generator"], harness.generators[1])
-        self.assertIs(harness.option_kwargs[1]["fp16"], False)
+        self.assertEqual(harness.generators[0].seed, expected_seed)
+        self.assertEqual(harness.generators[0].device, "cpu")
+        self.assertIs(harness.option_kwargs[0]["generator"], harness.generators[0])
+        self.assertIs(harness.option_kwargs[0]["fp16"], False)
+
+    def test_public_run_returns_after_prefill_and_steps_explicitly(self) -> None:
+        backend_run = FakeRun(complete_after=2)
+        harness = BackendHarness([backend_run])
+        request = self.request()
+        session = Session("session-1")
+
+        with patch.object(
+            native_whisper,
+            "_load_native_components",
+            return_value=harness.components(),
+        ):
+            run = self.adapter.start_window(
+                session=session,
+                request=request,
+                window_id="window-1",
+                mel=FakeMel(),
+                start_ms=0,
+                end_ms=30_000,
+            )
+
+        self.assertEqual(backend_run.prefill_calls, 1)
+        self.assertEqual(backend_run.step_calls, 0)
+        self.assertEqual(backend_run.finalize_calls, 0)
+        self.assertEqual(session.snapshot().version, 0)
+        self.assertEqual(request.status, RequestStatus.RUNNING)
+        self.assertEqual(self.worker.queue_depth, 1)
+        self.assertEqual(self.budget.available, ResourceVector())
+        self.assertFalse(run.capacity_released)
+
+        with run:
+            self.assertFalse(run.step())
+            self.assertEqual(run.step_count, 1)
+            self.assertEqual(backend_run.step_calls, 1)
+            self.assertTrue(run.step())
+            self.assertEqual(run.step_count, 2)
+            committed = run.finish(committed_through_ms=30_000)
+
+        self.assertTrue(run.closed)
+        self.assertTrue(run.capacity_released)
+        self.assertEqual(committed.committed_through_ms, 30_000)
+        self.assertEqual(committed.windows[0].result.text, " decoded text")
+        self.assertEqual(backend_run.finalize_calls, 1)
+        self.assertEqual(backend_run.cleanup_calls, 1)
+        self.assertEqual(self.worker.queue_depth, 0)
+        self.assertEqual(self.budget.available, self.capacity)
+
+    def test_public_run_finish_does_not_hide_missing_steps(self) -> None:
+        backend_run = FakeRun(complete_after=1)
+        harness = BackendHarness([backend_run])
+        session = Session("session-1")
+
+        with patch.object(
+            native_whisper,
+            "_load_native_components",
+            return_value=harness.components(),
+        ):
+            with self.adapter.start_window(
+                session=session,
+                request=self.request(),
+                window_id="window-1",
+                mel=FakeMel(),
+                start_ms=0,
+                end_ms=1_000,
+            ) as run:
+                with self.assertRaisesRegex(
+                    NativeDecodeContractError,
+                    "cannot finish before",
+                ):
+                    run.finish()
+                self.assertFalse(run.closed)
+                self.assertEqual(backend_run.step_calls, 0)
+                run.step()
+                run.finish()
+
+        self.assertEqual(session.snapshot().version, 1)
+        self.assertEqual(backend_run.cleanup_calls, 1)
+
+    def test_public_run_rejects_an_invalid_prefix_before_finalization(self) -> None:
+        backend_run = FakeRun(complete_after=1)
+        harness = BackendHarness([backend_run])
+
+        with patch.object(
+            native_whisper,
+            "_load_native_components",
+            return_value=harness.components(),
+        ):
+            with self.adapter.start_window(
+                session=Session("session-1"),
+                request=self.request(),
+                window_id="window-1",
+                mel=FakeMel(),
+                start_ms=0,
+                end_ms=1_000,
+            ) as run:
+                run.step()
+                with self.assertRaisesRegex(ValueError, "cannot exceed"):
+                    run.finish(committed_through_ms=1_001)
+                self.assertFalse(run.closed)
+                self.assertEqual(backend_run.finalize_calls, 0)
+                run.finish(committed_through_ms=1_000)
+
+        self.assertTrue(run.capacity_released)
+        self.assertEqual(backend_run.finalize_calls, 1)
+
+    def test_blocking_decode_rejects_an_invalid_prefix_before_admission(self) -> None:
+        backend_run = FakeRun(complete_after=1)
+        harness = BackendHarness([backend_run])
+        request = self.request()
+
+        with (
+            patch.object(
+                native_whisper,
+                "_load_native_components",
+                return_value=harness.components(),
+            ),
+            self.assertRaisesRegex(ValueError, "cannot exceed"),
+        ):
+            self.adapter.decode_window(
+                session=Session("session-1"),
+                request=request,
+                window_id="window-1",
+                mel=FakeMel(),
+                start_ms=0,
+                end_ms=1_000,
+                committed_through_ms=1_001,
+            )
+
+        self.assertEqual(request.status, RequestStatus.CREATED)
+        self.assertEqual(harness.generators, [])
+        self.assertEqual(backend_run.prefill_calls, 0)
+        self.assertEqual(self.worker.queue_depth, 0)
+        self.assertEqual(self.budget.available, self.capacity)
+
+    def test_public_run_context_aborts_after_caller_error(self) -> None:
+        backend_run = FakeRun(complete_after=1)
+        harness = BackendHarness([backend_run])
+        request = self.request()
+        session = Session("session-1")
+
+        with patch.object(
+            native_whisper,
+            "_load_native_components",
+            return_value=harness.components(),
+        ):
+            with self.assertRaisesRegex(RuntimeError, "caller failed"):
+                with self.adapter.start_window(
+                    session=session,
+                    request=request,
+                    window_id="window-1",
+                    mel=FakeMel(),
+                    start_ms=0,
+                    end_ms=1_000,
+                ):
+                    raise RuntimeError("caller failed")
+
+        self.assertEqual(session.snapshot().version, 0)
+        self.assertEqual(request.status, RequestStatus.ABORTED)
+        self.assertEqual(backend_run.cleanup_calls, 1)
+        self.assertEqual(self.worker.queue_depth, 0)
+        self.assertEqual(self.budget.available, self.capacity)
+
+    def test_public_run_observes_cross_thread_cancel_at_next_step(self) -> None:
+        backend_run = FakeRun(complete_after=2)
+        harness = BackendHarness([backend_run])
+        request = self.request()
+        session = Session("session-1")
+
+        with patch.object(
+            native_whisper,
+            "_load_native_components",
+            return_value=harness.components(),
+        ):
+            run = self.adapter.start_window(
+                session=session,
+                request=request,
+                window_id="window-1",
+                mel=FakeMel(),
+                start_ms=0,
+                end_ms=1_000,
+            )
+
+        cancellation: list[bool] = []
+        canceller = Thread(target=lambda: cancellation.append(run.cancel()))
+        canceller.start()
+        canceller.join(timeout=2)
+
+        self.assertFalse(canceller.is_alive())
+        self.assertEqual(cancellation, [True])
+        with self.assertRaises(RequestCancelledError):
+            run.step()
+        self.assertTrue(run.closed)
+        self.assertEqual(backend_run.step_calls, 0)
+        self.assertEqual(backend_run.cleanup_calls, 1)
+        self.assertEqual(session.snapshot().version, 0)
+        self.assertEqual(request.status, RequestStatus.CANCELLED)
+        self.assertEqual(self.budget.available, self.capacity)
+
+    def test_public_run_observes_cancel_before_finalize(self) -> None:
+        backend_run = FakeRun(complete_after=1)
+        harness = BackendHarness([backend_run])
+        request = self.request()
+        session = Session("session-1")
+
+        with patch.object(
+            native_whisper,
+            "_load_native_components",
+            return_value=harness.components(),
+        ):
+            run = self.adapter.start_window(
+                session=session,
+                request=request,
+                window_id="window-1",
+                mel=FakeMel(),
+                start_ms=0,
+                end_ms=1_000,
+            )
+
+        self.assertTrue(run.step())
+        self.assertTrue(run.cancel())
+        with self.assertRaises(RequestCancelledError):
+            run.finish()
+
+        self.assertTrue(run.closed)
+        self.assertEqual(backend_run.finalize_calls, 0)
+        self.assertEqual(backend_run.cleanup_calls, 1)
+        self.assertEqual(session.snapshot().version, 0)
+        self.assertEqual(request.status, RequestStatus.CANCELLED)
+        self.assertEqual(self.budget.available, self.capacity)
+
+    def test_public_run_rejects_driver_calls_from_another_thread(self) -> None:
+        backend_run = FakeRun(complete_after=1)
+        harness = BackendHarness([backend_run])
+
+        with patch.object(
+            native_whisper,
+            "_load_native_components",
+            return_value=harness.components(),
+        ):
+            run = self.adapter.start_window(
+                session=Session("session-1"),
+                request=self.request(),
+                window_id="window-1",
+                mel=FakeMel(),
+                start_ms=0,
+                end_ms=1_000,
+            )
+
+        errors: list[BaseException] = []
+        other_thread = Thread(target=lambda: self._capture_step_error(run, errors))
+        other_thread.start()
+        other_thread.join(timeout=2)
+
+        self.assertFalse(other_thread.is_alive())
+        self.assertEqual(len(errors), 1)
+        self.assertIsInstance(errors[0], TransactionStateError)
+        self.assertEqual(backend_run.step_calls, 0)
+        self.assertTrue(run.close())
+        self.assertEqual(backend_run.cleanup_calls, 1)
+
+    def test_public_run_stop_reclaims_an_orphaned_owner(self) -> None:
+        backend_run = FakeRun(complete_after=1)
+        harness = BackendHarness([backend_run])
+        request = self.request()
+        handles: list[native_whisper.NativeWindowRun] = []
+
+        def start_and_exit() -> None:
+            handles.append(
+                self.adapter.start_window(
+                    session=Session("session-1"),
+                    request=request,
+                    window_id="window-1",
+                    mel=FakeMel(),
+                    start_ms=0,
+                    end_ms=1_000,
+                )
+            )
+
+        with patch.object(
+            native_whisper,
+            "_load_native_components",
+            return_value=harness.components(),
+        ):
+            owner = Thread(target=start_and_exit)
+            owner.start()
+            owner.join(timeout=2)
+
+        self.assertFalse(owner.is_alive())
+        self.assertEqual(len(handles), 1)
+        run = handles[0]
+        self.assertTrue(run.stop())
+        self.assertTrue(run.closed)
+        self.assertTrue(run.capacity_released)
+        self.assertFalse(run.stop())
+        self.assertEqual(request.status, RequestStatus.ABORTED)
+        self.assertEqual(backend_run.cleanup_calls, 1)
+        self.assertEqual(self.worker.queue_depth, 0)
+        self.assertEqual(self.budget.available, self.capacity)
+
+    def test_public_run_stop_retries_a_quarantined_completion_fence(self) -> None:
+        backend_run = FakeRun(complete_after=1, fail_cleanup=True)
+        harness = BackendHarness([backend_run])
+        request = self.request()
+
+        with patch.object(
+            native_whisper,
+            "_load_native_components",
+            return_value=harness.components(),
+        ):
+            run = self.adapter.start_window(
+                session=Session("session-1"),
+                request=request,
+                window_id="window-1",
+                mel=FakeMel(),
+                start_ms=0,
+                end_ms=1_000,
+            )
+
+        with self.assertRaisesRegex(RuntimeError, "cleanup failed"):
+            run.stop()
+
+        self.assertFalse(run.closed)
+        self.assertFalse(run.capacity_released)
+        self.assertEqual(request.status, RequestStatus.RUNNING)
+        self.assertEqual(self.worker.queue_depth, 1)
+        self.assertEqual(self.worker.quarantined_count, 1)
+        self.assertEqual(self.budget.lease_count, 1)
+
+        backend_run.fail_cleanup = False
+        self.assertTrue(run.stop())
+        self.assertTrue(run.closed)
+        self.assertTrue(run.capacity_released)
+        self.assertEqual(request.status, RequestStatus.ABORTED)
+        self.assertEqual(backend_run.cleanup_calls, 2)
+        self.assertEqual(self.worker.queue_depth, 0)
+        self.assertEqual(self.worker.quarantined_count, 0)
+        self.assertEqual(self.budget.available, self.capacity)
+
+    def test_public_run_stop_retries_terminal_lease_release(self) -> None:
+        backend_run = FakeRun(complete_after=1)
+        harness = BackendHarness([backend_run])
+        request = self.request()
+
+        with patch.object(
+            native_whisper,
+            "_load_native_components",
+            return_value=harness.components(),
+        ):
+            run = self.adapter.start_window(
+                session=Session("session-1"),
+                request=request,
+                window_id="window-1",
+                mel=FakeMel(),
+                start_ms=0,
+                end_ms=1_000,
+            )
+
+        with patch.object(
+            ResourceVector,
+            "__add__",
+            side_effect=MemoryError("allocation failed"),
+        ):
+            self.assertTrue(run.stop())
+
+        self.assertTrue(run.closed)
+        self.assertFalse(run.capacity_released)
+        self.assertEqual(request.status, RequestStatus.ABORTED)
+        self.assertEqual(backend_run.cleanup_calls, 1)
+        self.assertEqual(self.worker.queue_depth, 1)
+        self.assertEqual(self.worker.quarantined_count, 1)
+        self.assertEqual(self.budget.lease_count, 1)
+
+        self.assertTrue(run.stop())
+        self.assertTrue(run.capacity_released)
+        self.assertEqual(backend_run.cleanup_calls, 1)
+        self.assertEqual(self.worker.queue_depth, 0)
+        self.assertEqual(self.worker.quarantined_count, 0)
+        self.assertEqual(self.budget.available, self.capacity)
+
+    def test_public_run_stop_signals_a_live_owner_without_early_release(self) -> None:
+        backend_run = FakeRun(complete_after=1)
+        harness = BackendHarness([backend_run])
+        request = self.request()
+        owner_ready = Event()
+        release_owner = Event()
+        handles: list[native_whisper.NativeWindowRun] = []
+        errors: list[BaseException] = []
+
+        def own_run() -> None:
+            try:
+                run = self.adapter.start_window(
+                    session=Session("session-1"),
+                    request=request,
+                    window_id="window-1",
+                    mel=FakeMel(),
+                    start_ms=0,
+                    end_ms=1_000,
+                )
+                handles.append(run)
+                owner_ready.set()
+                release_owner.wait(timeout=2)
+                run.step()
+            except BaseException as exc:
+                errors.append(exc)
+
+        with patch.object(
+            native_whisper,
+            "_load_native_components",
+            return_value=harness.components(),
+        ):
+            owner = Thread(target=own_run)
+            owner.start()
+            self.assertTrue(owner_ready.wait(timeout=2))
+            run = handles[0]
+            self.assertTrue(run.stop())
+            self.assertFalse(run.closed)
+            self.assertFalse(run.capacity_released)
+            self.assertEqual(request.status, RequestStatus.RUNNING)
+            self.assertEqual(self.worker.queue_depth, 1)
+            self.assertEqual(self.budget.available, ResourceVector())
+            release_owner.set()
+            owner.join(timeout=2)
+
+        self.assertFalse(owner.is_alive())
+        self.assertEqual(len(errors), 1)
+        self.assertIsInstance(errors[0], TransactionStateError)
+        self.assertTrue(run.closed)
+        self.assertTrue(run.capacity_released)
+        self.assertEqual(request.status, RequestStatus.ABORTED)
+        self.assertEqual(backend_run.step_calls, 0)
+        self.assertEqual(backend_run.cleanup_calls, 1)
+        self.assertEqual(self.worker.queue_depth, 0)
+        self.assertEqual(self.budget.available, self.capacity)
+
+    def test_public_run_uses_worker_capacity_instead_of_a_long_model_lock(
+        self,
+    ) -> None:
+        backend_run = FakeRun(complete_after=1)
+        harness = BackendHarness([backend_run])
+
+        with patch.object(
+            native_whisper,
+            "_load_native_components",
+            return_value=harness.components(),
+        ):
+            first = self.adapter.start_window(
+                session=Session("session-1"),
+                request=self.request("request-first"),
+                window_id="window-first",
+                mel=FakeMel(),
+                start_ms=0,
+                end_ms=1_000,
+            )
+            generator_count = len(harness.generators)
+            model_count = len(harness.models)
+            with self.assertRaises(QueueFullError):
+                self.adapter.start_window(
+                    session=Session("session-1"),
+                    request=self.request("request-second"),
+                    window_id="window-second",
+                    mel=FakeMel(),
+                    start_ms=0,
+                    end_ms=1_000,
+                )
+
+        self.assertEqual(len(harness.generators), generator_count)
+        self.assertEqual(len(harness.models), model_count)
+        self.assertTrue(first.close())
+        self.assertEqual(backend_run.cleanup_calls, 1)
+
+    def test_cancel_during_identity_check_does_not_release_admission_early(
+        self,
+    ) -> None:
+        identity_entered = Event()
+        release_identity = Event()
+        arm_block = Event()
+        probe_calls = 0
+
+        def blocking_probe(model: object) -> ModelSnapshot:
+            nonlocal probe_calls
+            probe_calls += 1
+            if arm_block.is_set():
+                identity_entered.set()
+                if not release_identity.wait(timeout=2):
+                    raise AssertionError("identity probe was not released")
+            return probe(model)
+
+        budget = Budget(self.capacity)
+        worker = Worker(
+            "preflight-worker",
+            self.identity,
+            budget,
+            queue_capacity=1,
+        )
+        adapter = NativeWhisperAdapter(
+            worker,
+            FakeNativeModel(self.identity),
+            blocking_probe,
+            self.profile,
+        )
+        baseline_probe_calls = probe_calls
+        backend_run = FakeRun(complete_after=1)
+        harness = BackendHarness([backend_run])
+        request = self.request("preflight-owner")
+        errors: list[BaseException] = []
+
+        def start_window() -> None:
+            try:
+                adapter.start_window(
+                    session=Session("session-1"),
+                    request=request,
+                    window_id="window-1",
+                    mel=FakeMel(),
+                    start_ms=0,
+                    end_ms=1_000,
+                )
+            except BaseException as exc:
+                errors.append(exc)
+
+        arm_block.set()
+        with patch.object(
+            native_whisper,
+            "_load_native_components",
+            return_value=harness.components(),
+        ):
+            owner = Thread(target=start_window)
+            owner.start()
+            self.assertTrue(identity_entered.wait(timeout=2))
+            self.assertTrue(request.cancel())
+            self.assertEqual(request.status, RequestStatus.CANCELLED)
+            self.assertEqual(worker.queue_depth, 1)
+            self.assertEqual(budget.available, ResourceVector())
+
+            with self.assertRaises(QueueFullError):
+                adapter.start_window(
+                    session=Session("session-2"),
+                    request=RequestState(
+                        "preflight-contender",
+                        "session-2",
+                        self.identity,
+                        rng_seed=8,
+                    ),
+                    window_id="window-2",
+                    mel=FakeMel(),
+                    start_ms=0,
+                    end_ms=1_000,
+                )
+
+            self.assertEqual(probe_calls, baseline_probe_calls + 1)
+            self.assertEqual(worker.queue_depth, 1)
+            self.assertEqual(budget.available, ResourceVector())
+            release_identity.set()
+            owner.join(timeout=2)
+
+        self.assertFalse(owner.is_alive())
+        self.assertEqual(len(errors), 1)
+        self.assertIsInstance(errors[0], RequestCancelledError)
+        self.assertEqual(backend_run.cleanup_calls, 0)
+        self.assertEqual(worker.queue_depth, 0)
+        self.assertEqual(budget.available, self.capacity)
+
+    @staticmethod
+    def _capture_step_error(run: object, errors: list[BaseException]) -> None:
+        try:
+            cast(native_whisper.NativeWindowRun, run).step()
+        except BaseException as exc:
+            errors.append(exc)
 
     def test_dual_lane_serializes_start_and_overlaps_request_local_decode(
         self,
@@ -725,7 +1310,9 @@ class NativeWhisperAdapterTests(unittest.TestCase):
                 max_concurrent_decodes=3,
             )
 
-    def test_dual_lane_rejects_shared_backend_state_before_admission(self) -> None:
+    def test_dual_lane_rejects_shared_backend_state_without_leaking_admission(
+        self,
+    ) -> None:
         adapter, worker, budget, transaction_cost = self.dual_adapter()
         cases = (
             (
@@ -757,7 +1344,7 @@ class NativeWhisperAdapterTests(unittest.TestCase):
                             start_ms=0,
                             end_ms=30_000,
                         )
-                self.assertEqual(request.status, RequestStatus.CREATED)
+                self.assertEqual(request.status, RequestStatus.ABORTED)
 
         self.assertEqual(worker.queue_depth, 0)
         self.assertEqual(budget.available, transaction_cost + transaction_cost)
@@ -1056,9 +1643,9 @@ class NativeWhisperAdapterTests(unittest.TestCase):
             self.decode(harness, request=self.request("request-first"))
         self.decode(harness, request=self.request("request-second"))
 
-        self.assertEqual(len(harness.generators), 4)
-        self.assertIsNot(harness.generators[1], harness.generators[3])
-        self.assertEqual(harness.generators[1].seed, harness.generators[3].seed)
+        self.assertEqual(len(harness.generators), 2)
+        self.assertIsNot(harness.generators[0], harness.generators[1])
+        self.assertEqual(harness.generators[0].seed, harness.generators[1].seed)
 
     def test_model_identity_is_checked_after_finalize(self) -> None:
         changed = ModelSnapshot(
@@ -1107,7 +1694,39 @@ class NativeWhisperAdapterTests(unittest.TestCase):
         self.assertEqual(harness.generators, [])
         self.assertEqual(run.cleanup_calls, 0)
         self.assertEqual(session.snapshot().version, 0)
-        self.assertEqual(request.status, RequestStatus.CREATED)
+        self.assertEqual(request.status, RequestStatus.ABORTED)
+        self.assertEqual(self.worker.queue_depth, 0)
+        self.assertEqual(self.budget.available, self.capacity)
+
+    def test_rejects_a_non_boolean_backend_completion_flag(self) -> None:
+        run = NonBooleanCompleteRun()
+        request = self.request()
+
+        with self.assertRaisesRegex(
+            NativeDecodeContractError,
+            "run complete must be a boolean",
+        ):
+            self.decode(BackendHarness([run]), request=request)
+
+        self.assertEqual(request.status, RequestStatus.ABORTED)
+        self.assertEqual(run.cleanup_calls, 1)
+        self.assertEqual(self.worker.queue_depth, 0)
+        self.assertEqual(self.budget.available, self.capacity)
+
+    def test_rejects_a_truthy_non_boolean_step_result(self) -> None:
+        run = NonBooleanStepRun(complete_after=1)
+        request = self.request()
+
+        with self.assertRaisesRegex(
+            NativeDecodeContractError,
+            "decode step must return a boolean",
+        ):
+            self.decode(BackendHarness([run]), request=request)
+
+        self.assertEqual(request.status, RequestStatus.ABORTED)
+        self.assertEqual(run.cleanup_calls, 1)
+        self.assertEqual(self.worker.queue_depth, 0)
+        self.assertEqual(self.budget.available, self.capacity)
 
     def test_rejects_multiple_results_without_commit(self) -> None:
         run = FakeRun(complete_after=1, result_count=2)
@@ -1154,11 +1773,11 @@ class NativeWhisperAdapterTests(unittest.TestCase):
             with self.assertRaisesRegex(NativeDependencyError, "requires PyTorch"):
                 native_whisper._load_native_components()
 
-    def test_preflight_interrupt_releases_the_shared_model_lock(self) -> None:
-        request = self.request("preflight-interrupt")
+    def test_task_build_interrupt_releases_the_shared_model_lock(self) -> None:
+        request = self.request("task-build-interrupt")
         with patch.object(
             NativeWhisperAdapter,
-            "_preflight_native_backend",
+            "_build_native_task",
             side_effect=KeyboardInterrupt,
         ):
             with self.assertRaises(KeyboardInterrupt):
@@ -1176,7 +1795,9 @@ class NativeWhisperAdapterTests(unittest.TestCase):
         contender.join(timeout=2)
         self.assertTrue(acquired.is_set())
         self.assertFalse(contender.is_alive())
-        self.assertEqual(request.status, RequestStatus.CREATED)
+        self.assertEqual(request.status, RequestStatus.ABORTED)
+        self.assertEqual(self.worker.queue_depth, 0)
+        self.assertEqual(self.budget.available, self.capacity)
 
     def test_rejects_batched_or_long_windows_before_admission(self) -> None:
         class BatchedMel:
@@ -1336,7 +1957,7 @@ class NativeWhisperAdapterTests(unittest.TestCase):
         self.assertEqual(self.worker.queue_depth, 0)
         self.assertEqual(self.budget.available, self.capacity)
 
-    def test_incompatible_stock_options_fail_before_admission(self) -> None:
+    def test_incompatible_stock_options_release_admission(self) -> None:
         request = self.request("stock-options")
 
         def stock_options(*, fp16: bool) -> object:
@@ -1364,11 +1985,11 @@ class NativeWhisperAdapterTests(unittest.TestCase):
                     end_ms=30_000,
                 )
 
-        self.assertEqual(request.status, RequestStatus.CREATED)
+        self.assertEqual(request.status, RequestStatus.ABORTED)
         self.assertEqual(self.worker.queue_depth, 0)
         self.assertEqual(self.budget.available, self.capacity)
 
-    def test_missing_suspendable_api_fails_before_admission(self) -> None:
+    def test_missing_suspendable_api_releases_admission(self) -> None:
         request = self.request("stock-task")
         harness = BackendHarness([])
         components = native_whisper._NativeComponents(
@@ -1392,7 +2013,7 @@ class NativeWhisperAdapterTests(unittest.TestCase):
                     end_ms=30_000,
                 )
 
-        self.assertEqual(request.status, RequestStatus.CREATED)
+        self.assertEqual(request.status, RequestStatus.ABORTED)
         self.assertEqual(self.worker.queue_depth, 0)
         self.assertEqual(self.budget.available, self.capacity)
 

@@ -26,7 +26,7 @@ For a repository checkout, the
 backend and an isolated Python environment with one command. It also provides a
 minimal native transaction example. The bootstrap does not download a model.
 
-PyTorch and Whisper are loaded when `decode_window()` starts. Importing
+PyTorch and Whisper are loaded when `decode_window()` or `start_window()` starts. Importing
 `whisper_runtime` does not load either package.
 
 ## Transaction boundary
@@ -44,15 +44,37 @@ One model object is bound to one adapter kind, worker, profile, and concurrency
 limit for that object's lifetime. Load a new model object when migrating
 between profiles or adapters.
 
-One call performs these operations:
+The blocking API performs these operations:
 
-1. Draw a seed from the transaction-local random stream.
-2. Create a new `torch.Generator` on the profile device from that seed.
-3. Submit run creation and encoder work.
-4. Submit prefill.
-5. Submit each token step separately, with a checkpoint after every step.
-6. Submit finalization and require exactly one decode result.
-7. Commit one `WindowResult` containing its text and declared time span.
+1. Admit the request and start its execution scope.
+2. Draw a seed from the transaction-local random stream.
+3. Submit model validation, task creation, and input preparation.
+4. Check for cancellation before encoder work.
+5. Submit run creation and encoder preparation.
+6. Submit prefill.
+7. Submit each token step separately, with a checkpoint after every step.
+8. Submit finalization and require exactly one decode result.
+9. Commit one `WindowResult` containing its text and declared time span.
+
+`start_window()` uses the same path but returns after step 6. Its
+`NativeWindowRun` exposes one-token `step()`, cooperative `cancel()`, supervisor
+`stop()`, explicit `finish()`, and idempotent `close()`. `finish()` refuses an
+incomplete run; it never executes hidden token steps. The thread that starts
+the run owns its driver methods. Another thread may request cancellation,
+which the owner observes before the next submission. It may also call `stop()`:
+the runtime signals a live owner, but it fences and reclaims the transaction
+when that owner has exited.
+
+Use the handle as a context manager. Leaving the context without a commit
+aborts the transaction, fences the backend, and releases or quarantines the
+lease under the same rules as `decode_window()`.
+
+`True` from `cancel()` or `stop()` means that state changed, a signal was
+delivered, or recovery progressed. It does not by itself mean that the lease
+was released. Read `capacity_released` for that fact. `closed` only reports
+that driver methods can no longer advance the run. `stop()` can be retried
+after a cleanup failure. A failed completion fence raises an error and keeps
+the transaction quarantined, with its lease held, until recovery succeeds.
 
 The execution scope owns the decode handle. Its completion fence calls
 `cleanup()` before the runtime releases the lease. Cancellation is cooperative:
@@ -113,6 +135,30 @@ state = adapter.decode_window(
     options=NativeDecodeOptions(language="en", beam_size=5),
 )
 ```
+
+Use the managed handle when an external scheduler owns progress:
+
+```python
+with adapter.start_window(
+    session=session,
+    request=request,
+    window_id="window-1",
+    mel=mel,
+    start_ms=0,
+    end_ms=30_000,
+) as run:
+    while not run.complete:
+        run.step()  # one token step, then a cancellation checkpoint
+    state = run.finish(committed_through_ms=30_000)
+```
+
+`committed_through_ms` is an explicit caller assertion that the audio prefix
+`[0, value)` is immutable. A later commit can advance this boundary or leave it
+unchanged. It cannot move the boundary backwards, publish a result that starts
+inside the committed prefix, or advance beyond that result's end. The session
+keeps the boundary when old window records are evicted. The runtime does not
+infer finality from a window end time because committed windows may contain
+gaps.
 
 `mel` must have the exact shape `(model.dims.n_mels, whisper.audio.N_FRAMES)`.
 The adapter adds the batch dimension. The identity probe must bind the loaded
@@ -199,9 +245,9 @@ own decoder run outside that preparation lock.
 
 The adapter enables this path only when the patched backend reports both the
 built-in decoder path and request-local KV-cache support. A legacy extension or
-hook-based cache fallback is rejected before admission. The created run is
-checked again before decode starts. The historical adapter remains strictly
-single-lane.
+hook-based cache fallback is rejected during admitted task construction, before
+any encoder or decoder operation. The created run is checked again before
+decode starts. The historical adapter remains strictly single-lane.
 
 ```python
 transaction_cost = ResourceVector(

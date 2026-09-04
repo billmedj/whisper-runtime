@@ -49,6 +49,7 @@ SDIST_REQUIRED_SUFFIXES = {
     "experiments/native-cuda-qualification-v6.json",
     "examples/minimal_transaction.py",
     "formal/lean/WhisperRuntimeFormal.lean",
+    "formal/lean/WhisperRuntimeFormal/CommittedPrefix.lean",
     "formal/lean/WhisperRuntimeFormal/CompletionFence.lean",
     "formal/lean/WhisperRuntimeFormal/StateResource.lean",
     "infra/__init__.py",
