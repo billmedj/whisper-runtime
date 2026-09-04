@@ -1,0 +1,178 @@
+{
+  "schema_version": "1",
+  "recorded_at": "2026-09-04T04:23:00.922946Z",
+  "status": "passed",
+  "scope": {
+    "evidence_kind": "patched-whisper-cuda-readiness",
+    "statement": "One pinned patched Whisper backend decoded one pinned fixture on one Modal T4. No runtime transaction was admitted or executed.",
+    "runtime_adapter_exercised": false
+  },
+  "claims": {
+    "patched_backend_cuda_decode": true,
+    "runtime_adapter_exercised": false,
+    "worker_admission_exercised": false,
+    "transaction_lifecycle_exercised": false,
+    "cuda_completion_fence_exercised": false,
+    "performance_benchmark": false
+  },
+  "runtime": {
+    "repository": "https://github.com/billmedj/whisper-runtime.git",
+    "native_adapter_path": "src/whisper_runtime/adapters/native_whisper.py",
+    "native_adapter_sha256": "3388992843384d2a4259588e9bc0e22dd971b7fd2fe4162e515330ef8b480d4c",
+    "git_commit": "599d1bab7746c2c2d3596dc0cc4423b40bf2e4b6",
+    "git_tree": "7263ea9696825c2a6d6538602c654ba51f328a9b",
+    "clean": true
+  },
+  "backend": {
+    "repository": "https://github.com/openai/whisper.git",
+    "base_commit": "86098128c0b4f24f0e2aa2994de830614b474227",
+    "base_tree": "f7b3cb8e12a2e84dccacc4c858c33d5a9c114688",
+    "applied_commit": "a0b9695ae1cc52bad4b8626fe9fb6ea4ac0ee650",
+    "git_tree": "c011d2563c26763b5f147026e6b18ef85bccd4fb",
+    "clean": true,
+    "patch_manifest": "patches/openai-whisper/SHA256SUMS",
+    "patch_manifest_sha256": "0fa1a833b0c489056d77da21188519c7e16fde7825d06bc5b902ba23a01abeb5"
+  },
+  "modal": {
+    "sdk_version": "1.5.5",
+    "function_call_id": "fc-01M1NAF3KMBSFZE1PYZPY46EW8",
+    "image_id": "im-kSrrms1wuvIATYFhH5ctI5",
+    "task_id": "ta-01M1NAF3YHHSBFK9FDW4HGQSVR",
+    "environment": "main",
+    "cloud_provider": "CLOUD_PROVIDER_GCP",
+    "region": "asia-southeast2",
+    "network_blocked": true,
+    "modal_access_restricted": true,
+    "model_cache": {
+      "name": "whisper-runtime-model-cache-v1",
+      "generation": 1,
+      "mount_path": "/models",
+      "read_only": true,
+      "write_probe": {
+        "denied": true,
+        "exception_type": "OSError",
+        "errno": 30
+      }
+    },
+    "network_probe": {
+      "target": "1.1.1.1:443",
+      "denied": true,
+      "exception_type": "OSError",
+      "errno": 101
+    }
+  },
+  "environment": {
+    "python": "3.13.3",
+    "platform": "Linux-4.19.0-gvisor-x86_64-with-glibc2.36",
+    "torch": "2.6.0+cu124",
+    "torch_git_version": "2236df1770800ffea5697b11b0bb0d910b2e59e1",
+    "cuda_runtime": "12.4",
+    "cudnn": "90100",
+    "nvidia_driver": "580.95.05",
+    "ffmpeg": "ffmpeg version 5.1.9-0+deb12u1 Copyright (c) 2000-2026 the FFmpeg developers",
+    "numpy": "2.5.2",
+    "tiktoken": "0.14.0",
+    "numba": "0.67.0",
+    "tqdm": "4.70.0",
+    "more_itertools": "11.1.0"
+  },
+  "gpu": {
+    "requested": "T4",
+    "visible_device_count": 1,
+    "device_index": 0,
+    "name": "Tesla T4",
+    "capability_major": 7,
+    "capability_minor": 5,
+    "total_memory_bytes": 15637086208
+  },
+  "model": {
+    "name": "tiny.en",
+    "device": "cuda:0",
+    "dtype": "torch.float32",
+    "checkpoint_path": "model-cache-v1/tiny.en.pt",
+    "checkpoint_sha256": "d3dd57d32accea0b295c96e26691aa14d8822fac7d9d27d5dc00b4ca2826dd03",
+    "loaded_state_sha256_before": "sha256:8041a80119a588f542472da35e97d0372fce1d9709ed9874475e9c03deac5de6",
+    "loaded_state_sha256_after": "sha256:8041a80119a588f542472da35e97d0372fce1d9709ed9874475e9c03deac5de6"
+  },
+  "input": {
+    "fixture_id": "openai-whisper-jfk-flac",
+    "path": "openai-whisper/tests/jfk.flac",
+    "sha256": "63a4b1e4c1dc655ac70961ffbf518acd249df237e5a0152faae9a4a836949715",
+    "size_bytes": 1152693,
+    "sample_rate_hz": 16000,
+    "sample_count": 176000,
+    "decoded_pcm_sha256": "59be237a0814faee9f1279bc54c8a482fa7edc09a640ff0fdd18d14d41519065"
+  },
+  "decode": {
+    "language": "en",
+    "task": "transcribe",
+    "temperature": 0.0,
+    "without_timestamps": true,
+    "fp16": true,
+    "rng_seed": 7,
+    "staged_result_count": 1,
+    "text": "And so my fellow Americans ask not what your country can do for you, ask what you can do for your country.",
+    "expected_text": "And so my fellow Americans ask not what your country can do for you, ask what you can do for your country.",
+    "expected_text_matched": true,
+    "reuse_text": "And so my fellow Americans ask not what your country can do for you, ask what you can do for your country.",
+    "reuse_matched": true,
+    "cleanup_calls": 2,
+    "reuse_cleanup_calls": 2
+  },
+  "timing": {
+    "staged_decode_seconds": 1.4844854736328126,
+    "reuse_decode_seconds": 0.20423039245605468,
+    "total_seconds": 7.8945735379999995,
+    "synchronized": true
+  },
+  "memory": {
+    "allocated_before_bytes": 153161216,
+    "peak_allocated_bytes": 215189504,
+    "peak_reserved_bytes": 255852544,
+    "allocated_after_bytes": 164833792,
+    "measured": true,
+    "enforced": false
+  },
+  "adapter_boundary": {
+    "adapter": "NativeWhisperAdapter",
+    "device": "cuda:0",
+    "attempted": true,
+    "rejected_before_admission": true,
+    "exception_type": "ValueError",
+    "message": "the native adapter requires an explicit CPU device for the mel tensor",
+    "queue_depth_before": 0,
+    "queue_depth_after": 0,
+    "budget_available_before": {
+      "memory_bytes": 1000000000,
+      "compute_units": 1,
+      "stream_slots": 1
+    },
+    "budget_available_after": {
+      "memory_bytes": 1000000000,
+      "compute_units": 1,
+      "stream_slots": 1
+    }
+  },
+  "assertions": {
+    "runtime_source_pinned": true,
+    "backend_source_pinned": true,
+    "patch_manifest_verified": true,
+    "checkpoint_verified_before_load": true,
+    "input_fixture_verified": true,
+    "torch_cuda_available": true,
+    "requested_t4_observed": true,
+    "model_loaded_on_cuda": true,
+    "staged_decode_completed": true,
+    "decode_result_matches_expected": true,
+    "cleanup_idempotent": true,
+    "persistent_model_state_unchanged": true,
+    "model_hooks_unchanged": true,
+    "model_reusable_after_decode": true,
+    "cuda_timing_synchronized": true,
+    "torch_cuda_memory_measured": true,
+    "native_runtime_adapter_rejected_before_admission": true,
+    "network_block_configured": true,
+    "outbound_network_probe_denied": true,
+    "model_cache_read_only": true
+  }
+}

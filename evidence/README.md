@@ -1,6 +1,6 @@
 # Integration evidence
 
-This directory contains four committed records from real backend runs:
+This directory contains six committed records from real backend runs:
 
 - `native-cpu-tiny-en-jfk-2026-09-03.json` records one
   `NativeWhisperAdapter` transaction.
@@ -11,15 +11,21 @@ This directory contains four committed records from real backend runs:
   case across two operating-system threads in the patched decoder backend.
 - `native-cpu-tiny-en-jfk-runtime-concurrency-2026-09-04.json` records two
   transactions through the experimental two-lane runtime adapter.
+- `modal-t4-tiny-en-jfk-cuda-readiness-gcp-2026-09-04.json` and
+  `modal-t4-tiny-en-jfk-cuda-readiness-aws-2026-09-04.json` record two separate
+  direct-backend CUDA executions on Modal T4 workers. The workers ran in GCP
+  `asia-southeast2` and AWS `us-west-2`.
 
 Each record identifies the runtime revision, backend source tree, model
 checkpoint, input, environment, and observed outcome.
 
-`modal-cuda-readiness.schema.json` defines a separate, version-one T4 record.
-The repository includes the manual harness and validator, but no CUDA record is
-committed yet. A passing record covers the direct patched backend only. It must
-state that no runtime transaction, worker admission, CUDA completion fence, or
-performance benchmark was exercised. See
+`modal-cuda-readiness.schema.json` defines the version-one T4 record. Both
+committed records passed its schema and semantic validator. They bind the same
+runtime commit, backend tree, patch manifest, model checkpoint, decoded PCM,
+and transcript. A passing record covers the direct patched backend only. The
+CUDA rejection boundary was exercised; no runtime transaction was admitted or
+executed. No record covers worker admission, the transaction lifecycle, a CUDA
+completion fence, or a performance benchmark. See
 [`docs/MODAL_GPU_VALIDATION.md`](../docs/MODAL_GPU_VALIDATION.md).
 
 The native CI workflow repeats the same-model interleaving check and publishes

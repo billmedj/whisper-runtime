@@ -106,6 +106,20 @@ is the default because every new Modal workspace has it.
 The workflow stores the record as a 30-day GitHub artifact. The repository does
 not commit a GPU result until the artifact has passed review.
 
+## Published records
+
+Two reviewed records are committed under `evidence/`. They use the same pinned
+runtime, patched backend, model checkpoint, decoded PCM, and expected output.
+Modal placed one T4 worker in GCP `asia-southeast2` and the other in AWS
+`us-west-2`. Both workers produced the exact transcript, preserved the recorded
+model-state fingerprint, denied the outbound network probe, and denied a write
+to the read-only model cache.
+
+These records establish only the direct patched-backend cases that they state.
+The CUDA rejection boundary was exercised; no runtime transaction was admitted
+or executed. The records do not establish adapter-level CUDA execution, memory
+enforcement, latency, throughput, or production readiness.
+
 ## Record validation
 
 The JSON Schema closes every object and fixes the scope-defining values. The

@@ -190,6 +190,7 @@ See the [native adapter contract](https://github.com/billmedj/whisper-runtime/bl
 | One recorded staged-run isolation check | One loaded `tiny.en` model, two overlapping run lifetimes, early cleanup, unchanged survivor, and successful model reuse |
 | One recorded OS-thread isolation check | Two native worker threads, overlapping outer decoder-call intervals, owner-thread cleanup, unchanged survivor, and model reuse |
 | One recorded adapter-level concurrency check | Two runtime-admitted transactions, serialized encoder preparation, cooperative cancellation, isolated commit, and exact budget restoration |
+| Two recorded Modal T4 readiness checks | Direct patched-backend CUDA decode on separate GCP and AWS workers, exact transcript and model reuse, verified source and model identities, blocked network, and read-only model cache |
 | Four conformance pairs | Pinned greedy, beam-search, word-timestamp, and translation reference/candidate records |
 
 The recorded transaction identifies the imported source tree, checkpoint,
@@ -221,14 +222,18 @@ establish simultaneous PyTorch kernel execution or higher throughput. The
 checks cover one pinned CPU configuration and are not a general thread-safety
 guarantee.
 
-These results do not establish CUDA correctness, safe batching, live audio
-streaming, durable mid-window resume, portable worker migration, latency,
-throughput, or production readiness. The Lean model does not model Python
-threads, PyTorch kernels, submission gates, or adapter code.
+The T4 records establish the stated direct-backend CUDA cases. They do not run
+a transaction through the runtime adapter. These results do not establish
+runtime-level CUDA correctness, safe batching, live audio streaming, durable
+mid-window resume, portable worker migration, latency, throughput, or
+production readiness. The Lean model does not model Python threads, PyTorch
+kernels, submission gates, or adapter code.
 
 See the [transaction record](https://github.com/billmedj/whisper-runtime/blob/main/evidence/native-cpu-tiny-en-jfk-2026-09-03.json),
 [staged-run isolation record](https://github.com/billmedj/whisper-runtime/blob/main/evidence/native-cpu-tiny-en-jfk-interleaving-2026-09-03.json),
 [adapter concurrency record](https://github.com/billmedj/whisper-runtime/blob/main/evidence/native-cpu-tiny-en-jfk-runtime-concurrency-2026-09-04.json),
+[GCP T4 readiness record](https://github.com/billmedj/whisper-runtime/blob/main/evidence/modal-t4-tiny-en-jfk-cuda-readiness-gcp-2026-09-04.json),
+[AWS T4 readiness record](https://github.com/billmedj/whisper-runtime/blob/main/evidence/modal-t4-tiny-en-jfk-cuda-readiness-aws-2026-09-04.json),
 [assurance map](https://github.com/billmedj/whisper-runtime/blob/main/docs/ASSURANCE.md),
 [conformance contract](https://github.com/billmedj/whisper-runtime/blob/main/docs/CONFORMANCE.md), and
 [development roadmap](https://github.com/billmedj/whisper-runtime/blob/main/docs/ROADMAP.md).
