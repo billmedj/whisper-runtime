@@ -39,6 +39,15 @@ python -m build
 python -B tools/check_distribution.py dist
 ```
 
+The repository-tool tests include offline checks for the real-backend
+bootstrap. Run the networked native integration only when the change affects
+the backend, its adapter, or its setup:
+
+```sh
+python tools/bootstrap_native_backend.py
+python tools/run_native_example.py --allow-model-download
+```
+
 Run `lake build` from `formal/lean` when a change affects the state model,
 resource accounting, lifecycle, or published claims about the formal model.
 

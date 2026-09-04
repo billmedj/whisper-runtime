@@ -19,6 +19,11 @@ The source distribution contains the patch series. The wheel contains the
 runtime package only. Wheel users must obtain the backend patches from the
 source archive or repository.
 
+For a repository checkout, the
+[real backend quick start](REAL_BACKEND_QUICKSTART.md) creates the pinned
+backend and an isolated Python environment with one command. It also provides a
+minimal native transaction example. The bootstrap does not download a model.
+
 PyTorch and Whisper are loaded when `decode_window()` starts. Importing
 `whisper_runtime` does not load either package.
 

@@ -19,6 +19,16 @@ Apply the files in numeric order:
 0007-Serialize-legacy-cache-run-lifetimes.patch
 ```
 
+From a full repository checkout, the supported bootstrap verifies and applies
+this series and installs its dependencies in a project-local environment:
+
+```sh
+python tools/bootstrap_native_backend.py
+```
+
+See the [real backend quick start](../../docs/REAL_BACKEND_QUICKSTART.md). The
+manual procedure below remains useful for patch review and custom environments.
+
 On a POSIX shell, verify the patch files before applying them:
 
 ```sh

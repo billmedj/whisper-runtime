@@ -62,6 +62,8 @@ The detailed state and close rules are in
 
 ## Quick start
 
+### Runtime core
+
 Clone the repository and create an environment:
 
 ```sh
@@ -92,6 +94,28 @@ python examples/minimal_transaction.py
 
 The command prints `Example transcript` after it commits session version 1,
 returns the worker queue to zero, and restores the declared budget.
+
+### Patched Whisper backend
+
+Build the pinned backend and its isolated Python environment with one command:
+
+```sh
+python tools/bootstrap_native_backend.py
+```
+
+The bootstrap verifies the backend commit, source trees, and patch digests. It
+installs packages only in `.tmp-native/venv`. It does not download a model.
+
+Run one real `tiny.en` CPU transaction. The flag gives explicit permission for
+the first checkpoint download:
+
+```sh
+python tools/run_native_example.py --allow-model-download
+```
+
+Later runs use the verified local checkpoint and omit the flag. See the
+[real backend quick start](https://github.com/billmedj/whisper-runtime/blob/main/docs/REAL_BACKEND_QUICKSTART.md)
+for prerequisites, offline verification, custom paths, and limits.
 
 ## Development validation
 
@@ -192,7 +216,7 @@ See the [transaction record](https://github.com/billmedj/whisper-runtime/blob/ma
 conformance/     Fixture schema, case matrix, and recorded comparison
 docs/            Architecture, adapter contracts, and roadmap
 evidence/        Versioned integration-run records
-examples/        Minimal executable use of the runtime core
+examples/        Minimal runtime-core and native-backend programs
 formal/lean/     Abstract state, lease, and capacity model
 patches/         Reproducible integration patches for the pinned backend
 src/             Python reference implementation

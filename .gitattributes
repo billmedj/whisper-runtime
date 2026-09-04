@@ -1,5 +1,7 @@
 * text=auto
 
+.gitattributes text eol=lf
+
 *.json text eol=lf
 *.lean text eol=lf
 *.md text eol=lf
@@ -7,8 +9,11 @@
 *.ps1 text eol=lf
 *.py text eol=lf
 *.toml text eol=lf
+*.txt text eol=lf
 *.yml text eol=lf
 *.yaml text eol=lf
+
+patches/openai-whisper/SHA256SUMS text eol=lf
 
 *.flac binary
 *.pt binary
