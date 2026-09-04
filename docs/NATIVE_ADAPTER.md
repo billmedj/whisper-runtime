@@ -169,6 +169,9 @@ outer calls before either continues. Temporary instrumentation records the
 owning Python and native thread identifiers and the start and end of each outer
 call. The check requires those two intervals to overlap.
 
+The repository includes one validated record at
+`evidence/native-cpu-tiny-en-jfk-threaded-2026-09-04.json`.
+
 The cancelled worker cleans its run after one token step. The other worker
 continues to completion. The check requires:
 

@@ -152,7 +152,7 @@ See the [native adapter contract](https://github.com/billmedj/whisper-runtime/bl
 | 35 Lean theorem declarations | Abstract lease provenance, capacity conservation, lifecycle, and stale-commit properties |
 | One recorded native run | Patched `tiny.en` decoder, JFK fixture, CPU, exact transcript, queue returned to zero, declared budget restored |
 | One recorded staged-run isolation check | One loaded `tiny.en` model, two overlapping run lifetimes, early cleanup, unchanged survivor, and successful model reuse |
-| OS-thread backend check | Two native worker threads, overlapping outer decoder-call intervals, owner-thread cleanup, unchanged survivor, and model reuse |
+| One recorded OS-thread isolation check | Two native worker threads, overlapping outer decoder-call intervals, owner-thread cleanup, unchanged survivor, and model reuse |
 | One conformance pair | Pinned greedy CPU reference and candidate records |
 
 The recorded transaction identifies the imported source tree, checkpoint,
@@ -161,8 +161,8 @@ CI workflow also runs two staged decodes on one loaded model under a fixed
 token-step schedule. It then repeats the decoder isolation case with two native
 worker threads after preparing both encoder outputs sequentially. Each thread
 enters its first outer decoder call. A barrier in the first decoder block holds
-both calls before either continues. The evidence records
-the start and end of each outer call and requires the two intervals to overlap.
+both calls before either continues. The evidence records the start and end of
+each outer call and requires the two intervals to overlap.
 It also records the explicit decode options. In both checks, one run is cleaned
 after a decoder step, the survivor must match an isolated baseline, and a final
 decode must show that the model remains usable.

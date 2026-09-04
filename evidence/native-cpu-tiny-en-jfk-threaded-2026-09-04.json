@@ -1,0 +1,350 @@
+{
+  "schema_version": "1",
+  "recorded_at": "2026-09-04T01:37:56.193791Z",
+  "status": "passed",
+  "scope": "patched_backend",
+  "subject": {
+    "layer": "patched_openai_whisper_backend",
+    "entrypoint": "whisper.decoding.DecodingTask._start_run",
+    "runtime_adapter_exercised": false,
+    "scheduler_exercised": false,
+    "encoder_concurrency_exercised": false
+  },
+  "runtime": {
+    "version": "0.1.0.dev0",
+    "git_commit": "2156fa892dfabef63d878788ffbb4bad41b031fd",
+    "git_tree": "c55e4c994ae23636b8e50f2ab2ee21dbcec2c5c4",
+    "clean": true
+  },
+  "backend": {
+    "name": "openai-whisper-suspendable",
+    "base_commit": "86098128c0b4f24f0e2aa2994de830614b474227",
+    "applied_commit": "d7ba9a64e93c22a83964045b0ac29ac01c601fc7",
+    "git_tree": "c011d2563c26763b5f147026e6b18ef85bccd4fb",
+    "clean": true,
+    "patch_manifest": "patches/openai-whisper/SHA256SUMS",
+    "patch_manifest_sha256": "0fa1a833b0c489056d77da21188519c7e16fde7825d06bc5b902ba23a01abeb5"
+  },
+  "environment": {
+    "platform": "Windows-11-10.0.26200-SP0",
+    "python": "3.13.1",
+    "process_id": 25568,
+    "torch": "2.6.0+cpu",
+    "numpy": "2.5.2",
+    "tiktoken": "0.14.0",
+    "numba": "0.67.0",
+    "tqdm": "4.70.0",
+    "more_itertools": "11.1.0",
+    "jsonschema": "4.25.1",
+    "ffmpeg": "ffmpeg version 2025-09-28-git-0fdb5829e3-essentials_build-www.gyan.dev Copyright (c) 2000-2025 the FFmpeg developers",
+    "torch_cpu_threads": 1,
+    "torch_interop_threads": 1
+  },
+  "model": {
+    "name": "tiny.en",
+    "device": "cpu",
+    "checkpoint_sha256": "d3dd57d32accea0b295c96e26691aa14d8822fac7d9d27d5dc00b4ca2826dd03",
+    "loaded_state_before": "sha256:8041a80119a588f542472da35e97d0372fce1d9709ed9874475e9c03deac5de6",
+    "loaded_state_after": "sha256:8041a80119a588f542472da35e97d0372fce1d9709ed9874475e9c03deac5de6",
+    "execution_state_before": "sha256:85b949d56f851277e274d3c03ed513546739b090d7309e197b4b551b8c91b74b",
+    "execution_state_after": "sha256:85b949d56f851277e274d3c03ed513546739b090d7309e197b4b551b8c91b74b"
+  },
+  "explicit_decode_options": {
+    "language": "en",
+    "temperature": 0.0,
+    "without_timestamps": true,
+    "fp16": false
+  },
+  "input": {
+    "fixture_id": "openai-whisper-jfk-flac",
+    "path": "tests/jfk.flac",
+    "file_sha256": "63a4b1e4c1dc655ac70961ffbf518acd249df237e5a0152faae9a4a836949715",
+    "size_bytes": 1152693,
+    "sample_rate_hz": 16000,
+    "source_sample_count": 176000,
+    "cancelled": {
+      "sample_start": 0,
+      "sample_end": 88000,
+      "pcm_sha256": "a00f67fa06fd383bf1f8b55263f4424748e0630378b5afcc497bcc9dbed6be9c",
+      "mel_sha256": "7bf72ca97247365d85b3b673005321a9770e07344a13070bd65e03b3ad7938b2",
+      "encoded_features_sha256": "ad5f6cd112ad084f468a3809db94af69c3c14bd56f530d3eb00ac2735b58e749"
+    },
+    "survivor": {
+      "sample_start": 0,
+      "sample_end": 176000,
+      "pcm_sha256": "59be237a0814faee9f1279bc54c8a482fa7edc09a640ff0fdd18d14d41519065",
+      "mel_sha256": "183f80f82524811b3f528f58b9d380aa2ea1ea126c9aff58f47f8666a89a04e6",
+      "encoded_features_sha256": "f27ef911bcbc5ef287297ae66297b55b05ecf79face108f7c260a0cbf0138f8a"
+    }
+  },
+  "execution": {
+    "mode": "two_os_threads_decoder_body_overlap",
+    "thread_count": 2,
+    "synchronization": "first_decoder_block_barrier_and_events",
+    "encoder_preparation": "sequential_encoder_passes",
+    "controlled_forward_calls": 2,
+    "maximum_instrumented_forward_calls_live": 2,
+    "kernel_overlap_measured": false,
+    "parallel_kernel_execution_claimed": false,
+    "cancellation": "owner_thread_cleanup_after_first_step",
+    "cancelled_steps": 1,
+    "survivor_steps": 25,
+    "survivor_cache_entries_at_cancellation": 16,
+    "numeric_absolute_tolerance": 0.0,
+    "worker_timeout_seconds": 120.0,
+    "process_timeout_seconds": 300.0,
+    "timing_is_benchmark": false,
+    "elapsed_seconds": {
+      "encoder_preparation": 1.1740823000000091,
+      "baseline": 0.5730559999992693,
+      "threaded": 0.43269539999982953,
+      "reuse_control": 0.34947209999972983,
+      "total": 2.9949079999996684
+    },
+    "threads": [
+      {
+        "role": "cancelled",
+        "python_thread_id": 36620,
+        "native_thread_id": 36620,
+        "started_ns": 4836995612400,
+        "finished_ns": 4837080024500,
+        "events": [
+          {
+            "name": "start",
+            "at_ns": 4836996063100
+          },
+          {
+            "name": "prefill",
+            "at_ns": 4837070872600
+          },
+          {
+            "name": "step:1",
+            "at_ns": 4837073241100
+          },
+          {
+            "name": "cleanup",
+            "at_ns": 4837079913600
+          },
+          {
+            "name": "cleanup:idempotent",
+            "at_ns": 4837079919900
+          },
+          {
+            "name": "step:rejected",
+            "at_ns": 4837079982900
+          },
+          {
+            "name": "finalize:rejected",
+            "at_ns": 4837080003500
+          }
+        ]
+      },
+      {
+        "role": "survivor",
+        "python_thread_id": 35736,
+        "native_thread_id": 35736,
+        "started_ns": 4836996106000,
+        "finished_ns": 4837423969800,
+        "events": [
+          {
+            "name": "start",
+            "at_ns": 4836996325900
+          },
+          {
+            "name": "prefill",
+            "at_ns": 4837070218100
+          },
+          {
+            "name": "step:1",
+            "at_ns": 4837073421300
+          },
+          {
+            "name": "step:2",
+            "at_ns": 4837103006800
+          },
+          {
+            "name": "step:3",
+            "at_ns": 4837116769600
+          },
+          {
+            "name": "step:4",
+            "at_ns": 4837129621400
+          },
+          {
+            "name": "step:5",
+            "at_ns": 4837142609800
+          },
+          {
+            "name": "step:6",
+            "at_ns": 4837155497400
+          },
+          {
+            "name": "step:7",
+            "at_ns": 4837168395100
+          },
+          {
+            "name": "step:8",
+            "at_ns": 4837181854100
+          },
+          {
+            "name": "step:9",
+            "at_ns": 4837194487200
+          },
+          {
+            "name": "step:10",
+            "at_ns": 4837210826100
+          },
+          {
+            "name": "step:11",
+            "at_ns": 4837224616100
+          },
+          {
+            "name": "step:12",
+            "at_ns": 4837237564400
+          },
+          {
+            "name": "step:13",
+            "at_ns": 4837250867600
+          },
+          {
+            "name": "step:14",
+            "at_ns": 4837264536200
+          },
+          {
+            "name": "step:15",
+            "at_ns": 4837279630000
+          },
+          {
+            "name": "step:16",
+            "at_ns": 4837292942300
+          },
+          {
+            "name": "step:17",
+            "at_ns": 4837305034800
+          },
+          {
+            "name": "step:18",
+            "at_ns": 4837317442800
+          },
+          {
+            "name": "step:19",
+            "at_ns": 4837338304200
+          },
+          {
+            "name": "step:20",
+            "at_ns": 4837354261700
+          },
+          {
+            "name": "step:21",
+            "at_ns": 4837368805400
+          },
+          {
+            "name": "step:22",
+            "at_ns": 4837380174600
+          },
+          {
+            "name": "step:23",
+            "at_ns": 4837394183500
+          },
+          {
+            "name": "step:24",
+            "at_ns": 4837408344600
+          },
+          {
+            "name": "step:25",
+            "at_ns": 4837423525800
+          },
+          {
+            "name": "finalize",
+            "at_ns": 4837423918900
+          },
+          {
+            "name": "finalize:rejected",
+            "at_ns": 4837423954100
+          },
+          {
+            "name": "cleanup:idempotent",
+            "at_ns": 4837423961600
+          }
+        ]
+      }
+    ],
+    "controlled_forward_lifetimes": [
+      {
+        "role": "cancelled",
+        "python_thread_id": 36620,
+        "native_thread_id": 36620,
+        "inner_barrier_entered_ns": 4836996706800,
+        "forward_started_ns": 4836996531800,
+        "forward_finished_ns": 4837070534700
+      },
+      {
+        "role": "survivor",
+        "python_thread_id": 35736,
+        "native_thread_id": 35736,
+        "inner_barrier_entered_ns": 4836996643600,
+        "forward_started_ns": 4836996391000,
+        "forward_finished_ns": 4837069865700
+      }
+    ]
+  },
+  "assertions": {
+    "two_distinct_worker_threads": true,
+    "instrumented_forwards_ran_on_owner_threads": true,
+    "decoder_forward_lifetimes_overlap": true,
+    "forward_instrumentation_restored": true,
+    "request_local_cache_path": true,
+    "state_objects_distinct": true,
+    "kv_cache_storage_disjoint": true,
+    "both_runs_stepped_before_cancellation": true,
+    "cancelled_cleanup_idempotent": true,
+    "cancelled_tensor_and_decoder_state_released": true,
+    "cancelled_run_rejects_step": true,
+    "cancelled_run_rejects_finalize": true,
+    "survivor_cache_unchanged_by_cancellation": true,
+    "survivor_matches_isolated_baseline": true,
+    "survivor_cache_cleanup_complete": true,
+    "survivor_rejects_second_finalize": true,
+    "model_reusable_after_cleanup": true,
+    "model_state_unchanged": true,
+    "model_execution_hooks_unchanged": true,
+    "input_unchanged": true,
+    "prepared_features_unchanged": true,
+    "no_worker_errors": true
+  },
+  "results": {
+    "isolated_baseline": {
+      "text": "And so my fellow Americans ask not what your country can do for you, ask what you can do for your country.",
+      "language": "en",
+      "token_count": 24,
+      "tokens_sha256": "08a5105204a86ab664333b9540356944e1ae0e0ed056214b1632ffae2d5c8cd9",
+      "audio_features_sha256": "f27ef911bcbc5ef287297ae66297b55b05ecf79face108f7c260a0cbf0138f8a",
+      "temperature": 0.0,
+      "compression_ratio": 1.3417721518987342,
+      "avg_logprob": -0.1330690574645996,
+      "no_speech_prob": 0.029303060844540596
+    },
+    "survivor": {
+      "text": "And so my fellow Americans ask not what your country can do for you, ask what you can do for your country.",
+      "language": "en",
+      "token_count": 24,
+      "tokens_sha256": "08a5105204a86ab664333b9540356944e1ae0e0ed056214b1632ffae2d5c8cd9",
+      "audio_features_sha256": "f27ef911bcbc5ef287297ae66297b55b05ecf79face108f7c260a0cbf0138f8a",
+      "temperature": 0.0,
+      "compression_ratio": 1.3417721518987342,
+      "avg_logprob": -0.1330690574645996,
+      "no_speech_prob": 0.029303060844540596
+    },
+    "reuse_control": {
+      "text": "And so my fellow Americans ask not what your country can do for you, ask what you can do for your country.",
+      "language": "en",
+      "token_count": 24,
+      "tokens_sha256": "08a5105204a86ab664333b9540356944e1ae0e0ed056214b1632ffae2d5c8cd9",
+      "audio_features_sha256": "f27ef911bcbc5ef287297ae66297b55b05ecf79face108f7c260a0cbf0138f8a",
+      "temperature": 0.0,
+      "compression_ratio": 1.3417721518987342,
+      "avg_logprob": -0.1330690574645996,
+      "no_speech_prob": 0.029303060844540596
+    }
+  }
+}
