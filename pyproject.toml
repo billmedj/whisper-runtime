@@ -35,7 +35,7 @@ Issues = "https://github.com/billmedj/whisper-runtime/issues"
 
 [project.optional-dependencies]
 validation = ["jsonschema>=4.23,<5"]
-quality = ["mypy>=1.16,<2", "ruff>=0.12,<1"]
+quality = ["mypy>=1.16,<3", "ruff>=0.12,<1"]
 modal-validation = ["modal==1.5.5"]
 
 [tool.setuptools]
