@@ -46,7 +46,7 @@ PRODUCER_SCRIPT_PATH = "infra/modal_native_cuda_qualification.py"
 SCHEMA_PATH = "evidence/modal-native-cuda-qualification.schema.json"
 VALIDATOR_PATH = "tools/validate_modal_native_cuda_qualification.py"
 IMAGE_INPUTS_PATH = "infra/modal-native-cuda-image-inputs.lock"
-QUALIFICATION_MANIFEST_PATH = "experiments/native-cuda-qualification-v3.json"
+QUALIFICATION_MANIFEST_PATH = "experiments/native-cuda-qualification-v4.json"
 QUALIFICATION_MANIFEST_SHA256 = sha256_file(DEFAULT_QUALIFICATION_MANIFEST)
 QUALIFICATION_MANIFEST = read_json(DEFAULT_QUALIFICATION_MANIFEST)
 WORKER_ID = "9" * 64
@@ -182,7 +182,7 @@ def _fault(point: str, repetition: int, index: int) -> dict[str, Any]:
         "repetition": repetition,
         "fault_origin": "harness-injected",
         "planned_injection_count": 2,
-        "backend_call_relation": "after-backend-call",
+        "backend_call_relation": "before-backend-call",
         "blocked_request_id": f"blocked-{point}-{repetition}",
         "wall_ns": 1,
         "injection_to_quiescence_ns": 1,
@@ -336,14 +336,14 @@ def valid_record() -> dict[str, Any]:
         "recorded_at": "2026-09-04T12:00:00Z",
         "status": "passed",
         "outcome": {
-            "registered_cell_id": "t4-tiny-en-jfk-qualification-v3",
+            "registered_cell_id": "t4-tiny-en-jfk-qualification-v4",
             "exclusion_rule_id": "no-exclusions-v1",
             "result": "passed",
             "failure_class": "none",
             "failure_summary": None,
         },
         "qualification_registration": {
-            "manifest_id": "native-cuda-qualification-v3",
+            "manifest_id": "native-cuda-qualification-v4",
             "manifest_path": QUALIFICATION_MANIFEST_PATH,
             "manifest_sha256": QUALIFICATION_MANIFEST_SHA256,
             "runtime_commit": RUNTIME_COMMIT,
@@ -390,7 +390,7 @@ def valid_record() -> dict[str, Any]:
             "container_image_id": "im-qualificationfixture",
         },
         "worker": {
-            "campaign_id": "native-cuda-qualification-v3",
+            "campaign_id": "native-cuda-qualification-v4",
             "worker_id": WORKER_ID,
             "worker_ordinal": 0,
             "expected_worker_count": 1,
@@ -579,7 +579,7 @@ class NativeCudaQualificationContractTests(unittest.TestCase):
     def test_valid_qualification_record_passes(self) -> None:
         self.assertEqual(self.failures(valid_record()), [])
 
-    def test_version_3_decode_options_are_closed_and_executable(self) -> None:
+    def test_registered_decode_options_are_closed_and_executable(self) -> None:
         altered_manifest = copy.deepcopy(QUALIFICATION_MANIFEST)
         altered_manifest["cell"]["decode_options"]["condition_on_previous_text"] = True
         altered_manifest["cell"]["decode_options_sha256"] = canonical_sha256(
@@ -589,7 +589,7 @@ class NativeCudaQualificationContractTests(unittest.TestCase):
             valid_record(), qualification_manifest=altered_manifest
         )
         self.assertTrue(
-            any("version 3 registered configuration" in failure for failure in failures),
+            any("registered decode configuration" in failure for failure in failures),
             failures,
         )
 
@@ -602,7 +602,7 @@ class NativeCudaQualificationContractTests(unittest.TestCase):
             valid_record(), qualification_manifest=altered_manifest
         )
         self.assertTrue(
-            any("version 3 registered configuration" in failure for failure in failures),
+            any("registered decode configuration" in failure for failure in failures),
             failures,
         )
 
@@ -939,8 +939,8 @@ class NativeCudaQualificationContractTests(unittest.TestCase):
             for item in record["events"]
             if item["run_id"] == run["run_id"] and item["event"] == "fault-triggered"
         )
-        event["backend_call_relation"] = "before-backend-call"
-        self.assert_rejected(record, "fault_exactly_injected_never_published")
+        event["backend_call_relation"] = "after-backend-call"
+        self.assert_rejected(record, "record.events.")
 
         record = valid_record()
         run = record["fault_runs"][0]

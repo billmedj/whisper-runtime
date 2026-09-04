@@ -2,7 +2,7 @@
 
 `evidence/modal-native-cuda-qualification.schema.json` defines the
 `1-draft` record format for one fixed native CUDA qualification cell. Version
-three is the active preregistered campaign under this format. This schema is
+four is the active preregistered campaign under this format. This schema is
 not a performance-benchmark schema, and no committed evidence record currently
 satisfies it.
 
@@ -21,7 +21,7 @@ Provider logs and independent review remain necessary.
 ## Registered cell
 
 The versioned registration is
-[`experiments/native-cuda-qualification-v3.json`](../experiments/native-cuda-qualification-v3.json).
+[`experiments/native-cuda-qualification-v4.json`](../experiments/native-cuda-qualification-v4.json).
 It fixes the source policy, backend revision, T4 worker profile, model,
 checkpoint, input, decode options, resource contract, measurement boundaries,
 sample counts, fault points, exclusion rule, and required invariants.
@@ -91,7 +91,7 @@ injection fails normal close. The second fails automatic cleanup. Manual
 recovery begins only after both failures leave the transaction retained:
 
 ```text
-run start -> lease acquired -> fault armed -> fault triggered (1)
+run start -> fault armed -> lease acquired -> fault triggered (1)
           -> fault triggered (2) -> transaction retained
           -> competing request rejected -> recovery started
           -> backend quiescent -> transaction aborted -> lease released
@@ -106,7 +106,8 @@ The closed fault set is:
 - completion-event synchronization.
 
 These are harness-injected failures. They are not CUDA driver, hardware, or
-process failures. A wider fault boundary requires a new schema version.
+process failures. Each injection stops immediately before its named delegate
+call. A wider fault boundary requires a new schema version.
 
 ## Budget and allocator observations
 
@@ -179,7 +180,7 @@ manifest:
 $env:WHISPER_RUNTIME_COMMIT = git rev-parse HEAD
 $env:WHISPER_MODAL_ENABLE_REMOTE_RESOURCES = "1"
 python -m modal run -m infra.modal_native_cuda_qualification `
-  --output artifacts/modal/native-cuda-qualification-v3.json `
+  --output artifacts/modal/native-cuda-qualification-v4.json `
   --confirm-paid-gpu
 ```
 
@@ -200,7 +201,7 @@ producer rejects that form before it creates an attempt receipt.
 python -B tools/validate_modal_native_cuda_qualification.py <record.json> `
   --runtime-checkout . `
   --backend-checkout <clean-patched-whisper-checkout> `
-  --qualification-manifest experiments/native-cuda-qualification-v3.json `
+  --qualification-manifest experiments/native-cuda-qualification-v4.json `
   --patch-manifest patches/openai-whisper/SHA256SUMS `
   --producer-script infra/modal_native_cuda_qualification.py `
   --image-inputs infra/modal-native-cuda-image-inputs.lock

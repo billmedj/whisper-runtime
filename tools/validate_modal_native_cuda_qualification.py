@@ -24,7 +24,7 @@ from urllib.parse import unquote, urlsplit
 
 ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_SCHEMA = ROOT / "evidence/modal-native-cuda-qualification.schema.json"
-DEFAULT_QUALIFICATION_MANIFEST = ROOT / "experiments/native-cuda-qualification-v3.json"
+DEFAULT_QUALIFICATION_MANIFEST = ROOT / "experiments/native-cuda-qualification-v4.json"
 FAULT_POINTS = (
     "cleanup",
     "event-create",
@@ -69,8 +69,8 @@ CANCELLATION_EVENTS = (
 )
 FAULT_EVENTS = (
     "run-start",
-    "lease-acquired",
     "fault-armed",
+    "lease-acquired",
     "fault-triggered",
     "fault-triggered",
     "transaction-retained",
@@ -655,6 +655,7 @@ def _validate_fault_run(
             armed["fault_point"] == run["fault_point"]
             and armed["operation_ordinal"] == 1
             and armed["planned_injection_count"] == run["planned_injection_count"] == 2
+            and run["backend_call_relation"] == "before-backend-call"
             and [event["operation_ordinal"] for event in triggered] == [1, 2]
             and all(
                 event["fault_point"] == run["fault_point"]
@@ -791,9 +792,12 @@ def validate_qualification_manifest(
         "1": "native-cuda-qualification-v1",
         "2": "native-cuda-qualification-v2",
         "3": "native-cuda-qualification-v3",
+        "4": "native-cuda-qualification-v4",
     }
     if manifest_version not in manifest_ids:
-        failures.append(f"{location}.manifest_version must be '1', '2', or '3'")
+        failures.append(
+            f"{location}.manifest_version must be '1', '2', '3', or '4'"
+        )
     elif top.get("manifest_id") != manifest_ids[manifest_version]:
         failures.append(
             f"{location}.manifest_id must be {manifest_ids[manifest_version]!r}"
@@ -962,7 +966,9 @@ def validate_qualification_manifest(
                 failures.append(f"{location}.cell.{field} must be an object")
             elif cell.get(f"{field}_sha256") != canonical_sha256(cell[field]):
                 failures.append(f"{location}.cell.{field}_sha256 is not canonical")
-        if manifest_version == "3" and isinstance(cell.get("decode_options"), dict):
+        if manifest_version in {"3", "4"} and isinstance(
+            cell.get("decode_options"), dict
+        ):
             expected_decode_options = {
                 "temperature": 0,
                 "beam_size": None,
@@ -982,8 +988,8 @@ def validate_qualification_manifest(
                 expected_decode_options
             ):
                 failures.append(
-                    f"{location}.cell.decode_options must match the version 3 "
-                    "registered configuration"
+                    f"{location}.cell.decode_options must match the registered "
+                    "decode configuration"
                 )
 
     resource = _closed_manifest_object(

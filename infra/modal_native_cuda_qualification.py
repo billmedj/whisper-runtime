@@ -57,7 +57,7 @@ except ImportError:  # pragma: no cover - direct ``modal run`` script loading
     )
 
 ROOT = Path(__file__).resolve().parents[1]
-APP_NAME = "whisper-runtime-native-cuda-qualification-v3"
+APP_NAME = "whisper-runtime-native-cuda-qualification-v4"
 CANONICAL_MODULE_NAME = "infra.modal_native_cuda_qualification"
 SCHEMA_VERSION = "1-draft"
 ATTEMPT_RECEIPT_VERSION = "1"
@@ -69,12 +69,12 @@ BACKEND_BASE_TREE = "f7b3cb8e12a2e84dccacc4c858c33d5a9c114688"
 BACKEND_COMMIT = "a0b9695ae1cc52bad4b8626fe9fb6ea4ac0ee650"
 BACKEND_TREE = "c011d2563c26763b5f147026e6b18ef85bccd4fb"
 PATCH_MANIFEST_PATH = "patches/openai-whisper/SHA256SUMS"
-QUALIFICATION_MANIFEST_PATH = "experiments/native-cuda-qualification-v3.json"
+QUALIFICATION_MANIFEST_PATH = "experiments/native-cuda-qualification-v4.json"
 PRODUCER_PATH = "infra/modal_native_cuda_qualification.py"
 TRACE_PATH = "infra/native_cuda_trace.py"
 IMAGE_INPUTS_PATH = "infra/modal-native-cuda-image-inputs.lock"
 INPUT_MANIFEST_PATH = "conformance/audio-manifest.json"
-REGISTERED_OUTPUT_PATH = "artifacts/modal/native-cuda-qualification-v3.json"
+REGISTERED_OUTPUT_PATH = "artifacts/modal/native-cuda-qualification-v4.json"
 SCHEMA_PATH = "evidence/modal-native-cuda-qualification.schema.json"
 VALIDATOR_PATH = "tools/validate_modal_native_cuda_qualification.py"
 MODEL_CACHE_NAME = "whisper-runtime-model-cache-v1"
@@ -111,6 +111,21 @@ FAULT_TRACE_COUNTS = {
     "event-record": (3, 3),
     "event-synchronize": (3, 3),
 }
+FAULT_EVENTS = (
+    "run-start",
+    "fault-armed",
+    "lease-acquired",
+    "fault-triggered",
+    "fault-triggered",
+    "transaction-retained",
+    "new-work-rejected",
+    "recovery-started",
+    "backend-quiescent",
+    "transaction-aborted",
+    "lease-released",
+    "budget-restored",
+    "run-complete",
+)
 DIRECT_IMAGE_PACKAGES = (
     "jsonschema==4.25.1",
     "more-itertools==11.1.0",
@@ -709,8 +724,43 @@ class QualificationTrace(ScenarioTrace):
             operation_ordinal=self.context.fault_ordinal,
             error_type="RuntimeError",
             error_sha256=_sha256_text(FAULT_MESSAGE_BY_NAME[fault_name]),
-            backend_call_relation="after-backend-call",
+            backend_call_relation="before-backend-call",
         )
+
+
+def _prepare_fault_trace(
+    context: RunContext, events: QualificationEventLog
+) -> QualificationTrace:
+    if context.fault_point not in FAULT_POINT_BY_NAME:
+        raise RuntimeError("the fault run has no registered injection point")
+    trace = QualificationTrace(context, events)
+    point = FAULT_POINT_BY_NAME[context.fault_point]
+    if trace.fault_plan.remaining(point) != 2:
+        raise RuntimeError("the registered fault was not armed")
+    events.record(context, "run-start")
+    return trace
+
+
+def _record_fault_armed(
+    context: RunContext,
+    events: QualificationEventLog,
+    router: TraceRouter,
+    trace: QualificationTrace,
+) -> None:
+    if router.require() is not trace:
+        raise RuntimeError("the registered fault trace is not active")
+    if context.fault_point not in FAULT_POINT_BY_NAME:
+        raise RuntimeError("the fault run has no registered injection point")
+    point = FAULT_POINT_BY_NAME[context.fault_point]
+    if trace.fault_plan.remaining(point) != 2:
+        raise RuntimeError("the registered fault is not ready")
+    events.record(
+        context,
+        "fault-armed",
+        fault_point=context.fault_point,
+        operation_ordinal=1,
+        planned_injection_count=2,
+    )
 
 
 def _run_wall_ns(
@@ -1652,15 +1702,7 @@ class _QualificationRunner:
         blocked_id = f"blocked-{fault_name}-{repetition}"
         baseline = _memory_begin(self.torch)
         self._bind_active(context, session, request)
-        self.events.record(context, "run-start")
-        self.events.record(
-            context,
-            "fault-armed",
-            fault_point=fault_name,
-            operation_ordinal=1,
-            planned_injection_count=2,
-        )
-        trace = QualificationTrace(context, self.events)
+        trace = _prepare_fault_trace(context, self.events)
         trace.set_decode_thread()
         retained: BaseException | None = None
         try:
@@ -1672,6 +1714,7 @@ class _QualificationRunner:
                     return_value=self.traced_components,
                 ),
             ):
+                _record_fault_armed(context, self.events, self.router, trace)
                 try:
                     self.adapter.decode_window(
                         session=session,
@@ -1749,22 +1792,7 @@ class _QualificationRunner:
             self._clear_active(context)
         memory = _memory_end(self.torch, baseline)
         self.events.record(context, "run-complete")
-        expected_events = (
-            "run-start",
-            "lease-acquired",
-            "fault-armed",
-            "fault-triggered",
-            "fault-triggered",
-            "transaction-retained",
-            "new-work-rejected",
-            "recovery-started",
-            "backend-quiescent",
-            "transaction-aborted",
-            "lease-released",
-            "budget-restored",
-            "run-complete",
-        )
-        self._assert_events(context, expected_events)
+        self._assert_events(context, FAULT_EVENTS)
         expected_cleanup_count, expected_event_count = FAULT_TRACE_COUNTS[fault_name]
         if (
             context.transaction is None
@@ -1806,7 +1834,7 @@ class _QualificationRunner:
             "repetition": repetition,
             "fault_origin": "harness-injected",
             "planned_injection_count": 2,
-            "backend_call_relation": "after-backend-call",
+            "backend_call_relation": "before-backend-call",
             "blocked_request_id": blocked_id,
             "wall_ns": _run_wall_ns(self.events, context, end_event="budget-restored"),
             "injection_to_quiescence_ns": quiescent - first_trigger,

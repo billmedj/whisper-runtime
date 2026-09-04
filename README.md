@@ -245,7 +245,7 @@ abstract release and publication protocol. It does not prove Python threads,
 PyTorch kernels, the concrete submission gate, CUDA events, or adapter code.
 
 The next fixed CUDA qualification cell is defined by the
-[versioned registration](https://github.com/billmedj/whisper-runtime/blob/main/experiments/native-cuda-qualification-v3.json)
+[versioned registration](https://github.com/billmedj/whisper-runtime/blob/main/experiments/native-cuda-qualification-v4.json)
 and the [qualification evidence contract](https://github.com/billmedj/whisper-runtime/blob/main/docs/CUDA_QUALIFICATION_CONTRACT.md).
 The contract includes the exact Modal command, an append-only attempt receipt,
 and an offline validator. The cell uses one worker and a small diagnostic

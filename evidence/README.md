@@ -30,7 +30,7 @@ fault points. Its p50 and p95 summaries are diagnostic; p99 is
 `not_estimated`. No committed record currently satisfies this contract.
 
 The active registration is
-[`experiments/native-cuda-qualification-v3.json`](../experiments/native-cuda-qualification-v3.json).
+[`experiments/native-cuda-qualification-v4.json`](../experiments/native-cuda-qualification-v4.json).
 A record binds its path, digest, and runtime commit. The local validator cannot
 prove that the registration was public before execution; that requires an
 external public timestamp. A future performance campaign requires a new schema
@@ -55,8 +55,21 @@ is retained. The receipt itself records the `gpu-campaign` stage, exception
 type, and message digest; it does not independently prove the allocated GPU or
 preserve the observed transcript. The earlier passing AWS record used
 timestamp-free decoding. Version two registered timestamp-token decoding with
-the timestamp-free transcript digest. Version three aligns
-`without_timestamps` with that digest and remains unexecuted.
+the timestamp-free transcript digest. Version three aligned
+`without_timestamps` with that digest and was executed once.
+
+For version three, Modal logs show that the worker completed the registered
+warm-up, measured, and cancellation runs. The first `cleanup` fault scenario
+then completed retention and recovery before an incorrect event-order
+expectation stopped the harness. The
+[`attempt-failed` receipt](modal-native-cuda-qualification-v3-attempt-2026-09-04.jsonl)
+records the `gpu-campaign` stage, exception type, and message digest. It does not
+contain the transient event trace, and no qualification record was published.
+This was a harness assertion failure, not a Whisper, CUDA, driver, or hardware
+failure. Version four records `fault-armed` only after the injection plan exists
+and before the protected operation acquires its lease. It also records that
+harness faults occur before the named delegate call. Version four remains
+unexecuted.
 
 `modal-cuda-readiness.schema.json` defines the version-one T4 record. Both
 committed records passed its schema and semantic validator. They bind the same

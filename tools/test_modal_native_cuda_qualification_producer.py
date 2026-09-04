@@ -170,6 +170,35 @@ assert 'whisper' not in sys.modules
             },
         )
 
+    def test_fault_is_armed_before_resource_admission(self) -> None:
+        self.assertEqual(producer.FAULT_EVENTS, producer._validator().FAULT_EVENTS)
+        self.assertEqual(
+            producer.FAULT_EVENTS[:3],
+            ("run-start", "fault-armed", "lease-acquired"),
+        )
+
+        context = producer.RunContext(
+            run_id="fault-cleanup-0",
+            run_kind="fault",
+            iteration=0,
+            session_id="session",
+            request_id="request",
+            transaction_id="transaction",
+            lease_id="lease",
+            fault_point="cleanup",
+        )
+        events = producer.QualificationEventLog("a" * 64)
+        trace = producer._prepare_fault_trace(context, events)
+        self.assertEqual(trace.fault_plan.remaining(producer.FaultPoint.CLEANUP), 2)
+        self.assertEqual(tuple(item["event"] for item in events.events), ("run-start",))
+        router = producer.TraceRouter()
+        with router.activate(trace):
+            producer._record_fault_armed(context, events, router, trace)
+        self.assertEqual(
+            tuple(item["event"] for item in events.events),
+            ("run-start", "fault-armed"),
+        )
+
     def test_modal_image_id_is_observed_not_invented(self) -> None:
         with patch.dict(os.environ, {"MODAL_IMAGE_ID": "im-12345678"}, clear=False):
             self.assertEqual(producer._required_modal_image_id(), "im-12345678")

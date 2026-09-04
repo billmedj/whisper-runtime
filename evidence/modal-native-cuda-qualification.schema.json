@@ -759,9 +759,7 @@
         "repetition": { "$ref": "#/$defs/nonnegative_integer" },
         "fault_origin": { "const": "harness-injected" },
         "planned_injection_count": { "const": 2 },
-        "backend_call_relation": {
-          "enum": ["before-backend-call", "after-backend-call"]
-        },
+        "backend_call_relation": { "const": "before-backend-call" },
         "blocked_request_id": { "$ref": "#/$defs/id" },
         "wall_ns": { "$ref": "#/$defs/positive_integer" },
         "injection_to_quiescence_ns": { "$ref": "#/$defs/positive_integer" },
@@ -829,9 +827,7 @@
         "error_type": { "$ref": "#/$defs/nonempty_string" },
         "error_sha256": { "$ref": "#/$defs/sha256" },
         "blocked_request_id": { "$ref": "#/$defs/id" },
-        "backend_call_relation": {
-          "enum": ["before-backend-call", "after-backend-call"]
-        },
+        "backend_call_relation": { "const": "before-backend-call" },
         "planned_injection_count": { "const": 2 }
       }
     },

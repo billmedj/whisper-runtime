@@ -1636,6 +1636,7 @@ def check_modal_cuda_schema() -> list[str]:
         "native-cuda-qualification-v1.json",
         "native-cuda-qualification-v2.json",
         "native-cuda-qualification-v3.json",
+        "native-cuda-qualification-v4.json",
     ):
         manifest_path = ROOT / "experiments" / name
         manifest = _read_json(manifest_path, failures)
