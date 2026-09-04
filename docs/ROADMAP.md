@@ -12,8 +12,8 @@ evidence is committed to the repository.
   inputs and model sizes.
 - Maintain the pinned CPU backend checks for deterministic interleaving and
   overlapping outer decoder calls in two operating-system threads.
-- Record real-model request-isolation evidence for the experimental two-lane
-  adapter profile, then add CUDA coverage.
+- Run the adapter-level two-lane verifier in CI, review its artifact, and commit
+  a stable real-model record before adding CUDA coverage.
 - Select and document one random-generator contract.
 - Validate the native path on CUDA with source, model, input, environment,
   output, latency, and memory records.

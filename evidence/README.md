@@ -29,10 +29,23 @@ committed record and each 30-day CI artifact are validated against
 `native-threaded.schema.json` and by cross-field checks in
 `tools/validate_threaded_record.py`.
 
+The workflow then sends two real-model transactions through the experimental
+two-lane `NativeWhisperAdapter` profile. It verifies admission and declared
+budget state while both calls are live, cancels one request through the runtime
+transaction, and requires the other request to commit the isolated-baseline
+text. The cancelled session stays empty. The queue and declared budget must be
+fully restored, and a later adapter call must succeed. The CI artifact is
+validated against `native-runtime-concurrency.schema.json` and by
+`tools/validate_runtime_concurrency_record.py`. This adapter-level record is not
+yet committed to this directory.
+
 Each record applies only to its stated configuration. The records are not
-performance benchmarks. The two-thread check exercises the patched Whisper
-backend below the runtime adapter. It does not exercise concurrent encoder
-calls, the scheduler, or adapter concurrency. Neither check establishes kernel
-overlap, throughput, CUDA behavior, production readiness, or behavior on other
-models, devices, operating systems, or dependency versions. The two-thread
-check covers one controlled case; it is not a general thread-safety guarantee.
+performance benchmarks. The committed two-thread check exercises the patched
+Whisper backend below the runtime adapter. The adapter-level CI check uses
+caller threads; it does not exercise a runtime-owned scheduler. Encoder
+preparation remains serialized. The declared resource vectors are
+admission-ledger values, not measured RAM or device memory. No check establishes
+kernel overlap, throughput, CUDA behavior, production readiness, or behavior
+on other models, devices, operating systems, or dependency versions. Each
+two-thread check covers one controlled case; it is not a general thread-safety
+guarantee.

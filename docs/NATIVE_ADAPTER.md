@@ -167,8 +167,9 @@ not clear another.
 
 The resource vector is trusted configuration, not a measurement. Two admitted
 transactions do not prove that PyTorch kernels overlap or improve throughput.
-The repository does not yet contain real-model evidence at the adapter
-boundary for this profile. Use it for controlled CPU experiments only.
+The repository includes a real-model verifier for this adapter boundary. CI
+publishes its result as a temporary artifact; no adapter-concurrency record is
+committed yet. Use the profile for controlled CPU experiments only.
 
 ## Local smoke test
 
@@ -265,4 +266,40 @@ simultaneously. The check makes no claim about kernel overlap, throughput,
 CUDA, production readiness, or general thread safety across other models,
 devices, operating systems, or dependency versions. The default adapter
 profile remains serialized; the experimental two-lane profile has not yet
-produced a real-model evidence record.
+produced a committed real-model evidence record.
+
+## Runtime adapter concurrency check
+
+`tools/verify_native_runtime_concurrency.py` exercises the experimental
+two-lane profile through `NativeWhisperAdapter.decode_window`. It uses two
+caller threads, two independent sessions, and explicit deterministic
+`tiny.en` options. The check requires:
+
+- two admitted transactions and full reservation of the declared two-lane
+  budget;
+- non-overlapping `_start_run` intervals, which include encoder preparation;
+- overlapping recorded lifetimes for the first outer decoder calls;
+- distinct request state and disjoint KV-cache storage;
+- cancellation through `RequestState.cancel()` after both first token steps;
+- no publication by the cancelled request and lease release after its cleanup;
+- no change to the survivor cache while the cancelled run is cleaned;
+- one survivor commit equal to the isolated-baseline text;
+- an empty queue, restored budget, unchanged model state, restored
+  instrumentation, and a successful adapter reuse call.
+
+The cancellation occurs while both first `step()` submissions remain admitted.
+The cancelled owner then reaches the adapter's next transaction checkpoint,
+where cleanup and lease release occur. The verifier does not call native
+cleanup as a substitute for runtime cancellation.
+
+The tool emits JSON. `tools/validate_runtime_concurrency_record.py` validates
+it against `evidence/native-runtime-concurrency.schema.json` and enforces event,
+ownership, cancellation, queue, lease, budget, session, and result relations.
+Native CI publishes the validated record as a 30-day artifact.
+
+This is an integration check, not a benchmark. The caller threads are created
+by the verifier; the current worker does not schedule them. Encoder preparation
+remains serialized. Declared resource accounting is verified, but RAM and
+device memory are not measured or enforced. The recorded decoder-call
+lifetimes do not prove kernel overlap, throughput improvement, CUDA behavior,
+or production readiness.

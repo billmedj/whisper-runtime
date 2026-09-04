@@ -179,12 +179,13 @@ See the [native adapter contract](https://github.com/billmedj/whisper-runtime/bl
 | Evidence | Scope |
 | --- | --- |
 | 94 runtime tests | Resource accounting, queue bounds, commit races, deadlines, cancellation, quarantine, recovery, and adapter behavior |
-| 49 repository-tool tests | Provenance, source state, fixtures, portability, setup contracts, evidence schemas, semantic validation, and native smoke contracts |
+| 53 repository-tool tests | Provenance, source state, fixtures, portability, setup contracts, evidence schemas, semantic validation, and native smoke contracts |
 | 2,000-step deterministic state trace | State-machine transitions under generated operations |
 | 35 Lean theorem declarations | Abstract lease provenance, capacity conservation, lifecycle, and stale-commit properties |
 | One recorded native run | Patched `tiny.en` decoder, JFK fixture, CPU, exact transcript, queue returned to zero, declared budget restored |
 | One recorded staged-run isolation check | One loaded `tiny.en` model, two overlapping run lifetimes, early cleanup, unchanged survivor, and successful model reuse |
 | One recorded OS-thread isolation check | Two native worker threads, overlapping outer decoder-call intervals, owner-thread cleanup, unchanged survivor, and model reuse |
+| Adapter-level real-model verifier | Two runtime-admitted transactions, serialized encoder preparation, cooperative cancellation, isolated commit, and exact budget restoration |
 | Four conformance pairs | Pinned greedy, beam-search, word-timestamp, and translation reference/candidate records |
 
 The recorded transaction identifies the imported source tree, checkpoint,
@@ -195,16 +196,26 @@ worker threads after preparing both encoder outputs sequentially. Each thread
 enters its first outer decoder call. A barrier in the first decoder block holds
 both calls before either continues. The evidence records the start and end of
 each outer call and requires the two intervals to overlap.
-It also records the explicit decode options. In both checks, one run is cleaned
-after a decoder step, the survivor must match an isolated baseline, and a final
-decode must show that the model remains usable.
+It also records the explicit decode options. In both backend checks, one run is
+cleaned after a decoder step, the survivor must match an isolated baseline, and
+a final decode must show that the model remains usable.
 
-These checks exercise the patched Whisper backend below the runtime adapter.
-The threaded check does not exercise concurrent encoder calls, the scheduler,
-or concurrent `NativeWhisperAdapter` transactions. The experimental two-lane
-adapter profile currently has deterministic unit coverage only. It does not
-measure kernel overlap or throughput. The recorded check covers one pinned CPU
-configuration and is not a general thread-safety guarantee.
+`tools/verify_native_runtime_concurrency.py` adds an adapter-level check. Two
+caller threads enter `NativeWhisperAdapter.decode_window` with independent
+sessions. The worker admits both transactions and reserves both declared
+resource vectors. The adapter serializes each `_start_run`, then the first
+decoder calls have overlapping recorded lifetimes. The controller cancels one
+request after both first token steps. That request does not commit, its lease is
+released after cleanup, and the other request commits the isolated-baseline
+text. A final adapter call checks reuse and complete budget restoration. Native
+CI validates and publishes this record as a 30-day artifact.
+
+The adapter check does not exercise a runtime-owned thread scheduler or
+concurrent encoder calls. The resource vectors are declared admission units,
+not measured RAM or device memory. Recorded outer decoder-call overlap does not
+establish simultaneous PyTorch kernel execution or higher throughput. The
+checks cover one pinned CPU configuration and are not a general thread-safety
+guarantee.
 
 These results do not establish CUDA correctness, safe batching, live audio
 streaming, durable mid-window resume, portable worker migration, latency,

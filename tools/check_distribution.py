@@ -25,6 +25,7 @@ SDIST_REQUIRED_SUFFIXES = {
     "evidence/native-cpu-tiny-en-jfk-interleaving-2026-09-03.json",
     "evidence/native-cpu-tiny-en-jfk-threaded-2026-09-04.json",
     "evidence/native-interleaving.schema.json",
+    "evidence/native-runtime-concurrency.schema.json",
     "evidence/native-threaded.schema.json",
     "examples/minimal_transaction.py",
     "formal/lean/WhisperRuntimeFormal.lean",
@@ -44,8 +45,10 @@ SDIST_REQUIRED_SUFFIXES = {
     "tools/compare_whisper_fixtures.py",
     "tools/smoke_native_whisper.py",
     "tools/validate_interleaving_record.py",
+    "tools/validate_runtime_concurrency_record.py",
     "tools/validate_threaded_record.py",
     "tools/verify_native_interleaving.py",
+    "tools/verify_native_runtime_concurrency.py",
     "tools/verify_native_threaded.py",
 }
 FORBIDDEN_PARTS = {

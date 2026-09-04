@@ -22,6 +22,7 @@ from smoke_native_whisper import (
     verify_terminal_invariants,
 )
 from validate_interleaving_record import validate_record
+from validate_runtime_concurrency_record import validate_runtime_concurrency_record
 from validate_threaded_record import validate_threaded_record
 from verify_native_interleaving import (
     EXPECTED_ASSERTIONS,
@@ -30,6 +31,10 @@ from verify_native_interleaving import (
     decode_results_match,
     verify_audio_manifest_binding,
     verify_passed_assertions,
+)
+from verify_native_runtime_concurrency import (
+    EXPECTED_RUNTIME_ASSERTIONS,
+    verify_passed_runtime_assertions,
 )
 from verify_native_threaded import (
     EXPECTED_THREADED_ASSERTIONS,
@@ -792,6 +797,287 @@ class NativeThreadedContractTests(unittest.TestCase):
         self.assertTrue(
             any("shorter than its measured phases" in failure for failure in failures)
         )
+
+
+class NativeRuntimeConcurrencyContractTests(unittest.TestCase):
+    def evidence(self) -> dict[str, object]:
+        record = NativeThreadedContractTests().evidence()
+        record["scope"] = "native_runtime_adapter"
+        record["subject"] = {
+            "layer": "whisper_runtime.adapters.NativeWhisperAdapter",
+            "entrypoint": "NativeWhisperAdapter.decode_window",
+            "runtime_adapter_exercised": True,
+            "worker_admission_exercised": True,
+            "transaction_lifecycle_exercised": True,
+            "scheduler_exercised": False,
+            "caller_threads": 2,
+            "encoder_concurrency_exercised": False,
+        }
+        for role, digest in (("cancelled", "3"), ("survivor", "4")):
+            derived = record["input"][role]
+            del derived["encoded_features_sha256"]
+            derived["observed_runtime_features_sha256"] = digest * 64
+        one_lane = {
+            "memory_bytes": 100,
+            "compute_units": 1,
+            "stream_slots": 1,
+        }
+        capacity = {
+            "memory_bytes": 200,
+            "compute_units": 2,
+            "stream_slots": 2,
+        }
+        zero = {"memory_bytes": 0, "compute_units": 0, "stream_slots": 0}
+
+        def role_state(
+            cancelled_status: str,
+            survivor_status: str,
+            cancelled_version: int,
+            survivor_version: int,
+        ) -> dict[str, object]:
+            return {
+                "cancelled": {
+                    "request_status": cancelled_status,
+                    "session_version": cancelled_version,
+                    "window_count": cancelled_version,
+                },
+                "survivor": {
+                    "request_status": survivor_status,
+                    "session_version": survivor_version,
+                    "window_count": survivor_version,
+                },
+            }
+
+        record["resources"] = {
+            "accounting": "declared_in_process_admission_ledger",
+            "per_transaction": one_lane,
+            "capacity": capacity,
+            "os_memory_enforced": False,
+            "device_memory_measured": False,
+            "snapshots": [
+                {
+                    "label": "initial",
+                    "at_ns": 50,
+                    "queue_depth": 0,
+                    "lease_count": 0,
+                    "capacity": capacity,
+                    "available": capacity,
+                    "in_use": zero,
+                    **role_state("created", "created", 0, 0),
+                },
+                {
+                    "label": "both_admitted",
+                    "at_ns": 560,
+                    "queue_depth": 2,
+                    "lease_count": 2,
+                    "capacity": capacity,
+                    "available": zero,
+                    "in_use": capacity,
+                    **role_state("running", "running", 0, 0),
+                },
+                {
+                    "label": "cancelled_released",
+                    "at_ns": 660,
+                    "queue_depth": 1,
+                    "lease_count": 1,
+                    "capacity": capacity,
+                    "available": one_lane,
+                    "in_use": one_lane,
+                    **role_state("cancelled", "running", 0, 0),
+                },
+                {
+                    "label": "final",
+                    "at_ns": 1_100,
+                    "queue_depth": 0,
+                    "lease_count": 0,
+                    "capacity": capacity,
+                    "available": capacity,
+                    "in_use": zero,
+                    **role_state("cancelled", "committed", 0, 1),
+                },
+            ],
+        }
+        record["execution"] = {
+            "mode": "two_runtime_admitted_transactions",
+            "thread_count": 2,
+            "worker_queue_capacity": 2,
+            "max_concurrent_decodes": 2,
+            "encoder_policy": "serialized_start_run",
+            "decoder_overlap_observation": "outer_call_lifetimes",
+            "kernel_overlap_measured": False,
+            "parallel_kernel_execution_claimed": False,
+            "throughput_measured": False,
+            "timing_is_benchmark": False,
+            "cancellation": (
+                "external_request_cancel_after_both_first_steps_before_"
+                "cancelled_checkpoint"
+            ),
+            "cancelled_steps": 1,
+            "survivor_steps": 2,
+            "survivor_cache_entries_at_cancellation": 16,
+            "worker_timeout_seconds": 120.0,
+            "process_timeout_seconds": 300.0,
+            "elapsed_seconds": {
+                "input_preparation": 0.1,
+                "baseline": 1.0,
+                "concurrent_adapter": 2.0,
+                "reuse_control": 1.0,
+                "total": 4.2,
+            },
+            "controller": {
+                "cancel_started_ns": 570,
+                "cancel_finished_ns": 580,
+                "cancel_accepted": True,
+            },
+            "threads": [
+                {
+                    "role": "cancelled",
+                    "python_thread_id": 11,
+                    "native_thread_id": 21,
+                    "started_ns": 100,
+                    "finished_ns": 700,
+                    "events": [
+                        {"name": "adapter:enter", "at_ns": 110},
+                        {"name": "start_run:begin", "at_ns": 120},
+                        {"name": "start_run:end", "at_ns": 250},
+                        {"name": "prefill:begin", "at_ns": 260},
+                        {"name": "prefill:end", "at_ns": 500},
+                        {"name": "step:1", "at_ns": 520},
+                        {"name": "cleanup:begin", "at_ns": 600},
+                        {"name": "cleanup:end", "at_ns": 650},
+                        {"name": "adapter:cancelled", "at_ns": 680},
+                    ],
+                },
+                {
+                    "role": "survivor",
+                    "python_thread_id": 12,
+                    "native_thread_id": 22,
+                    "started_ns": 105,
+                    "finished_ns": 1_000,
+                    "events": [
+                        {"name": "adapter:enter", "at_ns": 115},
+                        {"name": "start_run:begin", "at_ns": 260},
+                        {"name": "start_run:end", "at_ns": 390},
+                        {"name": "prefill:begin", "at_ns": 400},
+                        {"name": "prefill:end", "at_ns": 510},
+                        {"name": "step:1", "at_ns": 550},
+                        {"name": "step:2", "at_ns": 750},
+                        {"name": "finalize", "at_ns": 800},
+                        {"name": "cleanup:begin", "at_ns": 850},
+                        {"name": "cleanup:end", "at_ns": 870},
+                        {"name": "adapter:committed", "at_ns": 900},
+                    ],
+                },
+            ],
+            "start_run_intervals": [
+                {
+                    "role": "cancelled",
+                    "python_thread_id": 11,
+                    "native_thread_id": 21,
+                    "started_ns": 125,
+                    "finished_ns": 245,
+                },
+                {
+                    "role": "survivor",
+                    "python_thread_id": 12,
+                    "native_thread_id": 22,
+                    "started_ns": 265,
+                    "finished_ns": 385,
+                },
+            ],
+            "maximum_start_run_calls_live": 1,
+            "controlled_forward_lifetimes": [
+                {
+                    "role": "cancelled",
+                    "python_thread_id": 11,
+                    "native_thread_id": 21,
+                    "forward_started_ns": 280,
+                    "inner_barrier_entered_ns": 430,
+                    "forward_finished_ns": 480,
+                },
+                {
+                    "role": "survivor",
+                    "python_thread_id": 12,
+                    "native_thread_id": 22,
+                    "forward_started_ns": 420,
+                    "inner_barrier_entered_ns": 440,
+                    "forward_finished_ns": 490,
+                },
+            ],
+            "maximum_instrumented_forward_calls_live": 2,
+        }
+        record["assertions"] = {name: True for name in EXPECTED_RUNTIME_ASSERTIONS}
+        text = "And so my fellow Americans"
+        record["results"] = {
+            "isolated_baseline": {"text": text},
+            "cancelled": {
+                "error_type": "RequestCancelledError",
+                "request_status": "cancelled",
+                "session_version": 0,
+                "window_count": 0,
+            },
+            "survivor": {
+                "text": text,
+                "request_status": "committed",
+                "session_version": 1,
+                "window_count": 1,
+                "window_id": "window-survivor",
+            },
+            "reuse_control": {
+                "text": text,
+                "request_status": "committed",
+                "session_version": 1,
+                "window_count": 1,
+                "window_id": "window-reuse",
+            },
+        }
+        return record
+
+    def test_runtime_concurrency_record_is_valid(self) -> None:
+        self.assertEqual(
+            validate_runtime_concurrency_record(
+                self.evidence(), "evidence/runtime-concurrency-test.json"
+            ),
+            [],
+        )
+
+    def test_all_runtime_concurrency_assertions_must_pass(self) -> None:
+        passed = {name: True for name in EXPECTED_RUNTIME_ASSERTIONS}
+        verify_passed_runtime_assertions(passed)
+        failed = dict(passed)
+        failed["cancelled_request_did_not_commit"] = False
+        with self.assertRaisesRegex(RuntimeError, "cancelled_request_did_not_commit"):
+            verify_passed_runtime_assertions(failed)
+
+    def test_runtime_validator_binds_cancellation_and_resources(self) -> None:
+        evidence = self.evidence()
+        evidence["execution"]["controller"]["cancel_started_ns"] = 500
+        evidence["resources"]["snapshots"][2]["lease_count"] = 2
+        failures = validate_runtime_concurrency_record(
+            evidence, "evidence/runtime-concurrency-test.json"
+        )
+        self.assertTrue(any("cancellation is not between" in item for item in failures))
+        self.assertTrue(
+            any("cancelled_released resource state" in item for item in failures)
+        )
+
+    def test_runtime_validator_rejects_false_isolation_evidence(self) -> None:
+        evidence = self.evidence()
+        evidence["execution"]["start_run_intervals"][1]["started_ns"] = 200
+        evidence["execution"]["controlled_forward_lifetimes"][1].update(
+            {
+                "forward_started_ns": 501,
+                "inner_barrier_entered_ns": 502,
+                "forward_finished_ns": 503,
+            }
+        )
+        evidence["results"]["survivor"]["text"] = "different"
+        failures = validate_runtime_concurrency_record(
+            evidence, "evidence/runtime-concurrency-test.json"
+        )
+        self.assertTrue(any("start-run intervals overlap" in item for item in failures))
+        self.assertTrue(any("lifetimes do not overlap" in item for item in failures))
+        self.assertTrue(any("transcripts differ" in item for item in failures))
 
 
 if __name__ == "__main__":
