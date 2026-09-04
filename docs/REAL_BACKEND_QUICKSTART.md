@@ -28,8 +28,8 @@ The command creates `.tmp-native` and performs these checks:
 2. The OpenAI Whisper source is checked out at the pinned commit.
 3. Each integration patch matches its recorded SHA-256 digest.
 4. The seven-patch series produces the expected Git tree.
-5. Required top-level Python packages are installed only in
-   `.tmp-native/venv` at the versions used by native CI.
+5. Required dependencies and the current runtime package are installed only in
+   `.tmp-native/venv`.
 6. A local manifest records the runtime, backend, patches, tools, interpreter,
    and complete resolved distribution inventory.
 

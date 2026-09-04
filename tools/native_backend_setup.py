@@ -39,6 +39,7 @@ REQUIRED_DISTRIBUTIONS = {
     "more-itertools": "11.1.0",
     "numba": "0.67.0",
     "numpy": "2.5.2",
+    "setuptools": "82.0.1",
     "tiktoken": "0.14.0",
     "torch": TORCH_VERSION,
     "tqdm": "4.70.0",
@@ -202,6 +203,7 @@ def dependency_install_commands(
         "install",
         "--disable-pip-version-check",
         "--no-input",
+        "--no-cache-dir",
         "--only-binary=:all:",
     )
     if selected_platform == "darwin":
@@ -222,9 +224,23 @@ def dependency_install_commands(
         "-r",
         str(CONSTRAINTS_FILE),
     )
+    runtime_command = (
+        str(python),
+        "-m",
+        "pip",
+        "--isolated",
+        "install",
+        "--disable-pip-version-check",
+        "--no-input",
+        "--no-cache-dir",
+        "--no-deps",
+        "--no-build-isolation",
+        str(RUNTIME_ROOT),
+    )
     return (
         torch_command,
         requirements_command,
+        runtime_command,
         (str(python), "-m", "pip", "--isolated", "check"),
     )
 

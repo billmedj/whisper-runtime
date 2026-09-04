@@ -21,6 +21,7 @@ from native_backend_setup import (
     BACKEND_URL,
     PATCH_DIRECTORY,
     PYPI_INDEX,
+    RUNTIME_ROOT,
     TORCH_CPU_INDEX,
     EnvironmentIdentity,
     GitIdentity,
@@ -52,6 +53,7 @@ class NativeBackendSetupTests(unittest.TestCase):
             "more-itertools": "11.1.0",
             "numba": "0.67.0",
             "numpy": "2.5.2",
+            "setuptools": "82.0.1",
             "tiktoken": "0.14.0",
             "torch": "2.6.0+cpu",
             "tqdm": "4.70.0",
@@ -139,11 +141,15 @@ class NativeBackendSetupTests(unittest.TestCase):
     def test_install_plan_targets_only_the_selected_environment(self) -> None:
         python = Path("setup") / "venv" / "bin" / "python"
         linux = dependency_install_commands(python, platform="linux")
-        self.assertEqual(len(linux), 3)
+        self.assertEqual(len(linux), 4)
         self.assertTrue(all(command[0] == str(python) for command in linux))
         self.assertIn(TORCH_CPU_INDEX, linux[0])
         self.assertIn(PYPI_INDEX, linux[1])
+        self.assertEqual(linux[2][-1], str(RUNTIME_ROOT))
+        self.assertIn("--no-deps", linux[2])
+        self.assertIn("--no-build-isolation", linux[2])
         self.assertTrue(all("--isolated" in command for command in linux))
+        self.assertTrue(all("--no-cache-dir" in command for command in linux[:3]))
         self.assertFalse(any("--user" in command for command in linux))
 
         macos = dependency_install_commands(python, platform="darwin")
@@ -280,6 +286,7 @@ class NativeBackendSetupTests(unittest.TestCase):
             "more-itertools": "11.1.0",
             "numba": "0.67.0",
             "numpy": "2.5.2",
+            "setuptools": "82.0.1",
             "tiktoken": "0.14.0",
             "torch": "2.6.0+cpu",
             "tqdm": "4.70.0",
