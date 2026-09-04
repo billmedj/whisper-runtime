@@ -2,9 +2,9 @@
 
 `evidence/modal-native-cuda-qualification.schema.json` defines the
 `1-draft` record format for one fixed native CUDA qualification cell. Version
-six is the active preregistered campaign under this format. This schema is
-not a performance-benchmark schema, and no committed evidence record currently
-satisfies it.
+six is the current executed campaign under this format. Its committed evidence
+record satisfies the schema and semantic validator. This schema is not a
+performance-benchmark schema.
 
 The contract has two purposes:
 
@@ -26,8 +26,13 @@ It fixes the source policy, backend revision, T4 worker profile, model,
 checkpoint, input, decode options, resource contract, measurement boundaries,
 sample counts, fault points, exclusion rule, and required invariants.
 
-The [evidence index](../evidence/README.md) records prior attempts and their
-limits. No version-six GPU attempt or qualification record exists.
+The [evidence index](../evidence/README.md) records all attempts and their
+limits. Version six has one passing
+[qualification record](../evidence/modal-t4-tiny-en-jfk-native-cuda-qualification-v6-2026-09-04.json)
+and one append-only
+[attempt receipt](../evidence/modal-native-cuda-qualification-v6-attempt-2026-09-04.jsonl).
+The same registration path and digest were public in commit
+`bf46687d6c0f837426d85a1f97c60dd64128f9ed` before the worker ran.
 
 The record must bind the registration by repository-relative path, SHA-256
 digest, and runtime commit. These fields prove which tracked registration was

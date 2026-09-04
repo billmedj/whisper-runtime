@@ -16,8 +16,9 @@ explicit.
 > **Status:** pre-alpha research implementation. The native adapter handles one
 > unbatched 30-second mel window per transaction. CPU remains the default. A
 > strict single-lane CUDA path is implemented and recorded for one pinned
-> `tiny.en` FP32 case on separate AWS and GCP T4 workers. This is not a
-> production transcription service.
+> `tiny.en` FP32 case on separate AWS and GCP T4 workers. One registered AWS T4
+> qualification also exercises cancellation and four harness fault points.
+> This is not a production transcription service.
 
 ## What it provides
 
@@ -194,7 +195,7 @@ See the [native adapter contract](https://github.com/billmedj/whisper-runtime/bl
 | Evidence | Scope |
 | --- | --- |
 | 105 runtime tests | Resource accounting, queue bounds, commit races, deadlines, cancellation, quarantine, recovery, and adapter behavior |
-| 184 repository-tool tests | Provenance, source state, fixtures, portability, setup contracts, evidence schemas, semantic validation, qualification relations, and native smoke contracts |
+| 191 repository-tool tests | Provenance, source state, fixtures, portability, setup contracts, evidence schemas, semantic validation, qualification relations, and native smoke contracts |
 | 2,000-step deterministic state trace | State-machine transitions under generated operations |
 | 51 Lean theorem declarations | Abstract lease provenance, capacity conservation, lifecycle, stale-commit properties, completion-fence publication, quarantine, and recovery |
 | One recorded native run | Patched `tiny.en` decoder, JFK fixture, CPU, exact transcript, queue returned to zero, declared budget restored |
@@ -203,6 +204,7 @@ See the [native adapter contract](https://github.com/billmedj/whisper-runtime/bl
 | One recorded adapter-level concurrency check | Two runtime-admitted transactions, serialized encoder preparation, cooperative cancellation, isolated commit, and exact budget restoration |
 | Two recorded Modal T4 readiness checks | Direct patched-backend CUDA decode on separate GCP and AWS workers, exact transcript and model reuse, verified source and model identities, blocked network, and read-only model cache |
 | Two recorded native CUDA transaction checks | The same public runtime revision on separate AWS and GCP T4 workers: admission, one private stream, exact transcript, fence-before-publication, cooperative cancellation, retained failure, manual recovery, and native reuse |
+| One registered native CUDA qualification | One AWS T4 worker, exact control/runtime output compatibility, three cancellation runs, and two repetitions at each of four harness fault points; qualification only, not a benchmark |
 | Four conformance pairs | Pinned greedy, beam-search, word-timestamp, and translation reference/candidate records |
 
 The recorded transaction identifies the imported source tree, checkpoint,
@@ -244,7 +246,7 @@ not a physical driver fault. The Lean completion-boundary model proves an
 abstract release and publication protocol. It does not prove Python threads,
 PyTorch kernels, the concrete submission gate, CUDA events, or adapter code.
 
-The next fixed CUDA qualification cell is defined by the
+The fixed CUDA qualification cell is defined by the
 [versioned registration](https://github.com/billmedj/whisper-runtime/blob/main/experiments/native-cuda-qualification-v6.json)
 and the [qualification evidence contract](https://github.com/billmedj/whisper-runtime/blob/main/docs/CUDA_QUALIFICATION_CONTRACT.md).
 The contract includes the exact Modal command, an append-only attempt receipt,
@@ -255,8 +257,11 @@ defines requirements for a future performance campaign, which will require a
 new evidence schema or version. The producer runs a CPU environment and
 contract preflight before it creates an attempt receipt or dispatches the GPU
 campaign. The [evidence index](https://github.com/billmedj/whisper-runtime/blob/main/evidence/README.md)
-records prior attempts and their limits. No version-six GPU attempt or
-qualification record exists.
+records all attempts and their limits. Version six ran once against public
+runtime commit `9c2494234f08b24325d427ea422818b24f460c0c` and produced a
+[passing qualification record](https://github.com/billmedj/whisper-runtime/blob/main/evidence/modal-t4-tiny-en-jfk-native-cuda-qualification-v6-2026-09-04.json).
+The record establishes only the registered functional and fault-injection
+scope. It is not a performance or production-readiness result.
 
 See the [transaction record](https://github.com/billmedj/whisper-runtime/blob/main/evidence/native-cpu-tiny-en-jfk-2026-09-03.json),
 [staged-run isolation record](https://github.com/billmedj/whisper-runtime/blob/main/evidence/native-cpu-tiny-en-jfk-interleaving-2026-09-03.json),
@@ -265,6 +270,7 @@ See the [transaction record](https://github.com/billmedj/whisper-runtime/blob/ma
 [AWS T4 readiness record](https://github.com/billmedj/whisper-runtime/blob/main/evidence/modal-t4-tiny-en-jfk-cuda-readiness-aws-2026-09-04.json),
 [AWS native CUDA transaction record](https://github.com/billmedj/whisper-runtime/blob/main/evidence/modal-t4-tiny-en-jfk-native-cuda-transaction-aws-2026-09-04.json),
 [GCP native CUDA transaction record](https://github.com/billmedj/whisper-runtime/blob/main/evidence/modal-t4-tiny-en-jfk-native-cuda-transaction-gcp-2026-09-04.json),
+[fixed AWS T4 qualification record](https://github.com/billmedj/whisper-runtime/blob/main/evidence/modal-t4-tiny-en-jfk-native-cuda-qualification-v6-2026-09-04.json),
 [assurance map](https://github.com/billmedj/whisper-runtime/blob/main/docs/ASSURANCE.md),
 [conformance contract](https://github.com/billmedj/whisper-runtime/blob/main/docs/CONFORMANCE.md), and
 [development roadmap](https://github.com/billmedj/whisper-runtime/blob/main/docs/ROADMAP.md).

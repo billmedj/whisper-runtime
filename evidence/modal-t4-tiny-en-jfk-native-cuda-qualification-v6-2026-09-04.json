@@ -1,0 +1,5154 @@
+{
+  "schema_version": "1-draft",
+  "recorded_at": "2026-09-04T14:08:37.950021Z",
+  "status": "passed",
+  "outcome": {
+    "registered_cell_id": "t4-tiny-en-jfk-qualification-v6",
+    "exclusion_rule_id": "no-exclusions-v1",
+    "result": "passed",
+    "failure_class": "none",
+    "failure_summary": null
+  },
+  "qualification_registration": {
+    "manifest_id": "native-cuda-qualification-v6",
+    "manifest_path": "experiments/native-cuda-qualification-v6.json",
+    "manifest_sha256": "87039fecb06c990e40ccc4c736e25b6d5db7d86a88df22b488cb9d392d946a01",
+    "runtime_commit": "9c2494234f08b24325d427ea422818b24f460c0c"
+  },
+  "scope": {
+    "evidence_kind": "native-whisper-cuda-qualification",
+    "evidence_tier": "qualification",
+    "fault_matrix_scope": "completion-boundary-qualification-subset",
+    "statement": "A fixed CUDA qualification cell with raw diagnostic observations.",
+    "hardware_execution": true,
+    "fault_injection_used": true,
+    "performance_benchmark": false,
+    "production_readiness": false
+  },
+  "runtime": {
+    "repository": "https://github.com/billmedj/whisper-runtime",
+    "git_commit": "9c2494234f08b24325d427ea422818b24f460c0c",
+    "git_tree": "35661fd8a821fb47784e38de148e5204666cb9fc",
+    "clean": true
+  },
+  "backend": {
+    "repository": "https://github.com/openai/whisper",
+    "git_commit": "a0b9695ae1cc52bad4b8626fe9fb6ea4ac0ee650",
+    "git_tree": "c011d2563c26763b5f147026e6b18ef85bccd4fb",
+    "clean": true,
+    "patch_manifest_path": "patches/openai-whisper/SHA256SUMS",
+    "patch_manifest_sha256": "0fa1a833b0c489056d77da21188519c7e16fde7825d06bc5b902ba23a01abeb5"
+  },
+  "producer": {
+    "repository": "https://github.com/billmedj/whisper-runtime",
+    "git_commit": "9c2494234f08b24325d427ea422818b24f460c0c",
+    "git_tree": "35661fd8a821fb47784e38de148e5204666cb9fc",
+    "clean": true,
+    "script_path": "infra/modal_native_cuda_qualification.py",
+    "script_sha256": "178285839ced6820d1fb139fa328ff10f8dbbd13e771eb9be50920358316e151",
+    "schema_path": "evidence/modal-native-cuda-qualification.schema.json",
+    "schema_sha256": "d8fbb9ad72c25715aff114f13169152989f923e41208f3334666e351e6b0bc9a",
+    "validator_path": "tools/validate_modal_native_cuda_qualification.py",
+    "validator_sha256": "97881c7e3f67581e8778559e8c5864f9dde1d470792dee9e1efd1f1e752be9ea",
+    "image_inputs_path": "infra/modal-native-cuda-image-inputs.lock",
+    "image_inputs_sha256": "380ae21d86dcb1f1b6a4190fc30178f3e123ebfc862a144a928cc32276f65787",
+    "resolved_dependencies": [
+      {
+        "name": "aiohappyeyeballs",
+        "version": "2.6.1"
+      },
+      {
+        "name": "aiohttp",
+        "version": "3.12.7"
+      },
+      {
+        "name": "aiosignal",
+        "version": "1.3.2"
+      },
+      {
+        "name": "attrs",
+        "version": "26.1.0"
+      },
+      {
+        "name": "cbor2",
+        "version": "5.7.0"
+      },
+      {
+        "name": "certifi",
+        "version": "2026.7.22"
+      },
+      {
+        "name": "charset-normalizer",
+        "version": "3.5.1"
+      },
+      {
+        "name": "filelock",
+        "version": "3.32.3"
+      },
+      {
+        "name": "frozenlist",
+        "version": "1.6.0"
+      },
+      {
+        "name": "fsspec",
+        "version": "2026.7.0"
+      },
+      {
+        "name": "grpclib",
+        "version": "0.4.8"
+      },
+      {
+        "name": "h2",
+        "version": "4.2.0"
+      },
+      {
+        "name": "hpack",
+        "version": "4.1.0"
+      },
+      {
+        "name": "hyperframe",
+        "version": "6.1.0"
+      },
+      {
+        "name": "idna",
+        "version": "3.19"
+      },
+      {
+        "name": "jinja2",
+        "version": "3.1.6"
+      },
+      {
+        "name": "jsonschema",
+        "version": "4.25.1"
+      },
+      {
+        "name": "jsonschema-specifications",
+        "version": "2025.9.1"
+      },
+      {
+        "name": "llvmlite",
+        "version": "0.49.0"
+      },
+      {
+        "name": "markupsafe",
+        "version": "3.0.3"
+      },
+      {
+        "name": "more-itertools",
+        "version": "11.1.0"
+      },
+      {
+        "name": "mpmath",
+        "version": "1.3.0"
+      },
+      {
+        "name": "multidict",
+        "version": "6.4.4"
+      },
+      {
+        "name": "networkx",
+        "version": "3.6.1"
+      },
+      {
+        "name": "numba",
+        "version": "0.67.0"
+      },
+      {
+        "name": "numpy",
+        "version": "2.5.2"
+      },
+      {
+        "name": "nvidia-cublas-cu12",
+        "version": "12.4.5.8"
+      },
+      {
+        "name": "nvidia-cuda-cupti-cu12",
+        "version": "12.4.127"
+      },
+      {
+        "name": "nvidia-cuda-nvrtc-cu12",
+        "version": "12.4.127"
+      },
+      {
+        "name": "nvidia-cuda-runtime-cu12",
+        "version": "12.4.127"
+      },
+      {
+        "name": "nvidia-cudnn-cu12",
+        "version": "9.1.0.70"
+      },
+      {
+        "name": "nvidia-cufft-cu12",
+        "version": "11.2.1.3"
+      },
+      {
+        "name": "nvidia-curand-cu12",
+        "version": "10.3.5.147"
+      },
+      {
+        "name": "nvidia-cusolver-cu12",
+        "version": "11.6.1.9"
+      },
+      {
+        "name": "nvidia-cusparse-cu12",
+        "version": "12.3.1.170"
+      },
+      {
+        "name": "nvidia-cusparselt-cu12",
+        "version": "0.6.2"
+      },
+      {
+        "name": "nvidia-nccl-cu12",
+        "version": "2.21.5"
+      },
+      {
+        "name": "nvidia-nvjitlink-cu12",
+        "version": "12.4.127"
+      },
+      {
+        "name": "nvidia-nvtx-cu12",
+        "version": "12.4.127"
+      },
+      {
+        "name": "pip",
+        "version": "25.1.1"
+      },
+      {
+        "name": "propcache",
+        "version": "0.3.1"
+      },
+      {
+        "name": "protobuf",
+        "version": "6.31.1"
+      },
+      {
+        "name": "referencing",
+        "version": "0.37.0"
+      },
+      {
+        "name": "regex",
+        "version": "2026.9.3"
+      },
+      {
+        "name": "requests",
+        "version": "2.34.2"
+      },
+      {
+        "name": "rpds-py",
+        "version": "2026.6.3"
+      },
+      {
+        "name": "setuptools",
+        "version": "82.0.1"
+      },
+      {
+        "name": "sympy",
+        "version": "1.13.1"
+      },
+      {
+        "name": "tiktoken",
+        "version": "0.14.0"
+      },
+      {
+        "name": "torch",
+        "version": "2.6.0+cu124"
+      },
+      {
+        "name": "tqdm",
+        "version": "4.70.0"
+      },
+      {
+        "name": "triton",
+        "version": "3.2.0"
+      },
+      {
+        "name": "typing-extensions",
+        "version": "4.16.0"
+      },
+      {
+        "name": "urllib3",
+        "version": "2.7.0"
+      },
+      {
+        "name": "uv",
+        "version": "0.7.19"
+      },
+      {
+        "name": "wheel",
+        "version": "0.45.1"
+      },
+      {
+        "name": "whisper-execution-runtime",
+        "version": "0.1.0.dev0"
+      },
+      {
+        "name": "yarl",
+        "version": "1.20.0"
+      }
+    ],
+    "resolved_dependencies_sha256": "22163d4c508bbc0bc2a3553894e37e057677e18c62743ea7e5dfa3e46dd108c0",
+    "container_image_id": "im-z82ZERYkMzCvb3MYrKIo40"
+  },
+  "worker": {
+    "campaign_id": "native-cuda-qualification-v6",
+    "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+    "worker_ordinal": 0,
+    "expected_worker_count": 1,
+    "single_use": true
+  },
+  "environment": {
+    "python": "3.13.3",
+    "platform": "Linux-4.19.0-gvisor-x86_64-with-glibc2.36",
+    "torch": "2.6.0+cu124",
+    "cuda_runtime": "12.4",
+    "cudnn": "90100",
+    "driver": "580.95.05",
+    "modal_sdk": "1.5.5"
+  },
+  "gpu": {
+    "cloud_provider": "CLOUD_PROVIDER_AWS",
+    "region": "us-west-2",
+    "visible_device_count": 1,
+    "device_index": 0,
+    "name": "Tesla T4",
+    "compute_capability": "7.5",
+    "total_memory_bytes": 15637086208
+  },
+  "clock": {
+    "source": "time.monotonic_ns",
+    "unit": "nanosecond",
+    "origin": "worker-qualification-start",
+    "resolution_ns": 1
+  },
+  "workload": {
+    "profile_id": "tiny.en-cuda0-float32-v1",
+    "model": "tiny.en",
+    "checkpoint_source": "https://openaipublic.azureedge.net/main/whisper/models/d3dd57d32accea0b295c96e26691aa14d8822fac7d9d27d5dc00b4ca2826dd03/tiny.en.pt",
+    "checkpoint_sha256": "d3dd57d32accea0b295c96e26691aa14d8822fac7d9d27d5dc00b4ca2826dd03",
+    "fixture_id": "openai-whisper-jfk-flac",
+    "input_manifest_source": "https://github.com/billmedj/whisper-runtime/blob/3ea09422106615b12a01ffe118fea57c10ab1050/conformance/audio-manifest.json",
+    "input_manifest_sha256": "4be9e19aa78bf09159183b136896569c6603ecb9decd7537ded14c911d8bfd06",
+    "input_source": "https://raw.githubusercontent.com/openai/whisper/86098128c0b4f24f0e2aa2994de830614b474227/tests/jfk.flac",
+    "input_sha256": "63a4b1e4c1dc655ac70961ffbf518acd249df237e5a0152faae9a4a836949715",
+    "decoded_pcm_sha256": "59be237a0814faee9f1279bc54c8a482fa7edc09a640ff0fdd18d14d41519065",
+    "preprocessing_options": {
+      "loader": "whisper.load_audio",
+      "sample_rate_hz": 16000,
+      "pad_or_trim_samples": 480000,
+      "mel_bins": 80
+    },
+    "preprocessing_options_sha256": "aa14e36e3d6bc2afa425440390be07b56e586546bfabc3d0e350f8e3e3233f43",
+    "input_bytes": 1152693,
+    "input_duration_ns": 11000000000,
+    "sample_rate_hz": 16000,
+    "channel_count": 1,
+    "language": "en",
+    "task": "transcribe",
+    "numeric_precision": "float32",
+    "compatibility_rule": "exact-result-sha256",
+    "result_digest_encoding": "utf8-transcript-v1",
+    "expected_result_sha256": "dfe1af694958a82c9d89d31bf0378075a10d40f715e670b6e5169042c8680cec",
+    "decode_options": {
+      "temperature": 0,
+      "beam_size": null,
+      "best_of": null,
+      "patience": null,
+      "length_penalty": null,
+      "sample_len": null,
+      "prompt": null,
+      "prefix": null,
+      "suppress_tokens": "-1",
+      "suppress_blank": true,
+      "without_timestamps": true,
+      "max_initial_timestamp": 1.0,
+      "fp16": false
+    },
+    "decode_options_sha256": "c1a21c6b26f89e58bbeab21fc2ad03e5e7dd86066646771309c5df07418e8890",
+    "seed": 7,
+    "seed_reset_each_run": true,
+    "device": "cuda:0",
+    "execution_mode": "single-lane",
+    "pair_order": "control-first",
+    "comparison_backend_mode": "native-unproxied",
+    "fault_backend_mode": "scoped-harness-injector",
+    "network_access_during_measured_work": false,
+    "model_loaded_before_timing": true,
+    "peak_stats_reset_each_run": true,
+    "runtime_measurement_start": "before-admission",
+    "runtime_measurement_end": "after-budget-restored",
+    "control_measurement_start": "before-backend-call",
+    "control_measurement_end": "after-backend-quiescent",
+    "warmup_iterations": 2,
+    "control_iterations": 5,
+    "measured_iterations": 5,
+    "cancellation_iterations": 3,
+    "fault_repetitions_per_point": 2,
+    "resource_capacity": {
+      "memory_bytes": 2147483648,
+      "compute_units": 1,
+      "stream_slots": 1
+    },
+    "resource_reservation": {
+      "memory_bytes": 2147483648,
+      "compute_units": 1,
+      "stream_slots": 1
+    },
+    "allocation_tolerance_bytes": 67108864,
+    "reserved_tolerance_bytes": 67108864
+  },
+  "warmup_runs": [
+    {
+      "run_id": "warmup-0",
+      "session_id": "warmup-0-session",
+      "request_id": "warmup-0-request",
+      "transaction_id": "warmup-0-transaction",
+      "lease_id": "warmup-0-lease",
+      "iteration": 0,
+      "wall_ns": 190989115,
+      "session_version_before": 0,
+      "session_version_after": 1,
+      "result_sha256": "dfe1af694958a82c9d89d31bf0378075a10d40f715e670b6e5169042c8680cec",
+      "memory": {
+        "baseline_allocated_bytes": 160720896,
+        "final_allocated_bytes": 169240576,
+        "peak_allocated_bytes": 197848576,
+        "baseline_reserved_bytes": 255852544,
+        "final_reserved_bytes": 320864256,
+        "peak_reserved_bytes": 320864256,
+        "peak_allocated_delta_bytes": 37127680,
+        "peak_reserved_delta_bytes": 65011712
+      },
+      "budget": {
+        "available_before": {
+          "memory_bytes": 2147483648,
+          "compute_units": 1,
+          "stream_slots": 1
+        },
+        "available_while_held": {
+          "memory_bytes": 0,
+          "compute_units": 0,
+          "stream_slots": 0
+        },
+        "available_at_quiescence": {
+          "memory_bytes": 0,
+          "compute_units": 0,
+          "stream_slots": 0
+        },
+        "available_after_release": {
+          "memory_bytes": 2147483648,
+          "compute_units": 1,
+          "stream_slots": 1
+        }
+      }
+    },
+    {
+      "run_id": "warmup-1",
+      "session_id": "warmup-1-session",
+      "request_id": "warmup-1-request",
+      "transaction_id": "warmup-1-transaction",
+      "lease_id": "warmup-1-lease",
+      "iteration": 1,
+      "wall_ns": 125286655,
+      "session_version_before": 0,
+      "session_version_after": 1,
+      "result_sha256": "dfe1af694958a82c9d89d31bf0378075a10d40f715e670b6e5169042c8680cec",
+      "memory": {
+        "baseline_allocated_bytes": 169240576,
+        "final_allocated_bytes": 177760256,
+        "peak_allocated_bytes": 206368256,
+        "baseline_reserved_bytes": 320864256,
+        "final_reserved_bytes": 385875968,
+        "peak_reserved_bytes": 385875968,
+        "peak_allocated_delta_bytes": 37127680,
+        "peak_reserved_delta_bytes": 65011712
+      },
+      "budget": {
+        "available_before": {
+          "memory_bytes": 2147483648,
+          "compute_units": 1,
+          "stream_slots": 1
+        },
+        "available_while_held": {
+          "memory_bytes": 0,
+          "compute_units": 0,
+          "stream_slots": 0
+        },
+        "available_at_quiescence": {
+          "memory_bytes": 0,
+          "compute_units": 0,
+          "stream_slots": 0
+        },
+        "available_after_release": {
+          "memory_bytes": 2147483648,
+          "compute_units": 1,
+          "stream_slots": 1
+        }
+      }
+    }
+  ],
+  "control_warmup_runs": [
+    {
+      "run_id": "control-warmup-0",
+      "iteration": 0,
+      "wall_ns": 1063968314,
+      "result_sha256": "dfe1af694958a82c9d89d31bf0378075a10d40f715e670b6e5169042c8680cec",
+      "memory": {
+        "baseline_allocated_bytes": 152201216,
+        "final_allocated_bytes": 163984896,
+        "peak_allocated_bytes": 190205440,
+        "baseline_reserved_bytes": 255852544,
+        "final_reserved_bytes": 255852544,
+        "peak_reserved_bytes": 255852544,
+        "peak_allocated_delta_bytes": 38004224,
+        "peak_reserved_delta_bytes": 0
+      }
+    },
+    {
+      "run_id": "control-warmup-1",
+      "iteration": 1,
+      "wall_ns": 126247044,
+      "result_sha256": "dfe1af694958a82c9d89d31bf0378075a10d40f715e670b6e5169042c8680cec",
+      "memory": {
+        "baseline_allocated_bytes": 169240576,
+        "final_allocated_bytes": 173381120,
+        "peak_allocated_bytes": 198725120,
+        "baseline_reserved_bytes": 320864256,
+        "final_reserved_bytes": 320864256,
+        "peak_reserved_bytes": 320864256,
+        "peak_allocated_delta_bytes": 29484544,
+        "peak_reserved_delta_bytes": 0
+      }
+    }
+  ],
+  "control_runs": [
+    {
+      "run_id": "control-0",
+      "iteration": 0,
+      "wall_ns": 115474301,
+      "result_sha256": "dfe1af694958a82c9d89d31bf0378075a10d40f715e670b6e5169042c8680cec",
+      "memory": {
+        "baseline_allocated_bytes": 177760256,
+        "final_allocated_bytes": 181900800,
+        "peak_allocated_bytes": 207244800,
+        "baseline_reserved_bytes": 385875968,
+        "final_reserved_bytes": 385875968,
+        "peak_reserved_bytes": 385875968,
+        "peak_allocated_delta_bytes": 29484544,
+        "peak_reserved_delta_bytes": 0
+      }
+    },
+    {
+      "run_id": "control-1",
+      "iteration": 1,
+      "wall_ns": 113765935,
+      "result_sha256": "dfe1af694958a82c9d89d31bf0378075a10d40f715e670b6e5169042c8680cec",
+      "memory": {
+        "baseline_allocated_bytes": 186279936,
+        "final_allocated_bytes": 190420480,
+        "peak_allocated_bytes": 215764480,
+        "baseline_reserved_bytes": 450887680,
+        "final_reserved_bytes": 450887680,
+        "peak_reserved_bytes": 450887680,
+        "peak_allocated_delta_bytes": 29484544,
+        "peak_reserved_delta_bytes": 0
+      }
+    },
+    {
+      "run_id": "control-2",
+      "iteration": 2,
+      "wall_ns": 122759593,
+      "result_sha256": "dfe1af694958a82c9d89d31bf0378075a10d40f715e670b6e5169042c8680cec",
+      "memory": {
+        "baseline_allocated_bytes": 194799616,
+        "final_allocated_bytes": 198940160,
+        "peak_allocated_bytes": 224284160,
+        "baseline_reserved_bytes": 515899392,
+        "final_reserved_bytes": 515899392,
+        "peak_reserved_bytes": 515899392,
+        "peak_allocated_delta_bytes": 29484544,
+        "peak_reserved_delta_bytes": 0
+      }
+    },
+    {
+      "run_id": "control-3",
+      "iteration": 3,
+      "wall_ns": 119309950,
+      "result_sha256": "dfe1af694958a82c9d89d31bf0378075a10d40f715e670b6e5169042c8680cec",
+      "memory": {
+        "baseline_allocated_bytes": 203319296,
+        "final_allocated_bytes": 207459840,
+        "peak_allocated_bytes": 232803840,
+        "baseline_reserved_bytes": 580911104,
+        "final_reserved_bytes": 580911104,
+        "peak_reserved_bytes": 580911104,
+        "peak_allocated_delta_bytes": 29484544,
+        "peak_reserved_delta_bytes": 0
+      }
+    },
+    {
+      "run_id": "control-4",
+      "iteration": 4,
+      "wall_ns": 113506622,
+      "result_sha256": "dfe1af694958a82c9d89d31bf0378075a10d40f715e670b6e5169042c8680cec",
+      "memory": {
+        "baseline_allocated_bytes": 211838976,
+        "final_allocated_bytes": 215979520,
+        "peak_allocated_bytes": 241323520,
+        "baseline_reserved_bytes": 645922816,
+        "final_reserved_bytes": 645922816,
+        "peak_reserved_bytes": 645922816,
+        "peak_allocated_delta_bytes": 29484544,
+        "peak_reserved_delta_bytes": 0
+      }
+    }
+  ],
+  "measured_runs": [
+    {
+      "run_id": "measured-0",
+      "session_id": "measured-0-session",
+      "request_id": "measured-0-request",
+      "transaction_id": "measured-0-transaction",
+      "lease_id": "measured-0-lease",
+      "iteration": 0,
+      "wall_ns": 121527670,
+      "session_version_before": 0,
+      "session_version_after": 1,
+      "result_sha256": "dfe1af694958a82c9d89d31bf0378075a10d40f715e670b6e5169042c8680cec",
+      "memory": {
+        "baseline_allocated_bytes": 177760256,
+        "final_allocated_bytes": 186279936,
+        "peak_allocated_bytes": 214887936,
+        "baseline_reserved_bytes": 385875968,
+        "final_reserved_bytes": 450887680,
+        "peak_reserved_bytes": 450887680,
+        "peak_allocated_delta_bytes": 37127680,
+        "peak_reserved_delta_bytes": 65011712
+      },
+      "budget": {
+        "available_before": {
+          "memory_bytes": 2147483648,
+          "compute_units": 1,
+          "stream_slots": 1
+        },
+        "available_while_held": {
+          "memory_bytes": 0,
+          "compute_units": 0,
+          "stream_slots": 0
+        },
+        "available_at_quiescence": {
+          "memory_bytes": 0,
+          "compute_units": 0,
+          "stream_slots": 0
+        },
+        "available_after_release": {
+          "memory_bytes": 2147483648,
+          "compute_units": 1,
+          "stream_slots": 1
+        }
+      }
+    },
+    {
+      "run_id": "measured-1",
+      "session_id": "measured-1-session",
+      "request_id": "measured-1-request",
+      "transaction_id": "measured-1-transaction",
+      "lease_id": "measured-1-lease",
+      "iteration": 1,
+      "wall_ns": 129162492,
+      "session_version_before": 0,
+      "session_version_after": 1,
+      "result_sha256": "dfe1af694958a82c9d89d31bf0378075a10d40f715e670b6e5169042c8680cec",
+      "memory": {
+        "baseline_allocated_bytes": 186279936,
+        "final_allocated_bytes": 194799616,
+        "peak_allocated_bytes": 223407616,
+        "baseline_reserved_bytes": 450887680,
+        "final_reserved_bytes": 515899392,
+        "peak_reserved_bytes": 515899392,
+        "peak_allocated_delta_bytes": 37127680,
+        "peak_reserved_delta_bytes": 65011712
+      },
+      "budget": {
+        "available_before": {
+          "memory_bytes": 2147483648,
+          "compute_units": 1,
+          "stream_slots": 1
+        },
+        "available_while_held": {
+          "memory_bytes": 0,
+          "compute_units": 0,
+          "stream_slots": 0
+        },
+        "available_at_quiescence": {
+          "memory_bytes": 0,
+          "compute_units": 0,
+          "stream_slots": 0
+        },
+        "available_after_release": {
+          "memory_bytes": 2147483648,
+          "compute_units": 1,
+          "stream_slots": 1
+        }
+      }
+    },
+    {
+      "run_id": "measured-2",
+      "session_id": "measured-2-session",
+      "request_id": "measured-2-request",
+      "transaction_id": "measured-2-transaction",
+      "lease_id": "measured-2-lease",
+      "iteration": 2,
+      "wall_ns": 134224002,
+      "session_version_before": 0,
+      "session_version_after": 1,
+      "result_sha256": "dfe1af694958a82c9d89d31bf0378075a10d40f715e670b6e5169042c8680cec",
+      "memory": {
+        "baseline_allocated_bytes": 194799616,
+        "final_allocated_bytes": 203319296,
+        "peak_allocated_bytes": 231927296,
+        "baseline_reserved_bytes": 515899392,
+        "final_reserved_bytes": 580911104,
+        "peak_reserved_bytes": 580911104,
+        "peak_allocated_delta_bytes": 37127680,
+        "peak_reserved_delta_bytes": 65011712
+      },
+      "budget": {
+        "available_before": {
+          "memory_bytes": 2147483648,
+          "compute_units": 1,
+          "stream_slots": 1
+        },
+        "available_while_held": {
+          "memory_bytes": 0,
+          "compute_units": 0,
+          "stream_slots": 0
+        },
+        "available_at_quiescence": {
+          "memory_bytes": 0,
+          "compute_units": 0,
+          "stream_slots": 0
+        },
+        "available_after_release": {
+          "memory_bytes": 2147483648,
+          "compute_units": 1,
+          "stream_slots": 1
+        }
+      }
+    },
+    {
+      "run_id": "measured-3",
+      "session_id": "measured-3-session",
+      "request_id": "measured-3-request",
+      "transaction_id": "measured-3-transaction",
+      "lease_id": "measured-3-lease",
+      "iteration": 3,
+      "wall_ns": 200993998,
+      "session_version_before": 0,
+      "session_version_after": 1,
+      "result_sha256": "dfe1af694958a82c9d89d31bf0378075a10d40f715e670b6e5169042c8680cec",
+      "memory": {
+        "baseline_allocated_bytes": 203319296,
+        "final_allocated_bytes": 211838976,
+        "peak_allocated_bytes": 240446976,
+        "baseline_reserved_bytes": 580911104,
+        "final_reserved_bytes": 645922816,
+        "peak_reserved_bytes": 645922816,
+        "peak_allocated_delta_bytes": 37127680,
+        "peak_reserved_delta_bytes": 65011712
+      },
+      "budget": {
+        "available_before": {
+          "memory_bytes": 2147483648,
+          "compute_units": 1,
+          "stream_slots": 1
+        },
+        "available_while_held": {
+          "memory_bytes": 0,
+          "compute_units": 0,
+          "stream_slots": 0
+        },
+        "available_at_quiescence": {
+          "memory_bytes": 0,
+          "compute_units": 0,
+          "stream_slots": 0
+        },
+        "available_after_release": {
+          "memory_bytes": 2147483648,
+          "compute_units": 1,
+          "stream_slots": 1
+        }
+      }
+    },
+    {
+      "run_id": "measured-4",
+      "session_id": "measured-4-session",
+      "request_id": "measured-4-request",
+      "transaction_id": "measured-4-transaction",
+      "lease_id": "measured-4-lease",
+      "iteration": 4,
+      "wall_ns": 207699090,
+      "session_version_before": 0,
+      "session_version_after": 1,
+      "result_sha256": "dfe1af694958a82c9d89d31bf0378075a10d40f715e670b6e5169042c8680cec",
+      "memory": {
+        "baseline_allocated_bytes": 211838976,
+        "final_allocated_bytes": 220358656,
+        "peak_allocated_bytes": 248966656,
+        "baseline_reserved_bytes": 645922816,
+        "final_reserved_bytes": 710934528,
+        "peak_reserved_bytes": 710934528,
+        "peak_allocated_delta_bytes": 37127680,
+        "peak_reserved_delta_bytes": 65011712
+      },
+      "budget": {
+        "available_before": {
+          "memory_bytes": 2147483648,
+          "compute_units": 1,
+          "stream_slots": 1
+        },
+        "available_while_held": {
+          "memory_bytes": 0,
+          "compute_units": 0,
+          "stream_slots": 0
+        },
+        "available_at_quiescence": {
+          "memory_bytes": 0,
+          "compute_units": 0,
+          "stream_slots": 0
+        },
+        "available_after_release": {
+          "memory_bytes": 2147483648,
+          "compute_units": 1,
+          "stream_slots": 1
+        }
+      }
+    }
+  ],
+  "cancellation_runs": [
+    {
+      "run_id": "cancellation-0",
+      "session_id": "cancellation-0-session",
+      "request_id": "cancellation-0-request",
+      "transaction_id": "cancellation-0-transaction",
+      "lease_id": "cancellation-0-lease",
+      "iteration": 0,
+      "wall_ns": 205925467,
+      "cancel_to_quiescence_ns": 473220,
+      "session_version_before": 0,
+      "session_version_after": 0,
+      "memory": {
+        "baseline_allocated_bytes": 220358656,
+        "final_allocated_bytes": 228878336,
+        "peak_allocated_bytes": 257486336,
+        "baseline_reserved_bytes": 710934528,
+        "final_reserved_bytes": 775946240,
+        "peak_reserved_bytes": 775946240,
+        "peak_allocated_delta_bytes": 37127680,
+        "peak_reserved_delta_bytes": 65011712
+      },
+      "budget": {
+        "available_before": {
+          "memory_bytes": 2147483648,
+          "compute_units": 1,
+          "stream_slots": 1
+        },
+        "available_while_held": {
+          "memory_bytes": 0,
+          "compute_units": 0,
+          "stream_slots": 0
+        },
+        "available_at_quiescence": {
+          "memory_bytes": 0,
+          "compute_units": 0,
+          "stream_slots": 0
+        },
+        "available_after_release": {
+          "memory_bytes": 2147483648,
+          "compute_units": 1,
+          "stream_slots": 1
+        }
+      }
+    },
+    {
+      "run_id": "cancellation-1",
+      "session_id": "cancellation-1-session",
+      "request_id": "cancellation-1-request",
+      "transaction_id": "cancellation-1-transaction",
+      "lease_id": "cancellation-1-lease",
+      "iteration": 1,
+      "wall_ns": 86589029,
+      "cancel_to_quiescence_ns": 503548,
+      "session_version_before": 0,
+      "session_version_after": 0,
+      "memory": {
+        "baseline_allocated_bytes": 228878336,
+        "final_allocated_bytes": 237398016,
+        "peak_allocated_bytes": 266006016,
+        "baseline_reserved_bytes": 775946240,
+        "final_reserved_bytes": 840957952,
+        "peak_reserved_bytes": 840957952,
+        "peak_allocated_delta_bytes": 37127680,
+        "peak_reserved_delta_bytes": 65011712
+      },
+      "budget": {
+        "available_before": {
+          "memory_bytes": 2147483648,
+          "compute_units": 1,
+          "stream_slots": 1
+        },
+        "available_while_held": {
+          "memory_bytes": 0,
+          "compute_units": 0,
+          "stream_slots": 0
+        },
+        "available_at_quiescence": {
+          "memory_bytes": 0,
+          "compute_units": 0,
+          "stream_slots": 0
+        },
+        "available_after_release": {
+          "memory_bytes": 2147483648,
+          "compute_units": 1,
+          "stream_slots": 1
+        }
+      }
+    },
+    {
+      "run_id": "cancellation-2",
+      "session_id": "cancellation-2-session",
+      "request_id": "cancellation-2-request",
+      "transaction_id": "cancellation-2-transaction",
+      "lease_id": "cancellation-2-lease",
+      "iteration": 2,
+      "wall_ns": 104959379,
+      "cancel_to_quiescence_ns": 431142,
+      "session_version_before": 0,
+      "session_version_after": 0,
+      "memory": {
+        "baseline_allocated_bytes": 237398016,
+        "final_allocated_bytes": 245917696,
+        "peak_allocated_bytes": 274525696,
+        "baseline_reserved_bytes": 840957952,
+        "final_reserved_bytes": 905969664,
+        "peak_reserved_bytes": 905969664,
+        "peak_allocated_delta_bytes": 37127680,
+        "peak_reserved_delta_bytes": 65011712
+      },
+      "budget": {
+        "available_before": {
+          "memory_bytes": 2147483648,
+          "compute_units": 1,
+          "stream_slots": 1
+        },
+        "available_while_held": {
+          "memory_bytes": 0,
+          "compute_units": 0,
+          "stream_slots": 0
+        },
+        "available_at_quiescence": {
+          "memory_bytes": 0,
+          "compute_units": 0,
+          "stream_slots": 0
+        },
+        "available_after_release": {
+          "memory_bytes": 2147483648,
+          "compute_units": 1,
+          "stream_slots": 1
+        }
+      }
+    }
+  ],
+  "fault_runs": [
+    {
+      "run_id": "fault-cleanup-0",
+      "session_id": "fault-cleanup-0-session",
+      "request_id": "fault-cleanup-0-request",
+      "transaction_id": "fault-cleanup-0-transaction",
+      "lease_id": "fault-cleanup-0-lease",
+      "fault_point": "cleanup",
+      "repetition": 0,
+      "fault_origin": "harness-injected",
+      "planned_injection_count": 2,
+      "backend_call_relation": "before-backend-call",
+      "blocked_request_id": "blocked-cleanup-0",
+      "wall_ns": 195668301,
+      "injection_to_quiescence_ns": 727991,
+      "recovery_ns": 272033,
+      "session_version_before": 0,
+      "session_version_after": 0,
+      "memory": {
+        "baseline_allocated_bytes": 245917696,
+        "final_allocated_bytes": 256742400,
+        "peak_allocated_bytes": 283045376,
+        "baseline_reserved_bytes": 905969664,
+        "final_reserved_bytes": 970981376,
+        "peak_reserved_bytes": 970981376,
+        "peak_allocated_delta_bytes": 37127680,
+        "peak_reserved_delta_bytes": 65011712
+      },
+      "budget": {
+        "available_before": {
+          "memory_bytes": 2147483648,
+          "compute_units": 1,
+          "stream_slots": 1
+        },
+        "available_while_held": {
+          "memory_bytes": 0,
+          "compute_units": 0,
+          "stream_slots": 0
+        },
+        "available_at_quiescence": {
+          "memory_bytes": 0,
+          "compute_units": 0,
+          "stream_slots": 0
+        },
+        "available_after_release": {
+          "memory_bytes": 2147483648,
+          "compute_units": 1,
+          "stream_slots": 1
+        }
+      },
+      "post_recovery_reuse": {
+        "run_id": "reuse-cleanup-0",
+        "session_id": "fault-cleanup-0-session",
+        "request_id": "reuse-cleanup-0-request",
+        "transaction_id": "reuse-cleanup-0-transaction",
+        "lease_id": "reuse-cleanup-0-lease",
+        "iteration": 0,
+        "wall_ns": 165068934,
+        "session_version_before": 0,
+        "session_version_after": 1,
+        "result_sha256": "dfe1af694958a82c9d89d31bf0378075a10d40f715e670b6e5169042c8680cec",
+        "memory": {
+          "baseline_allocated_bytes": 256742400,
+          "final_allocated_bytes": 265262080,
+          "peak_allocated_bytes": 293870080,
+          "baseline_reserved_bytes": 970981376,
+          "final_reserved_bytes": 1035993088,
+          "peak_reserved_bytes": 1035993088,
+          "peak_allocated_delta_bytes": 37127680,
+          "peak_reserved_delta_bytes": 65011712
+        },
+        "budget": {
+          "available_before": {
+            "memory_bytes": 2147483648,
+            "compute_units": 1,
+            "stream_slots": 1
+          },
+          "available_while_held": {
+            "memory_bytes": 0,
+            "compute_units": 0,
+            "stream_slots": 0
+          },
+          "available_at_quiescence": {
+            "memory_bytes": 0,
+            "compute_units": 0,
+            "stream_slots": 0
+          },
+          "available_after_release": {
+            "memory_bytes": 2147483648,
+            "compute_units": 1,
+            "stream_slots": 1
+          }
+        }
+      }
+    },
+    {
+      "run_id": "fault-cleanup-1",
+      "session_id": "fault-cleanup-1-session",
+      "request_id": "fault-cleanup-1-request",
+      "transaction_id": "fault-cleanup-1-transaction",
+      "lease_id": "fault-cleanup-1-lease",
+      "fault_point": "cleanup",
+      "repetition": 1,
+      "fault_origin": "harness-injected",
+      "planned_injection_count": 2,
+      "backend_call_relation": "before-backend-call",
+      "blocked_request_id": "blocked-cleanup-1",
+      "wall_ns": 183436555,
+      "injection_to_quiescence_ns": 668662,
+      "recovery_ns": 255698,
+      "session_version_before": 0,
+      "session_version_after": 0,
+      "memory": {
+        "baseline_allocated_bytes": 262957056,
+        "final_allocated_bytes": 273781760,
+        "peak_allocated_bytes": 300084736,
+        "baseline_reserved_bytes": 1035993088,
+        "final_reserved_bytes": 1101004800,
+        "peak_reserved_bytes": 1101004800,
+        "peak_allocated_delta_bytes": 37127680,
+        "peak_reserved_delta_bytes": 65011712
+      },
+      "budget": {
+        "available_before": {
+          "memory_bytes": 2147483648,
+          "compute_units": 1,
+          "stream_slots": 1
+        },
+        "available_while_held": {
+          "memory_bytes": 0,
+          "compute_units": 0,
+          "stream_slots": 0
+        },
+        "available_at_quiescence": {
+          "memory_bytes": 0,
+          "compute_units": 0,
+          "stream_slots": 0
+        },
+        "available_after_release": {
+          "memory_bytes": 2147483648,
+          "compute_units": 1,
+          "stream_slots": 1
+        }
+      },
+      "post_recovery_reuse": {
+        "run_id": "reuse-cleanup-1",
+        "session_id": "fault-cleanup-1-session",
+        "request_id": "reuse-cleanup-1-request",
+        "transaction_id": "reuse-cleanup-1-transaction",
+        "lease_id": "reuse-cleanup-1-lease",
+        "iteration": 1,
+        "wall_ns": 149938406,
+        "session_version_before": 0,
+        "session_version_after": 1,
+        "result_sha256": "dfe1af694958a82c9d89d31bf0378075a10d40f715e670b6e5169042c8680cec",
+        "memory": {
+          "baseline_allocated_bytes": 273781760,
+          "final_allocated_bytes": 282301440,
+          "peak_allocated_bytes": 310909440,
+          "baseline_reserved_bytes": 1101004800,
+          "final_reserved_bytes": 1166016512,
+          "peak_reserved_bytes": 1166016512,
+          "peak_allocated_delta_bytes": 37127680,
+          "peak_reserved_delta_bytes": 65011712
+        },
+        "budget": {
+          "available_before": {
+            "memory_bytes": 2147483648,
+            "compute_units": 1,
+            "stream_slots": 1
+          },
+          "available_while_held": {
+            "memory_bytes": 0,
+            "compute_units": 0,
+            "stream_slots": 0
+          },
+          "available_at_quiescence": {
+            "memory_bytes": 0,
+            "compute_units": 0,
+            "stream_slots": 0
+          },
+          "available_after_release": {
+            "memory_bytes": 2147483648,
+            "compute_units": 1,
+            "stream_slots": 1
+          }
+        }
+      }
+    },
+    {
+      "run_id": "fault-event-create-0",
+      "session_id": "fault-event-create-0-session",
+      "request_id": "fault-event-create-0-request",
+      "transaction_id": "fault-event-create-0-transaction",
+      "lease_id": "fault-event-create-0-lease",
+      "fault_point": "event-create",
+      "repetition": 0,
+      "fault_origin": "harness-injected",
+      "planned_injection_count": 2,
+      "backend_call_relation": "before-backend-call",
+      "blocked_request_id": "blocked-event-create-0",
+      "wall_ns": 189224463,
+      "injection_to_quiescence_ns": 692161,
+      "recovery_ns": 229292,
+      "session_version_before": 0,
+      "session_version_after": 0,
+      "memory": {
+        "baseline_allocated_bytes": 279996416,
+        "final_allocated_bytes": 290821120,
+        "peak_allocated_bytes": 317124096,
+        "baseline_reserved_bytes": 1166016512,
+        "final_reserved_bytes": 1231028224,
+        "peak_reserved_bytes": 1231028224,
+        "peak_allocated_delta_bytes": 37127680,
+        "peak_reserved_delta_bytes": 65011712
+      },
+      "budget": {
+        "available_before": {
+          "memory_bytes": 2147483648,
+          "compute_units": 1,
+          "stream_slots": 1
+        },
+        "available_while_held": {
+          "memory_bytes": 0,
+          "compute_units": 0,
+          "stream_slots": 0
+        },
+        "available_at_quiescence": {
+          "memory_bytes": 0,
+          "compute_units": 0,
+          "stream_slots": 0
+        },
+        "available_after_release": {
+          "memory_bytes": 2147483648,
+          "compute_units": 1,
+          "stream_slots": 1
+        }
+      },
+      "post_recovery_reuse": {
+        "run_id": "reuse-event-create-0",
+        "session_id": "fault-event-create-0-session",
+        "request_id": "reuse-event-create-0-request",
+        "transaction_id": "reuse-event-create-0-transaction",
+        "lease_id": "reuse-event-create-0-lease",
+        "iteration": 2,
+        "wall_ns": 199163331,
+        "session_version_before": 0,
+        "session_version_after": 1,
+        "result_sha256": "dfe1af694958a82c9d89d31bf0378075a10d40f715e670b6e5169042c8680cec",
+        "memory": {
+          "baseline_allocated_bytes": 290821120,
+          "final_allocated_bytes": 299340800,
+          "peak_allocated_bytes": 327948800,
+          "baseline_reserved_bytes": 1231028224,
+          "final_reserved_bytes": 1296039936,
+          "peak_reserved_bytes": 1296039936,
+          "peak_allocated_delta_bytes": 37127680,
+          "peak_reserved_delta_bytes": 65011712
+        },
+        "budget": {
+          "available_before": {
+            "memory_bytes": 2147483648,
+            "compute_units": 1,
+            "stream_slots": 1
+          },
+          "available_while_held": {
+            "memory_bytes": 0,
+            "compute_units": 0,
+            "stream_slots": 0
+          },
+          "available_at_quiescence": {
+            "memory_bytes": 0,
+            "compute_units": 0,
+            "stream_slots": 0
+          },
+          "available_after_release": {
+            "memory_bytes": 2147483648,
+            "compute_units": 1,
+            "stream_slots": 1
+          }
+        }
+      }
+    },
+    {
+      "run_id": "fault-event-create-1",
+      "session_id": "fault-event-create-1-session",
+      "request_id": "fault-event-create-1-request",
+      "transaction_id": "fault-event-create-1-transaction",
+      "lease_id": "fault-event-create-1-lease",
+      "fault_point": "event-create",
+      "repetition": 1,
+      "fault_origin": "harness-injected",
+      "planned_injection_count": 2,
+      "backend_call_relation": "before-backend-call",
+      "blocked_request_id": "blocked-event-create-1",
+      "wall_ns": 163452600,
+      "injection_to_quiescence_ns": 708461,
+      "recovery_ns": 242097,
+      "session_version_before": 0,
+      "session_version_after": 0,
+      "memory": {
+        "baseline_allocated_bytes": 297035776,
+        "final_allocated_bytes": 307860480,
+        "peak_allocated_bytes": 334163456,
+        "baseline_reserved_bytes": 1296039936,
+        "final_reserved_bytes": 1361051648,
+        "peak_reserved_bytes": 1361051648,
+        "peak_allocated_delta_bytes": 37127680,
+        "peak_reserved_delta_bytes": 65011712
+      },
+      "budget": {
+        "available_before": {
+          "memory_bytes": 2147483648,
+          "compute_units": 1,
+          "stream_slots": 1
+        },
+        "available_while_held": {
+          "memory_bytes": 0,
+          "compute_units": 0,
+          "stream_slots": 0
+        },
+        "available_at_quiescence": {
+          "memory_bytes": 0,
+          "compute_units": 0,
+          "stream_slots": 0
+        },
+        "available_after_release": {
+          "memory_bytes": 2147483648,
+          "compute_units": 1,
+          "stream_slots": 1
+        }
+      },
+      "post_recovery_reuse": {
+        "run_id": "reuse-event-create-1",
+        "session_id": "fault-event-create-1-session",
+        "request_id": "reuse-event-create-1-request",
+        "transaction_id": "reuse-event-create-1-transaction",
+        "lease_id": "reuse-event-create-1-lease",
+        "iteration": 3,
+        "wall_ns": 134094768,
+        "session_version_before": 0,
+        "session_version_after": 1,
+        "result_sha256": "dfe1af694958a82c9d89d31bf0378075a10d40f715e670b6e5169042c8680cec",
+        "memory": {
+          "baseline_allocated_bytes": 307860480,
+          "final_allocated_bytes": 316380160,
+          "peak_allocated_bytes": 344988160,
+          "baseline_reserved_bytes": 1361051648,
+          "final_reserved_bytes": 1426063360,
+          "peak_reserved_bytes": 1426063360,
+          "peak_allocated_delta_bytes": 37127680,
+          "peak_reserved_delta_bytes": 65011712
+        },
+        "budget": {
+          "available_before": {
+            "memory_bytes": 2147483648,
+            "compute_units": 1,
+            "stream_slots": 1
+          },
+          "available_while_held": {
+            "memory_bytes": 0,
+            "compute_units": 0,
+            "stream_slots": 0
+          },
+          "available_at_quiescence": {
+            "memory_bytes": 0,
+            "compute_units": 0,
+            "stream_slots": 0
+          },
+          "available_after_release": {
+            "memory_bytes": 2147483648,
+            "compute_units": 1,
+            "stream_slots": 1
+          }
+        }
+      }
+    },
+    {
+      "run_id": "fault-event-record-0",
+      "session_id": "fault-event-record-0-session",
+      "request_id": "fault-event-record-0-request",
+      "transaction_id": "fault-event-record-0-transaction",
+      "lease_id": "fault-event-record-0-lease",
+      "fault_point": "event-record",
+      "repetition": 0,
+      "fault_origin": "harness-injected",
+      "planned_injection_count": 2,
+      "backend_call_relation": "before-backend-call",
+      "blocked_request_id": "blocked-event-record-0",
+      "wall_ns": 175175888,
+      "injection_to_quiescence_ns": 644584,
+      "recovery_ns": 224392,
+      "session_version_before": 0,
+      "session_version_after": 0,
+      "memory": {
+        "baseline_allocated_bytes": 314075136,
+        "final_allocated_bytes": 324899840,
+        "peak_allocated_bytes": 351202816,
+        "baseline_reserved_bytes": 1426063360,
+        "final_reserved_bytes": 1491075072,
+        "peak_reserved_bytes": 1491075072,
+        "peak_allocated_delta_bytes": 37127680,
+        "peak_reserved_delta_bytes": 65011712
+      },
+      "budget": {
+        "available_before": {
+          "memory_bytes": 2147483648,
+          "compute_units": 1,
+          "stream_slots": 1
+        },
+        "available_while_held": {
+          "memory_bytes": 0,
+          "compute_units": 0,
+          "stream_slots": 0
+        },
+        "available_at_quiescence": {
+          "memory_bytes": 0,
+          "compute_units": 0,
+          "stream_slots": 0
+        },
+        "available_after_release": {
+          "memory_bytes": 2147483648,
+          "compute_units": 1,
+          "stream_slots": 1
+        }
+      },
+      "post_recovery_reuse": {
+        "run_id": "reuse-event-record-0",
+        "session_id": "fault-event-record-0-session",
+        "request_id": "reuse-event-record-0-request",
+        "transaction_id": "reuse-event-record-0-transaction",
+        "lease_id": "reuse-event-record-0-lease",
+        "iteration": 4,
+        "wall_ns": 170608672,
+        "session_version_before": 0,
+        "session_version_after": 1,
+        "result_sha256": "dfe1af694958a82c9d89d31bf0378075a10d40f715e670b6e5169042c8680cec",
+        "memory": {
+          "baseline_allocated_bytes": 324899840,
+          "final_allocated_bytes": 333419520,
+          "peak_allocated_bytes": 362027520,
+          "baseline_reserved_bytes": 1491075072,
+          "final_reserved_bytes": 1556086784,
+          "peak_reserved_bytes": 1556086784,
+          "peak_allocated_delta_bytes": 37127680,
+          "peak_reserved_delta_bytes": 65011712
+        },
+        "budget": {
+          "available_before": {
+            "memory_bytes": 2147483648,
+            "compute_units": 1,
+            "stream_slots": 1
+          },
+          "available_while_held": {
+            "memory_bytes": 0,
+            "compute_units": 0,
+            "stream_slots": 0
+          },
+          "available_at_quiescence": {
+            "memory_bytes": 0,
+            "compute_units": 0,
+            "stream_slots": 0
+          },
+          "available_after_release": {
+            "memory_bytes": 2147483648,
+            "compute_units": 1,
+            "stream_slots": 1
+          }
+        }
+      }
+    },
+    {
+      "run_id": "fault-event-record-1",
+      "session_id": "fault-event-record-1-session",
+      "request_id": "fault-event-record-1-request",
+      "transaction_id": "fault-event-record-1-transaction",
+      "lease_id": "fault-event-record-1-lease",
+      "fault_point": "event-record",
+      "repetition": 1,
+      "fault_origin": "harness-injected",
+      "planned_injection_count": 2,
+      "backend_call_relation": "before-backend-call",
+      "blocked_request_id": "blocked-event-record-1",
+      "wall_ns": 168839996,
+      "injection_to_quiescence_ns": 639113,
+      "recovery_ns": 210729,
+      "session_version_before": 0,
+      "session_version_after": 0,
+      "memory": {
+        "baseline_allocated_bytes": 331114496,
+        "final_allocated_bytes": 341939200,
+        "peak_allocated_bytes": 368242176,
+        "baseline_reserved_bytes": 1556086784,
+        "final_reserved_bytes": 1621098496,
+        "peak_reserved_bytes": 1621098496,
+        "peak_allocated_delta_bytes": 37127680,
+        "peak_reserved_delta_bytes": 65011712
+      },
+      "budget": {
+        "available_before": {
+          "memory_bytes": 2147483648,
+          "compute_units": 1,
+          "stream_slots": 1
+        },
+        "available_while_held": {
+          "memory_bytes": 0,
+          "compute_units": 0,
+          "stream_slots": 0
+        },
+        "available_at_quiescence": {
+          "memory_bytes": 0,
+          "compute_units": 0,
+          "stream_slots": 0
+        },
+        "available_after_release": {
+          "memory_bytes": 2147483648,
+          "compute_units": 1,
+          "stream_slots": 1
+        }
+      },
+      "post_recovery_reuse": {
+        "run_id": "reuse-event-record-1",
+        "session_id": "fault-event-record-1-session",
+        "request_id": "reuse-event-record-1-request",
+        "transaction_id": "reuse-event-record-1-transaction",
+        "lease_id": "reuse-event-record-1-lease",
+        "iteration": 5,
+        "wall_ns": 286576389,
+        "session_version_before": 0,
+        "session_version_after": 1,
+        "result_sha256": "dfe1af694958a82c9d89d31bf0378075a10d40f715e670b6e5169042c8680cec",
+        "memory": {
+          "baseline_allocated_bytes": 341939200,
+          "final_allocated_bytes": 350458880,
+          "peak_allocated_bytes": 379066880,
+          "baseline_reserved_bytes": 1621098496,
+          "final_reserved_bytes": 1686110208,
+          "peak_reserved_bytes": 1686110208,
+          "peak_allocated_delta_bytes": 37127680,
+          "peak_reserved_delta_bytes": 65011712
+        },
+        "budget": {
+          "available_before": {
+            "memory_bytes": 2147483648,
+            "compute_units": 1,
+            "stream_slots": 1
+          },
+          "available_while_held": {
+            "memory_bytes": 0,
+            "compute_units": 0,
+            "stream_slots": 0
+          },
+          "available_at_quiescence": {
+            "memory_bytes": 0,
+            "compute_units": 0,
+            "stream_slots": 0
+          },
+          "available_after_release": {
+            "memory_bytes": 2147483648,
+            "compute_units": 1,
+            "stream_slots": 1
+          }
+        }
+      }
+    },
+    {
+      "run_id": "fault-event-synchronize-0",
+      "session_id": "fault-event-synchronize-0-session",
+      "request_id": "fault-event-synchronize-0-request",
+      "transaction_id": "fault-event-synchronize-0-transaction",
+      "lease_id": "fault-event-synchronize-0-lease",
+      "fault_point": "event-synchronize",
+      "repetition": 0,
+      "fault_origin": "harness-injected",
+      "planned_injection_count": 2,
+      "backend_call_relation": "before-backend-call",
+      "blocked_request_id": "blocked-event-synchronize-0",
+      "wall_ns": 213633103,
+      "injection_to_quiescence_ns": 635055,
+      "recovery_ns": 207127,
+      "session_version_before": 0,
+      "session_version_after": 0,
+      "memory": {
+        "baseline_allocated_bytes": 348153856,
+        "final_allocated_bytes": 358978560,
+        "peak_allocated_bytes": 385281536,
+        "baseline_reserved_bytes": 1686110208,
+        "final_reserved_bytes": 1751121920,
+        "peak_reserved_bytes": 1751121920,
+        "peak_allocated_delta_bytes": 37127680,
+        "peak_reserved_delta_bytes": 65011712
+      },
+      "budget": {
+        "available_before": {
+          "memory_bytes": 2147483648,
+          "compute_units": 1,
+          "stream_slots": 1
+        },
+        "available_while_held": {
+          "memory_bytes": 0,
+          "compute_units": 0,
+          "stream_slots": 0
+        },
+        "available_at_quiescence": {
+          "memory_bytes": 0,
+          "compute_units": 0,
+          "stream_slots": 0
+        },
+        "available_after_release": {
+          "memory_bytes": 2147483648,
+          "compute_units": 1,
+          "stream_slots": 1
+        }
+      },
+      "post_recovery_reuse": {
+        "run_id": "reuse-event-synchronize-0",
+        "session_id": "fault-event-synchronize-0-session",
+        "request_id": "reuse-event-synchronize-0-request",
+        "transaction_id": "reuse-event-synchronize-0-transaction",
+        "lease_id": "reuse-event-synchronize-0-lease",
+        "iteration": 6,
+        "wall_ns": 222607118,
+        "session_version_before": 0,
+        "session_version_after": 1,
+        "result_sha256": "dfe1af694958a82c9d89d31bf0378075a10d40f715e670b6e5169042c8680cec",
+        "memory": {
+          "baseline_allocated_bytes": 358978560,
+          "final_allocated_bytes": 367498240,
+          "peak_allocated_bytes": 396106240,
+          "baseline_reserved_bytes": 1751121920,
+          "final_reserved_bytes": 1816133632,
+          "peak_reserved_bytes": 1816133632,
+          "peak_allocated_delta_bytes": 37127680,
+          "peak_reserved_delta_bytes": 65011712
+        },
+        "budget": {
+          "available_before": {
+            "memory_bytes": 2147483648,
+            "compute_units": 1,
+            "stream_slots": 1
+          },
+          "available_while_held": {
+            "memory_bytes": 0,
+            "compute_units": 0,
+            "stream_slots": 0
+          },
+          "available_at_quiescence": {
+            "memory_bytes": 0,
+            "compute_units": 0,
+            "stream_slots": 0
+          },
+          "available_after_release": {
+            "memory_bytes": 2147483648,
+            "compute_units": 1,
+            "stream_slots": 1
+          }
+        }
+      }
+    },
+    {
+      "run_id": "fault-event-synchronize-1",
+      "session_id": "fault-event-synchronize-1-session",
+      "request_id": "fault-event-synchronize-1-request",
+      "transaction_id": "fault-event-synchronize-1-transaction",
+      "lease_id": "fault-event-synchronize-1-lease",
+      "fault_point": "event-synchronize",
+      "repetition": 1,
+      "fault_origin": "harness-injected",
+      "planned_injection_count": 2,
+      "backend_call_relation": "before-backend-call",
+      "blocked_request_id": "blocked-event-synchronize-1",
+      "wall_ns": 204863182,
+      "injection_to_quiescence_ns": 605535,
+      "recovery_ns": 197555,
+      "session_version_before": 0,
+      "session_version_after": 0,
+      "memory": {
+        "baseline_allocated_bytes": 365193216,
+        "final_allocated_bytes": 376017920,
+        "peak_allocated_bytes": 402320896,
+        "baseline_reserved_bytes": 1816133632,
+        "final_reserved_bytes": 1881145344,
+        "peak_reserved_bytes": 1881145344,
+        "peak_allocated_delta_bytes": 37127680,
+        "peak_reserved_delta_bytes": 65011712
+      },
+      "budget": {
+        "available_before": {
+          "memory_bytes": 2147483648,
+          "compute_units": 1,
+          "stream_slots": 1
+        },
+        "available_while_held": {
+          "memory_bytes": 0,
+          "compute_units": 0,
+          "stream_slots": 0
+        },
+        "available_at_quiescence": {
+          "memory_bytes": 0,
+          "compute_units": 0,
+          "stream_slots": 0
+        },
+        "available_after_release": {
+          "memory_bytes": 2147483648,
+          "compute_units": 1,
+          "stream_slots": 1
+        }
+      },
+      "post_recovery_reuse": {
+        "run_id": "reuse-event-synchronize-1",
+        "session_id": "fault-event-synchronize-1-session",
+        "request_id": "reuse-event-synchronize-1-request",
+        "transaction_id": "reuse-event-synchronize-1-transaction",
+        "lease_id": "reuse-event-synchronize-1-lease",
+        "iteration": 7,
+        "wall_ns": 148904433,
+        "session_version_before": 0,
+        "session_version_after": 1,
+        "result_sha256": "dfe1af694958a82c9d89d31bf0378075a10d40f715e670b6e5169042c8680cec",
+        "memory": {
+          "baseline_allocated_bytes": 376017920,
+          "final_allocated_bytes": 384537600,
+          "peak_allocated_bytes": 413145600,
+          "baseline_reserved_bytes": 1881145344,
+          "final_reserved_bytes": 1946157056,
+          "peak_reserved_bytes": 1946157056,
+          "peak_allocated_delta_bytes": 37127680,
+          "peak_reserved_delta_bytes": 65011712
+        },
+        "budget": {
+          "available_before": {
+            "memory_bytes": 2147483648,
+            "compute_units": 1,
+            "stream_slots": 1
+          },
+          "available_while_held": {
+            "memory_bytes": 0,
+            "compute_units": 0,
+            "stream_slots": 0
+          },
+          "available_at_quiescence": {
+            "memory_bytes": 0,
+            "compute_units": 0,
+            "stream_slots": 0
+          },
+          "available_after_release": {
+            "memory_bytes": 2147483648,
+            "compute_units": 1,
+            "stream_slots": 1
+          }
+        }
+      }
+    }
+  ],
+  "events": [
+    {
+      "sequence": 0,
+      "offset_ns": 105176106,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "control-warmup-0",
+      "run_kind": "control",
+      "event": "run-start"
+    },
+    {
+      "sequence": 1,
+      "offset_ns": 1169144420,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "control-warmup-0",
+      "run_kind": "control",
+      "event": "backend-quiescent"
+    },
+    {
+      "sequence": 2,
+      "offset_ns": 1295778578,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "control-warmup-0",
+      "run_kind": "control",
+      "event": "run-complete"
+    },
+    {
+      "sequence": 3,
+      "offset_ns": 1388064596,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "warmup-0",
+      "run_kind": "warmup",
+      "event": "run-start",
+      "session_id": "warmup-0-session",
+      "request_id": "warmup-0-request",
+      "transaction_id": "warmup-0-transaction",
+      "lease_id": "warmup-0-lease"
+    },
+    {
+      "sequence": 4,
+      "offset_ns": 1388782314,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "warmup-0",
+      "run_kind": "warmup",
+      "event": "lease-acquired",
+      "session_id": "warmup-0-session",
+      "request_id": "warmup-0-request",
+      "transaction_id": "warmup-0-transaction",
+      "lease_id": "warmup-0-lease"
+    },
+    {
+      "sequence": 5,
+      "offset_ns": 1578871503,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "warmup-0",
+      "run_kind": "warmup",
+      "event": "completion-fence",
+      "session_id": "warmup-0-session",
+      "request_id": "warmup-0-request",
+      "transaction_id": "warmup-0-transaction",
+      "lease_id": "warmup-0-lease"
+    },
+    {
+      "sequence": 6,
+      "offset_ns": 1579010453,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "warmup-0",
+      "run_kind": "warmup",
+      "event": "result-published",
+      "session_id": "warmup-0-session",
+      "request_id": "warmup-0-request",
+      "transaction_id": "warmup-0-transaction",
+      "lease_id": "warmup-0-lease"
+    },
+    {
+      "sequence": 7,
+      "offset_ns": 1579031455,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "warmup-0",
+      "run_kind": "warmup",
+      "event": "transaction-committed",
+      "session_id": "warmup-0-session",
+      "request_id": "warmup-0-request",
+      "transaction_id": "warmup-0-transaction",
+      "lease_id": "warmup-0-lease"
+    },
+    {
+      "sequence": 8,
+      "offset_ns": 1579049215,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "warmup-0",
+      "run_kind": "warmup",
+      "event": "lease-released",
+      "session_id": "warmup-0-session",
+      "request_id": "warmup-0-request",
+      "transaction_id": "warmup-0-transaction",
+      "lease_id": "warmup-0-lease"
+    },
+    {
+      "sequence": 9,
+      "offset_ns": 1579053711,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "warmup-0",
+      "run_kind": "warmup",
+      "event": "budget-restored",
+      "session_id": "warmup-0-session",
+      "request_id": "warmup-0-request",
+      "transaction_id": "warmup-0-transaction",
+      "lease_id": "warmup-0-lease"
+    },
+    {
+      "sequence": 10,
+      "offset_ns": 1672309465,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "warmup-0",
+      "run_kind": "warmup",
+      "event": "run-complete",
+      "session_id": "warmup-0-session",
+      "request_id": "warmup-0-request",
+      "transaction_id": "warmup-0-transaction",
+      "lease_id": "warmup-0-lease"
+    },
+    {
+      "sequence": 11,
+      "offset_ns": 1762021836,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "control-warmup-1",
+      "run_kind": "control",
+      "event": "run-start"
+    },
+    {
+      "sequence": 12,
+      "offset_ns": 1888268880,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "control-warmup-1",
+      "run_kind": "control",
+      "event": "backend-quiescent"
+    },
+    {
+      "sequence": 13,
+      "offset_ns": 1991296269,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "control-warmup-1",
+      "run_kind": "control",
+      "event": "run-complete"
+    },
+    {
+      "sequence": 14,
+      "offset_ns": 2093459448,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "warmup-1",
+      "run_kind": "warmup",
+      "event": "run-start",
+      "session_id": "warmup-1-session",
+      "request_id": "warmup-1-request",
+      "transaction_id": "warmup-1-transaction",
+      "lease_id": "warmup-1-lease"
+    },
+    {
+      "sequence": 15,
+      "offset_ns": 2094056933,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "warmup-1",
+      "run_kind": "warmup",
+      "event": "lease-acquired",
+      "session_id": "warmup-1-session",
+      "request_id": "warmup-1-request",
+      "transaction_id": "warmup-1-transaction",
+      "lease_id": "warmup-1-lease"
+    },
+    {
+      "sequence": 16,
+      "offset_ns": 2218540087,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "warmup-1",
+      "run_kind": "warmup",
+      "event": "completion-fence",
+      "session_id": "warmup-1-session",
+      "request_id": "warmup-1-request",
+      "transaction_id": "warmup-1-transaction",
+      "lease_id": "warmup-1-lease"
+    },
+    {
+      "sequence": 17,
+      "offset_ns": 2218704013,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "warmup-1",
+      "run_kind": "warmup",
+      "event": "result-published",
+      "session_id": "warmup-1-session",
+      "request_id": "warmup-1-request",
+      "transaction_id": "warmup-1-transaction",
+      "lease_id": "warmup-1-lease"
+    },
+    {
+      "sequence": 18,
+      "offset_ns": 2218724370,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "warmup-1",
+      "run_kind": "warmup",
+      "event": "transaction-committed",
+      "session_id": "warmup-1-session",
+      "request_id": "warmup-1-request",
+      "transaction_id": "warmup-1-transaction",
+      "lease_id": "warmup-1-lease"
+    },
+    {
+      "sequence": 19,
+      "offset_ns": 2218741465,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "warmup-1",
+      "run_kind": "warmup",
+      "event": "lease-released",
+      "session_id": "warmup-1-session",
+      "request_id": "warmup-1-request",
+      "transaction_id": "warmup-1-transaction",
+      "lease_id": "warmup-1-lease"
+    },
+    {
+      "sequence": 20,
+      "offset_ns": 2218746103,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "warmup-1",
+      "run_kind": "warmup",
+      "event": "budget-restored",
+      "session_id": "warmup-1-session",
+      "request_id": "warmup-1-request",
+      "transaction_id": "warmup-1-transaction",
+      "lease_id": "warmup-1-lease"
+    },
+    {
+      "sequence": 21,
+      "offset_ns": 2316166752,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "warmup-1",
+      "run_kind": "warmup",
+      "event": "run-complete",
+      "session_id": "warmup-1-session",
+      "request_id": "warmup-1-request",
+      "transaction_id": "warmup-1-transaction",
+      "lease_id": "warmup-1-lease"
+    },
+    {
+      "sequence": 22,
+      "offset_ns": 2414738367,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "control-0",
+      "run_kind": "control",
+      "event": "run-start"
+    },
+    {
+      "sequence": 23,
+      "offset_ns": 2530212668,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "control-0",
+      "run_kind": "control",
+      "event": "backend-quiescent"
+    },
+    {
+      "sequence": 24,
+      "offset_ns": 2625470040,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "control-0",
+      "run_kind": "control",
+      "event": "run-complete"
+    },
+    {
+      "sequence": 25,
+      "offset_ns": 2719667721,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "measured-0",
+      "run_kind": "measured",
+      "event": "run-start",
+      "session_id": "measured-0-session",
+      "request_id": "measured-0-request",
+      "transaction_id": "measured-0-transaction",
+      "lease_id": "measured-0-lease"
+    },
+    {
+      "sequence": 26,
+      "offset_ns": 2720197960,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "measured-0",
+      "run_kind": "measured",
+      "event": "lease-acquired",
+      "session_id": "measured-0-session",
+      "request_id": "measured-0-request",
+      "transaction_id": "measured-0-transaction",
+      "lease_id": "measured-0-lease"
+    },
+    {
+      "sequence": 27,
+      "offset_ns": 2841045526,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "measured-0",
+      "run_kind": "measured",
+      "event": "completion-fence",
+      "session_id": "measured-0-session",
+      "request_id": "measured-0-request",
+      "transaction_id": "measured-0-transaction",
+      "lease_id": "measured-0-lease"
+    },
+    {
+      "sequence": 28,
+      "offset_ns": 2841165469,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "measured-0",
+      "run_kind": "measured",
+      "event": "result-published",
+      "session_id": "measured-0-session",
+      "request_id": "measured-0-request",
+      "transaction_id": "measured-0-transaction",
+      "lease_id": "measured-0-lease"
+    },
+    {
+      "sequence": 29,
+      "offset_ns": 2841178053,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "measured-0",
+      "run_kind": "measured",
+      "event": "transaction-committed",
+      "session_id": "measured-0-session",
+      "request_id": "measured-0-request",
+      "transaction_id": "measured-0-transaction",
+      "lease_id": "measured-0-lease"
+    },
+    {
+      "sequence": 30,
+      "offset_ns": 2841191433,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "measured-0",
+      "run_kind": "measured",
+      "event": "lease-released",
+      "session_id": "measured-0-session",
+      "request_id": "measured-0-request",
+      "transaction_id": "measured-0-transaction",
+      "lease_id": "measured-0-lease"
+    },
+    {
+      "sequence": 31,
+      "offset_ns": 2841195391,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "measured-0",
+      "run_kind": "measured",
+      "event": "budget-restored",
+      "session_id": "measured-0-session",
+      "request_id": "measured-0-request",
+      "transaction_id": "measured-0-transaction",
+      "lease_id": "measured-0-lease"
+    },
+    {
+      "sequence": 32,
+      "offset_ns": 2936518113,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "measured-0",
+      "run_kind": "measured",
+      "event": "run-complete",
+      "session_id": "measured-0-session",
+      "request_id": "measured-0-request",
+      "transaction_id": "measured-0-transaction",
+      "lease_id": "measured-0-lease"
+    },
+    {
+      "sequence": 33,
+      "offset_ns": 3030396451,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "control-1",
+      "run_kind": "control",
+      "event": "run-start"
+    },
+    {
+      "sequence": 34,
+      "offset_ns": 3144162386,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "control-1",
+      "run_kind": "control",
+      "event": "backend-quiescent"
+    },
+    {
+      "sequence": 35,
+      "offset_ns": 3241019867,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "control-1",
+      "run_kind": "control",
+      "event": "run-complete"
+    },
+    {
+      "sequence": 36,
+      "offset_ns": 3339720577,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "measured-1",
+      "run_kind": "measured",
+      "event": "run-start",
+      "session_id": "measured-1-session",
+      "request_id": "measured-1-request",
+      "transaction_id": "measured-1-transaction",
+      "lease_id": "measured-1-lease"
+    },
+    {
+      "sequence": 37,
+      "offset_ns": 3340242564,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "measured-1",
+      "run_kind": "measured",
+      "event": "lease-acquired",
+      "session_id": "measured-1-session",
+      "request_id": "measured-1-request",
+      "transaction_id": "measured-1-transaction",
+      "lease_id": "measured-1-lease"
+    },
+    {
+      "sequence": 38,
+      "offset_ns": 3468737449,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "measured-1",
+      "run_kind": "measured",
+      "event": "completion-fence",
+      "session_id": "measured-1-session",
+      "request_id": "measured-1-request",
+      "transaction_id": "measured-1-transaction",
+      "lease_id": "measured-1-lease"
+    },
+    {
+      "sequence": 39,
+      "offset_ns": 3468852198,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "measured-1",
+      "run_kind": "measured",
+      "event": "result-published",
+      "session_id": "measured-1-session",
+      "request_id": "measured-1-request",
+      "transaction_id": "measured-1-transaction",
+      "lease_id": "measured-1-lease"
+    },
+    {
+      "sequence": 40,
+      "offset_ns": 3468865732,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "measured-1",
+      "run_kind": "measured",
+      "event": "transaction-committed",
+      "session_id": "measured-1-session",
+      "request_id": "measured-1-request",
+      "transaction_id": "measured-1-transaction",
+      "lease_id": "measured-1-lease"
+    },
+    {
+      "sequence": 41,
+      "offset_ns": 3468879395,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "measured-1",
+      "run_kind": "measured",
+      "event": "lease-released",
+      "session_id": "measured-1-session",
+      "request_id": "measured-1-request",
+      "transaction_id": "measured-1-transaction",
+      "lease_id": "measured-1-lease"
+    },
+    {
+      "sequence": 42,
+      "offset_ns": 3468883069,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "measured-1",
+      "run_kind": "measured",
+      "event": "budget-restored",
+      "session_id": "measured-1-session",
+      "request_id": "measured-1-request",
+      "transaction_id": "measured-1-transaction",
+      "lease_id": "measured-1-lease"
+    },
+    {
+      "sequence": 43,
+      "offset_ns": 3574908869,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "measured-1",
+      "run_kind": "measured",
+      "event": "run-complete",
+      "session_id": "measured-1-session",
+      "request_id": "measured-1-request",
+      "transaction_id": "measured-1-transaction",
+      "lease_id": "measured-1-lease"
+    },
+    {
+      "sequence": 44,
+      "offset_ns": 3678148123,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "control-2",
+      "run_kind": "control",
+      "event": "run-start"
+    },
+    {
+      "sequence": 45,
+      "offset_ns": 3800907716,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "control-2",
+      "run_kind": "control",
+      "event": "backend-quiescent"
+    },
+    {
+      "sequence": 46,
+      "offset_ns": 3909367414,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "control-2",
+      "run_kind": "control",
+      "event": "run-complete"
+    },
+    {
+      "sequence": 47,
+      "offset_ns": 4024212077,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "measured-2",
+      "run_kind": "measured",
+      "event": "run-start",
+      "session_id": "measured-2-session",
+      "request_id": "measured-2-request",
+      "transaction_id": "measured-2-transaction",
+      "lease_id": "measured-2-lease"
+    },
+    {
+      "sequence": 48,
+      "offset_ns": 4024997794,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "measured-2",
+      "run_kind": "measured",
+      "event": "lease-acquired",
+      "session_id": "measured-2-session",
+      "request_id": "measured-2-request",
+      "transaction_id": "measured-2-transaction",
+      "lease_id": "measured-2-lease"
+    },
+    {
+      "sequence": 49,
+      "offset_ns": 4158269750,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "measured-2",
+      "run_kind": "measured",
+      "event": "completion-fence",
+      "session_id": "measured-2-session",
+      "request_id": "measured-2-request",
+      "transaction_id": "measured-2-transaction",
+      "lease_id": "measured-2-lease"
+    },
+    {
+      "sequence": 50,
+      "offset_ns": 4158405672,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "measured-2",
+      "run_kind": "measured",
+      "event": "result-published",
+      "session_id": "measured-2-session",
+      "request_id": "measured-2-request",
+      "transaction_id": "measured-2-transaction",
+      "lease_id": "measured-2-lease"
+    },
+    {
+      "sequence": 51,
+      "offset_ns": 4158418345,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "measured-2",
+      "run_kind": "measured",
+      "event": "transaction-committed",
+      "session_id": "measured-2-session",
+      "request_id": "measured-2-request",
+      "transaction_id": "measured-2-transaction",
+      "lease_id": "measured-2-lease"
+    },
+    {
+      "sequence": 52,
+      "offset_ns": 4158431513,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "measured-2",
+      "run_kind": "measured",
+      "event": "lease-released",
+      "session_id": "measured-2-session",
+      "request_id": "measured-2-request",
+      "transaction_id": "measured-2-transaction",
+      "lease_id": "measured-2-lease"
+    },
+    {
+      "sequence": 53,
+      "offset_ns": 4158436079,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "measured-2",
+      "run_kind": "measured",
+      "event": "budget-restored",
+      "session_id": "measured-2-session",
+      "request_id": "measured-2-request",
+      "transaction_id": "measured-2-transaction",
+      "lease_id": "measured-2-lease"
+    },
+    {
+      "sequence": 54,
+      "offset_ns": 4262552596,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "measured-2",
+      "run_kind": "measured",
+      "event": "run-complete",
+      "session_id": "measured-2-session",
+      "request_id": "measured-2-request",
+      "transaction_id": "measured-2-transaction",
+      "lease_id": "measured-2-lease"
+    },
+    {
+      "sequence": 55,
+      "offset_ns": 4363147648,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "control-3",
+      "run_kind": "control",
+      "event": "run-start"
+    },
+    {
+      "sequence": 56,
+      "offset_ns": 4482457598,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "control-3",
+      "run_kind": "control",
+      "event": "backend-quiescent"
+    },
+    {
+      "sequence": 57,
+      "offset_ns": 4584941459,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "control-3",
+      "run_kind": "control",
+      "event": "run-complete"
+    },
+    {
+      "sequence": 58,
+      "offset_ns": 4689421236,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "measured-3",
+      "run_kind": "measured",
+      "event": "run-start",
+      "session_id": "measured-3-session",
+      "request_id": "measured-3-request",
+      "transaction_id": "measured-3-transaction",
+      "lease_id": "measured-3-lease"
+    },
+    {
+      "sequence": 59,
+      "offset_ns": 4689994712,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "measured-3",
+      "run_kind": "measured",
+      "event": "lease-acquired",
+      "session_id": "measured-3-session",
+      "request_id": "measured-3-request",
+      "transaction_id": "measured-3-transaction",
+      "lease_id": "measured-3-lease"
+    },
+    {
+      "sequence": 60,
+      "offset_ns": 4890238965,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "measured-3",
+      "run_kind": "measured",
+      "event": "completion-fence",
+      "session_id": "measured-3-session",
+      "request_id": "measured-3-request",
+      "transaction_id": "measured-3-transaction",
+      "lease_id": "measured-3-lease"
+    },
+    {
+      "sequence": 61,
+      "offset_ns": 4890384031,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "measured-3",
+      "run_kind": "measured",
+      "event": "result-published",
+      "session_id": "measured-3-session",
+      "request_id": "measured-3-request",
+      "transaction_id": "measured-3-transaction",
+      "lease_id": "measured-3-lease"
+    },
+    {
+      "sequence": 62,
+      "offset_ns": 4890397675,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "measured-3",
+      "run_kind": "measured",
+      "event": "transaction-committed",
+      "session_id": "measured-3-session",
+      "request_id": "measured-3-request",
+      "transaction_id": "measured-3-transaction",
+      "lease_id": "measured-3-lease"
+    },
+    {
+      "sequence": 63,
+      "offset_ns": 4890410962,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "measured-3",
+      "run_kind": "measured",
+      "event": "lease-released",
+      "session_id": "measured-3-session",
+      "request_id": "measured-3-request",
+      "transaction_id": "measured-3-transaction",
+      "lease_id": "measured-3-lease"
+    },
+    {
+      "sequence": 64,
+      "offset_ns": 4890415234,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "measured-3",
+      "run_kind": "measured",
+      "event": "budget-restored",
+      "session_id": "measured-3-session",
+      "request_id": "measured-3-request",
+      "transaction_id": "measured-3-transaction",
+      "lease_id": "measured-3-lease"
+    },
+    {
+      "sequence": 65,
+      "offset_ns": 4988880949,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "measured-3",
+      "run_kind": "measured",
+      "event": "run-complete",
+      "session_id": "measured-3-session",
+      "request_id": "measured-3-request",
+      "transaction_id": "measured-3-transaction",
+      "lease_id": "measured-3-lease"
+    },
+    {
+      "sequence": 66,
+      "offset_ns": 5087490451,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "control-4",
+      "run_kind": "control",
+      "event": "run-start"
+    },
+    {
+      "sequence": 67,
+      "offset_ns": 5200997073,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "control-4",
+      "run_kind": "control",
+      "event": "backend-quiescent"
+    },
+    {
+      "sequence": 68,
+      "offset_ns": 5299177195,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "control-4",
+      "run_kind": "control",
+      "event": "run-complete"
+    },
+    {
+      "sequence": 69,
+      "offset_ns": 5396651134,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "measured-4",
+      "run_kind": "measured",
+      "event": "run-start",
+      "session_id": "measured-4-session",
+      "request_id": "measured-4-request",
+      "transaction_id": "measured-4-transaction",
+      "lease_id": "measured-4-lease"
+    },
+    {
+      "sequence": 70,
+      "offset_ns": 5397163965,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "measured-4",
+      "run_kind": "measured",
+      "event": "lease-acquired",
+      "session_id": "measured-4-session",
+      "request_id": "measured-4-request",
+      "transaction_id": "measured-4-transaction",
+      "lease_id": "measured-4-lease"
+    },
+    {
+      "sequence": 71,
+      "offset_ns": 5604107163,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "measured-4",
+      "run_kind": "measured",
+      "event": "completion-fence",
+      "session_id": "measured-4-session",
+      "request_id": "measured-4-request",
+      "transaction_id": "measured-4-transaction",
+      "lease_id": "measured-4-lease"
+    },
+    {
+      "sequence": 72,
+      "offset_ns": 5604317371,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "measured-4",
+      "run_kind": "measured",
+      "event": "result-published",
+      "session_id": "measured-4-session",
+      "request_id": "measured-4-request",
+      "transaction_id": "measured-4-transaction",
+      "lease_id": "measured-4-lease"
+    },
+    {
+      "sequence": 73,
+      "offset_ns": 5604332201,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "measured-4",
+      "run_kind": "measured",
+      "event": "transaction-committed",
+      "session_id": "measured-4-session",
+      "request_id": "measured-4-request",
+      "transaction_id": "measured-4-transaction",
+      "lease_id": "measured-4-lease"
+    },
+    {
+      "sequence": 74,
+      "offset_ns": 5604345901,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "measured-4",
+      "run_kind": "measured",
+      "event": "lease-released",
+      "session_id": "measured-4-session",
+      "request_id": "measured-4-request",
+      "transaction_id": "measured-4-transaction",
+      "lease_id": "measured-4-lease"
+    },
+    {
+      "sequence": 75,
+      "offset_ns": 5604350224,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "measured-4",
+      "run_kind": "measured",
+      "event": "budget-restored",
+      "session_id": "measured-4-session",
+      "request_id": "measured-4-request",
+      "transaction_id": "measured-4-transaction",
+      "lease_id": "measured-4-lease"
+    },
+    {
+      "sequence": 76,
+      "offset_ns": 5731561675,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "measured-4",
+      "run_kind": "measured",
+      "event": "run-complete",
+      "session_id": "measured-4-session",
+      "request_id": "measured-4-request",
+      "transaction_id": "measured-4-transaction",
+      "lease_id": "measured-4-lease"
+    },
+    {
+      "sequence": 77,
+      "offset_ns": 5874694969,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "cancellation-0",
+      "run_kind": "cancellation",
+      "event": "run-start",
+      "session_id": "cancellation-0-session",
+      "request_id": "cancellation-0-request",
+      "transaction_id": "cancellation-0-transaction",
+      "lease_id": "cancellation-0-lease"
+    },
+    {
+      "sequence": 78,
+      "offset_ns": 5875964420,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "cancellation-0",
+      "run_kind": "cancellation",
+      "event": "lease-acquired",
+      "session_id": "cancellation-0-session",
+      "request_id": "cancellation-0-request",
+      "transaction_id": "cancellation-0-transaction",
+      "lease_id": "cancellation-0-lease"
+    },
+    {
+      "sequence": 79,
+      "offset_ns": 6079966149,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "cancellation-0",
+      "run_kind": "cancellation",
+      "event": "decoder-step-incomplete",
+      "session_id": "cancellation-0-session",
+      "request_id": "cancellation-0-request",
+      "transaction_id": "cancellation-0-transaction",
+      "lease_id": "cancellation-0-lease",
+      "decoder_step": 1
+    },
+    {
+      "sequence": 80,
+      "offset_ns": 6080067573,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "cancellation-0",
+      "run_kind": "cancellation",
+      "event": "cancel-requested",
+      "session_id": "cancellation-0-session",
+      "request_id": "cancellation-0-request",
+      "transaction_id": "cancellation-0-transaction",
+      "lease_id": "cancellation-0-lease"
+    },
+    {
+      "sequence": 81,
+      "offset_ns": 6080540793,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "cancellation-0",
+      "run_kind": "cancellation",
+      "event": "backend-quiescent",
+      "session_id": "cancellation-0-session",
+      "request_id": "cancellation-0-request",
+      "transaction_id": "cancellation-0-transaction",
+      "lease_id": "cancellation-0-lease"
+    },
+    {
+      "sequence": 82,
+      "offset_ns": 6080576875,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "cancellation-0",
+      "run_kind": "cancellation",
+      "event": "transaction-aborted",
+      "session_id": "cancellation-0-session",
+      "request_id": "cancellation-0-request",
+      "transaction_id": "cancellation-0-transaction",
+      "lease_id": "cancellation-0-lease"
+    },
+    {
+      "sequence": 83,
+      "offset_ns": 6080615781,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "cancellation-0",
+      "run_kind": "cancellation",
+      "event": "lease-released",
+      "session_id": "cancellation-0-session",
+      "request_id": "cancellation-0-request",
+      "transaction_id": "cancellation-0-transaction",
+      "lease_id": "cancellation-0-lease"
+    },
+    {
+      "sequence": 84,
+      "offset_ns": 6080620436,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "cancellation-0",
+      "run_kind": "cancellation",
+      "event": "budget-restored",
+      "session_id": "cancellation-0-session",
+      "request_id": "cancellation-0-request",
+      "transaction_id": "cancellation-0-transaction",
+      "lease_id": "cancellation-0-lease"
+    },
+    {
+      "sequence": 85,
+      "offset_ns": 6193724607,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "cancellation-0",
+      "run_kind": "cancellation",
+      "event": "run-complete",
+      "session_id": "cancellation-0-session",
+      "request_id": "cancellation-0-request",
+      "transaction_id": "cancellation-0-transaction",
+      "lease_id": "cancellation-0-lease"
+    },
+    {
+      "sequence": 86,
+      "offset_ns": 6292518920,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "cancellation-1",
+      "run_kind": "cancellation",
+      "event": "run-start",
+      "session_id": "cancellation-1-session",
+      "request_id": "cancellation-1-request",
+      "transaction_id": "cancellation-1-transaction",
+      "lease_id": "cancellation-1-lease"
+    },
+    {
+      "sequence": 87,
+      "offset_ns": 6293493828,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "cancellation-1",
+      "run_kind": "cancellation",
+      "event": "lease-acquired",
+      "session_id": "cancellation-1-session",
+      "request_id": "cancellation-1-request",
+      "transaction_id": "cancellation-1-transaction",
+      "lease_id": "cancellation-1-lease"
+    },
+    {
+      "sequence": 88,
+      "offset_ns": 6378470451,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "cancellation-1",
+      "run_kind": "cancellation",
+      "event": "decoder-step-incomplete",
+      "session_id": "cancellation-1-session",
+      "request_id": "cancellation-1-request",
+      "transaction_id": "cancellation-1-transaction",
+      "lease_id": "cancellation-1-lease",
+      "decoder_step": 1
+    },
+    {
+      "sequence": 89,
+      "offset_ns": 6378548160,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "cancellation-1",
+      "run_kind": "cancellation",
+      "event": "cancel-requested",
+      "session_id": "cancellation-1-session",
+      "request_id": "cancellation-1-request",
+      "transaction_id": "cancellation-1-transaction",
+      "lease_id": "cancellation-1-lease"
+    },
+    {
+      "sequence": 90,
+      "offset_ns": 6379051708,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "cancellation-1",
+      "run_kind": "cancellation",
+      "event": "backend-quiescent",
+      "session_id": "cancellation-1-session",
+      "request_id": "cancellation-1-request",
+      "transaction_id": "cancellation-1-transaction",
+      "lease_id": "cancellation-1-lease"
+    },
+    {
+      "sequence": 91,
+      "offset_ns": 6379087521,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "cancellation-1",
+      "run_kind": "cancellation",
+      "event": "transaction-aborted",
+      "session_id": "cancellation-1-session",
+      "request_id": "cancellation-1-request",
+      "transaction_id": "cancellation-1-transaction",
+      "lease_id": "cancellation-1-lease"
+    },
+    {
+      "sequence": 92,
+      "offset_ns": 6379102590,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "cancellation-1",
+      "run_kind": "cancellation",
+      "event": "lease-released",
+      "session_id": "cancellation-1-session",
+      "request_id": "cancellation-1-request",
+      "transaction_id": "cancellation-1-transaction",
+      "lease_id": "cancellation-1-lease"
+    },
+    {
+      "sequence": 93,
+      "offset_ns": 6379107949,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "cancellation-1",
+      "run_kind": "cancellation",
+      "event": "budget-restored",
+      "session_id": "cancellation-1-session",
+      "request_id": "cancellation-1-request",
+      "transaction_id": "cancellation-1-transaction",
+      "lease_id": "cancellation-1-lease"
+    },
+    {
+      "sequence": 94,
+      "offset_ns": 6486006613,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "cancellation-1",
+      "run_kind": "cancellation",
+      "event": "run-complete",
+      "session_id": "cancellation-1-session",
+      "request_id": "cancellation-1-request",
+      "transaction_id": "cancellation-1-transaction",
+      "lease_id": "cancellation-1-lease"
+    },
+    {
+      "sequence": 95,
+      "offset_ns": 6596496998,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "cancellation-2",
+      "run_kind": "cancellation",
+      "event": "run-start",
+      "session_id": "cancellation-2-session",
+      "request_id": "cancellation-2-request",
+      "transaction_id": "cancellation-2-transaction",
+      "lease_id": "cancellation-2-lease"
+    },
+    {
+      "sequence": 96,
+      "offset_ns": 6597642394,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "cancellation-2",
+      "run_kind": "cancellation",
+      "event": "lease-acquired",
+      "session_id": "cancellation-2-session",
+      "request_id": "cancellation-2-request",
+      "transaction_id": "cancellation-2-transaction",
+      "lease_id": "cancellation-2-lease"
+    },
+    {
+      "sequence": 97,
+      "offset_ns": 6700906931,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "cancellation-2",
+      "run_kind": "cancellation",
+      "event": "decoder-step-incomplete",
+      "session_id": "cancellation-2-session",
+      "request_id": "cancellation-2-request",
+      "transaction_id": "cancellation-2-transaction",
+      "lease_id": "cancellation-2-lease",
+      "decoder_step": 1
+    },
+    {
+      "sequence": 98,
+      "offset_ns": 6700975196,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "cancellation-2",
+      "run_kind": "cancellation",
+      "event": "cancel-requested",
+      "session_id": "cancellation-2-session",
+      "request_id": "cancellation-2-request",
+      "transaction_id": "cancellation-2-transaction",
+      "lease_id": "cancellation-2-lease"
+    },
+    {
+      "sequence": 99,
+      "offset_ns": 6701406338,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "cancellation-2",
+      "run_kind": "cancellation",
+      "event": "backend-quiescent",
+      "session_id": "cancellation-2-session",
+      "request_id": "cancellation-2-request",
+      "transaction_id": "cancellation-2-transaction",
+      "lease_id": "cancellation-2-lease"
+    },
+    {
+      "sequence": 100,
+      "offset_ns": 6701435976,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "cancellation-2",
+      "run_kind": "cancellation",
+      "event": "transaction-aborted",
+      "session_id": "cancellation-2-session",
+      "request_id": "cancellation-2-request",
+      "transaction_id": "cancellation-2-transaction",
+      "lease_id": "cancellation-2-lease"
+    },
+    {
+      "sequence": 101,
+      "offset_ns": 6701452258,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "cancellation-2",
+      "run_kind": "cancellation",
+      "event": "lease-released",
+      "session_id": "cancellation-2-session",
+      "request_id": "cancellation-2-request",
+      "transaction_id": "cancellation-2-transaction",
+      "lease_id": "cancellation-2-lease"
+    },
+    {
+      "sequence": 102,
+      "offset_ns": 6701456377,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "cancellation-2",
+      "run_kind": "cancellation",
+      "event": "budget-restored",
+      "session_id": "cancellation-2-session",
+      "request_id": "cancellation-2-request",
+      "transaction_id": "cancellation-2-transaction",
+      "lease_id": "cancellation-2-lease"
+    },
+    {
+      "sequence": 103,
+      "offset_ns": 6806414091,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "cancellation-2",
+      "run_kind": "cancellation",
+      "event": "run-complete",
+      "session_id": "cancellation-2-session",
+      "request_id": "cancellation-2-request",
+      "transaction_id": "cancellation-2-transaction",
+      "lease_id": "cancellation-2-lease"
+    },
+    {
+      "sequence": 104,
+      "offset_ns": 6910047836,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "fault-cleanup-0",
+      "run_kind": "fault",
+      "event": "run-start",
+      "session_id": "fault-cleanup-0-session",
+      "request_id": "fault-cleanup-0-request",
+      "transaction_id": "fault-cleanup-0-transaction",
+      "lease_id": "fault-cleanup-0-lease"
+    },
+    {
+      "sequence": 105,
+      "offset_ns": 6910306020,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "fault-cleanup-0",
+      "run_kind": "fault",
+      "event": "fault-armed",
+      "session_id": "fault-cleanup-0-session",
+      "request_id": "fault-cleanup-0-request",
+      "transaction_id": "fault-cleanup-0-transaction",
+      "lease_id": "fault-cleanup-0-lease",
+      "fault_point": "cleanup",
+      "operation_ordinal": 1,
+      "planned_injection_count": 2
+    },
+    {
+      "sequence": 106,
+      "offset_ns": 6910566984,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "fault-cleanup-0",
+      "run_kind": "fault",
+      "event": "lease-acquired",
+      "session_id": "fault-cleanup-0-session",
+      "request_id": "fault-cleanup-0-request",
+      "transaction_id": "fault-cleanup-0-transaction",
+      "lease_id": "fault-cleanup-0-lease"
+    },
+    {
+      "sequence": 107,
+      "offset_ns": 7104936368,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "fault-cleanup-0",
+      "run_kind": "fault",
+      "event": "fault-triggered",
+      "session_id": "fault-cleanup-0-session",
+      "request_id": "fault-cleanup-0-request",
+      "transaction_id": "fault-cleanup-0-transaction",
+      "lease_id": "fault-cleanup-0-lease",
+      "fault_point": "cleanup",
+      "operation_ordinal": 1,
+      "error_type": "RuntimeError",
+      "error_sha256": "5ac895201250b039c30bd143a1f5237c12cc39e072c10399f983201a9581bf22",
+      "backend_call_relation": "before-backend-call"
+    },
+    {
+      "sequence": 108,
+      "offset_ns": 7105095871,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "fault-cleanup-0",
+      "run_kind": "fault",
+      "event": "fault-triggered",
+      "session_id": "fault-cleanup-0-session",
+      "request_id": "fault-cleanup-0-request",
+      "transaction_id": "fault-cleanup-0-transaction",
+      "lease_id": "fault-cleanup-0-lease",
+      "fault_point": "cleanup",
+      "operation_ordinal": 2,
+      "error_type": "RuntimeError",
+      "error_sha256": "5ac895201250b039c30bd143a1f5237c12cc39e072c10399f983201a9581bf22",
+      "backend_call_relation": "before-backend-call"
+    },
+    {
+      "sequence": 109,
+      "offset_ns": 7105183235,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "fault-cleanup-0",
+      "run_kind": "fault",
+      "event": "transaction-retained",
+      "session_id": "fault-cleanup-0-session",
+      "request_id": "fault-cleanup-0-request",
+      "transaction_id": "fault-cleanup-0-transaction",
+      "lease_id": "fault-cleanup-0-lease"
+    },
+    {
+      "sequence": 110,
+      "offset_ns": 7105388166,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "fault-cleanup-0",
+      "run_kind": "fault",
+      "event": "new-work-rejected",
+      "session_id": "fault-cleanup-0-session",
+      "request_id": "fault-cleanup-0-request",
+      "transaction_id": "fault-cleanup-0-transaction",
+      "lease_id": "fault-cleanup-0-lease",
+      "blocked_request_id": "blocked-cleanup-0"
+    },
+    {
+      "sequence": 111,
+      "offset_ns": 7105392326,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "fault-cleanup-0",
+      "run_kind": "fault",
+      "event": "recovery-started",
+      "session_id": "fault-cleanup-0-session",
+      "request_id": "fault-cleanup-0-request",
+      "transaction_id": "fault-cleanup-0-transaction",
+      "lease_id": "fault-cleanup-0-lease"
+    },
+    {
+      "sequence": 112,
+      "offset_ns": 7105664359,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "fault-cleanup-0",
+      "run_kind": "fault",
+      "event": "backend-quiescent",
+      "session_id": "fault-cleanup-0-session",
+      "request_id": "fault-cleanup-0-request",
+      "transaction_id": "fault-cleanup-0-transaction",
+      "lease_id": "fault-cleanup-0-lease"
+    },
+    {
+      "sequence": 113,
+      "offset_ns": 7105697521,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "fault-cleanup-0",
+      "run_kind": "fault",
+      "event": "transaction-aborted",
+      "session_id": "fault-cleanup-0-session",
+      "request_id": "fault-cleanup-0-request",
+      "transaction_id": "fault-cleanup-0-transaction",
+      "lease_id": "fault-cleanup-0-lease"
+    },
+    {
+      "sequence": 114,
+      "offset_ns": 7105712076,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "fault-cleanup-0",
+      "run_kind": "fault",
+      "event": "lease-released",
+      "session_id": "fault-cleanup-0-session",
+      "request_id": "fault-cleanup-0-request",
+      "transaction_id": "fault-cleanup-0-transaction",
+      "lease_id": "fault-cleanup-0-lease"
+    },
+    {
+      "sequence": 115,
+      "offset_ns": 7105716137,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "fault-cleanup-0",
+      "run_kind": "fault",
+      "event": "budget-restored",
+      "session_id": "fault-cleanup-0-session",
+      "request_id": "fault-cleanup-0-request",
+      "transaction_id": "fault-cleanup-0-transaction",
+      "lease_id": "fault-cleanup-0-lease"
+    },
+    {
+      "sequence": 116,
+      "offset_ns": 7208757082,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "fault-cleanup-0",
+      "run_kind": "fault",
+      "event": "run-complete",
+      "session_id": "fault-cleanup-0-session",
+      "request_id": "fault-cleanup-0-request",
+      "transaction_id": "fault-cleanup-0-transaction",
+      "lease_id": "fault-cleanup-0-lease"
+    },
+    {
+      "sequence": 117,
+      "offset_ns": 7313430746,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "reuse-cleanup-0",
+      "run_kind": "reuse",
+      "event": "run-start",
+      "session_id": "fault-cleanup-0-session",
+      "request_id": "reuse-cleanup-0-request",
+      "transaction_id": "reuse-cleanup-0-transaction",
+      "lease_id": "reuse-cleanup-0-lease"
+    },
+    {
+      "sequence": 118,
+      "offset_ns": 7313964069,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "reuse-cleanup-0",
+      "run_kind": "reuse",
+      "event": "lease-acquired",
+      "session_id": "fault-cleanup-0-session",
+      "request_id": "reuse-cleanup-0-request",
+      "transaction_id": "reuse-cleanup-0-transaction",
+      "lease_id": "reuse-cleanup-0-lease"
+    },
+    {
+      "sequence": 119,
+      "offset_ns": 7478337481,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "reuse-cleanup-0",
+      "run_kind": "reuse",
+      "event": "completion-fence",
+      "session_id": "fault-cleanup-0-session",
+      "request_id": "reuse-cleanup-0-request",
+      "transaction_id": "reuse-cleanup-0-transaction",
+      "lease_id": "reuse-cleanup-0-lease"
+    },
+    {
+      "sequence": 120,
+      "offset_ns": 7478467985,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "reuse-cleanup-0",
+      "run_kind": "reuse",
+      "event": "result-published",
+      "session_id": "fault-cleanup-0-session",
+      "request_id": "reuse-cleanup-0-request",
+      "transaction_id": "reuse-cleanup-0-transaction",
+      "lease_id": "reuse-cleanup-0-lease"
+    },
+    {
+      "sequence": 121,
+      "offset_ns": 7478481584,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "reuse-cleanup-0",
+      "run_kind": "reuse",
+      "event": "transaction-committed",
+      "session_id": "fault-cleanup-0-session",
+      "request_id": "reuse-cleanup-0-request",
+      "transaction_id": "reuse-cleanup-0-transaction",
+      "lease_id": "reuse-cleanup-0-lease"
+    },
+    {
+      "sequence": 122,
+      "offset_ns": 7478495672,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "reuse-cleanup-0",
+      "run_kind": "reuse",
+      "event": "lease-released",
+      "session_id": "fault-cleanup-0-session",
+      "request_id": "reuse-cleanup-0-request",
+      "transaction_id": "reuse-cleanup-0-transaction",
+      "lease_id": "reuse-cleanup-0-lease"
+    },
+    {
+      "sequence": 123,
+      "offset_ns": 7478499680,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "reuse-cleanup-0",
+      "run_kind": "reuse",
+      "event": "budget-restored",
+      "session_id": "fault-cleanup-0-session",
+      "request_id": "reuse-cleanup-0-request",
+      "transaction_id": "reuse-cleanup-0-transaction",
+      "lease_id": "reuse-cleanup-0-lease"
+    },
+    {
+      "sequence": 124,
+      "offset_ns": 7572000297,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "reuse-cleanup-0",
+      "run_kind": "reuse",
+      "event": "run-complete",
+      "session_id": "fault-cleanup-0-session",
+      "request_id": "reuse-cleanup-0-request",
+      "transaction_id": "reuse-cleanup-0-transaction",
+      "lease_id": "reuse-cleanup-0-lease"
+    },
+    {
+      "sequence": 125,
+      "offset_ns": 7666288351,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "fault-cleanup-1",
+      "run_kind": "fault",
+      "event": "run-start",
+      "session_id": "fault-cleanup-1-session",
+      "request_id": "fault-cleanup-1-request",
+      "transaction_id": "fault-cleanup-1-transaction",
+      "lease_id": "fault-cleanup-1-lease"
+    },
+    {
+      "sequence": 126,
+      "offset_ns": 7666547802,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "fault-cleanup-1",
+      "run_kind": "fault",
+      "event": "fault-armed",
+      "session_id": "fault-cleanup-1-session",
+      "request_id": "fault-cleanup-1-request",
+      "transaction_id": "fault-cleanup-1-transaction",
+      "lease_id": "fault-cleanup-1-lease",
+      "fault_point": "cleanup",
+      "operation_ordinal": 1,
+      "planned_injection_count": 2
+    },
+    {
+      "sequence": 127,
+      "offset_ns": 7666787505,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "fault-cleanup-1",
+      "run_kind": "fault",
+      "event": "lease-acquired",
+      "session_id": "fault-cleanup-1-session",
+      "request_id": "fault-cleanup-1-request",
+      "transaction_id": "fault-cleanup-1-transaction",
+      "lease_id": "fault-cleanup-1-lease"
+    },
+    {
+      "sequence": 128,
+      "offset_ns": 7849011306,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "fault-cleanup-1",
+      "run_kind": "fault",
+      "event": "fault-triggered",
+      "session_id": "fault-cleanup-1-session",
+      "request_id": "fault-cleanup-1-request",
+      "transaction_id": "fault-cleanup-1-transaction",
+      "lease_id": "fault-cleanup-1-lease",
+      "fault_point": "cleanup",
+      "operation_ordinal": 1,
+      "error_type": "RuntimeError",
+      "error_sha256": "5ac895201250b039c30bd143a1f5237c12cc39e072c10399f983201a9581bf22",
+      "backend_call_relation": "before-backend-call"
+    },
+    {
+      "sequence": 129,
+      "offset_ns": 7849152631,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "fault-cleanup-1",
+      "run_kind": "fault",
+      "event": "fault-triggered",
+      "session_id": "fault-cleanup-1-session",
+      "request_id": "fault-cleanup-1-request",
+      "transaction_id": "fault-cleanup-1-transaction",
+      "lease_id": "fault-cleanup-1-lease",
+      "fault_point": "cleanup",
+      "operation_ordinal": 2,
+      "error_type": "RuntimeError",
+      "error_sha256": "5ac895201250b039c30bd143a1f5237c12cc39e072c10399f983201a9581bf22",
+      "backend_call_relation": "before-backend-call"
+    },
+    {
+      "sequence": 130,
+      "offset_ns": 7849225424,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "fault-cleanup-1",
+      "run_kind": "fault",
+      "event": "transaction-retained",
+      "session_id": "fault-cleanup-1-session",
+      "request_id": "fault-cleanup-1-request",
+      "transaction_id": "fault-cleanup-1-transaction",
+      "lease_id": "fault-cleanup-1-lease"
+    },
+    {
+      "sequence": 131,
+      "offset_ns": 7849420498,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "fault-cleanup-1",
+      "run_kind": "fault",
+      "event": "new-work-rejected",
+      "session_id": "fault-cleanup-1-session",
+      "request_id": "fault-cleanup-1-request",
+      "transaction_id": "fault-cleanup-1-transaction",
+      "lease_id": "fault-cleanup-1-lease",
+      "blocked_request_id": "blocked-cleanup-1"
+    },
+    {
+      "sequence": 132,
+      "offset_ns": 7849424270,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "fault-cleanup-1",
+      "run_kind": "fault",
+      "event": "recovery-started",
+      "session_id": "fault-cleanup-1-session",
+      "request_id": "fault-cleanup-1-request",
+      "transaction_id": "fault-cleanup-1-transaction",
+      "lease_id": "fault-cleanup-1-lease"
+    },
+    {
+      "sequence": 133,
+      "offset_ns": 7849679968,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "fault-cleanup-1",
+      "run_kind": "fault",
+      "event": "backend-quiescent",
+      "session_id": "fault-cleanup-1-session",
+      "request_id": "fault-cleanup-1-request",
+      "transaction_id": "fault-cleanup-1-transaction",
+      "lease_id": "fault-cleanup-1-lease"
+    },
+    {
+      "sequence": 134,
+      "offset_ns": 7849707705,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "fault-cleanup-1",
+      "run_kind": "fault",
+      "event": "transaction-aborted",
+      "session_id": "fault-cleanup-1-session",
+      "request_id": "fault-cleanup-1-request",
+      "transaction_id": "fault-cleanup-1-transaction",
+      "lease_id": "fault-cleanup-1-lease"
+    },
+    {
+      "sequence": 135,
+      "offset_ns": 7849721281,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "fault-cleanup-1",
+      "run_kind": "fault",
+      "event": "lease-released",
+      "session_id": "fault-cleanup-1-session",
+      "request_id": "fault-cleanup-1-request",
+      "transaction_id": "fault-cleanup-1-transaction",
+      "lease_id": "fault-cleanup-1-lease"
+    },
+    {
+      "sequence": 136,
+      "offset_ns": 7849724906,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "fault-cleanup-1",
+      "run_kind": "fault",
+      "event": "budget-restored",
+      "session_id": "fault-cleanup-1-session",
+      "request_id": "fault-cleanup-1-request",
+      "transaction_id": "fault-cleanup-1-transaction",
+      "lease_id": "fault-cleanup-1-lease"
+    },
+    {
+      "sequence": 137,
+      "offset_ns": 7956546505,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "fault-cleanup-1",
+      "run_kind": "fault",
+      "event": "run-complete",
+      "session_id": "fault-cleanup-1-session",
+      "request_id": "fault-cleanup-1-request",
+      "transaction_id": "fault-cleanup-1-transaction",
+      "lease_id": "fault-cleanup-1-lease"
+    },
+    {
+      "sequence": 138,
+      "offset_ns": 8061153378,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "reuse-cleanup-1",
+      "run_kind": "reuse",
+      "event": "run-start",
+      "session_id": "fault-cleanup-1-session",
+      "request_id": "reuse-cleanup-1-request",
+      "transaction_id": "reuse-cleanup-1-transaction",
+      "lease_id": "reuse-cleanup-1-lease"
+    },
+    {
+      "sequence": 139,
+      "offset_ns": 8061768569,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "reuse-cleanup-1",
+      "run_kind": "reuse",
+      "event": "lease-acquired",
+      "session_id": "fault-cleanup-1-session",
+      "request_id": "reuse-cleanup-1-request",
+      "transaction_id": "reuse-cleanup-1-transaction",
+      "lease_id": "reuse-cleanup-1-lease"
+    },
+    {
+      "sequence": 140,
+      "offset_ns": 8210922343,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "reuse-cleanup-1",
+      "run_kind": "reuse",
+      "event": "completion-fence",
+      "session_id": "fault-cleanup-1-session",
+      "request_id": "reuse-cleanup-1-request",
+      "transaction_id": "reuse-cleanup-1-transaction",
+      "lease_id": "reuse-cleanup-1-lease"
+    },
+    {
+      "sequence": 141,
+      "offset_ns": 8211055877,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "reuse-cleanup-1",
+      "run_kind": "reuse",
+      "event": "result-published",
+      "session_id": "fault-cleanup-1-session",
+      "request_id": "reuse-cleanup-1-request",
+      "transaction_id": "reuse-cleanup-1-transaction",
+      "lease_id": "reuse-cleanup-1-lease"
+    },
+    {
+      "sequence": 142,
+      "offset_ns": 8211071549,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "reuse-cleanup-1",
+      "run_kind": "reuse",
+      "event": "transaction-committed",
+      "session_id": "fault-cleanup-1-session",
+      "request_id": "reuse-cleanup-1-request",
+      "transaction_id": "reuse-cleanup-1-transaction",
+      "lease_id": "reuse-cleanup-1-lease"
+    },
+    {
+      "sequence": 143,
+      "offset_ns": 8211087737,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "reuse-cleanup-1",
+      "run_kind": "reuse",
+      "event": "lease-released",
+      "session_id": "fault-cleanup-1-session",
+      "request_id": "reuse-cleanup-1-request",
+      "transaction_id": "reuse-cleanup-1-transaction",
+      "lease_id": "reuse-cleanup-1-lease"
+    },
+    {
+      "sequence": 144,
+      "offset_ns": 8211091784,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "reuse-cleanup-1",
+      "run_kind": "reuse",
+      "event": "budget-restored",
+      "session_id": "fault-cleanup-1-session",
+      "request_id": "reuse-cleanup-1-request",
+      "transaction_id": "reuse-cleanup-1-transaction",
+      "lease_id": "reuse-cleanup-1-lease"
+    },
+    {
+      "sequence": 145,
+      "offset_ns": 8339536673,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "reuse-cleanup-1",
+      "run_kind": "reuse",
+      "event": "run-complete",
+      "session_id": "fault-cleanup-1-session",
+      "request_id": "reuse-cleanup-1-request",
+      "transaction_id": "reuse-cleanup-1-transaction",
+      "lease_id": "reuse-cleanup-1-lease"
+    },
+    {
+      "sequence": 146,
+      "offset_ns": 8468298095,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "fault-event-create-0",
+      "run_kind": "fault",
+      "event": "run-start",
+      "session_id": "fault-event-create-0-session",
+      "request_id": "fault-event-create-0-request",
+      "transaction_id": "fault-event-create-0-transaction",
+      "lease_id": "fault-event-create-0-lease"
+    },
+    {
+      "sequence": 147,
+      "offset_ns": 8468629208,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "fault-event-create-0",
+      "run_kind": "fault",
+      "event": "fault-armed",
+      "session_id": "fault-event-create-0-session",
+      "request_id": "fault-event-create-0-request",
+      "transaction_id": "fault-event-create-0-transaction",
+      "lease_id": "fault-event-create-0-lease",
+      "fault_point": "event-create",
+      "operation_ordinal": 1,
+      "planned_injection_count": 2
+    },
+    {
+      "sequence": 148,
+      "offset_ns": 8468919680,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "fault-event-create-0",
+      "run_kind": "fault",
+      "event": "lease-acquired",
+      "session_id": "fault-event-create-0-session",
+      "request_id": "fault-event-create-0-request",
+      "transaction_id": "fault-event-create-0-transaction",
+      "lease_id": "fault-event-create-0-lease"
+    },
+    {
+      "sequence": 149,
+      "offset_ns": 8656779125,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "fault-event-create-0",
+      "run_kind": "fault",
+      "event": "fault-triggered",
+      "session_id": "fault-event-create-0-session",
+      "request_id": "fault-event-create-0-request",
+      "transaction_id": "fault-event-create-0-transaction",
+      "lease_id": "fault-event-create-0-lease",
+      "fault_point": "event-create",
+      "operation_ordinal": 1,
+      "error_type": "RuntimeError",
+      "error_sha256": "7327aa7c7e117932397bad992f191ebb6f9fb6b4d40a38071d96299707677800",
+      "backend_call_relation": "before-backend-call"
+    },
+    {
+      "sequence": 150,
+      "offset_ns": 8656965612,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "fault-event-create-0",
+      "run_kind": "fault",
+      "event": "fault-triggered",
+      "session_id": "fault-event-create-0-session",
+      "request_id": "fault-event-create-0-request",
+      "transaction_id": "fault-event-create-0-transaction",
+      "lease_id": "fault-event-create-0-lease",
+      "fault_point": "event-create",
+      "operation_ordinal": 2,
+      "error_type": "RuntimeError",
+      "error_sha256": "7327aa7c7e117932397bad992f191ebb6f9fb6b4d40a38071d96299707677800",
+      "backend_call_relation": "before-backend-call"
+    },
+    {
+      "sequence": 151,
+      "offset_ns": 8657027176,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "fault-event-create-0",
+      "run_kind": "fault",
+      "event": "transaction-retained",
+      "session_id": "fault-event-create-0-session",
+      "request_id": "fault-event-create-0-request",
+      "transaction_id": "fault-event-create-0-transaction",
+      "lease_id": "fault-event-create-0-lease"
+    },
+    {
+      "sequence": 152,
+      "offset_ns": 8657238141,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "fault-event-create-0",
+      "run_kind": "fault",
+      "event": "new-work-rejected",
+      "session_id": "fault-event-create-0-session",
+      "request_id": "fault-event-create-0-request",
+      "transaction_id": "fault-event-create-0-transaction",
+      "lease_id": "fault-event-create-0-lease",
+      "blocked_request_id": "blocked-event-create-0"
+    },
+    {
+      "sequence": 153,
+      "offset_ns": 8657241994,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "fault-event-create-0",
+      "run_kind": "fault",
+      "event": "recovery-started",
+      "session_id": "fault-event-create-0-session",
+      "request_id": "fault-event-create-0-request",
+      "transaction_id": "fault-event-create-0-transaction",
+      "lease_id": "fault-event-create-0-lease"
+    },
+    {
+      "sequence": 154,
+      "offset_ns": 8657471286,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "fault-event-create-0",
+      "run_kind": "fault",
+      "event": "backend-quiescent",
+      "session_id": "fault-event-create-0-session",
+      "request_id": "fault-event-create-0-request",
+      "transaction_id": "fault-event-create-0-transaction",
+      "lease_id": "fault-event-create-0-lease"
+    },
+    {
+      "sequence": 155,
+      "offset_ns": 8657502077,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "fault-event-create-0",
+      "run_kind": "fault",
+      "event": "transaction-aborted",
+      "session_id": "fault-event-create-0-session",
+      "request_id": "fault-event-create-0-request",
+      "transaction_id": "fault-event-create-0-transaction",
+      "lease_id": "fault-event-create-0-lease"
+    },
+    {
+      "sequence": 156,
+      "offset_ns": 8657518782,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "fault-event-create-0",
+      "run_kind": "fault",
+      "event": "lease-released",
+      "session_id": "fault-event-create-0-session",
+      "request_id": "fault-event-create-0-request",
+      "transaction_id": "fault-event-create-0-transaction",
+      "lease_id": "fault-event-create-0-lease"
+    },
+    {
+      "sequence": 157,
+      "offset_ns": 8657522558,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "fault-event-create-0",
+      "run_kind": "fault",
+      "event": "budget-restored",
+      "session_id": "fault-event-create-0-session",
+      "request_id": "fault-event-create-0-request",
+      "transaction_id": "fault-event-create-0-transaction",
+      "lease_id": "fault-event-create-0-lease"
+    },
+    {
+      "sequence": 158,
+      "offset_ns": 8788489261,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "fault-event-create-0",
+      "run_kind": "fault",
+      "event": "run-complete",
+      "session_id": "fault-event-create-0-session",
+      "request_id": "fault-event-create-0-request",
+      "transaction_id": "fault-event-create-0-transaction",
+      "lease_id": "fault-event-create-0-lease"
+    },
+    {
+      "sequence": 159,
+      "offset_ns": 8918072384,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "reuse-event-create-0",
+      "run_kind": "reuse",
+      "event": "run-start",
+      "session_id": "fault-event-create-0-session",
+      "request_id": "reuse-event-create-0-request",
+      "transaction_id": "reuse-event-create-0-transaction",
+      "lease_id": "reuse-event-create-0-lease"
+    },
+    {
+      "sequence": 160,
+      "offset_ns": 8918721603,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "reuse-event-create-0",
+      "run_kind": "reuse",
+      "event": "lease-acquired",
+      "session_id": "fault-event-create-0-session",
+      "request_id": "reuse-event-create-0-request",
+      "transaction_id": "reuse-event-create-0-transaction",
+      "lease_id": "reuse-event-create-0-lease"
+    },
+    {
+      "sequence": 161,
+      "offset_ns": 9117086557,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "reuse-event-create-0",
+      "run_kind": "reuse",
+      "event": "completion-fence",
+      "session_id": "fault-event-create-0-session",
+      "request_id": "reuse-event-create-0-request",
+      "transaction_id": "reuse-event-create-0-transaction",
+      "lease_id": "reuse-event-create-0-lease"
+    },
+    {
+      "sequence": 162,
+      "offset_ns": 9117199622,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "reuse-event-create-0",
+      "run_kind": "reuse",
+      "event": "result-published",
+      "session_id": "fault-event-create-0-session",
+      "request_id": "reuse-event-create-0-request",
+      "transaction_id": "reuse-event-create-0-transaction",
+      "lease_id": "reuse-event-create-0-lease"
+    },
+    {
+      "sequence": 163,
+      "offset_ns": 9117215544,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "reuse-event-create-0",
+      "run_kind": "reuse",
+      "event": "transaction-committed",
+      "session_id": "fault-event-create-0-session",
+      "request_id": "reuse-event-create-0-request",
+      "transaction_id": "reuse-event-create-0-transaction",
+      "lease_id": "reuse-event-create-0-lease"
+    },
+    {
+      "sequence": 164,
+      "offset_ns": 9117231312,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "reuse-event-create-0",
+      "run_kind": "reuse",
+      "event": "lease-released",
+      "session_id": "fault-event-create-0-session",
+      "request_id": "reuse-event-create-0-request",
+      "transaction_id": "reuse-event-create-0-transaction",
+      "lease_id": "reuse-event-create-0-lease"
+    },
+    {
+      "sequence": 165,
+      "offset_ns": 9117235715,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "reuse-event-create-0",
+      "run_kind": "reuse",
+      "event": "budget-restored",
+      "session_id": "fault-event-create-0-session",
+      "request_id": "reuse-event-create-0-request",
+      "transaction_id": "reuse-event-create-0-transaction",
+      "lease_id": "reuse-event-create-0-lease"
+    },
+    {
+      "sequence": 166,
+      "offset_ns": 9248702505,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "reuse-event-create-0",
+      "run_kind": "reuse",
+      "event": "run-complete",
+      "session_id": "fault-event-create-0-session",
+      "request_id": "reuse-event-create-0-request",
+      "transaction_id": "reuse-event-create-0-transaction",
+      "lease_id": "reuse-event-create-0-lease"
+    },
+    {
+      "sequence": 167,
+      "offset_ns": 9380578511,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "fault-event-create-1",
+      "run_kind": "fault",
+      "event": "run-start",
+      "session_id": "fault-event-create-1-session",
+      "request_id": "fault-event-create-1-request",
+      "transaction_id": "fault-event-create-1-transaction",
+      "lease_id": "fault-event-create-1-lease"
+    },
+    {
+      "sequence": 168,
+      "offset_ns": 9380896977,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "fault-event-create-1",
+      "run_kind": "fault",
+      "event": "fault-armed",
+      "session_id": "fault-event-create-1-session",
+      "request_id": "fault-event-create-1-request",
+      "transaction_id": "fault-event-create-1-transaction",
+      "lease_id": "fault-event-create-1-lease",
+      "fault_point": "event-create",
+      "operation_ordinal": 1,
+      "planned_injection_count": 2
+    },
+    {
+      "sequence": 169,
+      "offset_ns": 9381182854,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "fault-event-create-1",
+      "run_kind": "fault",
+      "event": "lease-acquired",
+      "session_id": "fault-event-create-1-session",
+      "request_id": "fault-event-create-1-request",
+      "transaction_id": "fault-event-create-1-transaction",
+      "lease_id": "fault-event-create-1-lease"
+    },
+    {
+      "sequence": 170,
+      "offset_ns": 9543271348,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "fault-event-create-1",
+      "run_kind": "fault",
+      "event": "fault-triggered",
+      "session_id": "fault-event-create-1-session",
+      "request_id": "fault-event-create-1-request",
+      "transaction_id": "fault-event-create-1-transaction",
+      "lease_id": "fault-event-create-1-lease",
+      "fault_point": "event-create",
+      "operation_ordinal": 1,
+      "error_type": "RuntimeError",
+      "error_sha256": "7327aa7c7e117932397bad992f191ebb6f9fb6b4d40a38071d96299707677800",
+      "backend_call_relation": "before-backend-call"
+    },
+    {
+      "sequence": 171,
+      "offset_ns": 9543458778,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "fault-event-create-1",
+      "run_kind": "fault",
+      "event": "fault-triggered",
+      "session_id": "fault-event-create-1-session",
+      "request_id": "fault-event-create-1-request",
+      "transaction_id": "fault-event-create-1-transaction",
+      "lease_id": "fault-event-create-1-lease",
+      "fault_point": "event-create",
+      "operation_ordinal": 2,
+      "error_type": "RuntimeError",
+      "error_sha256": "7327aa7c7e117932397bad992f191ebb6f9fb6b4d40a38071d96299707677800",
+      "backend_call_relation": "before-backend-call"
+    },
+    {
+      "sequence": 172,
+      "offset_ns": 9543521779,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "fault-event-create-1",
+      "run_kind": "fault",
+      "event": "transaction-retained",
+      "session_id": "fault-event-create-1-session",
+      "request_id": "fault-event-create-1-request",
+      "transaction_id": "fault-event-create-1-transaction",
+      "lease_id": "fault-event-create-1-lease"
+    },
+    {
+      "sequence": 173,
+      "offset_ns": 9543734193,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "fault-event-create-1",
+      "run_kind": "fault",
+      "event": "new-work-rejected",
+      "session_id": "fault-event-create-1-session",
+      "request_id": "fault-event-create-1-request",
+      "transaction_id": "fault-event-create-1-transaction",
+      "lease_id": "fault-event-create-1-lease",
+      "blocked_request_id": "blocked-event-create-1"
+    },
+    {
+      "sequence": 174,
+      "offset_ns": 9543737712,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "fault-event-create-1",
+      "run_kind": "fault",
+      "event": "recovery-started",
+      "session_id": "fault-event-create-1-session",
+      "request_id": "fault-event-create-1-request",
+      "transaction_id": "fault-event-create-1-transaction",
+      "lease_id": "fault-event-create-1-lease"
+    },
+    {
+      "sequence": 175,
+      "offset_ns": 9543979809,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "fault-event-create-1",
+      "run_kind": "fault",
+      "event": "backend-quiescent",
+      "session_id": "fault-event-create-1-session",
+      "request_id": "fault-event-create-1-request",
+      "transaction_id": "fault-event-create-1-transaction",
+      "lease_id": "fault-event-create-1-lease"
+    },
+    {
+      "sequence": 176,
+      "offset_ns": 9544010549,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "fault-event-create-1",
+      "run_kind": "fault",
+      "event": "transaction-aborted",
+      "session_id": "fault-event-create-1-session",
+      "request_id": "fault-event-create-1-request",
+      "transaction_id": "fault-event-create-1-transaction",
+      "lease_id": "fault-event-create-1-lease"
+    },
+    {
+      "sequence": 177,
+      "offset_ns": 9544026717,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "fault-event-create-1",
+      "run_kind": "fault",
+      "event": "lease-released",
+      "session_id": "fault-event-create-1-session",
+      "request_id": "fault-event-create-1-request",
+      "transaction_id": "fault-event-create-1-transaction",
+      "lease_id": "fault-event-create-1-lease"
+    },
+    {
+      "sequence": 178,
+      "offset_ns": 9544031111,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "fault-event-create-1",
+      "run_kind": "fault",
+      "event": "budget-restored",
+      "session_id": "fault-event-create-1-session",
+      "request_id": "fault-event-create-1-request",
+      "transaction_id": "fault-event-create-1-transaction",
+      "lease_id": "fault-event-create-1-lease"
+    },
+    {
+      "sequence": 179,
+      "offset_ns": 9655955902,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "fault-event-create-1",
+      "run_kind": "fault",
+      "event": "run-complete",
+      "session_id": "fault-event-create-1-session",
+      "request_id": "fault-event-create-1-request",
+      "transaction_id": "fault-event-create-1-transaction",
+      "lease_id": "fault-event-create-1-lease"
+    },
+    {
+      "sequence": 180,
+      "offset_ns": 9751819401,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "reuse-event-create-1",
+      "run_kind": "reuse",
+      "event": "run-start",
+      "session_id": "fault-event-create-1-session",
+      "request_id": "reuse-event-create-1-request",
+      "transaction_id": "reuse-event-create-1-transaction",
+      "lease_id": "reuse-event-create-1-lease"
+    },
+    {
+      "sequence": 181,
+      "offset_ns": 9752333638,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "reuse-event-create-1",
+      "run_kind": "reuse",
+      "event": "lease-acquired",
+      "session_id": "fault-event-create-1-session",
+      "request_id": "reuse-event-create-1-request",
+      "transaction_id": "reuse-event-create-1-transaction",
+      "lease_id": "reuse-event-create-1-lease"
+    },
+    {
+      "sequence": 182,
+      "offset_ns": 9885754085,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "reuse-event-create-1",
+      "run_kind": "reuse",
+      "event": "completion-fence",
+      "session_id": "fault-event-create-1-session",
+      "request_id": "reuse-event-create-1-request",
+      "transaction_id": "reuse-event-create-1-transaction",
+      "lease_id": "reuse-event-create-1-lease"
+    },
+    {
+      "sequence": 183,
+      "offset_ns": 9885882714,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "reuse-event-create-1",
+      "run_kind": "reuse",
+      "event": "result-published",
+      "session_id": "fault-event-create-1-session",
+      "request_id": "reuse-event-create-1-request",
+      "transaction_id": "reuse-event-create-1-transaction",
+      "lease_id": "reuse-event-create-1-lease"
+    },
+    {
+      "sequence": 184,
+      "offset_ns": 9885896505,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "reuse-event-create-1",
+      "run_kind": "reuse",
+      "event": "transaction-committed",
+      "session_id": "fault-event-create-1-session",
+      "request_id": "reuse-event-create-1-request",
+      "transaction_id": "reuse-event-create-1-transaction",
+      "lease_id": "reuse-event-create-1-lease"
+    },
+    {
+      "sequence": 185,
+      "offset_ns": 9885910299,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "reuse-event-create-1",
+      "run_kind": "reuse",
+      "event": "lease-released",
+      "session_id": "fault-event-create-1-session",
+      "request_id": "reuse-event-create-1-request",
+      "transaction_id": "reuse-event-create-1-transaction",
+      "lease_id": "reuse-event-create-1-lease"
+    },
+    {
+      "sequence": 186,
+      "offset_ns": 9885914169,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "reuse-event-create-1",
+      "run_kind": "reuse",
+      "event": "budget-restored",
+      "session_id": "fault-event-create-1-session",
+      "request_id": "reuse-event-create-1-request",
+      "transaction_id": "reuse-event-create-1-transaction",
+      "lease_id": "reuse-event-create-1-lease"
+    },
+    {
+      "sequence": 187,
+      "offset_ns": 9980172473,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "reuse-event-create-1",
+      "run_kind": "reuse",
+      "event": "run-complete",
+      "session_id": "fault-event-create-1-session",
+      "request_id": "reuse-event-create-1-request",
+      "transaction_id": "reuse-event-create-1-transaction",
+      "lease_id": "reuse-event-create-1-lease"
+    },
+    {
+      "sequence": 188,
+      "offset_ns": 10072573042,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "fault-event-record-0",
+      "run_kind": "fault",
+      "event": "run-start",
+      "session_id": "fault-event-record-0-session",
+      "request_id": "fault-event-record-0-request",
+      "transaction_id": "fault-event-record-0-transaction",
+      "lease_id": "fault-event-record-0-lease"
+    },
+    {
+      "sequence": 189,
+      "offset_ns": 10072827040,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "fault-event-record-0",
+      "run_kind": "fault",
+      "event": "fault-armed",
+      "session_id": "fault-event-record-0-session",
+      "request_id": "fault-event-record-0-request",
+      "transaction_id": "fault-event-record-0-transaction",
+      "lease_id": "fault-event-record-0-lease",
+      "fault_point": "event-record",
+      "operation_ordinal": 1,
+      "planned_injection_count": 2
+    },
+    {
+      "sequence": 190,
+      "offset_ns": 10073054007,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "fault-event-record-0",
+      "run_kind": "fault",
+      "event": "lease-acquired",
+      "session_id": "fault-event-record-0-session",
+      "request_id": "fault-event-record-0-request",
+      "transaction_id": "fault-event-record-0-transaction",
+      "lease_id": "fault-event-record-0-lease"
+    },
+    {
+      "sequence": 191,
+      "offset_ns": 10247058714,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "fault-event-record-0",
+      "run_kind": "fault",
+      "event": "fault-triggered",
+      "session_id": "fault-event-record-0-session",
+      "request_id": "fault-event-record-0-request",
+      "transaction_id": "fault-event-record-0-transaction",
+      "lease_id": "fault-event-record-0-lease",
+      "fault_point": "event-record",
+      "operation_ordinal": 1,
+      "error_type": "RuntimeError",
+      "error_sha256": "ffd560583d7cd6df7ad542e81b0dde15e9b6067fe1870797386080b550c392f0",
+      "backend_call_relation": "before-backend-call"
+    },
+    {
+      "sequence": 192,
+      "offset_ns": 10247249091,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "fault-event-record-0",
+      "run_kind": "fault",
+      "event": "fault-triggered",
+      "session_id": "fault-event-record-0-session",
+      "request_id": "fault-event-record-0-request",
+      "transaction_id": "fault-event-record-0-transaction",
+      "lease_id": "fault-event-record-0-lease",
+      "fault_point": "event-record",
+      "operation_ordinal": 2,
+      "error_type": "RuntimeError",
+      "error_sha256": "ffd560583d7cd6df7ad542e81b0dde15e9b6067fe1870797386080b550c392f0",
+      "backend_call_relation": "before-backend-call"
+    },
+    {
+      "sequence": 193,
+      "offset_ns": 10247303548,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "fault-event-record-0",
+      "run_kind": "fault",
+      "event": "transaction-retained",
+      "session_id": "fault-event-record-0-session",
+      "request_id": "fault-event-record-0-request",
+      "transaction_id": "fault-event-record-0-transaction",
+      "lease_id": "fault-event-record-0-lease"
+    },
+    {
+      "sequence": 194,
+      "offset_ns": 10247475322,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "fault-event-record-0",
+      "run_kind": "fault",
+      "event": "new-work-rejected",
+      "session_id": "fault-event-record-0-session",
+      "request_id": "fault-event-record-0-request",
+      "transaction_id": "fault-event-record-0-transaction",
+      "lease_id": "fault-event-record-0-lease",
+      "blocked_request_id": "blocked-event-record-0"
+    },
+    {
+      "sequence": 195,
+      "offset_ns": 10247478906,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "fault-event-record-0",
+      "run_kind": "fault",
+      "event": "recovery-started",
+      "session_id": "fault-event-record-0-session",
+      "request_id": "fault-event-record-0-request",
+      "transaction_id": "fault-event-record-0-transaction",
+      "lease_id": "fault-event-record-0-lease"
+    },
+    {
+      "sequence": 196,
+      "offset_ns": 10247703298,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "fault-event-record-0",
+      "run_kind": "fault",
+      "event": "backend-quiescent",
+      "session_id": "fault-event-record-0-session",
+      "request_id": "fault-event-record-0-request",
+      "transaction_id": "fault-event-record-0-transaction",
+      "lease_id": "fault-event-record-0-lease"
+    },
+    {
+      "sequence": 197,
+      "offset_ns": 10247730711,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "fault-event-record-0",
+      "run_kind": "fault",
+      "event": "transaction-aborted",
+      "session_id": "fault-event-record-0-session",
+      "request_id": "fault-event-record-0-request",
+      "transaction_id": "fault-event-record-0-transaction",
+      "lease_id": "fault-event-record-0-lease"
+    },
+    {
+      "sequence": 198,
+      "offset_ns": 10247744797,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "fault-event-record-0",
+      "run_kind": "fault",
+      "event": "lease-released",
+      "session_id": "fault-event-record-0-session",
+      "request_id": "fault-event-record-0-request",
+      "transaction_id": "fault-event-record-0-transaction",
+      "lease_id": "fault-event-record-0-lease"
+    },
+    {
+      "sequence": 199,
+      "offset_ns": 10247748930,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "fault-event-record-0",
+      "run_kind": "fault",
+      "event": "budget-restored",
+      "session_id": "fault-event-record-0-session",
+      "request_id": "fault-event-record-0-request",
+      "transaction_id": "fault-event-record-0-transaction",
+      "lease_id": "fault-event-record-0-lease"
+    },
+    {
+      "sequence": 200,
+      "offset_ns": 10345630707,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "fault-event-record-0",
+      "run_kind": "fault",
+      "event": "run-complete",
+      "session_id": "fault-event-record-0-session",
+      "request_id": "fault-event-record-0-request",
+      "transaction_id": "fault-event-record-0-transaction",
+      "lease_id": "fault-event-record-0-lease"
+    },
+    {
+      "sequence": 201,
+      "offset_ns": 10442715245,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "reuse-event-record-0",
+      "run_kind": "reuse",
+      "event": "run-start",
+      "session_id": "fault-event-record-0-session",
+      "request_id": "reuse-event-record-0-request",
+      "transaction_id": "reuse-event-record-0-transaction",
+      "lease_id": "reuse-event-record-0-lease"
+    },
+    {
+      "sequence": 202,
+      "offset_ns": 10443220092,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "reuse-event-record-0",
+      "run_kind": "reuse",
+      "event": "lease-acquired",
+      "session_id": "fault-event-record-0-session",
+      "request_id": "reuse-event-record-0-request",
+      "transaction_id": "reuse-event-record-0-transaction",
+      "lease_id": "reuse-event-record-0-lease"
+    },
+    {
+      "sequence": 203,
+      "offset_ns": 10613171717,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "reuse-event-record-0",
+      "run_kind": "reuse",
+      "event": "completion-fence",
+      "session_id": "fault-event-record-0-session",
+      "request_id": "reuse-event-record-0-request",
+      "transaction_id": "reuse-event-record-0-transaction",
+      "lease_id": "reuse-event-record-0-lease"
+    },
+    {
+      "sequence": 204,
+      "offset_ns": 10613292370,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "reuse-event-record-0",
+      "run_kind": "reuse",
+      "event": "result-published",
+      "session_id": "fault-event-record-0-session",
+      "request_id": "reuse-event-record-0-request",
+      "transaction_id": "reuse-event-record-0-transaction",
+      "lease_id": "reuse-event-record-0-lease"
+    },
+    {
+      "sequence": 205,
+      "offset_ns": 10613306233,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "reuse-event-record-0",
+      "run_kind": "reuse",
+      "event": "transaction-committed",
+      "session_id": "fault-event-record-0-session",
+      "request_id": "reuse-event-record-0-request",
+      "transaction_id": "reuse-event-record-0-transaction",
+      "lease_id": "reuse-event-record-0-lease"
+    },
+    {
+      "sequence": 206,
+      "offset_ns": 10613319681,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "reuse-event-record-0",
+      "run_kind": "reuse",
+      "event": "lease-released",
+      "session_id": "fault-event-record-0-session",
+      "request_id": "reuse-event-record-0-request",
+      "transaction_id": "reuse-event-record-0-transaction",
+      "lease_id": "reuse-event-record-0-lease"
+    },
+    {
+      "sequence": 207,
+      "offset_ns": 10613323917,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "reuse-event-record-0",
+      "run_kind": "reuse",
+      "event": "budget-restored",
+      "session_id": "fault-event-record-0-session",
+      "request_id": "reuse-event-record-0-request",
+      "transaction_id": "reuse-event-record-0-transaction",
+      "lease_id": "reuse-event-record-0-lease"
+    },
+    {
+      "sequence": 208,
+      "offset_ns": 10707895820,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "reuse-event-record-0",
+      "run_kind": "reuse",
+      "event": "run-complete",
+      "session_id": "fault-event-record-0-session",
+      "request_id": "reuse-event-record-0-request",
+      "transaction_id": "reuse-event-record-0-transaction",
+      "lease_id": "reuse-event-record-0-lease"
+    },
+    {
+      "sequence": 209,
+      "offset_ns": 10798238434,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "fault-event-record-1",
+      "run_kind": "fault",
+      "event": "run-start",
+      "session_id": "fault-event-record-1-session",
+      "request_id": "fault-event-record-1-request",
+      "transaction_id": "fault-event-record-1-transaction",
+      "lease_id": "fault-event-record-1-lease"
+    },
+    {
+      "sequence": 210,
+      "offset_ns": 10798487372,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "fault-event-record-1",
+      "run_kind": "fault",
+      "event": "fault-armed",
+      "session_id": "fault-event-record-1-session",
+      "request_id": "fault-event-record-1-request",
+      "transaction_id": "fault-event-record-1-transaction",
+      "lease_id": "fault-event-record-1-lease",
+      "fault_point": "event-record",
+      "operation_ordinal": 1,
+      "planned_injection_count": 2
+    },
+    {
+      "sequence": 211,
+      "offset_ns": 10798728968,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "fault-event-record-1",
+      "run_kind": "fault",
+      "event": "lease-acquired",
+      "session_id": "fault-event-record-1-session",
+      "request_id": "fault-event-record-1-request",
+      "transaction_id": "fault-event-record-1-transaction",
+      "lease_id": "fault-event-record-1-lease"
+    },
+    {
+      "sequence": 212,
+      "offset_ns": 10966395850,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "fault-event-record-1",
+      "run_kind": "fault",
+      "event": "fault-triggered",
+      "session_id": "fault-event-record-1-session",
+      "request_id": "fault-event-record-1-request",
+      "transaction_id": "fault-event-record-1-transaction",
+      "lease_id": "fault-event-record-1-lease",
+      "fault_point": "event-record",
+      "operation_ordinal": 1,
+      "error_type": "RuntimeError",
+      "error_sha256": "ffd560583d7cd6df7ad542e81b0dde15e9b6067fe1870797386080b550c392f0",
+      "backend_call_relation": "before-backend-call"
+    },
+    {
+      "sequence": 213,
+      "offset_ns": 10966594972,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "fault-event-record-1",
+      "run_kind": "fault",
+      "event": "fault-triggered",
+      "session_id": "fault-event-record-1-session",
+      "request_id": "fault-event-record-1-request",
+      "transaction_id": "fault-event-record-1-transaction",
+      "lease_id": "fault-event-record-1-lease",
+      "fault_point": "event-record",
+      "operation_ordinal": 2,
+      "error_type": "RuntimeError",
+      "error_sha256": "ffd560583d7cd6df7ad542e81b0dde15e9b6067fe1870797386080b550c392f0",
+      "backend_call_relation": "before-backend-call"
+    },
+    {
+      "sequence": 214,
+      "offset_ns": 10966648339,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "fault-event-record-1",
+      "run_kind": "fault",
+      "event": "transaction-retained",
+      "session_id": "fault-event-record-1-session",
+      "request_id": "fault-event-record-1-request",
+      "transaction_id": "fault-event-record-1-transaction",
+      "lease_id": "fault-event-record-1-lease"
+    },
+    {
+      "sequence": 215,
+      "offset_ns": 10966820733,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "fault-event-record-1",
+      "run_kind": "fault",
+      "event": "new-work-rejected",
+      "session_id": "fault-event-record-1-session",
+      "request_id": "fault-event-record-1-request",
+      "transaction_id": "fault-event-record-1-transaction",
+      "lease_id": "fault-event-record-1-lease",
+      "blocked_request_id": "blocked-event-record-1"
+    },
+    {
+      "sequence": 216,
+      "offset_ns": 10966824234,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "fault-event-record-1",
+      "run_kind": "fault",
+      "event": "recovery-started",
+      "session_id": "fault-event-record-1-session",
+      "request_id": "fault-event-record-1-request",
+      "transaction_id": "fault-event-record-1-transaction",
+      "lease_id": "fault-event-record-1-lease"
+    },
+    {
+      "sequence": 217,
+      "offset_ns": 10967034963,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "fault-event-record-1",
+      "run_kind": "fault",
+      "event": "backend-quiescent",
+      "session_id": "fault-event-record-1-session",
+      "request_id": "fault-event-record-1-request",
+      "transaction_id": "fault-event-record-1-transaction",
+      "lease_id": "fault-event-record-1-lease"
+    },
+    {
+      "sequence": 218,
+      "offset_ns": 10967060542,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "fault-event-record-1",
+      "run_kind": "fault",
+      "event": "transaction-aborted",
+      "session_id": "fault-event-record-1-session",
+      "request_id": "fault-event-record-1-request",
+      "transaction_id": "fault-event-record-1-transaction",
+      "lease_id": "fault-event-record-1-lease"
+    },
+    {
+      "sequence": 219,
+      "offset_ns": 10967074457,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "fault-event-record-1",
+      "run_kind": "fault",
+      "event": "lease-released",
+      "session_id": "fault-event-record-1-session",
+      "request_id": "fault-event-record-1-request",
+      "transaction_id": "fault-event-record-1-transaction",
+      "lease_id": "fault-event-record-1-lease"
+    },
+    {
+      "sequence": 220,
+      "offset_ns": 10967078430,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "fault-event-record-1",
+      "run_kind": "fault",
+      "event": "budget-restored",
+      "session_id": "fault-event-record-1-session",
+      "request_id": "fault-event-record-1-request",
+      "transaction_id": "fault-event-record-1-transaction",
+      "lease_id": "fault-event-record-1-lease"
+    },
+    {
+      "sequence": 221,
+      "offset_ns": 11057314498,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "fault-event-record-1",
+      "run_kind": "fault",
+      "event": "run-complete",
+      "session_id": "fault-event-record-1-session",
+      "request_id": "fault-event-record-1-request",
+      "transaction_id": "fault-event-record-1-transaction",
+      "lease_id": "fault-event-record-1-lease"
+    },
+    {
+      "sequence": 222,
+      "offset_ns": 11145516674,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "reuse-event-record-1",
+      "run_kind": "reuse",
+      "event": "run-start",
+      "session_id": "fault-event-record-1-session",
+      "request_id": "reuse-event-record-1-request",
+      "transaction_id": "reuse-event-record-1-transaction",
+      "lease_id": "reuse-event-record-1-lease"
+    },
+    {
+      "sequence": 223,
+      "offset_ns": 11146009498,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "reuse-event-record-1",
+      "run_kind": "reuse",
+      "event": "lease-acquired",
+      "session_id": "fault-event-record-1-session",
+      "request_id": "reuse-event-record-1-request",
+      "transaction_id": "reuse-event-record-1-transaction",
+      "lease_id": "reuse-event-record-1-lease"
+    },
+    {
+      "sequence": 224,
+      "offset_ns": 11431929203,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "reuse-event-record-1",
+      "run_kind": "reuse",
+      "event": "completion-fence",
+      "session_id": "fault-event-record-1-session",
+      "request_id": "reuse-event-record-1-request",
+      "transaction_id": "reuse-event-record-1-transaction",
+      "lease_id": "reuse-event-record-1-lease"
+    },
+    {
+      "sequence": 225,
+      "offset_ns": 11432060600,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "reuse-event-record-1",
+      "run_kind": "reuse",
+      "event": "result-published",
+      "session_id": "fault-event-record-1-session",
+      "request_id": "reuse-event-record-1-request",
+      "transaction_id": "reuse-event-record-1-transaction",
+      "lease_id": "reuse-event-record-1-lease"
+    },
+    {
+      "sequence": 226,
+      "offset_ns": 11432074962,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "reuse-event-record-1",
+      "run_kind": "reuse",
+      "event": "transaction-committed",
+      "session_id": "fault-event-record-1-session",
+      "request_id": "reuse-event-record-1-request",
+      "transaction_id": "reuse-event-record-1-transaction",
+      "lease_id": "reuse-event-record-1-lease"
+    },
+    {
+      "sequence": 227,
+      "offset_ns": 11432088615,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "reuse-event-record-1",
+      "run_kind": "reuse",
+      "event": "lease-released",
+      "session_id": "fault-event-record-1-session",
+      "request_id": "reuse-event-record-1-request",
+      "transaction_id": "reuse-event-record-1-transaction",
+      "lease_id": "reuse-event-record-1-lease"
+    },
+    {
+      "sequence": 228,
+      "offset_ns": 11432093063,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "reuse-event-record-1",
+      "run_kind": "reuse",
+      "event": "budget-restored",
+      "session_id": "fault-event-record-1-session",
+      "request_id": "reuse-event-record-1-request",
+      "transaction_id": "reuse-event-record-1-transaction",
+      "lease_id": "reuse-event-record-1-lease"
+    },
+    {
+      "sequence": 229,
+      "offset_ns": 11521514060,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "reuse-event-record-1",
+      "run_kind": "reuse",
+      "event": "run-complete",
+      "session_id": "fault-event-record-1-session",
+      "request_id": "reuse-event-record-1-request",
+      "transaction_id": "reuse-event-record-1-transaction",
+      "lease_id": "reuse-event-record-1-lease"
+    },
+    {
+      "sequence": 230,
+      "offset_ns": 11607811510,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "fault-event-synchronize-0",
+      "run_kind": "fault",
+      "event": "run-start",
+      "session_id": "fault-event-synchronize-0-session",
+      "request_id": "fault-event-synchronize-0-request",
+      "transaction_id": "fault-event-synchronize-0-transaction",
+      "lease_id": "fault-event-synchronize-0-lease"
+    },
+    {
+      "sequence": 231,
+      "offset_ns": 11608054995,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "fault-event-synchronize-0",
+      "run_kind": "fault",
+      "event": "fault-armed",
+      "session_id": "fault-event-synchronize-0-session",
+      "request_id": "fault-event-synchronize-0-request",
+      "transaction_id": "fault-event-synchronize-0-transaction",
+      "lease_id": "fault-event-synchronize-0-lease",
+      "fault_point": "event-synchronize",
+      "operation_ordinal": 1,
+      "planned_injection_count": 2
+    },
+    {
+      "sequence": 232,
+      "offset_ns": 11608282415,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "fault-event-synchronize-0",
+      "run_kind": "fault",
+      "event": "lease-acquired",
+      "session_id": "fault-event-synchronize-0-session",
+      "request_id": "fault-event-synchronize-0-request",
+      "transaction_id": "fault-event-synchronize-0-transaction",
+      "lease_id": "fault-event-synchronize-0-lease"
+    },
+    {
+      "sequence": 233,
+      "offset_ns": 11820766185,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "fault-event-synchronize-0",
+      "run_kind": "fault",
+      "event": "fault-triggered",
+      "session_id": "fault-event-synchronize-0-session",
+      "request_id": "fault-event-synchronize-0-request",
+      "transaction_id": "fault-event-synchronize-0-transaction",
+      "lease_id": "fault-event-synchronize-0-lease",
+      "fault_point": "event-synchronize",
+      "operation_ordinal": 1,
+      "error_type": "RuntimeError",
+      "error_sha256": "b9a4cc7c89e153c9c1a8824937b64be6d723283e97702534558695436c379f31",
+      "backend_call_relation": "before-backend-call"
+    },
+    {
+      "sequence": 234,
+      "offset_ns": 11820973656,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "fault-event-synchronize-0",
+      "run_kind": "fault",
+      "event": "fault-triggered",
+      "session_id": "fault-event-synchronize-0-session",
+      "request_id": "fault-event-synchronize-0-request",
+      "transaction_id": "fault-event-synchronize-0-transaction",
+      "lease_id": "fault-event-synchronize-0-lease",
+      "fault_point": "event-synchronize",
+      "operation_ordinal": 2,
+      "error_type": "RuntimeError",
+      "error_sha256": "b9a4cc7c89e153c9c1a8824937b64be6d723283e97702534558695436c379f31",
+      "backend_call_relation": "before-backend-call"
+    },
+    {
+      "sequence": 235,
+      "offset_ns": 11821015830,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "fault-event-synchronize-0",
+      "run_kind": "fault",
+      "event": "transaction-retained",
+      "session_id": "fault-event-synchronize-0-session",
+      "request_id": "fault-event-synchronize-0-request",
+      "transaction_id": "fault-event-synchronize-0-transaction",
+      "lease_id": "fault-event-synchronize-0-lease"
+    },
+    {
+      "sequence": 236,
+      "offset_ns": 11821190580,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "fault-event-synchronize-0",
+      "run_kind": "fault",
+      "event": "new-work-rejected",
+      "session_id": "fault-event-synchronize-0-session",
+      "request_id": "fault-event-synchronize-0-request",
+      "transaction_id": "fault-event-synchronize-0-transaction",
+      "lease_id": "fault-event-synchronize-0-lease",
+      "blocked_request_id": "blocked-event-synchronize-0"
+    },
+    {
+      "sequence": 237,
+      "offset_ns": 11821194113,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "fault-event-synchronize-0",
+      "run_kind": "fault",
+      "event": "recovery-started",
+      "session_id": "fault-event-synchronize-0-session",
+      "request_id": "fault-event-synchronize-0-request",
+      "transaction_id": "fault-event-synchronize-0-transaction",
+      "lease_id": "fault-event-synchronize-0-lease"
+    },
+    {
+      "sequence": 238,
+      "offset_ns": 11821401240,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "fault-event-synchronize-0",
+      "run_kind": "fault",
+      "event": "backend-quiescent",
+      "session_id": "fault-event-synchronize-0-session",
+      "request_id": "fault-event-synchronize-0-request",
+      "transaction_id": "fault-event-synchronize-0-transaction",
+      "lease_id": "fault-event-synchronize-0-lease"
+    },
+    {
+      "sequence": 239,
+      "offset_ns": 11821427571,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "fault-event-synchronize-0",
+      "run_kind": "fault",
+      "event": "transaction-aborted",
+      "session_id": "fault-event-synchronize-0-session",
+      "request_id": "fault-event-synchronize-0-request",
+      "transaction_id": "fault-event-synchronize-0-transaction",
+      "lease_id": "fault-event-synchronize-0-lease"
+    },
+    {
+      "sequence": 240,
+      "offset_ns": 11821441063,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "fault-event-synchronize-0",
+      "run_kind": "fault",
+      "event": "lease-released",
+      "session_id": "fault-event-synchronize-0-session",
+      "request_id": "fault-event-synchronize-0-request",
+      "transaction_id": "fault-event-synchronize-0-transaction",
+      "lease_id": "fault-event-synchronize-0-lease"
+    },
+    {
+      "sequence": 241,
+      "offset_ns": 11821444613,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "fault-event-synchronize-0",
+      "run_kind": "fault",
+      "event": "budget-restored",
+      "session_id": "fault-event-synchronize-0-session",
+      "request_id": "fault-event-synchronize-0-request",
+      "transaction_id": "fault-event-synchronize-0-transaction",
+      "lease_id": "fault-event-synchronize-0-lease"
+    },
+    {
+      "sequence": 242,
+      "offset_ns": 11910116098,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "fault-event-synchronize-0",
+      "run_kind": "fault",
+      "event": "run-complete",
+      "session_id": "fault-event-synchronize-0-session",
+      "request_id": "fault-event-synchronize-0-request",
+      "transaction_id": "fault-event-synchronize-0-transaction",
+      "lease_id": "fault-event-synchronize-0-lease"
+    },
+    {
+      "sequence": 243,
+      "offset_ns": 11994195602,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "reuse-event-synchronize-0",
+      "run_kind": "reuse",
+      "event": "run-start",
+      "session_id": "fault-event-synchronize-0-session",
+      "request_id": "reuse-event-synchronize-0-request",
+      "transaction_id": "reuse-event-synchronize-0-transaction",
+      "lease_id": "reuse-event-synchronize-0-lease"
+    },
+    {
+      "sequence": 244,
+      "offset_ns": 11994697453,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "reuse-event-synchronize-0",
+      "run_kind": "reuse",
+      "event": "lease-acquired",
+      "session_id": "fault-event-synchronize-0-session",
+      "request_id": "reuse-event-synchronize-0-request",
+      "transaction_id": "reuse-event-synchronize-0-transaction",
+      "lease_id": "reuse-event-synchronize-0-lease"
+    },
+    {
+      "sequence": 245,
+      "offset_ns": 12216660485,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "reuse-event-synchronize-0",
+      "run_kind": "reuse",
+      "event": "completion-fence",
+      "session_id": "fault-event-synchronize-0-session",
+      "request_id": "reuse-event-synchronize-0-request",
+      "transaction_id": "reuse-event-synchronize-0-transaction",
+      "lease_id": "reuse-event-synchronize-0-lease"
+    },
+    {
+      "sequence": 246,
+      "offset_ns": 12216771940,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "reuse-event-synchronize-0",
+      "run_kind": "reuse",
+      "event": "result-published",
+      "session_id": "fault-event-synchronize-0-session",
+      "request_id": "reuse-event-synchronize-0-request",
+      "transaction_id": "reuse-event-synchronize-0-transaction",
+      "lease_id": "reuse-event-synchronize-0-lease"
+    },
+    {
+      "sequence": 247,
+      "offset_ns": 12216784520,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "reuse-event-synchronize-0",
+      "run_kind": "reuse",
+      "event": "transaction-committed",
+      "session_id": "fault-event-synchronize-0-session",
+      "request_id": "reuse-event-synchronize-0-request",
+      "transaction_id": "reuse-event-synchronize-0-transaction",
+      "lease_id": "reuse-event-synchronize-0-lease"
+    },
+    {
+      "sequence": 248,
+      "offset_ns": 12216798104,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "reuse-event-synchronize-0",
+      "run_kind": "reuse",
+      "event": "lease-released",
+      "session_id": "fault-event-synchronize-0-session",
+      "request_id": "reuse-event-synchronize-0-request",
+      "transaction_id": "reuse-event-synchronize-0-transaction",
+      "lease_id": "reuse-event-synchronize-0-lease"
+    },
+    {
+      "sequence": 249,
+      "offset_ns": 12216802720,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "reuse-event-synchronize-0",
+      "run_kind": "reuse",
+      "event": "budget-restored",
+      "session_id": "fault-event-synchronize-0-session",
+      "request_id": "reuse-event-synchronize-0-request",
+      "transaction_id": "reuse-event-synchronize-0-transaction",
+      "lease_id": "reuse-event-synchronize-0-lease"
+    },
+    {
+      "sequence": 250,
+      "offset_ns": 12302718691,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "reuse-event-synchronize-0",
+      "run_kind": "reuse",
+      "event": "run-complete",
+      "session_id": "fault-event-synchronize-0-session",
+      "request_id": "reuse-event-synchronize-0-request",
+      "transaction_id": "reuse-event-synchronize-0-transaction",
+      "lease_id": "reuse-event-synchronize-0-lease"
+    },
+    {
+      "sequence": 251,
+      "offset_ns": 12378747627,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "fault-event-synchronize-1",
+      "run_kind": "fault",
+      "event": "run-start",
+      "session_id": "fault-event-synchronize-1-session",
+      "request_id": "fault-event-synchronize-1-request",
+      "transaction_id": "fault-event-synchronize-1-transaction",
+      "lease_id": "fault-event-synchronize-1-lease"
+    },
+    {
+      "sequence": 252,
+      "offset_ns": 12378989690,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "fault-event-synchronize-1",
+      "run_kind": "fault",
+      "event": "fault-armed",
+      "session_id": "fault-event-synchronize-1-session",
+      "request_id": "fault-event-synchronize-1-request",
+      "transaction_id": "fault-event-synchronize-1-transaction",
+      "lease_id": "fault-event-synchronize-1-lease",
+      "fault_point": "event-synchronize",
+      "operation_ordinal": 1,
+      "planned_injection_count": 2
+    },
+    {
+      "sequence": 253,
+      "offset_ns": 12379213097,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "fault-event-synchronize-1",
+      "run_kind": "fault",
+      "event": "lease-acquired",
+      "session_id": "fault-event-synchronize-1-session",
+      "request_id": "fault-event-synchronize-1-request",
+      "transaction_id": "fault-event-synchronize-1-transaction",
+      "lease_id": "fault-event-synchronize-1-lease"
+    },
+    {
+      "sequence": 254,
+      "offset_ns": 12582954329,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "fault-event-synchronize-1",
+      "run_kind": "fault",
+      "event": "fault-triggered",
+      "session_id": "fault-event-synchronize-1-session",
+      "request_id": "fault-event-synchronize-1-request",
+      "transaction_id": "fault-event-synchronize-1-transaction",
+      "lease_id": "fault-event-synchronize-1-lease",
+      "fault_point": "event-synchronize",
+      "operation_ordinal": 1,
+      "error_type": "RuntimeError",
+      "error_sha256": "b9a4cc7c89e153c9c1a8824937b64be6d723283e97702534558695436c379f31",
+      "backend_call_relation": "before-backend-call"
+    },
+    {
+      "sequence": 255,
+      "offset_ns": 12583150720,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "fault-event-synchronize-1",
+      "run_kind": "fault",
+      "event": "fault-triggered",
+      "session_id": "fault-event-synchronize-1-session",
+      "request_id": "fault-event-synchronize-1-request",
+      "transaction_id": "fault-event-synchronize-1-transaction",
+      "lease_id": "fault-event-synchronize-1-lease",
+      "fault_point": "event-synchronize",
+      "operation_ordinal": 2,
+      "error_type": "RuntimeError",
+      "error_sha256": "b9a4cc7c89e153c9c1a8824937b64be6d723283e97702534558695436c379f31",
+      "backend_call_relation": "before-backend-call"
+    },
+    {
+      "sequence": 256,
+      "offset_ns": 12583189962,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "fault-event-synchronize-1",
+      "run_kind": "fault",
+      "event": "transaction-retained",
+      "session_id": "fault-event-synchronize-1-session",
+      "request_id": "fault-event-synchronize-1-request",
+      "transaction_id": "fault-event-synchronize-1-transaction",
+      "lease_id": "fault-event-synchronize-1-lease"
+    },
+    {
+      "sequence": 257,
+      "offset_ns": 12583358935,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "fault-event-synchronize-1",
+      "run_kind": "fault",
+      "event": "new-work-rejected",
+      "session_id": "fault-event-synchronize-1-session",
+      "request_id": "fault-event-synchronize-1-request",
+      "transaction_id": "fault-event-synchronize-1-transaction",
+      "lease_id": "fault-event-synchronize-1-lease",
+      "blocked_request_id": "blocked-event-synchronize-1"
+    },
+    {
+      "sequence": 258,
+      "offset_ns": 12583362309,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "fault-event-synchronize-1",
+      "run_kind": "fault",
+      "event": "recovery-started",
+      "session_id": "fault-event-synchronize-1-session",
+      "request_id": "fault-event-synchronize-1-request",
+      "transaction_id": "fault-event-synchronize-1-transaction",
+      "lease_id": "fault-event-synchronize-1-lease"
+    },
+    {
+      "sequence": 259,
+      "offset_ns": 12583559864,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "fault-event-synchronize-1",
+      "run_kind": "fault",
+      "event": "backend-quiescent",
+      "session_id": "fault-event-synchronize-1-session",
+      "request_id": "fault-event-synchronize-1-request",
+      "transaction_id": "fault-event-synchronize-1-transaction",
+      "lease_id": "fault-event-synchronize-1-lease"
+    },
+    {
+      "sequence": 260,
+      "offset_ns": 12583592953,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "fault-event-synchronize-1",
+      "run_kind": "fault",
+      "event": "transaction-aborted",
+      "session_id": "fault-event-synchronize-1-session",
+      "request_id": "fault-event-synchronize-1-request",
+      "transaction_id": "fault-event-synchronize-1-transaction",
+      "lease_id": "fault-event-synchronize-1-lease"
+    },
+    {
+      "sequence": 261,
+      "offset_ns": 12583607049,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "fault-event-synchronize-1",
+      "run_kind": "fault",
+      "event": "lease-released",
+      "session_id": "fault-event-synchronize-1-session",
+      "request_id": "fault-event-synchronize-1-request",
+      "transaction_id": "fault-event-synchronize-1-transaction",
+      "lease_id": "fault-event-synchronize-1-lease"
+    },
+    {
+      "sequence": 262,
+      "offset_ns": 12583610809,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "fault-event-synchronize-1",
+      "run_kind": "fault",
+      "event": "budget-restored",
+      "session_id": "fault-event-synchronize-1-session",
+      "request_id": "fault-event-synchronize-1-request",
+      "transaction_id": "fault-event-synchronize-1-transaction",
+      "lease_id": "fault-event-synchronize-1-lease"
+    },
+    {
+      "sequence": 263,
+      "offset_ns": 12670783529,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "fault-event-synchronize-1",
+      "run_kind": "fault",
+      "event": "run-complete",
+      "session_id": "fault-event-synchronize-1-session",
+      "request_id": "fault-event-synchronize-1-request",
+      "transaction_id": "fault-event-synchronize-1-transaction",
+      "lease_id": "fault-event-synchronize-1-lease"
+    },
+    {
+      "sequence": 264,
+      "offset_ns": 12753890526,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "reuse-event-synchronize-1",
+      "run_kind": "reuse",
+      "event": "run-start",
+      "session_id": "fault-event-synchronize-1-session",
+      "request_id": "reuse-event-synchronize-1-request",
+      "transaction_id": "reuse-event-synchronize-1-transaction",
+      "lease_id": "reuse-event-synchronize-1-lease"
+    },
+    {
+      "sequence": 265,
+      "offset_ns": 12754367056,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "reuse-event-synchronize-1",
+      "run_kind": "reuse",
+      "event": "lease-acquired",
+      "session_id": "fault-event-synchronize-1-session",
+      "request_id": "reuse-event-synchronize-1-request",
+      "transaction_id": "reuse-event-synchronize-1-transaction",
+      "lease_id": "reuse-event-synchronize-1-lease"
+    },
+    {
+      "sequence": 266,
+      "offset_ns": 12902630638,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "reuse-event-synchronize-1",
+      "run_kind": "reuse",
+      "event": "completion-fence",
+      "session_id": "fault-event-synchronize-1-session",
+      "request_id": "reuse-event-synchronize-1-request",
+      "transaction_id": "reuse-event-synchronize-1-transaction",
+      "lease_id": "reuse-event-synchronize-1-lease"
+    },
+    {
+      "sequence": 267,
+      "offset_ns": 12902763129,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "reuse-event-synchronize-1",
+      "run_kind": "reuse",
+      "event": "result-published",
+      "session_id": "fault-event-synchronize-1-session",
+      "request_id": "reuse-event-synchronize-1-request",
+      "transaction_id": "reuse-event-synchronize-1-transaction",
+      "lease_id": "reuse-event-synchronize-1-lease"
+    },
+    {
+      "sequence": 268,
+      "offset_ns": 12902776311,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "reuse-event-synchronize-1",
+      "run_kind": "reuse",
+      "event": "transaction-committed",
+      "session_id": "fault-event-synchronize-1-session",
+      "request_id": "reuse-event-synchronize-1-request",
+      "transaction_id": "reuse-event-synchronize-1-transaction",
+      "lease_id": "reuse-event-synchronize-1-lease"
+    },
+    {
+      "sequence": 269,
+      "offset_ns": 12902790605,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "reuse-event-synchronize-1",
+      "run_kind": "reuse",
+      "event": "lease-released",
+      "session_id": "fault-event-synchronize-1-session",
+      "request_id": "reuse-event-synchronize-1-request",
+      "transaction_id": "reuse-event-synchronize-1-transaction",
+      "lease_id": "reuse-event-synchronize-1-lease"
+    },
+    {
+      "sequence": 270,
+      "offset_ns": 12902794959,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "reuse-event-synchronize-1",
+      "run_kind": "reuse",
+      "event": "budget-restored",
+      "session_id": "fault-event-synchronize-1-session",
+      "request_id": "reuse-event-synchronize-1-request",
+      "transaction_id": "reuse-event-synchronize-1-transaction",
+      "lease_id": "reuse-event-synchronize-1-lease"
+    },
+    {
+      "sequence": 271,
+      "offset_ns": 12991681654,
+      "worker_id": "edf50c8436cdf902b7fe2878da8ddfdeebce422a56529ade06c9d6618b4d2df8",
+      "run_id": "reuse-event-synchronize-1",
+      "run_kind": "reuse",
+      "event": "run-complete",
+      "session_id": "fault-event-synchronize-1-session",
+      "request_id": "reuse-event-synchronize-1-request",
+      "transaction_id": "reuse-event-synchronize-1-transaction",
+      "lease_id": "reuse-event-synchronize-1-lease"
+    }
+  ],
+  "summaries": {
+    "quantile_method": "nearest-rank",
+    "p99_minimum_sample_count": 1000,
+    "warmups_excluded": true,
+    "control_wall_ns": {
+      "sample_count": 5,
+      "min": 113506622,
+      "p50": 115474301,
+      "p95": 122759593,
+      "p99": "not_estimated",
+      "max": 122759593
+    },
+    "success_wall_ns": {
+      "sample_count": 5,
+      "min": 121527670,
+      "p50": 134224002,
+      "p95": 207699090,
+      "p99": "not_estimated",
+      "max": 207699090
+    },
+    "cancellation_to_quiescence_ns": {
+      "sample_count": 3,
+      "min": 431142,
+      "p50": 473220,
+      "p95": 503548,
+      "p99": "not_estimated",
+      "max": 503548
+    },
+    "success_peak_allocated_delta_bytes": {
+      "sample_count": 5,
+      "min": 37127680,
+      "p50": 37127680,
+      "p95": 37127680,
+      "p99": "not_estimated",
+      "max": 37127680
+    },
+    "success_peak_reserved_delta_bytes": {
+      "sample_count": 5,
+      "min": 65011712,
+      "p50": 65011712,
+      "p95": 65011712,
+      "p99": "not_estimated",
+      "max": 65011712
+    },
+    "control_peak_allocated_delta_bytes": {
+      "sample_count": 5,
+      "min": 29484544,
+      "p50": 29484544,
+      "p95": 29484544,
+      "p99": "not_estimated",
+      "max": 29484544
+    },
+    "control_peak_reserved_delta_bytes": {
+      "sample_count": 5,
+      "min": 0,
+      "p50": 0,
+      "p95": 0,
+      "p99": "not_estimated",
+      "max": 0
+    },
+    "fault_recovery_ns": {
+      "cleanup": {
+        "sample_count": 2,
+        "min": 255698,
+        "p50": 255698,
+        "p95": 272033,
+        "p99": "not_estimated",
+        "max": 272033
+      },
+      "event-create": {
+        "sample_count": 2,
+        "min": 229292,
+        "p50": 229292,
+        "p95": 242097,
+        "p99": "not_estimated",
+        "max": 242097
+      },
+      "event-record": {
+        "sample_count": 2,
+        "min": 210729,
+        "p50": 210729,
+        "p95": 224392,
+        "p99": "not_estimated",
+        "max": 224392
+      },
+      "event-synchronize": {
+        "sample_count": 2,
+        "min": 197555,
+        "p50": 197555,
+        "p95": 207127,
+        "p99": "not_estimated",
+        "max": 207127
+      }
+    },
+    "fault_injection_to_quiescence_ns": {
+      "cleanup": {
+        "sample_count": 2,
+        "min": 668662,
+        "p50": 668662,
+        "p95": 727991,
+        "p99": "not_estimated",
+        "max": 727991
+      },
+      "event-create": {
+        "sample_count": 2,
+        "min": 692161,
+        "p50": 692161,
+        "p95": 708461,
+        "p99": "not_estimated",
+        "max": 708461
+      },
+      "event-record": {
+        "sample_count": 2,
+        "min": 639113,
+        "p50": 639113,
+        "p95": 644584,
+        "p99": "not_estimated",
+        "max": 644584
+      },
+      "event-synchronize": {
+        "sample_count": 2,
+        "min": 605535,
+        "p50": 605535,
+        "p95": 635055,
+        "p99": "not_estimated",
+        "max": 635055
+      }
+    }
+  },
+  "derived_invariants": {
+    "event_stream_globally_ordered": true,
+    "control_and_runtime_results_stable": true,
+    "success_published_once_after_fence": true,
+    "cancellation_after_incomplete_step_never_published": true,
+    "fault_exactly_injected_never_published": true,
+    "fault_blocked_new_work": true,
+    "post_recovery_reuse_committed": true,
+    "leases_held_until_quiescence": true,
+    "budgets_retained_until_quiescence": true,
+    "budgets_restored_after_release": true,
+    "device_and_allocator_samples_within_bounds": true
+  }
+}

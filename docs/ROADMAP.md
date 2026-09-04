@@ -4,15 +4,15 @@
 page records implementation order. A target is incomplete until its stated
 evidence is committed to the repository.
 
-The next Modal step is the single-worker cell in the
-[versioned CUDA qualification registration](../experiments/native-cuda-qualification-v6.json).
-Its evidence contract is qualification-only. A later performance matrix follows
-the fixed comparison, cost order, metrics, falsifiers, and publication rules in
-the [CUDA experiment protocol](EXPERIMENT_PROTOCOL.md) under a new evidence
-schema or version.
-
-The [evidence index](../evidence/README.md) records prior attempts and their
-limits. No version-six GPU attempt or qualification record exists.
+The single-worker cell in the
+[versioned CUDA qualification registration](../experiments/native-cuda-qualification-v6.json)
+has one passing
+[record](../evidence/modal-t4-tiny-en-jfk-native-cuda-qualification-v6-2026-09-04.json).
+Its evidence contract is qualification-only. The next Modal step requires a
+separate registration for replication or a new schema for performance. A later
+performance matrix follows the fixed comparison, cost order, metrics,
+falsifiers, and publication rules in the
+[CUDA experiment protocol](EXPERIMENT_PROTOCOL.md).
 
 ## Now: establish the reference boundary
 
@@ -24,8 +24,8 @@ limits. No version-six GPU attempt or qualification record exists.
   overlapping outer decoder calls in two operating-system threads.
 - Maintain the adapter-level two-lane CPU record.
 - Select and document one random-generator contract.
-- Run and publish the fixed single-worker T4 qualification cell after its
-  registration has an external public timestamp.
+- Maintain the fixed single-worker T4 qualification record. Rerun it only under
+  a new versioned registration.
 - Extend the recorded single-lane T4 case to more inputs and model sizes only
   under separately versioned registrations.
 - Derive measured resource profiles only after the expanded CUDA corpus is

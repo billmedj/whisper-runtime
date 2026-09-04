@@ -13,8 +13,13 @@ The local validator binds that tracked file by path, digest, and runtime commit,
 but cannot prove that it was public before execution. A public Git host or
 another independent service must supply that timestamp.
 
-The [evidence index](../evidence/README.md) records prior attempts and their
-limits. No version-six GPU attempt or qualification record exists.
+The [evidence index](../evidence/README.md) records all attempts and their
+limits. Version six has one passing
+[qualification record](../evidence/modal-t4-tiny-en-jfk-native-cuda-qualification-v6-2026-09-04.json)
+and one append-only
+[attempt receipt](../evidence/modal-native-cuda-qualification-v6-attempt-2026-09-04.jsonl).
+This completes the first fixed T4 qualification cell. It does not complete the
+performance matrix.
 
 A performance campaign requires a new evidence schema or version. It must
 require the full metrics in this protocol, matched probes on the control and

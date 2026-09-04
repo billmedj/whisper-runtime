@@ -24,7 +24,17 @@ IGNORED_PARTS = {
     "dist",
     "generated",
 }
-TEXT_SUFFIXES = {".json", ".lean", ".md", ".ps1", ".py", ".toml", ".yml", ".yaml"}
+TEXT_SUFFIXES = {
+    ".json",
+    ".jsonl",
+    ".lean",
+    ".md",
+    ".ps1",
+    ".py",
+    ".toml",
+    ".yml",
+    ".yaml",
+}
 OUTCOMES = {"success", "error", "cancelled", "deadline_exceeded"}
 MEASUREMENT_FIELDS = {
     "active_requests_peak",
@@ -416,6 +426,37 @@ def _read_json(path: Path, failures: list[str]) -> Any | None:
     except (OSError, json.JSONDecodeError, ValueError) as error:
         failures.append(f"{path.relative_to(ROOT)} is not valid JSON: {error}")
         return None
+
+
+def _loads_strict_json(text: str, location: str, failures: list[str]) -> Any | None:
+    def reject_duplicate_keys(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
+        value: dict[str, Any] = {}
+        for key, item in pairs:
+            if key in value:
+                raise ValueError(f"duplicate object key: {key}")
+            value[key] = item
+        return value
+
+    try:
+        return json.loads(
+            text,
+            parse_constant=lambda value: (_ for _ in ()).throw(
+                ValueError(f"non-finite JSON number: {value}")
+            ),
+            object_pairs_hook=reject_duplicate_keys,
+        )
+    except (json.JSONDecodeError, ValueError) as error:
+        failures.append(f"{location} is not valid JSON: {error}")
+        return None
+
+
+def _read_strict_json(path: Path, location: str, failures: list[str]) -> Any | None:
+    try:
+        text = path.read_text(encoding="utf-8")
+    except (OSError, UnicodeError) as error:
+        failures.append(f"{location} cannot be read as UTF-8: {error}")
+        return None
+    return _loads_strict_json(text, location, failures)
 
 
 def _same_recorded_result(
@@ -1649,6 +1690,313 @@ def check_modal_cuda_schema() -> list[str]:
     return failures
 
 
+def check_native_cuda_qualification_publication(
+    *,
+    record_path: Path | None = None,
+    receipt_path: Path | None = None,
+    schema_path: Path | None = None,
+    manifest_path: Path | None = None,
+) -> list[str]:
+    """Validate the committed V6 record and its local publication receipt.
+
+    This check proves repository-local schema and digest relations. It does not
+    replay the historical backend or claim to reconstruct its execution state.
+    """
+
+    record_location = (
+        "evidence/modal-t4-tiny-en-jfk-native-cuda-qualification-v6-2026-09-04.json"
+    )
+    receipt_location = (
+        "evidence/modal-native-cuda-qualification-v6-attempt-2026-09-04.jsonl"
+    )
+    schema_location = "evidence/modal-native-cuda-qualification.schema.json"
+    manifest_location = "experiments/native-cuda-qualification-v6.json"
+    expected_record_path = "artifacts/modal/native-cuda-qualification-v6.json"
+    expected_manifest_id = "native-cuda-qualification-v6"
+    expected_manifest_sha256 = (
+        "87039fecb06c990e40ccc4c736e25b6d5db7d86a88df22b488cb9d392d946a01"
+    )
+    expected_runtime_commit = "9c2494234f08b24325d427ea422818b24f460c0c"
+
+    record_path = record_path or ROOT / record_location
+    receipt_path = receipt_path or ROOT / receipt_location
+    schema_path = schema_path or ROOT / schema_location
+    manifest_path = manifest_path or ROOT / manifest_location
+
+    failures: list[str] = []
+    record = _read_strict_json(record_path, record_location, failures)
+    schema = _read_strict_json(schema_path, schema_location, failures)
+    manifest = _read_strict_json(manifest_path, manifest_location, failures)
+
+    if record is not None and schema is not None:
+        try:
+            from jsonschema import Draft202012Validator, FormatChecker
+            from jsonschema.exceptions import SchemaError
+        except ImportError:
+            failures.append(
+                "JSON Schema validation is unavailable; install the 'validation' extra"
+            )
+        else:
+            try:
+                Draft202012Validator.check_schema(schema)
+            except SchemaError as error:
+                failures.append(f"{schema_location} is not a valid schema: {error}")
+            else:
+                validator = Draft202012Validator(schema, format_checker=FormatChecker())
+                for error in sorted(
+                    validator.iter_errors(record),
+                    key=lambda item: tuple(str(part) for part in item.path),
+                ):
+                    field = ".".join(str(part) for part in error.absolute_path)
+                    location = (
+                        f"{record_location}.{field}" if field else record_location
+                    )
+                    failures.append(f"{location}: {error.message}")
+
+    if isinstance(record, dict):
+        if record.get("status") != "passed":
+            failures.append(f"{record_location}.status must be passed")
+        outcome = record.get("outcome")
+        if not isinstance(outcome, dict) or (
+            outcome.get("result") != "passed"
+            or outcome.get("failure_class") != "none"
+            or outcome.get("failure_summary") is not None
+        ):
+            failures.append(
+                f"{record_location}.outcome must declare a passing result "
+                "without a failure"
+            )
+        registration = record.get("qualification_registration")
+        if (
+            not isinstance(registration, dict)
+            or registration.get("manifest_id") != expected_manifest_id
+        ):
+            failures.append(
+                f"{record_location}.qualification_registration.manifest_id "
+                f"must be {expected_manifest_id}"
+            )
+        if (
+            not isinstance(registration, dict)
+            or registration.get("manifest_path") != manifest_location
+        ):
+            failures.append(
+                f"{record_location}.qualification_registration.manifest_path "
+                f"must be {manifest_location}"
+            )
+        if (
+            not isinstance(registration, dict)
+            or registration.get("manifest_sha256") != expected_manifest_sha256
+        ):
+            failures.append(
+                f"{record_location}.qualification_registration.manifest_sha256 "
+                "does not match the registered V6 digest"
+            )
+        if (
+            not isinstance(registration, dict)
+            or registration.get("runtime_commit") != expected_runtime_commit
+        ):
+            failures.append(
+                f"{record_location}.qualification_registration.runtime_commit "
+                "does not match the executed V6 commit"
+            )
+        derived = record.get("derived_invariants")
+        if not isinstance(derived, dict) or any(
+            value is not True for value in derived.values()
+        ):
+            failures.append(f"{record_location}.derived_invariants must all be true")
+
+    try:
+        receipt_bytes = receipt_path.read_bytes()
+        receipt_text = receipt_bytes.decode("utf-8")
+    except (OSError, UnicodeError) as error:
+        failures.append(f"{receipt_location} cannot be read as UTF-8: {error}")
+        return failures
+
+    if b"\r" in receipt_bytes:
+        failures.append(f"{receipt_location} must use LF line endings")
+    if not receipt_bytes.endswith(b"\n"):
+        failures.append(f"{receipt_location} must end with a newline")
+    receipt_lines = receipt_text.splitlines()
+    if len(receipt_lines) != 2:
+        failures.append(
+            f"{receipt_location} must contain exactly 2 JSON events; "
+            f"found {len(receipt_lines)}"
+        )
+        return failures
+
+    events = [
+        _loads_strict_json(line, f"{receipt_location}:{index + 1}", failures)
+        for index, line in enumerate(receipt_lines)
+    ]
+    if any(not isinstance(event, dict) for event in events):
+        for index, event in enumerate(events):
+            if event is not None and not isinstance(event, dict):
+                failures.append(f"{receipt_location}:{index + 1} must be an object")
+        return failures
+    start, terminal = events
+    assert isinstance(start, dict) and isinstance(terminal, dict)
+
+    common_fields = {
+        "receipt_version",
+        "campaign_id",
+        "attempt",
+        "max_attempts",
+        "runtime_commit",
+        "manifest_sha256",
+        "record_path",
+    }
+    event_fields = common_fields | {"sequence", "recorded_at", "event", "stage"}
+    expected_keys = (event_fields, event_fields | {"record_sha256"})
+    for index, (event, keys) in enumerate(zip(events, expected_keys, strict=True)):
+        assert isinstance(event, dict)
+        missing = sorted(keys - set(event))
+        extra = sorted(set(event) - keys)
+        if missing:
+            failures.append(
+                f"{receipt_location}:{index + 1} is missing fields: "
+                f"{', '.join(missing)}"
+            )
+        if extra:
+            failures.append(
+                f"{receipt_location}:{index + 1} has unexpected fields: "
+                f"{', '.join(extra)}"
+            )
+        sequence = event.get("sequence")
+        if type(sequence) is not int or sequence != index:
+            failures.append(f"{receipt_location}:{index + 1}.sequence must be {index}")
+
+    for field in sorted(common_fields):
+        if start.get(field) != terminal.get(field):
+            failures.append(
+                f"{receipt_location} events disagree on common field {field}"
+            )
+
+    if (
+        start.get("event") != "attempt-started"
+        or start.get("stage") != "before-dispatch"
+    ):
+        failures.append(
+            f"{receipt_location}:1 must be attempt-started at before-dispatch"
+        )
+    if (
+        terminal.get("event") != "record-published"
+        or terminal.get("stage") != "record-write"
+    ):
+        failures.append(
+            f"{receipt_location}:2 must be record-published at record-write"
+        )
+    if start.get("receipt_version") != "1":
+        failures.append(f"{receipt_location} receipt_version must be '1'")
+    if type(start.get("attempt")) is not int or start.get("attempt") != 1:
+        failures.append(f"{receipt_location} attempt must be 1")
+    if type(start.get("max_attempts")) is not int or start.get("max_attempts") != 1:
+        failures.append(f"{receipt_location} max_attempts must be 1")
+    if start.get("record_path") != expected_record_path:
+        failures.append(
+            f"{receipt_location} record_path must be {expected_record_path}"
+        )
+    if start.get("campaign_id") != expected_manifest_id:
+        failures.append(
+            f"{receipt_location} campaign_id must be {expected_manifest_id}"
+        )
+    if start.get("manifest_sha256") != expected_manifest_sha256:
+        failures.append(
+            f"{receipt_location} manifest_sha256 does not match the registered V6 digest"
+        )
+    if start.get("runtime_commit") != expected_runtime_commit:
+        failures.append(
+            f"{receipt_location} runtime_commit does not match the executed V6 commit"
+        )
+
+    timestamps: list[dt.datetime] = []
+    for index, event in enumerate(events):
+        assert isinstance(event, dict)
+        value = event.get("recorded_at")
+        try:
+            if not isinstance(value, str) or not value.endswith("Z"):
+                raise ValueError
+            parsed = dt.datetime.fromisoformat(value.removesuffix("Z") + "+00:00")
+            if parsed.tzinfo is None:
+                raise ValueError
+        except ValueError:
+            failures.append(
+                f"{receipt_location}:{index + 1}.recorded_at must be a UTC ISO 8601 timestamp"
+            )
+        else:
+            timestamps.append(parsed)
+    if len(timestamps) == 2 and timestamps[1] < timestamps[0]:
+        failures.append(f"{receipt_location} event timestamps must be monotonic")
+
+    if record is not None and isinstance(record, dict):
+        registration = record.get("qualification_registration")
+        runtime = record.get("runtime")
+        producer = record.get("producer")
+        worker = record.get("worker")
+        if all(
+            isinstance(value, dict)
+            for value in (registration, runtime, producer, worker)
+        ):
+            assert isinstance(registration, dict)
+            assert isinstance(runtime, dict)
+            assert isinstance(producer, dict)
+            assert isinstance(worker, dict)
+            campaign_values = (
+                start.get("campaign_id"),
+                registration.get("manifest_id"),
+                worker.get("campaign_id"),
+            )
+            if any(value != campaign_values[0] for value in campaign_values[1:]):
+                failures.append(
+                    f"{receipt_location} campaign_id does not match the record"
+                )
+            runtime_values = (
+                start.get("runtime_commit"),
+                registration.get("runtime_commit"),
+                runtime.get("git_commit"),
+                producer.get("git_commit"),
+            )
+            if any(value != runtime_values[0] for value in runtime_values[1:]):
+                failures.append(
+                    f"{receipt_location} runtime_commit does not match the record"
+                )
+            if start.get("manifest_sha256") != registration.get("manifest_sha256"):
+                failures.append(
+                    f"{receipt_location} manifest_sha256 does not match the record"
+                )
+
+    if manifest is not None and isinstance(manifest, dict):
+        if manifest.get("manifest_id") != expected_manifest_id:
+            failures.append(
+                f"{manifest_location}.manifest_id must be {expected_manifest_id}"
+            )
+        if start.get("campaign_id") != manifest.get("manifest_id"):
+            failures.append(
+                f"{receipt_location} campaign_id does not match {manifest_location}"
+            )
+        observed_manifest_sha256 = hashlib.sha256(
+            manifest_path.read_bytes()
+        ).hexdigest()
+        if observed_manifest_sha256 != expected_manifest_sha256:
+            failures.append(
+                f"{manifest_location} does not match the registered V6 digest"
+            )
+        if start.get("manifest_sha256") != observed_manifest_sha256:
+            failures.append(
+                f"{receipt_location} manifest_sha256 does not match {manifest_location}"
+            )
+
+    try:
+        observed_record_sha256 = hashlib.sha256(record_path.read_bytes()).hexdigest()
+    except OSError as error:
+        failures.append(f"{record_location} cannot be hashed: {error}")
+    else:
+        if terminal.get("record_sha256") != observed_record_sha256:
+            failures.append(
+                f"{receipt_location}:2.record_sha256 does not match {record_location}"
+            )
+    return failures
+
+
 def validate_against_json_schema(fixture: dict[str, Any], location: str) -> list[str]:
     return validate_conformance_document(fixture, location)
 
@@ -1896,6 +2244,7 @@ def main() -> int:
         *check_lean_sources(),
         *check_fixture_schema(),
         *check_modal_cuda_schema(),
+        *check_native_cuda_qualification_publication(),
         *check_conformance_cases(),
         *check_native_interleaving_evidence(),
         *check_native_threaded_evidence(),

@@ -1,6 +1,6 @@
 # Integration evidence
 
-This directory contains eight committed records from real backend runs:
+This directory contains nine committed records from real backend runs:
 
 - `native-cpu-tiny-en-jfk-2026-09-03.json` records one
   `NativeWhisperAdapter` transaction.
@@ -19,6 +19,8 @@ This directory contains eight committed records from real backend runs:
   `modal-t4-tiny-en-jfk-native-cuda-transaction-gcp-2026-09-04.json` record two
   native-adapter transactions on Modal T4 workers. The workers ran in AWS
   `us-west-2` and GCP `europe-west2`.
+- `modal-t4-tiny-en-jfk-native-cuda-qualification-v6-2026-09-04.json` records
+  the registered single-worker qualification on an AWS `us-west-2` T4.
 
 Each record identifies the runtime revision, backend source tree, model
 checkpoint, input, environment, and observed outcome.
@@ -27,14 +29,16 @@ checkpoint, input, environment, and observed outcome.
 fixed native CUDA qualification cell. The cell uses one worker, two warm-up pairs, five
 measured pairs, three cancellation runs, and two repetitions at each of four
 fault points. Its p50 and p95 summaries are diagnostic; p99 is
-`not_estimated`. No committed record currently satisfies this contract.
+`not_estimated`. The version-six record satisfies this contract.
 
 The active registration is
 [`experiments/native-cuda-qualification-v6.json`](../experiments/native-cuda-qualification-v6.json).
 A record binds its path, digest, and runtime commit. The local validator cannot
 prove that the registration was public before execution; that requires an
-external public timestamp. A future performance campaign requires a new schema
-or version, full performance metrics, and matched control/runtime probes. See
+external public timestamp. The same version-six manifest and digest were public
+in commit `bf46687d6c0f837426d85a1f97c60dd64128f9ed` before execution. A future
+performance campaign requires a new schema or version, full performance
+metrics, and matched control/runtime probes. See
 [`docs/CUDA_QUALIFICATION_CONTRACT.md`](../docs/CUDA_QUALIFICATION_CONTRACT.md) and
 [`docs/EXPERIMENT_PROTOCOL.md`](../docs/EXPERIMENT_PROTOCOL.md).
 
@@ -102,9 +106,23 @@ distribution inventory as separate provenance observations. It does not
 require a Modal distribution entry. It retains exact Torch module and
 distribution equality because Torch executed the workload. It collects the
 dependency inventory and runs a CPU contract rehearsal before creating the GPU
-attempt receipt. No version-six GPU attempt or qualification record exists. The
-inventory describes distribution metadata; it does not prove the bytes of
-imported modules. Source and build-input hashes remain the integrity anchors.
+attempt receipt. Its single attempt produced a
+[`record-published` receipt](modal-native-cuda-qualification-v6-attempt-2026-09-04.jsonl)
+and a
+[passing qualification record](modal-t4-tiny-en-jfk-native-cuda-qualification-v6-2026-09-04.json).
+The record binds runtime commit
+`9c2494234f08b24325d427ea422818b24f460c0c`, an AWS `us-west-2` Tesla T4,
+the `tiny.en` checkpoint, and the pinned JFK input. It passed the schema and
+semantic validator, including exact output compatibility, cancellation,
+retention, recovery, resource-ledger, completion-fence, and publication
+relations. The record SHA-256 is
+`e3374c6f39f0739336706ce161e3836396f440b01c6254210d90e806678476bb`.
+The receipt SHA-256 is
+`641c3cd248de75fc7c96096fee8aee6ff1000adb3ba06cbe916db9c096255d02`.
+This is qualification evidence for one fixed cell, not a performance or
+production-readiness result. The inventory describes distribution metadata; it
+does not prove the bytes of imported modules. Source and build-input hashes
+remain the integrity anchors.
 
 `modal-cuda-readiness.schema.json` defines the version-one T4 record. Both
 committed records passed its schema and semantic validator. They bind the same

@@ -12,6 +12,7 @@ from types import SimpleNamespace
 
 from capture_whisper_reference import git_metadata
 from check_repository import (
+    check_native_cuda_qualification_publication,
     contains_absolute_user_path,
     validate_audio_binding,
 )
@@ -96,6 +97,164 @@ class AudioManifestTests(unittest.TestCase):
         }
         failures = validate_audio_binding(audio, manifest, "fixture.audio")
         self.assertEqual(len(failures), 4)
+
+
+class NativeCudaQualificationPublicationTests(unittest.TestCase):
+    record_source = (
+        ROOT
+        / "evidence"
+        / "modal-t4-tiny-en-jfk-native-cuda-qualification-v6-2026-09-04.json"
+    )
+    receipt_source = (
+        ROOT
+        / "evidence"
+        / "modal-native-cuda-qualification-v6-attempt-2026-09-04.jsonl"
+    )
+
+    def _copy_publication(self, root: Path) -> tuple[Path, Path]:
+        record = root / "record.json"
+        receipt = root / "receipt.jsonl"
+        record.write_bytes(self.record_source.read_bytes())
+        receipt.write_bytes(self.receipt_source.read_bytes())
+        return record, receipt
+
+    @staticmethod
+    def _read_events(path: Path) -> list[dict[str, object]]:
+        return [
+            json.loads(line) for line in path.read_text(encoding="utf-8").splitlines()
+        ]
+
+    @staticmethod
+    def _write_events(path: Path, events: list[dict[str, object]]) -> None:
+        payload = "\n".join(
+            json.dumps(event, ensure_ascii=False, separators=(",", ":"))
+            for event in events
+        )
+        path.write_text(payload + "\n", encoding="utf-8", newline="\n")
+
+    def _sync_receipt_digest(self, record: Path, receipt: Path) -> None:
+        events = self._read_events(receipt)
+        events[1]["record_sha256"] = hashlib.sha256(record.read_bytes()).hexdigest()
+        self._write_events(receipt, events)
+
+    def test_committed_publication_is_repository_valid(self) -> None:
+        self.assertEqual(check_native_cuda_qualification_publication(), [])
+
+    def test_record_must_satisfy_its_schema(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            record, receipt = self._copy_publication(Path(directory))
+            document = json.loads(record.read_text(encoding="utf-8"))
+            del document["status"]
+            record.write_text(
+                json.dumps(document, indent=2) + "\n", encoding="utf-8", newline="\n"
+            )
+            self._sync_receipt_digest(record, receipt)
+            failures = check_native_cuda_qualification_publication(
+                record_path=record, receipt_path=receipt
+            )
+            self.assertTrue(
+                any(
+                    "status" in failure and "required" in failure
+                    for failure in failures
+                ),
+                failures,
+            )
+
+    def test_receipt_requires_exactly_two_events(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            record, receipt = self._copy_publication(Path(directory))
+            events = self._read_events(receipt)
+            events.append(dict(events[-1]))
+            self._write_events(receipt, events)
+            failures = check_native_cuda_qualification_publication(
+                record_path=record, receipt_path=receipt
+            )
+            self.assertTrue(any("exactly 2 JSON events" in item for item in failures))
+
+    def test_receipt_rejects_common_field_drift_and_wrong_terminal(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            record, receipt = self._copy_publication(Path(directory))
+            events = self._read_events(receipt)
+            events[1]["campaign_id"] = "different-campaign"
+            events[1]["event"] = "attempt-failed"
+            self._write_events(receipt, events)
+            failures = check_native_cuda_qualification_publication(
+                record_path=record, receipt_path=receipt
+            )
+            self.assertTrue(
+                any("common field campaign_id" in item for item in failures)
+            )
+            self.assertTrue(
+                any("must be record-published" in item for item in failures)
+            )
+
+    def test_receipt_rejects_unexpected_fields_and_wrong_record_digest(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            record, receipt = self._copy_publication(Path(directory))
+            events = self._read_events(receipt)
+            events[0]["ignored"] = True
+            events[1]["record_sha256"] = "0" * 64
+            self._write_events(receipt, events)
+            failures = check_native_cuda_qualification_publication(
+                record_path=record, receipt_path=receipt
+            )
+            self.assertTrue(
+                any("unexpected fields: ignored" in item for item in failures)
+            )
+            self.assertTrue(
+                any("record_sha256 does not match" in item for item in failures)
+            )
+
+    def test_publication_requires_a_passing_claim_and_true_invariants(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            record, receipt = self._copy_publication(Path(directory))
+            document = json.loads(record.read_text(encoding="utf-8"))
+            document["status"] = "failed"
+            document["outcome"].update(
+                {
+                    "result": "failed",
+                    "failure_class": "derived-invariant",
+                    "failure_summary": "simulated failure",
+                }
+            )
+            invariant = next(iter(document["derived_invariants"]))
+            document["derived_invariants"][invariant] = False
+            record.write_text(
+                json.dumps(document, indent=2) + "\n", encoding="utf-8", newline="\n"
+            )
+            self._sync_receipt_digest(record, receipt)
+            failures = check_native_cuda_qualification_publication(
+                record_path=record, receipt_path=receipt
+            )
+            self.assertTrue(any("status must be passed" in item for item in failures))
+            self.assertTrue(
+                any("must declare a passing result" in item for item in failures)
+            )
+            self.assertTrue(any("must all be true" in item for item in failures))
+
+    def test_publication_binds_the_registered_manifest_and_runtime(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            record, receipt = self._copy_publication(Path(directory))
+            document = json.loads(record.read_text(encoding="utf-8"))
+            document["qualification_registration"].update(
+                {
+                    "manifest_id": "native-cuda-qualification-v7",
+                    "manifest_path": "experiments/native-cuda-qualification-v7.json",
+                    "manifest_sha256": "0" * 64,
+                    "runtime_commit": "1" * 40,
+                }
+            )
+            record.write_text(
+                json.dumps(document, indent=2) + "\n", encoding="utf-8", newline="\n"
+            )
+            self._sync_receipt_digest(record, receipt)
+            failures = check_native_cuda_qualification_publication(
+                record_path=record, receipt_path=receipt
+            )
+            self.assertTrue(any("manifest_id must be" in item for item in failures))
+            self.assertTrue(any("manifest_path must be" in item for item in failures))
+            self.assertTrue(any("registered V6 digest" in item for item in failures))
+            self.assertTrue(any("executed V6 commit" in item for item in failures))
 
 
 class ProvenanceTests(unittest.TestCase):
