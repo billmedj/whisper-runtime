@@ -24,8 +24,15 @@ that all Whisper integrations or model extensions are thread-safe.
 The grouped multi-audio correction is
 [openai/whisper#2843](https://github.com/openai/whisper/pull/2843). It preserves
 audio-to-group pairing for beam search and best-of decoding. Shared alignment
-capture remains a separate candidate. An incremental decode-session API needs
-maintainer design review before an implementation pull request.
+capture remains a separate candidate.
+
+The alignment error-path cleanup is
+[openai/whisper#2844](https://github.com/openai/whisper/pull/2844). It removes
+temporary word-alignment hooks when model inference raises. It does not change
+alignment calculations or successful inference behavior.
+
+An incremental decode-session API needs maintainer design review before an
+implementation pull request.
 
 The seven patches in this repository are a reproducible integration series for
 the native adapter. They are not the proposed upstream series and must not be
