@@ -1,0 +1,169 @@
+{
+  "schema_version": "1",
+  "recorded_at": "2026-09-03T19:32:04.558063Z",
+  "status": "passed",
+  "scope": "patched_backend",
+  "runtime": {
+    "version": "0.1.0.dev0",
+    "git_commit": "a1911f46a636c227a5199eaff811f95ee54ad2bc",
+    "git_tree": "caee44fb581133e8c5506f4fcf50207f60ee5e7a",
+    "clean": true
+  },
+  "backend": {
+    "name": "openai-whisper-suspendable",
+    "base_commit": "86098128c0b4f24f0e2aa2994de830614b474227",
+    "applied_commit": "d7ba9a64e93c22a83964045b0ac29ac01c601fc7",
+    "git_tree": "c011d2563c26763b5f147026e6b18ef85bccd4fb",
+    "clean": true,
+    "patch_manifest": "patches/openai-whisper/SHA256SUMS",
+    "patch_manifest_sha256": "0fa1a833b0c489056d77da21188519c7e16fde7825d06bc5b902ba23a01abeb5"
+  },
+  "environment": {
+    "platform": "Windows-11-10.0.26200-SP0",
+    "python": "3.13.1",
+    "torch": "2.6.0+cpu",
+    "numpy": "2.5.2",
+    "tiktoken": "0.14.0",
+    "numba": "0.67.0",
+    "tqdm": "4.70.0",
+    "more_itertools": "11.1.0",
+    "jsonschema": "4.25.1",
+    "ffmpeg": "ffmpeg version 2025-09-28-git-0fdb5829e3-essentials_build-www.gyan.dev Copyright (c) 2000-2025 the FFmpeg developers",
+    "cpu_threads": 1
+  },
+  "model": {
+    "name": "tiny.en",
+    "device": "cpu",
+    "checkpoint_sha256": "d3dd57d32accea0b295c96e26691aa14d8822fac7d9d27d5dc00b4ca2826dd03",
+    "loaded_state_before": "sha256:8041a80119a588f542472da35e97d0372fce1d9709ed9874475e9c03deac5de6",
+    "loaded_state_after": "sha256:8041a80119a588f542472da35e97d0372fce1d9709ed9874475e9c03deac5de6",
+    "execution_state_before": "sha256:85b949d56f851277e274d3c03ed513546739b090d7309e197b4b551b8c91b74b",
+    "execution_state_after": "sha256:85b949d56f851277e274d3c03ed513546739b090d7309e197b4b551b8c91b74b"
+  },
+  "input": {
+    "fixture_id": "openai-whisper-jfk-flac",
+    "path": "tests/jfk.flac",
+    "file_sha256": "63a4b1e4c1dc655ac70961ffbf518acd249df237e5a0152faae9a4a836949715",
+    "size_bytes": 1152693,
+    "sample_rate_hz": 16000,
+    "source_sample_count": 176000,
+    "cancelled": {
+      "sample_start": 0,
+      "sample_end": 88000,
+      "pcm_sha256": "a00f67fa06fd383bf1f8b55263f4424748e0630378b5afcc497bcc9dbed6be9c",
+      "mel_sha256": "7bf72ca97247365d85b3b673005321a9770e07344a13070bd65e03b3ad7938b2"
+    },
+    "survivor": {
+      "sample_start": 0,
+      "sample_end": 176000,
+      "pcm_sha256": "59be237a0814faee9f1279bc54c8a482fa7edc09a640ff0fdd18d14d41519065",
+      "mel_sha256": "183f80f82524811b3f528f58b9d380aa2ea1ea126c9aff58f47f8666a89a04e6"
+    }
+  },
+  "execution": {
+    "mode": "deterministic_sequential_interleaving",
+    "two_overlapping_run_lifetimes": true,
+    "parallel_kernels": false,
+    "cancellation": "explicit_cleanup_after_token_step",
+    "schedule": [
+      "start:cancelled",
+      "start:survivor",
+      "prefill:cancelled",
+      "prefill:survivor",
+      "step:cancelled:1",
+      "step:survivor:1",
+      "cancel:cancelled",
+      "cleanup:cancelled:idempotent",
+      "step:survivor:2",
+      "step:survivor:3",
+      "step:survivor:4",
+      "step:survivor:5",
+      "step:survivor:6",
+      "step:survivor:7",
+      "step:survivor:8",
+      "step:survivor:9",
+      "step:survivor:10",
+      "step:survivor:11",
+      "step:survivor:12",
+      "step:survivor:13",
+      "step:survivor:14",
+      "step:survivor:15",
+      "step:survivor:16",
+      "step:survivor:17",
+      "step:survivor:18",
+      "step:survivor:19",
+      "step:survivor:20",
+      "step:survivor:21",
+      "step:survivor:22",
+      "step:survivor:23",
+      "step:survivor:24",
+      "step:survivor:25",
+      "finalize:survivor",
+      "cleanup:survivor:idempotent"
+    ],
+    "cancelled_steps": 1,
+    "survivor_steps": 25,
+    "survivor_cache_entries_at_cancellation": 16,
+    "numeric_absolute_tolerance": 0.0,
+    "elapsed_seconds": {
+      "baseline": 1.0491726000000199,
+      "interleaving": 1.2121071000001393,
+      "reuse_control": 0.7534322999999858,
+      "total": 3.435707500000717
+    },
+    "timing_is_benchmark": false
+  },
+  "assertions": {
+    "two_live_runs": true,
+    "request_local_cache_path": true,
+    "state_objects_distinct": true,
+    "kv_cache_storage_disjoint": true,
+    "both_runs_stepped_before_cancellation": true,
+    "cancelled_cleanup_idempotent": true,
+    "cancelled_state_released": true,
+    "cancelled_run_rejects_step": true,
+    "cancelled_run_rejects_finalize": true,
+    "survivor_cache_unchanged_by_cancellation": true,
+    "survivor_matches_isolated_baseline": true,
+    "survivor_cache_cleanup_complete": true,
+    "survivor_rejects_second_finalize": true,
+    "model_reusable_after_cleanup": true,
+    "model_state_unchanged": true,
+    "model_hooks_unchanged": true
+  },
+  "results": {
+    "isolated_baseline": {
+      "text": "And so my fellow Americans ask not what your country can do for you, ask what you can do for your country.",
+      "language": "en",
+      "token_count": 24,
+      "tokens_sha256": "08a5105204a86ab664333b9540356944e1ae0e0ed056214b1632ffae2d5c8cd9",
+      "audio_features_sha256": "f27ef911bcbc5ef287297ae66297b55b05ecf79face108f7c260a0cbf0138f8a",
+      "temperature": 0.0,
+      "compression_ratio": 1.3417721518987342,
+      "avg_logprob": -0.1330690574645996,
+      "no_speech_prob": 0.029303060844540596
+    },
+    "survivor": {
+      "text": "And so my fellow Americans ask not what your country can do for you, ask what you can do for your country.",
+      "language": "en",
+      "token_count": 24,
+      "tokens_sha256": "08a5105204a86ab664333b9540356944e1ae0e0ed056214b1632ffae2d5c8cd9",
+      "audio_features_sha256": "f27ef911bcbc5ef287297ae66297b55b05ecf79face108f7c260a0cbf0138f8a",
+      "temperature": 0.0,
+      "compression_ratio": 1.3417721518987342,
+      "avg_logprob": -0.1330690574645996,
+      "no_speech_prob": 0.029303060844540596
+    },
+    "reuse_control": {
+      "text": "And so my fellow Americans ask not what your country can do for you, ask what you can do for your country.",
+      "language": "en",
+      "token_count": 24,
+      "tokens_sha256": "08a5105204a86ab664333b9540356944e1ae0e0ed056214b1632ffae2d5c8cd9",
+      "audio_features_sha256": "f27ef911bcbc5ef287297ae66297b55b05ecf79face108f7c260a0cbf0138f8a",
+      "temperature": 0.0,
+      "compression_ratio": 1.3417721518987342,
+      "avg_logprob": -0.1330690574645996,
+      "no_speech_prob": 0.029303060844540596
+    }
+  }
+}

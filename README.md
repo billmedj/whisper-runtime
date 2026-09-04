@@ -151,6 +151,7 @@ See the [native adapter contract](https://github.com/billmedj/whisper-runtime/bl
 | 2,000-step deterministic state trace | State-machine transitions under generated operations |
 | 35 Lean theorem declarations | Abstract lease provenance, capacity conservation, lifecycle, and stale-commit properties |
 | One recorded native run | Patched `tiny.en` decoder, JFK fixture, CPU, exact transcript, queue returned to zero, declared budget restored |
+| One recorded staged-run isolation check | One loaded `tiny.en` model, two overlapping run lifetimes, early cleanup, unchanged survivor, and successful model reuse |
 | One conformance pair | Pinned greedy CPU reference and candidate records |
 
 The recorded transaction identifies the imported source tree, checkpoint,
@@ -169,7 +170,8 @@ streaming, durable mid-window resume, portable worker migration, latency,
 throughput, or production readiness. The Lean model does not model Python
 threads, PyTorch kernels, submission gates, or adapter code.
 
-See the [integration record](https://github.com/billmedj/whisper-runtime/blob/main/evidence/native-cpu-tiny-en-jfk-2026-09-03.json),
+See the [transaction record](https://github.com/billmedj/whisper-runtime/blob/main/evidence/native-cpu-tiny-en-jfk-2026-09-03.json),
+[staged-run isolation record](https://github.com/billmedj/whisper-runtime/blob/main/evidence/native-cpu-tiny-en-jfk-interleaving-2026-09-03.json),
 [conformance contract](https://github.com/billmedj/whisper-runtime/blob/main/docs/CONFORMANCE.md), and
 [development roadmap](https://github.com/billmedj/whisper-runtime/blob/main/docs/ROADMAP.md).
 
