@@ -42,9 +42,14 @@ provides bounded admission, exact in-process leases, request-local random state,
 versioned session commits, deadlines, cooperative stop, quarantine, recovery,
 and owner-death takeover. A legacy adapter executes an unmodified synchronous
 `model.transcribe()` call as one serialized transaction with a full-worker
-reservation. It does not execute individual Whisper kernels through the
-scheduler. Batching, streaming, managed key-value caches, optimized backends,
-and the complete conformance matrix remain design targets.
+reservation. A native CPU adapter exposes request-local run creation, prefill,
+token steps, finalization, and cleanup through a pinned patched backend. Its
+default profile admits one transaction. An experimental profile admits two
+transactions while serializing run construction and encoder preparation. Four
+CPU reference/candidate pairs cover greedy decoding, beam search, word
+timestamps, and translation. Real-backend evidence for the two-transaction
+profile, batching, streaming, managed cache slots, optimized backends, and the
+complete conformance matrix remain design targets.
 
 The current formal model covers abstract lease provenance, lifecycle,
 capacity, stale commits, and independent-session commits. It does not model
@@ -385,9 +390,9 @@ The compiler boundary contains tensor operations only. Scheduling, queue access,
 
 ### Trusted backend boundary
 
-`ExecutionScope` is a trusted in-process interface. A conforming adapter MUST:
+`ExecutionScope` is a trusted in-process interface. Each conforming scope MUST:
 
-- serve only one live transaction at a time;
+- be bound to only one live transaction at a time;
 - register each backend operation before its submission callback returns;
 - include every registered operation in the final aggregate completion fence;
 - make `request_stop()` idempotent;

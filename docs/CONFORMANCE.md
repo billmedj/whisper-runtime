@@ -5,19 +5,19 @@ A runtime change can preserve one and regress the other.
 
 ## Current coverage
 
-The repository contains one implemented reference/candidate pair:
+The repository contains four implemented reference/candidate pairs for the
+pinned JFK audio fixture on the CPU:
 
-- OpenAI Whisper `tiny.en`;
-- the pinned JFK audio fixture;
-- English transcription;
-- greedy decoding with temperature `0.0`;
-- CPU execution with `float32` tensors.
+- `tiny.en` English transcription with greedy decoding;
+- `tiny.en` English transcription with beam size 5;
+- `tiny.en` English transcription with word timestamps;
+- multilingual `tiny` with the translation task and English input.
 
-The comparator checks the complete recorded public result for this pair. The
-other cases in `conformance/cases.json` are marked `planned`. The current
-fixtures record wall time, but they do not constitute a latency benchmark.
-Several resource fields are present with null values because those measurements
-have not been implemented.
+All four cases use temperature `0.0` and `float32` tensors. The comparator
+checks the complete recorded public result for each pair. The remaining cases
+in `conformance/cases.json` are marked `planned`. The current fixtures record
+wall time, but they do not constitute a latency benchmark. Several resource
+fields are null because those measurements have not been implemented.
 
 ## Output contract
 

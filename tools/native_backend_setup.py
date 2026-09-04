@@ -27,6 +27,8 @@ BACKEND_BASE_TREE = "f7b3cb8e12a2e84dccacc4c858c33d5a9c114688"
 BACKEND_PATCHED_TREE = "c011d2563c26763b5f147026e6b18ef85bccd4fb"
 TORCH_VERSION = "2.6.0"
 TORCH_CPU_INDEX = "https://download.pytorch.org/whl/cpu"
+NATIVE_PYTHON_MIN = (3, 12)
+NATIVE_PYTHON_MAX = (3, 13)
 
 REQUIRED_DISTRIBUTIONS = {
     "jsonschema": "4.25.1",
@@ -461,9 +463,15 @@ def _tool_version(command: Sequence[str]) -> str:
     return output[0].strip() if output else "unknown"
 
 
+def require_supported_python(version: tuple[int, int]) -> None:
+    if not NATIVE_PYTHON_MIN <= version <= NATIVE_PYTHON_MAX:
+        raise NativeSetupError(
+            "the pinned native backend requires CPython 3.12 or 3.13"
+        )
+
+
 def require_prerequisites() -> dict[str, str]:
-    if sys.version_info < (3, 10):
-        raise NativeSetupError("Python 3.10 or later is required")
+    require_supported_python((sys.version_info.major, sys.version_info.minor))
     for tool in ("git", "ffmpeg"):
         if shutil.which(tool) is None:
             raise NativeSetupError(f"required command not found on PATH: {tool}")

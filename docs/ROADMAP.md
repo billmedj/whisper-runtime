@@ -6,9 +6,10 @@ evidence is committed to the repository.
 
 ## Now: establish the reference boundary
 
-- Expand the conformance corpus beyond one greedy CPU case.
-- Record sampling, beam search, translation, timestamps, word timestamps,
-  multiple inputs, cancellation, and failure behavior.
+- Expand the four-case CPU conformance corpus beyond one input.
+- Add sampling, segment-timestamp, cancellation, and failure records. Extend
+  the existing beam-search, translation, and word-timestamp coverage to more
+  inputs and model sizes.
 - Maintain the pinned CPU backend checks for deterministic interleaving and
   overlapping outer decoder calls in two operating-system threads.
 - Record real-model request-isolation evidence for the experimental two-lane

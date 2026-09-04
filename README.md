@@ -14,8 +14,9 @@ request state, declared resource claims, backend work, and result publication
 explicit.
 
 > **Status:** pre-alpha research implementation. The current native adapter is
-> CPU-only, handles one unbatched 30-second mel window, and reserves one full
-> worker. This repository is not a production transcription service.
+> CPU-only and handles one unbatched 30-second mel window per transaction. Its
+> default profile admits one transaction; an experimental profile admits two.
+> This repository is not a production transcription service.
 
 ## What it provides
 
@@ -24,7 +25,7 @@ explicit.
 | Runtime core | Bounded admission, exact in-process leases, deadlines, versioned commits, cancellation, quarantine, and cleanup recovery |
 | Legacy adapter | Runs the existing synchronous `model.transcribe()` call as one serialized transaction |
 | Native adapter | Exposes run creation, prefill, token steps, finalization, and cleanup through a patched CPU decoder |
-| Conformance data | Records one pinned `tiny.en` and JFK CPU comparison with source, input, model, and output identities |
+| Conformance data | Records four pinned JFK CPU comparisons: greedy, beam search, word timestamps, and translation |
 | Isolation checks | Exercises two staged decodes under a fixed schedule and in two operating-system threads, cleans one early, and checks the survivor against an isolated baseline |
 | Formal model | Proves lease, capacity, lifecycle, and stale-commit properties within an abstract Lean model |
 
@@ -103,6 +104,9 @@ Build the pinned backend and its isolated Python environment with one command:
 python tools/bootstrap_native_backend.py
 ```
 
+The pinned native dependency set requires CPython 3.12 or 3.13. The runtime
+core supports Python 3.10 and later.
+
 The bootstrap verifies the backend commit, source trees, and patch digests. It
 installs packages only in `.tmp-native/venv`. It does not download a model.
 
@@ -173,13 +177,13 @@ See the [native adapter contract](https://github.com/billmedj/whisper-runtime/bl
 | Evidence | Scope |
 | --- | --- |
 | 94 runtime tests | Resource accounting, queue bounds, commit races, deadlines, cancellation, quarantine, recovery, and adapter behavior |
-| 31 repository-tool tests | Provenance, source state, fixtures, portability, evidence schemas, semantic validation, and native smoke contracts |
+| 41 repository-tool tests | Provenance, source state, fixtures, portability, setup contracts, evidence schemas, semantic validation, and native smoke contracts |
 | 2,000-step deterministic state trace | State-machine transitions under generated operations |
 | 35 Lean theorem declarations | Abstract lease provenance, capacity conservation, lifecycle, and stale-commit properties |
 | One recorded native run | Patched `tiny.en` decoder, JFK fixture, CPU, exact transcript, queue returned to zero, declared budget restored |
 | One recorded staged-run isolation check | One loaded `tiny.en` model, two overlapping run lifetimes, early cleanup, unchanged survivor, and successful model reuse |
 | One recorded OS-thread isolation check | Two native worker threads, overlapping outer decoder-call intervals, owner-thread cleanup, unchanged survivor, and model reuse |
-| One conformance pair | Pinned greedy CPU reference and candidate records |
+| Four conformance pairs | Pinned greedy, beam-search, word-timestamp, and translation reference/candidate records |
 
 The recorded transaction identifies the imported source tree, checkpoint,
 loaded model state, audio input, environment, and committed output. The native
@@ -207,6 +211,7 @@ threads, PyTorch kernels, submission gates, or adapter code.
 
 See the [transaction record](https://github.com/billmedj/whisper-runtime/blob/main/evidence/native-cpu-tiny-en-jfk-2026-09-03.json),
 [staged-run isolation record](https://github.com/billmedj/whisper-runtime/blob/main/evidence/native-cpu-tiny-en-jfk-interleaving-2026-09-03.json),
+[assurance map](https://github.com/billmedj/whisper-runtime/blob/main/docs/ASSURANCE.md),
 [conformance contract](https://github.com/billmedj/whisper-runtime/blob/main/docs/CONFORMANCE.md), and
 [development roadmap](https://github.com/billmedj/whisper-runtime/blob/main/docs/ROADMAP.md).
 
@@ -233,7 +238,9 @@ accepted by, or part of, OpenAI Whisper.
 Upstream contributions remain small and independent. Request-local cache state
 is tracked in [openai/whisper#2842](https://github.com/openai/whisper/pull/2842).
 Grouped multi-audio decoding is tracked in
-[openai/whisper#2843](https://github.com/openai/whisper/pull/2843). See
+[openai/whisper#2843](https://github.com/openai/whisper/pull/2843). Alignment
+hook cleanup after inference errors is tracked in
+[openai/whisper#2844](https://github.com/openai/whisper/pull/2844). See
 [the upstream contribution policy](https://github.com/billmedj/whisper-runtime/blob/main/docs/UPSTREAM.md).
 
 ## Contributing and security

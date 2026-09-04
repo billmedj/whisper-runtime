@@ -20,12 +20,23 @@ from native_backend_setup import (
     environment_python,
     parse_checksum_manifest,
     require_cached_checkpoint,
+    require_supported_python,
     verify_dependency_versions,
     verify_patch_manifest,
 )
 
 
 class NativeBackendSetupTests(unittest.TestCase):
+    def test_pinned_native_python_range_is_exact(self) -> None:
+        for version in ((3, 12), (3, 13)):
+            with self.subTest(version=version):
+                require_supported_python(version)
+
+        for version in ((3, 11), (3, 14)):
+            with self.subTest(version=version):
+                with self.assertRaisesRegex(NativeSetupError, "3.12 or 3.13"):
+                    require_supported_python(version)
+
     def test_pinned_source_identities_are_full_git_objects(self) -> None:
         self.assertEqual(BACKEND_URL, "https://github.com/openai/whisper.git")
         for value in (BACKEND_BASE_COMMIT, BACKEND_BASE_TREE, BACKEND_PATCHED_TREE):

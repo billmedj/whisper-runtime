@@ -6,7 +6,7 @@ cache inside one ignored project directory.
 
 ## Requirements
 
-- Python 3.10 or later
+- CPython 3.12 or 3.13
 - Git
 - FFmpeg on `PATH`
 - network access for the first setup
@@ -98,10 +98,10 @@ files, or the generated manifest.
 
 ## Scope
 
-This setup reproduces the tested CPU development profile. It is not a hermetic
-binary build: Python and package wheels remain specific to the host platform,
-and FFmpeg is supplied by the host. Package versions are pinned, but wheel
-files are not locked by hash across all supported platforms.
+This setup reproduces the tested default single-lane CPU profile. It is not a
+hermetic binary build: Python and package wheels remain specific to the host
+platform, and FFmpeg is supplied by the host. Package versions are pinned, but
+wheel files are not locked by hash across all supported platforms.
 
 The example handles one unbatched window of at most 30 seconds. It does not
 enable CUDA, live audio streaming, concurrent adapter transactions, or durable

@@ -200,8 +200,8 @@ against the patched decoder and a real model checkpoint.
 ## Same-model interleaving check
 
 `tools/verify_native_interleaving.py` tests the staged decoder below the
-serialized runtime adapter. It loads one model, records an isolated baseline,
-and creates two request-owned decode runs from the same model.
+`NativeWhisperAdapter` boundary. It loads one model, records an isolated
+baseline, and creates two request-owned decode runs from the same model.
 
 The tool follows a recorded token-step schedule. It cleans one run after one
 decoder step and continues the other to completion. The check requires:
