@@ -1,4 +1,4 @@
-name: Modal GPU readiness (historical v1)
+name: Modal native CUDA transaction
 
 on:
   workflow_dispatch:
@@ -18,25 +18,24 @@ permissions:
   contents: read
 
 concurrency:
-  group: modal-gpu-readiness
+  group: modal-native-cuda-transaction
   cancel-in-progress: false
 
 jobs:
-  cuda-readiness:
+  native-cuda-transaction:
     if: ${{ inputs.confirm_paid_gpu }}
     runs-on: ubuntu-24.04
-    timeout-minutes: 30
+    timeout-minutes: 40
     env:
       MODAL_TOKEN_ID: ${{ secrets.MODAL_TOKEN_ID }}
       MODAL_TOKEN_SECRET: ${{ secrets.MODAL_TOKEN_SECRET }}
       MODAL_ENVIRONMENT_NAME: ${{ inputs.modal_environment }}
       WHISPER_MODAL_ENABLE_REMOTE_RESOURCES: "1"
-      WHISPER_RUNTIME_COMMIT: 599d1bab7746c2c2d3596dc0cc4423b40bf2e4b6
+      WHISPER_RUNTIME_COMMIT: ${{ github.sha }}
     steps:
       - name: Check out validation source
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: 599d1bab7746c2c2d3596dc0cc4423b40bf2e4b6
           persist-credentials: false
 
       - name: Install Python
@@ -47,16 +46,16 @@ jobs:
       - name: Install pinned validation clients
         run: python -m pip install ".[validation,modal-validation]"
 
-      - name: Run the bounded T4 check
+      - name: Run the bounded native CUDA transaction check
         shell: bash
         run: |
-          output="artifacts/modal/cuda-backend-readiness-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}.json"
+          output="artifacts/modal/native-cuda-transaction-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}.json"
           python -m modal run \
             --env "$MODAL_ENVIRONMENT_NAME" \
-            -m infra.modal_gpu_validation \
+            -m infra.modal_native_cuda_validation \
             --output "$output" \
             --confirm-paid-gpu
-          python -B tools/validate_modal_cuda_record.py \
+          python -B tools/validate_modal_native_cuda_record.py \
             "$output" \
             --expected-runtime-commit "$WHISPER_RUNTIME_COMMIT" \
             --expected-runtime-tree "$(git show -s --format=%T "$WHISPER_RUNTIME_COMMIT")"
@@ -64,7 +63,7 @@ jobs:
       - name: Publish the validation record
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: modal-cuda-readiness-${{ github.run_id }}-${{ github.run_attempt }}
+          name: modal-native-cuda-transaction-${{ github.run_id }}-${{ github.run_attempt }}
           path: artifacts/modal/*.json
           if-no-files-found: error
           retention-days: 30

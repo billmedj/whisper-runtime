@@ -1,0 +1,571 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/billmedj/whisper-runtime/blob/main/evidence/modal-native-cuda-transaction.schema.json",
+  "title": "Modal native CUDA transaction evidence record",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version", "recorded_at", "status", "scope", "claims", "runtime",
+    "backend", "modal", "environment", "gpu", "model", "input", "profile",
+    "success", "cancellation", "recovery", "unproxied_reuse", "memory", "timing", "assertions"
+  ],
+  "properties": {
+    "schema_version": { "const": "2" },
+    "recorded_at": { "type": "string", "format": "date-time" },
+    "status": { "const": "passed" },
+    "scope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["evidence_kind", "statement", "fault_injection_used"],
+      "properties": {
+        "evidence_kind": { "const": "native-whisper-cuda-transaction" },
+        "statement": {
+          "const": "One pinned runtime completed, cancelled, quarantined, recovered, and reused NativeWhisperAdapter transactions on one Modal T4."
+        },
+        "fault_injection_used": { "const": true }
+      }
+    },
+    "claims": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "native_cuda_adapter_exercised", "worker_admission_exercised",
+        "transaction_lifecycle_exercised", "cuda_completion_fence_exercised",
+        "cooperative_cancellation_exercised", "quarantine_recovery_exercised",
+        "unproxied_native_reuse_exercised",
+        "physical_gpu_memory_enforced", "performance_benchmark", "production_readiness"
+      ],
+      "properties": {
+        "native_cuda_adapter_exercised": { "const": true },
+        "worker_admission_exercised": { "const": true },
+        "transaction_lifecycle_exercised": { "const": true },
+        "cuda_completion_fence_exercised": { "const": true },
+        "cooperative_cancellation_exercised": { "const": true },
+        "quarantine_recovery_exercised": { "const": true },
+        "unproxied_native_reuse_exercised": { "const": true },
+        "physical_gpu_memory_enforced": { "const": false },
+        "performance_benchmark": { "const": false },
+        "production_readiness": { "const": false }
+      }
+    },
+    "runtime": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["repository", "git_commit", "git_tree", "clean", "source_files"],
+      "properties": {
+        "repository": { "const": "https://github.com/billmedj/whisper-runtime.git" },
+        "git_commit": { "$ref": "#/$defs/git_hash" },
+        "git_tree": { "$ref": "#/$defs/git_hash" },
+        "clean": { "const": true },
+        "source_files": {
+          "type": "array",
+          "minItems": 7,
+          "maxItems": 7,
+          "items": { "$ref": "#/$defs/source_file" }
+        }
+      }
+    },
+    "backend": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "repository", "base_commit", "base_tree", "applied_commit", "git_tree",
+        "clean", "patch_manifest", "patch_manifest_sha256"
+      ],
+      "properties": {
+        "repository": { "const": "https://github.com/openai/whisper.git" },
+        "base_commit": { "const": "86098128c0b4f24f0e2aa2994de830614b474227" },
+        "base_tree": { "const": "f7b3cb8e12a2e84dccacc4c858c33d5a9c114688" },
+        "applied_commit": { "$ref": "#/$defs/git_hash" },
+        "git_tree": { "const": "c011d2563c26763b5f147026e6b18ef85bccd4fb" },
+        "clean": { "const": true },
+        "patch_manifest": { "const": "patches/openai-whisper/SHA256SUMS" },
+        "patch_manifest_sha256": { "const": "0fa1a833b0c489056d77da21188519c7e16fde7825d06bc5b902ba23a01abeb5" }
+      }
+    },
+    "modal": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "sdk_version", "function_call_id", "image_id", "task_id", "environment",
+        "cloud_provider", "region", "network_blocked", "modal_access_restricted",
+        "model_cache", "network_probe"
+      ],
+      "properties": {
+        "sdk_version": { "const": "1.5.5" },
+        "function_call_id": { "$ref": "#/$defs/nonempty_identifier" },
+        "image_id": { "$ref": "#/$defs/nullable_identifier" },
+        "task_id": { "$ref": "#/$defs/nullable_identifier" },
+        "environment": { "$ref": "#/$defs/nullable_identifier" },
+        "cloud_provider": { "$ref": "#/$defs/nullable_identifier" },
+        "region": { "$ref": "#/$defs/nullable_identifier" },
+        "network_blocked": { "const": true },
+        "modal_access_restricted": { "const": true },
+        "model_cache": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["name", "generation", "mount_path", "read_only", "write_probe"],
+          "properties": {
+            "name": { "const": "whisper-runtime-model-cache-v1" },
+            "generation": { "const": 1 },
+            "mount_path": { "const": "/models" },
+            "read_only": { "const": true },
+            "write_probe": { "$ref": "#/$defs/denied_probe" }
+          }
+        },
+        "network_probe": {
+          "allOf": [
+            { "$ref": "#/$defs/denied_probe" },
+            {
+              "type": "object",
+              "required": ["target"],
+              "properties": { "target": { "const": "1.1.1.1:443" } }
+            }
+          ]
+        }
+      }
+    },
+    "environment": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "python", "platform", "torch", "torch_git_version", "cuda_runtime", "cudnn",
+        "nvidia_driver", "ffmpeg", "numpy", "tiktoken", "numba", "tqdm", "more_itertools"
+      ],
+      "properties": {
+        "python": { "type": "string", "pattern": "^3\\.13(?:\\.|$)" },
+        "platform": { "type": "string", "minLength": 1, "maxLength": 256 },
+        "torch": { "type": "string", "pattern": "^2\\.6\\.0(?:\\+cu124)?$" },
+        "torch_git_version": { "$ref": "#/$defs/git_hash" },
+        "cuda_runtime": { "const": "12.4" },
+        "cudnn": { "type": "string", "pattern": "^[1-9][0-9]*$" },
+        "nvidia_driver": { "type": "string", "pattern": "^[0-9]+\\.[0-9.]+$" },
+        "ffmpeg": { "type": "string", "pattern": "^ffmpeg version ", "maxLength": 512 },
+        "numpy": { "const": "2.5.2" },
+        "tiktoken": { "const": "0.14.0" },
+        "numba": { "const": "0.67.0" },
+        "tqdm": { "const": "4.70.0" },
+        "more_itertools": { "const": "11.1.0" }
+      }
+    },
+    "gpu": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "requested", "visible_device_count", "device_index", "name",
+        "capability_major", "capability_minor", "total_memory_bytes"
+      ],
+      "properties": {
+        "requested": { "const": "T4" },
+        "visible_device_count": { "const": 1 },
+        "device_index": { "const": 0 },
+        "name": { "type": "string", "pattern": "T4", "maxLength": 128 },
+        "capability_major": { "const": 7 },
+        "capability_minor": { "const": 5 },
+        "total_memory_bytes": { "type": "integer", "minimum": 10000000000 }
+      }
+    },
+    "model": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name", "device", "dtype", "checkpoint_path", "checkpoint_sha256",
+        "loaded_state_sha256_before", "loaded_state_sha256_after",
+        "evaluation_mode", "parameter_tensor_count", "buffer_tensor_count",
+        "all_parameters_and_buffers_on_profile_device", "all_floating_tensors_fp32"
+      ],
+      "properties": {
+        "name": { "const": "tiny.en" },
+        "device": { "const": "cuda:0" },
+        "dtype": { "const": "torch.float32" },
+        "checkpoint_path": { "const": "model-cache-v1/tiny.en.pt" },
+        "checkpoint_sha256": { "const": "d3dd57d32accea0b295c96e26691aa14d8822fac7d9d27d5dc00b4ca2826dd03" },
+        "loaded_state_sha256_before": { "const": "sha256:8041a80119a588f542472da35e97d0372fce1d9709ed9874475e9c03deac5de6" },
+        "loaded_state_sha256_after": { "const": "sha256:8041a80119a588f542472da35e97d0372fce1d9709ed9874475e9c03deac5de6" },
+        "evaluation_mode": { "const": true },
+        "parameter_tensor_count": { "type": "integer", "minimum": 1 },
+        "buffer_tensor_count": { "type": "integer", "minimum": 1 },
+        "all_parameters_and_buffers_on_profile_device": { "const": true },
+        "all_floating_tensors_fp32": { "const": true }
+      }
+    },
+    "input": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "fixture_id", "path", "sha256", "size_bytes", "sample_rate_hz", "sample_count",
+        "decoded_pcm_sha256", "mel_device_at_boundary", "mel_dtype_at_boundary"
+      ],
+      "properties": {
+        "fixture_id": { "const": "openai-whisper-jfk-flac" },
+        "path": { "const": "openai-whisper/tests/jfk.flac" },
+        "sha256": { "const": "63a4b1e4c1dc655ac70961ffbf518acd249df237e5a0152faae9a4a836949715" },
+        "size_bytes": { "const": 1152693 },
+        "sample_rate_hz": { "const": 16000 },
+        "sample_count": { "const": 176000 },
+        "decoded_pcm_sha256": { "$ref": "#/$defs/sha256" },
+        "mel_device_at_boundary": { "const": "cpu" },
+        "mel_dtype_at_boundary": { "const": "torch.float32" }
+      }
+    },
+    "profile": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "profile_id", "device", "max_concurrent_decodes", "resources", "fp16",
+        "gpu_memory_measured", "gpu_memory_enforced"
+      ],
+      "properties": {
+        "profile_id": { "const": "tiny.en/cuda-0-float32-v1" },
+        "device": { "const": "cuda:0" },
+        "max_concurrent_decodes": { "const": 1 },
+        "resources": { "$ref": "#/$defs/full_resources" },
+        "fp16": { "const": false },
+        "gpu_memory_measured": { "const": true },
+        "gpu_memory_enforced": { "const": false }
+      }
+    },
+    "success": { "$ref": "#/$defs/success" },
+    "cancellation": { "$ref": "#/$defs/cancellation" },
+    "recovery": { "$ref": "#/$defs/recovery" },
+    "unproxied_reuse": { "$ref": "#/$defs/unproxied_success" },
+    "memory": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "baseline", "final", "observed_success_peak_delta_bytes",
+        "declared_memory_bytes", "observed_peak_within_declaration"
+      ],
+      "properties": {
+        "baseline": { "$ref": "#/$defs/memory_snapshot" },
+        "final": { "$ref": "#/$defs/memory_snapshot" },
+        "observed_success_peak_delta_bytes": { "$ref": "#/$defs/nonnegative_integer" },
+        "declared_memory_bytes": { "const": 1000000000 },
+        "observed_peak_within_declaration": { "const": true }
+      }
+    },
+    "timing": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["total_seconds", "performance_benchmark"],
+      "properties": {
+        "total_seconds": { "$ref": "#/$defs/nonnegative_number" },
+        "performance_benchmark": { "const": false }
+      }
+    },
+    "assertions": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "runtime_source_pinned", "backend_source_pinned", "checkpoint_verified_before_load",
+        "input_fixture_verified", "network_probe_denied", "model_cache_read_only",
+        "native_adapter_committed", "success_exact_result_and_terminal_states",
+        "publication_followed_cuda_fence", "success_fence_retained_transaction",
+        "success_used_one_private_stream", "success_fence_and_cleanup_counts",
+        "cancellation_prevented_publication", "cancellation_exact_terminal_state",
+        "cancellation_held_capacity_at_request", "cancellation_fence_retained_transaction",
+        "cancellation_fence_preceded_release", "cancelling_thread_made_no_cuda_call",
+        "failed_fence_retained_capacity", "recovery_retained_exact_state",
+        "recovery_blocked_new_work", "recovery_released_capacity",
+        "recovery_fence_retained_transaction", "recovery_fence_preceded_release",
+        "post_recovery_reuse_committed", "unproxied_native_reuse_committed",
+        "native_components_restored_for_unproxied_reuse",
+        "run_child_generators_verified", "cancellation_rendezvous_proved",
+        "model_profile_verified",
+        "persistent_model_state_unchanged",
+        "model_hooks_unchanged", "observed_peak_within_declared_memory"
+      ],
+      "properties": {
+        "runtime_source_pinned": { "const": true },
+        "backend_source_pinned": { "const": true },
+        "checkpoint_verified_before_load": { "const": true },
+        "input_fixture_verified": { "const": true },
+        "network_probe_denied": { "const": true },
+        "model_cache_read_only": { "const": true },
+        "native_adapter_committed": { "const": true },
+        "success_exact_result_and_terminal_states": { "const": true },
+        "publication_followed_cuda_fence": { "const": true },
+        "success_fence_retained_transaction": { "const": true },
+        "success_used_one_private_stream": { "const": true },
+        "success_fence_and_cleanup_counts": { "const": true },
+        "cancellation_prevented_publication": { "const": true },
+        "cancellation_exact_terminal_state": { "const": true },
+        "cancellation_held_capacity_at_request": { "const": true },
+        "cancellation_fence_retained_transaction": { "const": true },
+        "cancellation_fence_preceded_release": { "const": true },
+        "cancelling_thread_made_no_cuda_call": { "const": true },
+        "failed_fence_retained_capacity": { "const": true },
+        "recovery_retained_exact_state": { "const": true },
+        "recovery_blocked_new_work": { "const": true },
+        "recovery_released_capacity": { "const": true },
+        "recovery_fence_retained_transaction": { "const": true },
+        "recovery_fence_preceded_release": { "const": true },
+        "post_recovery_reuse_committed": { "const": true },
+        "unproxied_native_reuse_committed": { "const": true },
+        "native_components_restored_for_unproxied_reuse": { "const": true },
+        "run_child_generators_verified": { "const": true },
+        "cancellation_rendezvous_proved": { "const": true },
+        "model_profile_verified": { "const": true },
+        "persistent_model_state_unchanged": { "const": true },
+        "model_hooks_unchanged": { "const": true },
+        "observed_peak_within_declared_memory": { "const": true }
+      }
+    }
+  },
+  "$defs": {
+    "git_hash": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
+    "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "nonempty_identifier": { "type": "string", "minLength": 1, "maxLength": 256 },
+    "nullable_identifier": { "type": ["string", "null"], "minLength": 1, "maxLength": 256 },
+    "nonnegative_integer": { "type": "integer", "minimum": 0 },
+    "nonnegative_number": { "type": "number", "minimum": 0 },
+    "source_file": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "sha256"],
+      "properties": {
+        "path": { "type": "string", "pattern": "^src/whisper_runtime/[a-z0-9_./]+\\.py$", "maxLength": 128 },
+        "sha256": { "$ref": "#/$defs/sha256" }
+      }
+    },
+    "full_resources": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["memory_bytes", "compute_units", "stream_slots"],
+      "properties": {
+        "memory_bytes": { "const": 1000000000 },
+        "compute_units": { "const": 1 },
+        "stream_slots": { "const": 1 }
+      }
+    },
+    "zero_resources": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["memory_bytes", "compute_units", "stream_slots"],
+      "properties": {
+        "memory_bytes": { "const": 0 },
+        "compute_units": { "const": 0 },
+        "stream_slots": { "const": 0 }
+      }
+    },
+    "memory_snapshot": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["allocated_bytes", "reserved_bytes", "peak_allocated_bytes", "peak_reserved_bytes"],
+      "properties": {
+        "allocated_bytes": { "$ref": "#/$defs/nonnegative_integer" },
+        "reserved_bytes": { "$ref": "#/$defs/nonnegative_integer" },
+        "peak_allocated_bytes": { "$ref": "#/$defs/nonnegative_integer" },
+        "peak_reserved_bytes": { "$ref": "#/$defs/nonnegative_integer" }
+      }
+    },
+    "fence_state": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["request_status", "session_version", "queue_depth", "lease_count", "budget_available"],
+      "properties": {
+        "request_status": { "enum": ["running", "cancelled"] },
+        "session_version": { "const": 0 },
+        "queue_depth": { "const": 1 },
+        "lease_count": { "const": 1 },
+        "budget_available": { "$ref": "#/$defs/zero_resources" }
+      }
+    },
+    "trace_event": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["sequence", "offset_ns", "name", "kind", "thread", "stream"],
+      "properties": {
+        "sequence": { "type": "integer", "minimum": 1 },
+        "offset_ns": { "$ref": "#/$defs/nonnegative_integer" },
+        "name": { "type": "string", "pattern": "^[a-z0-9:-]+$", "minLength": 1, "maxLength": 96 },
+        "kind": { "enum": ["runtime", "cuda", "backend", "controller"] },
+        "thread": { "enum": ["controller", "decode"] },
+        "stream": { "type": ["string", "null"], "pattern": "^stream-[1-9][0-9]*$" },
+        "state": { "$ref": "#/$defs/fence_state" }
+      }
+    },
+    "trace": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 512,
+      "items": { "$ref": "#/$defs/trace_event" }
+    },
+    "success": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "outcome", "request_status", "transaction_status", "session_version_before",
+        "session_version_after", "window_count_after", "text", "expected_text_matched",
+        "queue_depth_after", "budget_available_before", "budget_available_after",
+        "backend_instrumented", "child_generator_checks",
+        "child_generators_on_profile_device", "child_generators_distinct",
+        "traced_cleanup_calls", "traced_stream_count",
+        "traced_event_count", "wall_seconds",
+        "memory_before", "memory_after", "trace"
+      ],
+      "properties": {
+        "outcome": { "const": "committed" },
+        "request_status": { "const": "committed" },
+        "transaction_status": { "const": "committed" },
+        "session_version_before": { "const": 0 },
+        "session_version_after": { "const": 1 },
+        "window_count_after": { "const": 1 },
+        "text": { "$ref": "#/$defs/expected_text" },
+        "expected_text_matched": { "const": true },
+        "queue_depth_after": { "const": 0 },
+        "budget_available_before": { "$ref": "#/$defs/full_resources" },
+        "budget_available_after": { "$ref": "#/$defs/full_resources" },
+        "backend_instrumented": { "const": true },
+        "child_generator_checks": { "const": 1 },
+        "child_generators_on_profile_device": { "const": true },
+        "child_generators_distinct": { "const": true },
+        "traced_cleanup_calls": { "const": 1 },
+        "traced_stream_count": { "const": 1 },
+        "traced_event_count": { "const": 1 },
+        "wall_seconds": { "$ref": "#/$defs/nonnegative_number" },
+        "memory_before": { "$ref": "#/$defs/memory_snapshot" },
+        "memory_after": { "$ref": "#/$defs/memory_snapshot" },
+        "trace": { "$ref": "#/$defs/trace" }
+      }
+    },
+    "unproxied_success": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "outcome", "request_status", "transaction_status", "session_version_before",
+        "session_version_after", "window_count_after", "text", "expected_text_matched",
+        "queue_depth_after", "budget_available_before", "budget_available_after",
+        "backend_instrumented", "child_generator_checks",
+        "child_generators_on_profile_device", "child_generators_distinct",
+        "traced_cleanup_calls", "traced_stream_count",
+        "traced_event_count", "wall_seconds", "memory_before", "memory_after", "trace"
+      ],
+      "properties": {
+        "outcome": { "const": "committed" },
+        "request_status": { "const": "committed" },
+        "transaction_status": { "const": "committed" },
+        "session_version_before": { "const": 0 },
+        "session_version_after": { "const": 1 },
+        "window_count_after": { "const": 1 },
+        "text": { "$ref": "#/$defs/expected_text" },
+        "expected_text_matched": { "const": true },
+        "queue_depth_after": { "const": 0 },
+        "budget_available_before": { "$ref": "#/$defs/full_resources" },
+        "budget_available_after": { "$ref": "#/$defs/full_resources" },
+        "backend_instrumented": { "const": false },
+        "child_generator_checks": { "const": 0 },
+        "child_generators_on_profile_device": { "const": true },
+        "child_generators_distinct": { "const": true },
+        "traced_cleanup_calls": { "const": 0 },
+        "traced_stream_count": { "const": 0 },
+        "traced_event_count": { "const": 0 },
+        "wall_seconds": { "$ref": "#/$defs/nonnegative_number" },
+        "memory_before": { "$ref": "#/$defs/memory_snapshot" },
+        "memory_after": { "$ref": "#/$defs/memory_snapshot" },
+        "trace": { "$ref": "#/$defs/trace" }
+      }
+    },
+    "cancellation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "outcome", "exception_type", "cancel_returned", "request_status",
+        "transaction_status", "session_version_at_cancel", "session_version_after",
+        "window_count_after", "queue_depth_at_cancel", "lease_count_at_cancel",
+        "queue_depth_after", "budget_available_after", "backend_instrumented",
+        "first_step_returned", "run_complete_after_first_step",
+        "child_generator_checks", "child_generators_on_profile_device",
+        "child_generators_distinct",
+        "traced_cleanup_calls", "traced_stream_count", "traced_event_count",
+        "controller_cuda_calls", "trace"
+      ],
+      "properties": {
+        "outcome": { "const": "cancelled" },
+        "exception_type": { "const": "RequestCancelledError" },
+        "cancel_returned": { "const": true },
+        "request_status": { "const": "cancelled" },
+        "transaction_status": { "const": "aborted" },
+        "session_version_at_cancel": { "const": 0 },
+        "session_version_after": { "const": 0 },
+        "window_count_after": { "const": 0 },
+        "queue_depth_at_cancel": { "const": 1 },
+        "lease_count_at_cancel": { "const": 1 },
+        "queue_depth_after": { "const": 0 },
+        "budget_available_after": { "$ref": "#/$defs/full_resources" },
+        "backend_instrumented": { "const": true },
+        "first_step_returned": { "const": false },
+        "run_complete_after_first_step": { "const": false },
+        "child_generator_checks": { "const": 1 },
+        "child_generators_on_profile_device": { "const": true },
+        "child_generators_distinct": { "const": true },
+        "traced_cleanup_calls": { "const": 1 },
+        "traced_stream_count": { "const": 1 },
+        "traced_event_count": { "const": 1 },
+        "controller_cuda_calls": { "const": 0 },
+        "trace": { "$ref": "#/$defs/trace" }
+      }
+    },
+    "recovery": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "outcome", "injected_failure", "injected_failure_count", "retained_exception_type",
+        "retained_transaction_status", "retained_queue_depth", "retained_lease_count",
+        "retained_budget_available", "retained_session_version", "retained_window_count",
+        "blocked_error_same_instance", "blocked_request_status", "blocked_session_version",
+        "blocked_queue_depth", "blocked_lease_count", "recovery_returned",
+        "recovered_transaction_status", "queue_depth_after_recovery",
+        "budget_available_after_recovery", "session_version_after_recovery", "request_status_after_recovery",
+        "child_generator_checks", "child_generators_on_profile_device",
+        "child_generators_distinct",
+        "traced_cleanup_calls_before_recovery_complete", "traced_event_count_before_recovery_complete",
+        "trace", "post_recovery_reuse"
+      ],
+      "properties": {
+        "outcome": { "const": "recovered" },
+        "injected_failure": { "const": "cuda-event-synchronize-before-delegate" },
+        "injected_failure_count": { "const": 2 },
+        "retained_exception_type": { "const": "TransactionRetainedError" },
+        "retained_transaction_status": { "const": "quarantined" },
+        "retained_queue_depth": { "const": 1 },
+        "retained_lease_count": { "const": 1 },
+        "retained_budget_available": { "$ref": "#/$defs/zero_resources" },
+        "retained_session_version": { "const": 0 },
+        "retained_window_count": { "const": 0 },
+        "blocked_error_same_instance": { "const": true },
+        "blocked_request_status": { "const": "created" },
+        "blocked_session_version": { "const": 0 },
+        "blocked_queue_depth": { "const": 1 },
+        "blocked_lease_count": { "const": 1 },
+        "recovery_returned": { "const": true },
+        "recovered_transaction_status": { "const": "aborted" },
+        "queue_depth_after_recovery": { "const": 0 },
+        "budget_available_after_recovery": { "$ref": "#/$defs/full_resources" },
+        "session_version_after_recovery": { "const": 0 },
+        "request_status_after_recovery": { "const": "aborted" },
+        "child_generator_checks": { "const": 1 },
+        "child_generators_on_profile_device": { "const": true },
+        "child_generators_distinct": { "const": true },
+        "traced_cleanup_calls_before_recovery_complete": { "const": 3 },
+        "traced_event_count_before_recovery_complete": { "const": 3 },
+        "trace": { "$ref": "#/$defs/trace" },
+        "post_recovery_reuse": { "$ref": "#/$defs/success" }
+      }
+    },
+    "denied_probe": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["denied", "exception_type", "errno"],
+      "properties": {
+        "denied": { "const": true },
+        "exception_type": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "errno": { "type": ["integer", "null"] },
+        "target": { "type": "string", "minLength": 1, "maxLength": 128 }
+      }
+    },
+    "expected_text": {
+      "const": "And so my fellow Americans ask not what your country can do for you, ask what you can do for your country."
+    }
+  }
+}

@@ -1,20 +1,23 @@
-# Modal GPU validation
+# Historical Modal GPU validation (schema version 1)
 
 This check answers one question: can the pinned patched Whisper backend decode
 the pinned `tiny.en` case on a Modal T4 with CUDA?
 
-It does not run a transaction through `NativeWhisperAdapter`. The current
-adapter is CPU-only. The check calls it once with a CUDA tensor and requires a
-rejection before worker admission. A passing record therefore contains
+It does not run a transaction through `NativeWhisperAdapter`. At the exact
+historical runtime commit `599d1bab7746c2c2d3596dc0cc4423b40bf2e4b6`, the
+adapter was CPU-only. The check calls that adapter once with a CUDA tensor and
+requires rejection before worker admission. A passing record therefore contains
 `runtime_adapter_exercised=false`, `worker_admission_exercised=false`, and
 `cuda_completion_fence_exercised=false`.
 
 The caller must provide the full public commit that contains the harness. The
 remote image clones that commit and records its commit and tree. The check also
 fixes the CPU-only adapter digest, OpenAI Whisper base and patched trees, patch
-manifest, `tiny.en` checkpoint, and JFK input. A future CUDA adapter requires a
-new check and evidence schema. Do not expand the meaning of a version-one
-record.
+manifest, `tiny.en` checkpoint, and JFK input. The later CUDA adapter uses the
+separate version-two transaction check in
+[`MODAL_NATIVE_CUDA_VALIDATION.md`](MODAL_NATIVE_CUDA_VALIDATION.md). Do not run
+this version-one harness from current `main` or expand the meaning of its
+records.
 
 ## Remote boundary
 
@@ -40,11 +43,13 @@ the image or evidence record.
 
 ## Local checks without credentials or GPU
 
-Use CPython 3.13 in a local environment:
+Use CPython 3.13 in a detached checkout or worktree at the historical commit:
 
 ```powershell
+git worktree add ..\whisper-runtime-modal-v1 599d1bab7746c2c2d3596dc0cc4423b40bf2e4b6
+Set-Location ..\whisper-runtime-modal-v1
 py -3.13 -m pip install -e ".[validation,quality,modal-validation]" "build>=1.2,<2"
-$env:WHISPER_RUNTIME_COMMIT = (git rev-parse HEAD).Trim()
+$env:WHISPER_RUNTIME_COMMIT = "599d1bab7746c2c2d3596dc0cc4423b40bf2e4b6"
 $env:WHISPER_MODAL_ENABLE_REMOTE_RESOURCES = "1"
 py -3.13 -B -m unittest discover -s tools -p "test_modal_cuda_record.py" -v
 py -3.13 -m ruff check infra tools
@@ -66,10 +71,10 @@ py -3.13 -m modal setup
 py -3.13 -m modal token info
 ```
 
-Set the fixed source revision, then run the check:
+Run this historical check only from the exact commit named above:
 
 ```powershell
-$env:WHISPER_RUNTIME_COMMIT = (git rev-parse HEAD).Trim()
+$env:WHISPER_RUNTIME_COMMIT = "599d1bab7746c2c2d3596dc0cc4423b40bf2e4b6"
 $env:WHISPER_MODAL_ENABLE_REMOTE_RESOURCES = "1"
 $output = "artifacts/modal/$env:WHISPER_RUNTIME_COMMIT/cuda-backend-readiness.json"
 py -3.13 -m modal run --env=main -m infra.modal_gpu_validation `
@@ -127,7 +132,7 @@ semantic validator checks cross-field timing, memory, admission, claim, and
 secret-sanitization rules:
 
 ```powershell
-$commit = (git rev-parse HEAD).Trim()
+$commit = "599d1bab7746c2c2d3596dc0cc4423b40bf2e4b6"
 $tree = (git show -s --format=%T $commit).Trim()
 py -3.13 tools/validate_modal_cuda_record.py <record.json> `
   --expected-runtime-commit $commit `

@@ -137,9 +137,11 @@ python -m build
 python -B tools/check_distribution.py dist
 ```
 
-The optional, paid Modal T4 check has a separate confirmation guard. Run its
-local definition and record tests first; see the
-[Modal GPU validation guide](https://github.com/billmedj/whisper-runtime/blob/main/docs/MODAL_GPU_VALIDATION.md).
+The optional, paid Modal T4 transaction check has two confirmation guards. Run
+its local definition and adversarial record tests first; see the
+[native CUDA validation guide](https://github.com/billmedj/whisper-runtime/blob/main/docs/MODAL_NATIVE_CUDA_VALIDATION.md).
+The two committed direct-backend records use the frozen
+[historical version-one guide](https://github.com/billmedj/whisper-runtime/blob/main/docs/MODAL_GPU_VALIDATION.md).
 
 The Windows check command also compiles the Python sources and builds the Lean
 model when the pinned Lean toolchain is available:

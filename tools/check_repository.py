@@ -1601,21 +1601,9 @@ def check_fixture_schema() -> list[str]:
 
 
 def check_modal_cuda_schema() -> list[str]:
-    """Require a valid closed schema for the optional Modal evidence record."""
+    """Require valid closed schemas for optional Modal evidence records."""
 
     failures: list[str] = []
-    path = ROOT / "evidence" / "modal-cuda-readiness.schema.json"
-    schema = _read_json(path, failures)
-    if not isinstance(schema, dict):
-        return failures
-    if schema.get("$schema") != "https://json-schema.org/draft/2020-12/schema":
-        failures.append(
-            "evidence/modal-cuda-readiness.schema.json must use JSON Schema 2020-12"
-        )
-    if schema.get("additionalProperties") is not False:
-        failures.append(
-            "evidence/modal-cuda-readiness.schema.json must close the top-level object"
-        )
     try:
         from jsonschema import Draft202012Validator
         from jsonschema.exceptions import SchemaError
@@ -1623,14 +1611,24 @@ def check_modal_cuda_schema() -> list[str]:
         failures.append(
             "JSON Schema validation is unavailable; install the 'validation' extra"
         )
-    else:
+        return failures
+
+    for name in (
+        "modal-cuda-readiness.schema.json",
+        "modal-native-cuda-transaction.schema.json",
+    ):
+        path = ROOT / "evidence" / name
+        schema = _read_json(path, failures)
+        if not isinstance(schema, dict):
+            continue
+        if schema.get("$schema") != "https://json-schema.org/draft/2020-12/schema":
+            failures.append(f"evidence/{name} must use JSON Schema 2020-12")
+        if schema.get("additionalProperties") is not False:
+            failures.append(f"evidence/{name} must close the top-level object")
         try:
             Draft202012Validator.check_schema(schema)
         except SchemaError as error:
-            failures.append(
-                "evidence/modal-cuda-readiness.schema.json is not a valid schema: "
-                f"{error}"
-            )
+            failures.append(f"evidence/{name} is not a valid schema: {error}")
     return failures
 
 

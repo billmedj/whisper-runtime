@@ -28,6 +28,14 @@ executed. No record covers worker admission, the transaction lifecycle, a CUDA
 completion fence, or a performance benchmark. See
 [`docs/MODAL_GPU_VALIDATION.md`](../docs/MODAL_GPU_VALIDATION.md).
 
+`modal-native-cuda-transaction.schema.json` defines the separate version-two
+adapter transaction record. Its optional Modal harness covers one instrumented
+commit, cooperative cancellation, injected fence failure and recovery, and one
+unproxied native control transaction after recovery. It also binds source,
+model, input, environment, trace order, terminal state, and resource state.
+No version-two GPU record is committed yet. See
+[`docs/MODAL_NATIVE_CUDA_VALIDATION.md`](../docs/MODAL_NATIVE_CUDA_VALIDATION.md).
+
 The native CI workflow repeats the same-model interleaving check and publishes
 its record as a 30-day artifact. The check covers state separation, early
 cleanup, rejection of cancelled-run reuse, and a survivor that matches an

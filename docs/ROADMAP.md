@@ -14,10 +14,10 @@ evidence is committed to the repository.
   overlapping outer decoder calls in two operating-system threads.
 - Maintain the adapter-level two-lane CPU record.
 - Select and document one random-generator contract.
-- Validate the native path on CUDA with source, model, input, environment,
-  output, latency, and memory records.
-- Validate the single-lane CUDA completion fence on a real device and add
-  measured resource profiles.
+- Run and review the version-two native CUDA transaction harness on its pinned
+  T4 configuration. Commit a record only after schema and semantic validation.
+- Extend the single-lane T4 result to more inputs and model sizes before
+  defining measured resource profiles.
 
 Exit condition: the recorded compatibility matrix covers the declared adapter
 capabilities, and admitted work does not exceed its measured profile under the
