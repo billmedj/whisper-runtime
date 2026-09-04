@@ -30,7 +30,7 @@ fault points. Its p50 and p95 summaries are diagnostic; p99 is
 `not_estimated`. No committed record currently satisfies this contract.
 
 The active registration is
-[`experiments/native-cuda-qualification-v5.json`](../experiments/native-cuda-qualification-v5.json).
+[`experiments/native-cuda-qualification-v6.json`](../experiments/native-cuda-qualification-v6.json).
 A record binds its path, digest, and runtime commit. The local validator cannot
 prove that the registration was public before execution; that requires an
 external public timestamp. A future performance campaign requires a new schema
@@ -78,10 +78,33 @@ visible metadata version for `idna`. The
 records the `gpu-campaign` stage, exception type, and message digest. The
 receipt does not contain the transient GPU observations, and no qualification
 record was published. The attempt supports no passing qualification claim.
-Version five records one resolver-selected active distribution version for each
-normalized package name and remains unexecuted. This inventory describes
-resolved distribution metadata; it does not prove the bytes of imported
-modules. Source and build-input hashes remain the integrity anchors.
+
+Version five changed the inventory to one metadata record returned by
+`importlib.metadata.distribution(name)` for each normalized name discovered by
+`importlib.metadata.distributions()`. Modal logs show that its single T4
+attempt completed the registered GPU campaign and constructed a schema-valid
+record. Internal semantic validation then rejected the record because the
+harness required distribution metadata for Modal to equal the
+platform-injected module version. A separate CPU diagnostic inspected the same
+Modal image (`im-GLEsEGZRFsSkRtNGoxP69W`) in run
+`ap-u7s5B07rhiT7g276cf2856`. It observed Modal 1.5.5 at
+`/pkg/modal/__init__.py` with no Modal distribution metadata. It also observed
+Torch 2.6.0+cu124 from matching module and distribution metadata, and selected
+idna 3.19 while idna 3.10 remained visible under `/__modal/deps`. This
+diagnostic was not a qualification attempt. The
+[`attempt-failed` receipt](modal-native-cuda-qualification-v5-attempt-2026-09-04.jsonl)
+records only the failure stage, exception type, and message digest. Modal logs
+support the detailed execution path and cause. No qualification record was
+published, so the attempt supports no passing qualification claim.
+
+Version six treats the platform-injected Modal module version and the
+distribution inventory as separate provenance observations. It does not
+require a Modal distribution entry. It retains exact Torch module and
+distribution equality because Torch executed the workload. It collects the
+dependency inventory and runs a CPU contract rehearsal before creating the GPU
+attempt receipt. No version-six GPU attempt or qualification record exists. The
+inventory describes distribution metadata; it does not prove the bytes of
+imported modules. Source and build-input hashes remain the integrity anchors.
 
 `modal-cuda-readiness.schema.json` defines the version-one T4 record. Both
 committed records passed its schema and semantic validator. They bind the same

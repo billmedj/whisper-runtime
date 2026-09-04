@@ -24,6 +24,7 @@ import random
 import re
 import socket
 import subprocess
+import sys
 import threading
 import time
 import urllib.request
@@ -57,7 +58,7 @@ except ImportError:  # pragma: no cover - direct ``modal run`` script loading
     )
 
 ROOT = Path(__file__).resolve().parents[1]
-APP_NAME = "whisper-runtime-native-cuda-qualification-v5"
+APP_NAME = "whisper-runtime-native-cuda-qualification-v6"
 CANONICAL_MODULE_NAME = "infra.modal_native_cuda_qualification"
 SCHEMA_VERSION = "1-draft"
 ATTEMPT_RECEIPT_VERSION = "1"
@@ -69,12 +70,12 @@ BACKEND_BASE_TREE = "f7b3cb8e12a2e84dccacc4c858c33d5a9c114688"
 BACKEND_COMMIT = "a0b9695ae1cc52bad4b8626fe9fb6ea4ac0ee650"
 BACKEND_TREE = "c011d2563c26763b5f147026e6b18ef85bccd4fb"
 PATCH_MANIFEST_PATH = "patches/openai-whisper/SHA256SUMS"
-QUALIFICATION_MANIFEST_PATH = "experiments/native-cuda-qualification-v5.json"
+QUALIFICATION_MANIFEST_PATH = "experiments/native-cuda-qualification-v6.json"
 PRODUCER_PATH = "infra/modal_native_cuda_qualification.py"
 TRACE_PATH = "infra/native_cuda_trace.py"
 IMAGE_INPUTS_PATH = "infra/modal-native-cuda-image-inputs.lock"
 INPUT_MANIFEST_PATH = "conformance/audio-manifest.json"
-REGISTERED_OUTPUT_PATH = "artifacts/modal/native-cuda-qualification-v5.json"
+REGISTERED_OUTPUT_PATH = "artifacts/modal/native-cuda-qualification-v6.json"
 SCHEMA_PATH = "evidence/modal-native-cuda-qualification.schema.json"
 VALIDATOR_PATH = "tools/validate_modal_native_cuda_qualification.py"
 MODEL_CACHE_NAME = "whisper-runtime-model-cache-v1"
@@ -92,6 +93,7 @@ BACKEND_ROOT = Path("/opt/openai-whisper")
 PATCH_FILES = tuple(f"{index:04d}-" for index in range(1, 8))
 GIT_HASH_PATTERN = re.compile(r"[0-9a-f]{40}\Z")
 MODAL_IMAGE_ID_PATTERN = re.compile(r"im-[A-Za-z0-9_-]{8,128}\Z")
+DISTRIBUTION_NAME_PATTERN = re.compile(r"[a-z0-9]+(?:-[a-z0-9]+)*\Z")
 
 FAULT_POINT_BY_NAME = {
     "cleanup": FaultPoint.CLEANUP,
@@ -134,6 +136,15 @@ DIRECT_IMAGE_PACKAGES = (
     "setuptools==82.0.1",
     "tiktoken==0.14.0",
     "tqdm==4.70.0",
+)
+PREFLIGHT_TEST_ARGUMENTS = (
+    "-m",
+    "unittest",
+    "discover",
+    "-s",
+    "tools",
+    "-p",
+    "test_modal_native_cuda_qualification*.py",
 )
 
 
@@ -313,7 +324,7 @@ def _normalized_distribution_name(distribution: object) -> str:
 
 
 def _resolved_dependencies() -> list[dict[str, str]]:
-    """Return the distributions selected by the standard metadata resolver."""
+    """Return one metadata record per discovered normalized distribution name."""
 
     names = {
         _normalized_distribution_name(distribution)
@@ -338,6 +349,111 @@ def _resolved_dependencies() -> list[dict[str, str]]:
             raise RuntimeError(f"installed distribution has no version: {name!r}")
         resolved.append({"name": name, "version": version})
     return resolved
+
+
+def _require_measured_dependency_versions(
+    dependencies: list[dict[str, str]],
+    *,
+    torch_module: object,
+) -> None:
+    """Require the imported Torch version to match its distribution metadata."""
+
+    versions = {entry["name"]: entry["version"] for entry in dependencies}
+    torch_version = str(getattr(torch_module, "__version__", "")).strip()
+    if not torch_version or versions.get("torch") != torch_version:
+        raise RuntimeError(
+            "torch distribution metadata version does not match the imported module"
+        )
+
+
+def _require_dependency_inventory_contract(
+    dependencies: list[dict[str, str]],
+) -> None:
+    """Check the dependency fields that the evidence schema will receive."""
+
+    if not 1 <= len(dependencies) <= 2048:
+        raise RuntimeError("dependency inventory size is outside the evidence schema")
+    names: list[str] = []
+    for dependency in dependencies:
+        if set(dependency) != {"name", "version"}:
+            raise RuntimeError(
+                "dependency inventory fields differ from the evidence schema"
+            )
+        name = dependency["name"]
+        version = dependency["version"]
+        if (
+            not isinstance(name, str)
+            or len(name) > 128
+            or DISTRIBUTION_NAME_PATTERN.fullmatch(name) is None
+        ):
+            raise RuntimeError("dependency name differs from the evidence schema")
+        if not isinstance(version, str) or not version or len(version) > 512:
+            raise RuntimeError("dependency version differs from the evidence schema")
+        names.append(name)
+    if names != sorted(names) or len(names) != len(set(names)):
+        raise RuntimeError("dependency inventory names must be sorted and unique")
+
+
+def _run_environment_preflight(
+    runtime_commit: str,
+    *,
+    modal_module: object,
+) -> dict[str, object]:
+    """Rehearse provenance and record-contract checks without a GPU."""
+
+    modal_version = str(getattr(modal_module, "__version__", "")).strip()
+    if modal_version != MODAL_SDK_VERSION:
+        raise RuntimeError(
+            f"Modal SDK mismatch: expected {MODAL_SDK_VERSION}, "
+            f"observed {modal_version or '<empty>'}"
+        )
+    torch = importlib.import_module("torch")
+    whisper = importlib.import_module("whisper")
+    runtime = importlib.import_module("whisper_runtime")
+    adapters = importlib.import_module("whisper_runtime.adapters")
+    native_module = importlib.import_module("whisper_runtime.adapters.native_whisper")
+    decoding_module = importlib.import_module("whisper.decoding")
+    runtime_identity, backend_identity, _, manifest = _bind_provenance(
+        RUNTIME_ROOT,
+        BACKEND_ROOT,
+        runtime_commit,
+    )
+    _verify_module_origins(
+        whisper,
+        decoding_module,
+        runtime,
+        adapters,
+        native_module,
+    )
+    dependencies = _resolved_dependencies()
+    _require_dependency_inventory_contract(dependencies)
+    _require_measured_dependency_versions(dependencies, torch_module=torch)
+
+    tests = subprocess.run(
+        [sys.executable, *PREFLIGHT_TEST_ARGUMENTS],
+        cwd=RUNTIME_ROOT,
+        capture_output=True,
+        text=True,
+        check=False,
+        timeout=300,
+    )
+    if tests.returncode != 0:
+        output = f"{tests.stdout}\n{tests.stderr}".strip()
+        raise RuntimeError(
+            f"remote CPU contract rehearsal failed: sha256={_sha256_text(output)}"
+        )
+
+    canonical_sha256 = _validator().canonical_sha256
+    return {
+        "status": "passed",
+        "runtime_commit": runtime_identity.git_commit,
+        "backend_commit": backend_identity.git_commit,
+        "manifest_id": manifest["manifest_id"],
+        "modal_module_version": modal_version,
+        "torch_module_version": str(torch.__version__),
+        "resolved_dependency_count": len(dependencies),
+        "resolved_dependencies_sha256": canonical_sha256(dependencies),
+    }
 
 
 def _git_invocation(root: Path, *arguments: str) -> list[str]:
@@ -1895,6 +2011,9 @@ def _run_qualification_worker(
         adapters,
         native_module,
     )
+    dependencies = _resolved_dependencies()
+    _require_dependency_inventory_contract(dependencies)
+    _require_measured_dependency_versions(dependencies, torch_module=torch)
     observed_cloud, observed_region = _required_modal_location(manifest)
     _probe_blocked_network()
     _probe_read_only_model_cache()
@@ -2072,7 +2191,6 @@ def _run_qualification_worker(
     if runner.worker.queue_depth != 0 or runner.budget.lease_count != 0:
         raise RuntimeError("the campaign ended with retained runtime capacity")
 
-    dependencies = _resolved_dependencies()
     canonical_sha256 = _validator().canonical_sha256
     resource = manifest["resource_contract"]
     workload = {
@@ -2257,7 +2375,7 @@ def _locked_image_inputs() -> tuple[str, ...]:
         for line in (ROOT / IMAGE_INPUTS_PATH).read_text(encoding="utf-8").splitlines()
         if line.strip() and not line.lstrip().startswith("#")
     )
-    expected = tuple(sorted((*DIRECT_IMAGE_PACKAGES, "modal==1.5.5", "torch==2.6.0")))
+    expected = tuple(sorted((*DIRECT_IMAGE_PACKAGES, "torch==2.6.0")))
     if values != expected:
         raise RuntimeError("the direct image inputs do not match the producer")
     return values
@@ -2275,22 +2393,44 @@ def _run_bound_worker(runtime_commit: str, *, modal_module: Any) -> dict[str, An
     )
 
 
+def _run_bound_preflight(
+    runtime_commit: str,
+    *,
+    modal_module: Any,
+) -> dict[str, object]:
+    producer = importlib.import_module("infra.modal_native_cuda_qualification")
+    return producer._run_environment_preflight(  # type: ignore[attr-defined]
+        runtime_commit,
+        modal_module=modal_module,
+    )
+
+
 def _modal_main(
     output: str = "",
     skip_cache_prime: bool = False,
     confirm_paid_gpu: bool = False,
+    preflight_only: bool = False,
 ) -> None:
     """Run the one registered campaign from Modal's local process."""
 
     _require_canonical_modal_invocation()
-    _require_paid_confirmation(confirm_paid_gpu)
+    runtime_commit = _required_runtime_commit()
+    if not preflight_only:
+        _require_paid_confirmation(confirm_paid_gpu)
+    if preflight_native_cuda_environment is None:
+        raise RuntimeError("Modal resources are not defined")
+    preflight = preflight_native_cuda_environment.remote()
+    print("Environment preflight passed: " + json.dumps(preflight, sort_keys=True))
+    if preflight_only:
+        return
+    _require_definition_checkout(runtime_commit)
     if prime_model_cache is None or run_native_cuda_qualification is None:
         raise RuntimeError("Modal resources are not defined")
     destination = _output_path(output)
     manifest = _read_registration()
     _execute_registered_attempt(
         destination,
-        runtime_commit=_required_runtime_commit(),
+        runtime_commit=runtime_commit,
         manifest=manifest,
         manifest_sha256=_sha256_file(ROOT / QUALIFICATION_MANIFEST_PATH),
         prime_cache=(None if skip_cache_prime else prime_model_cache.remote),
@@ -2299,8 +2439,13 @@ def _modal_main(
     print(f"Wrote validated qualification evidence to {destination}")
 
 
-def _define_modal_resources() -> tuple[Any, Any, Any, Any]:
+def _define_modal_resources() -> tuple[Any, Any, Any, Any, Any]:
     modal = importlib.import_module("modal")
+    if str(modal.__version__) != MODAL_SDK_VERSION:
+        raise RuntimeError(
+            f"Modal SDK mismatch: expected {MODAL_SDK_VERSION}, "
+            f"observed {modal.__version__}"
+        )
     runtime_commit = _required_runtime_commit()
     if os.environ.get("MODAL_IS_REMOTE") != "1":
         _require_definition_checkout(runtime_commit)
@@ -2357,6 +2502,23 @@ def _define_modal_resources() -> tuple[Any, Any, Any, Any]:
     @app.function(
         image=image,
         serialized=True,
+        cpu=2.0,
+        memory=2048,
+        timeout=600,
+        startup_timeout=600,
+        retries=0,
+        max_containers=1,
+        block_network=True,
+        restrict_modal_access=True,
+        single_use_containers=True,
+        include_source=False,
+    )
+    def preflight_native_cuda_environment() -> dict[str, object]:
+        return _run_bound_preflight(runtime_commit, modal_module=modal)
+
+    @app.function(
+        image=image,
+        serialized=True,
         gpu=GPU_REQUEST,
         cloud=cloud_selector,
         region=region_selector,
@@ -2382,15 +2544,26 @@ def _define_modal_resources() -> tuple[Any, Any, Any, Any]:
         return _run_bound_worker(runtime_commit, modal_module=modal)
 
     main = app.local_entrypoint(name="main")(_modal_main)
-    return app, prime_model_cache, run_native_cuda_qualification, main
+    return (
+        app,
+        prime_model_cache,
+        preflight_native_cuda_environment,
+        run_native_cuda_qualification,
+        main,
+    )
 
 
 if _definition_enabled():
-    app, prime_model_cache, run_native_cuda_qualification, main = (
-        _define_modal_resources()
-    )
+    (
+        app,
+        prime_model_cache,
+        preflight_native_cuda_environment,
+        run_native_cuda_qualification,
+        main,
+    ) = _define_modal_resources()
 else:
     app = None
     prime_model_cache = None
+    preflight_native_cuda_environment = None
     run_native_cuda_qualification = None
     main = None

@@ -125,6 +125,102 @@ assert 'whisper' not in sys.modules
         self.assertEqual(result, {"status": "passed"})
         self.assertEqual(observed, {"commit": "a" * 40, "modal": modal})
 
+    def test_remote_preflight_delegates_to_bound_producer(self) -> None:
+        observed: dict[str, object] = {}
+
+        def run(runtime_commit: str, *, modal_module: object) -> dict[str, object]:
+            observed.update(commit=runtime_commit, modal=modal_module)
+            return {"status": "passed"}
+
+        bound = SimpleNamespace(_run_environment_preflight=run)
+        modal = object()
+        with patch.object(
+            producer.importlib, "import_module", return_value=bound
+        ) as load:
+            result = producer._run_bound_preflight("a" * 40, modal_module=modal)
+        load.assert_called_once_with("infra.modal_native_cuda_qualification")
+        self.assertEqual(result, {"status": "passed"})
+        self.assertEqual(observed, {"commit": "a" * 40, "modal": modal})
+
+    def test_preflight_rehearsal_uses_tools_as_the_discovery_root(self) -> None:
+        self.assertEqual(
+            producer.PREFLIGHT_TEST_ARGUMENTS,
+            (
+                "-m",
+                "unittest",
+                "discover",
+                "-s",
+                "tools",
+                "-p",
+                "test_modal_native_cuda_qualification*.py",
+            ),
+        )
+
+    def test_preflight_only_never_creates_an_attempt(self) -> None:
+        preflight = SimpleNamespace(remote=lambda: {"status": "passed"})
+        with (
+            patch.object(producer, "_require_canonical_modal_invocation"),
+            patch.object(producer, "_required_runtime_commit", return_value="a" * 40),
+            patch.object(
+                producer,
+                "preflight_native_cuda_environment",
+                preflight,
+            ),
+            patch.object(producer, "_require_paid_confirmation") as paid,
+            patch.object(producer, "_execute_registered_attempt") as execute,
+            patch("builtins.print"),
+        ):
+            producer._modal_main(preflight_only=True)
+        paid.assert_not_called()
+        execute.assert_not_called()
+
+    def test_preflight_failure_stops_before_attempt_creation(self) -> None:
+        def fail() -> dict[str, object]:
+            raise RuntimeError("preflight failed")
+
+        preflight = SimpleNamespace(remote=fail)
+        with (
+            patch.object(producer, "_require_canonical_modal_invocation"),
+            patch.object(producer, "_required_runtime_commit", return_value="a" * 40),
+            patch.object(
+                producer,
+                "preflight_native_cuda_environment",
+                preflight,
+            ),
+            patch.object(producer, "_execute_registered_attempt") as execute,
+            self.assertRaisesRegex(RuntimeError, "preflight failed"),
+        ):
+            producer._modal_main(confirm_paid_gpu=True)
+        execute.assert_not_called()
+
+    def test_paid_path_rechecks_the_checkout_after_preflight(self) -> None:
+        runtime_commit = "a" * 40
+        preflight = SimpleNamespace(remote=lambda: {"status": "passed"})
+        remote = SimpleNamespace(remote=lambda: None)
+        with (
+            patch.object(producer, "_require_canonical_modal_invocation"),
+            patch.object(producer, "_require_paid_confirmation"),
+            patch.object(
+                producer, "_required_runtime_commit", return_value=runtime_commit
+            ),
+            patch.object(
+                producer,
+                "preflight_native_cuda_environment",
+                preflight,
+            ),
+            patch.object(producer, "prime_model_cache", remote),
+            patch.object(producer, "run_native_cuda_qualification", remote),
+            patch.object(producer, "_require_definition_checkout") as recheck,
+            patch.object(producer, "_execute_registered_attempt") as execute,
+            patch("builtins.print"),
+        ):
+            producer._modal_main(
+                output=producer.REGISTERED_OUTPUT_PATH,
+                confirm_paid_gpu=True,
+            )
+        recheck.assert_called_once_with(runtime_commit)
+        self.assertEqual(execute.call_args.kwargs["runtime_commit"], runtime_commit)
+
     def test_output_path_is_closed_and_repository_relative(self) -> None:
         self.assertEqual(
             producer._output_path(producer.REGISTERED_OUTPUT_PATH),
@@ -286,7 +382,7 @@ assert 'whisper' not in sys.modules
     def test_image_inputs_are_exact_and_sorted(self) -> None:
         values = producer._locked_image_inputs()
         self.assertEqual(values, tuple(sorted(values)))
-        self.assertIn("modal==1.5.5", values)
+        self.assertNotIn("modal==1.5.5", values)
         self.assertIn("torch==2.6.0", values)
 
     def test_input_manifest_is_content_bound_to_the_registered_fixture(self) -> None:
@@ -400,6 +496,43 @@ assert 'whisper' not in sys.modules
                 self.assertRaisesRegex(RuntimeError, message),
             ):
                 producer._resolved_dependencies()
+
+    def test_measured_dependency_version_matches_the_imported_module(self) -> None:
+        producer._require_measured_dependency_versions(
+            [{"name": "torch", "version": "2.6.0"}],
+            torch_module=SimpleNamespace(__version__="2.6.0"),
+        )
+
+        with self.assertRaisesRegex(RuntimeError, "imported module"):
+            producer._require_measured_dependency_versions(
+                [{"name": "torch", "version": "2.6.0"}],
+                torch_module=SimpleNamespace(__version__="2.6.1"),
+            )
+
+    def test_dependency_inventory_is_checked_before_record_construction(self) -> None:
+        producer._require_dependency_inventory_contract(
+            [
+                {"name": "idna", "version": "3.19"},
+                {"name": "torch", "version": "2.6.0+cu124"},
+            ]
+        )
+        invalid = (
+            ([{"name": "Bad_Name", "version": "1"}], "dependency name"),
+            ([{"name": "idna", "version": ""}], "dependency version"),
+            (
+                [
+                    {"name": "torch", "version": "2.6.0"},
+                    {"name": "idna", "version": "3.19"},
+                ],
+                "sorted and unique",
+            ),
+        )
+        for dependencies, message in invalid:
+            with (
+                self.subTest(message=message),
+                self.assertRaisesRegex(RuntimeError, message),
+            ):
+                producer._require_dependency_inventory_contract(dependencies)
 
     def test_record_write_is_atomic_and_never_overwrites(self) -> None:
         with tempfile.TemporaryDirectory() as directory:

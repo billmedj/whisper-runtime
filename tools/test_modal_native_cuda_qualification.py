@@ -46,7 +46,7 @@ PRODUCER_SCRIPT_PATH = "infra/modal_native_cuda_qualification.py"
 SCHEMA_PATH = "evidence/modal-native-cuda-qualification.schema.json"
 VALIDATOR_PATH = "tools/validate_modal_native_cuda_qualification.py"
 IMAGE_INPUTS_PATH = "infra/modal-native-cuda-image-inputs.lock"
-QUALIFICATION_MANIFEST_PATH = "experiments/native-cuda-qualification-v5.json"
+QUALIFICATION_MANIFEST_PATH = "experiments/native-cuda-qualification-v6.json"
 QUALIFICATION_MANIFEST_SHA256 = sha256_file(DEFAULT_QUALIFICATION_MANIFEST)
 QUALIFICATION_MANIFEST = read_json(DEFAULT_QUALIFICATION_MANIFEST)
 WORKER_ID = "9" * 64
@@ -328,7 +328,7 @@ def valid_record() -> dict[str, Any]:
             events, run["post_recovery_reuse"], "reuse", SUCCESS_EVENTS
         )
     resolved_dependencies = [
-        {"name": "modal", "version": "1.5.5"},
+        {"name": "idna", "version": "3.19"},
         {"name": "torch", "version": "2.8.0"},
     ]
     record = {
@@ -336,14 +336,14 @@ def valid_record() -> dict[str, Any]:
         "recorded_at": "2026-09-04T12:00:00Z",
         "status": "passed",
         "outcome": {
-            "registered_cell_id": "t4-tiny-en-jfk-qualification-v5",
+            "registered_cell_id": "t4-tiny-en-jfk-qualification-v6",
             "exclusion_rule_id": "no-exclusions-v1",
             "result": "passed",
             "failure_class": "none",
             "failure_summary": None,
         },
         "qualification_registration": {
-            "manifest_id": "native-cuda-qualification-v5",
+            "manifest_id": "native-cuda-qualification-v6",
             "manifest_path": QUALIFICATION_MANIFEST_PATH,
             "manifest_sha256": QUALIFICATION_MANIFEST_SHA256,
             "runtime_commit": RUNTIME_COMMIT,
@@ -390,7 +390,7 @@ def valid_record() -> dict[str, Any]:
             "container_image_id": "im-qualificationfixture",
         },
         "worker": {
-            "campaign_id": "native-cuda-qualification-v5",
+            "campaign_id": "native-cuda-qualification-v6",
             "worker_id": WORKER_ID,
             "worker_ordinal": 0,
             "expected_worker_count": 1,
@@ -666,7 +666,22 @@ class NativeCudaQualificationContractTests(unittest.TestCase):
         record["producer"]["resolved_dependencies_sha256"] = canonical_sha256(
             record["producer"]["resolved_dependencies"]
         )
-        self.assert_rejected(record, "torch version does not match environment")
+        self.assert_rejected(
+            record, "torch distribution metadata version does not match environment"
+        )
+
+    def test_platform_modal_module_does_not_require_distribution_metadata(self) -> None:
+        record = valid_record()
+        self.assertNotIn(
+            "modal",
+            {entry["name"] for entry in record["producer"]["resolved_dependencies"]},
+        )
+        self.assertEqual(self.failures(record), [])
+
+    def test_platform_modal_module_version_is_bound(self) -> None:
+        record = valid_record()
+        record["environment"]["modal_sdk"] = "9.9.9"
+        self.assert_rejected(record, "modal_sdk does not match")
 
     def test_arbitrary_git_hashes_cannot_replace_checkout_identity(self) -> None:
         record = valid_record()

@@ -24,7 +24,8 @@ from urllib.parse import unquote, urlsplit
 
 ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_SCHEMA = ROOT / "evidence/modal-native-cuda-qualification.schema.json"
-DEFAULT_QUALIFICATION_MANIFEST = ROOT / "experiments/native-cuda-qualification-v5.json"
+DEFAULT_QUALIFICATION_MANIFEST = ROOT / "experiments/native-cuda-qualification-v6.json"
+EXPECTED_MODAL_SDK_VERSION = "1.5.5"
 FAULT_POINTS = (
     "cleanup",
     "event-create",
@@ -794,10 +795,11 @@ def validate_qualification_manifest(
         "3": "native-cuda-qualification-v3",
         "4": "native-cuda-qualification-v4",
         "5": "native-cuda-qualification-v5",
+        "6": "native-cuda-qualification-v6",
     }
     if manifest_version not in manifest_ids:
         failures.append(
-            f"{location}.manifest_version must be '1', '2', '3', '4', or '5'"
+            f"{location}.manifest_version must be '1', '2', '3', '4', '5', or '6'"
         )
     elif top.get("manifest_id") != manifest_ids[manifest_version]:
         failures.append(
@@ -966,7 +968,7 @@ def validate_qualification_manifest(
                 failures.append(f"{location}.cell.{field} must be an object")
             elif cell.get(f"{field}_sha256") != canonical_sha256(cell[field]):
                 failures.append(f"{location}.cell.{field}_sha256 is not canonical")
-        if manifest_version in {"3", "4", "5"} and isinstance(
+        if manifest_version in {"3", "4", "5", "6"} and isinstance(
             cell.get("decode_options"), dict
         ):
             expected_decode_options = {
@@ -1437,11 +1439,12 @@ def _validate_source_bindings(
     if producer["resolved_dependencies_sha256"] != canonical_sha256(resolved):
         failures.append("producer.resolved_dependencies_sha256 is not canonical")
     observed_versions = dict(names_and_versions)
-    for name, environment_field in (("modal", "modal_sdk"), ("torch", "torch")):
-        if observed_versions.get(name) != record["environment"][environment_field]:
-            failures.append(
-                f"producer resolved {name} version does not match environment"
-            )
+    if observed_versions.get("torch") != record["environment"]["torch"]:
+        failures.append(
+            "torch distribution metadata version does not match environment"
+        )
+    if record["environment"]["modal_sdk"] != EXPECTED_MODAL_SDK_VERSION:
+        failures.append("environment.modal_sdk does not match the registered producer")
 
 
 def _validate_global_events(

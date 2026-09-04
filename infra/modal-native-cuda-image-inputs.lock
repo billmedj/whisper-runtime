@@ -1,10 +1,11 @@
 # Native CUDA qualification image inputs.
 #
-# Each package installed directly by the producer is pinned here. The worker
-# separately records the full resolved Python distribution inventory.
+# Direct third-party Python requirements passed to Modal's pip installers.
+# The runtime is installed separately from the required Git commit with
+# --no-deps. Modal adds its function runtime outside these inputs; the worker
+# records the imported Modal module version.
 
 jsonschema==4.25.1
-modal==1.5.5
 more-itertools==11.1.0
 numba==0.67.0
 numpy==2.5.2

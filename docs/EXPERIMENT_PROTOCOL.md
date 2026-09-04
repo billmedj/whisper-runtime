@@ -8,17 +8,13 @@ The current
 [`modal-native-cuda-qualification.schema.json`](../evidence/modal-native-cuda-qualification.schema.json)
 is qualification-only despite its historical filename. Its fixed cell is
 registered in
-[`experiments/native-cuda-qualification-v5.json`](../experiments/native-cuda-qualification-v5.json).
+[`experiments/native-cuda-qualification-v6.json`](../experiments/native-cuda-qualification-v6.json).
 The local validator binds that tracked file by path, digest, and runtime commit,
 but cannot prove that it was public before execution. A public Git host or
 another independent service must supply that timestamp.
 
-The single version-four attempt completed the registered GPU campaign on a T4,
-then failed during dependency inventory because more than one `idna` metadata
-version was visible. It published no qualification record. Version five
-records one resolver-selected active distribution version for each normalized
-package name and remains unexecuted. The version-four attempt supports no
-passing qualification claim.
+The [evidence index](../evidence/README.md) records prior attempts and their
+limits. No version-six GPU attempt or qualification record exists.
 
 A performance campaign requires a new evidence schema or version. It must
 require the full metrics in this protocol, matched probes on the control and
@@ -185,7 +181,7 @@ Every record MUST bind:
 
 - runtime commit and Git tree, clean-worktree result, and critical-file hashes;
 - patched Whisper commit, tree, patch-manifest digest, and patch-file hashes;
-- container image identity and the resolver-selected dependency inventory;
+- container image identity and the Python distribution metadata inventory;
 - Python, PyTorch, CUDA runtime, CUDA driver, and cuDNN versions;
 - provider, region, GPU type, GPU memory, and device capability;
 - checkpoint name and SHA-256 digest;
@@ -198,9 +194,15 @@ Every record MUST bind:
 Credentials, user names, local paths, temporary URLs, and account identifiers
 MUST NOT appear in a published record.
 
-The dependency inventory records resolver-selected distribution metadata. It
-does not prove the bytes of imported modules. Source and build-input hashes are
-the integrity anchors for the tracked implementation and image recipe.
+The dependency inventory stores one metadata record returned by
+`importlib.metadata.distribution(name)` for each normalized name discovered by
+`importlib.metadata.distributions()`. It does not prove the bytes of imported
+modules. Source and build-input hashes are the integrity anchors for the
+tracked implementation and image recipe. The producer MUST collect this
+inventory before GPU work. It MUST record the platform-injected Modal module
+version independently, even when the inventory contains no Modal distribution.
+It MUST require exact Torch module and distribution equality because Torch
+executes the workload.
 
 ## Publication rules
 

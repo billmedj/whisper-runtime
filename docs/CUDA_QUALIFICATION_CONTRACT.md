@@ -2,7 +2,7 @@
 
 `evidence/modal-native-cuda-qualification.schema.json` defines the
 `1-draft` record format for one fixed native CUDA qualification cell. Version
-five is the active preregistered campaign under this format. This schema is
+six is the active preregistered campaign under this format. This schema is
 not a performance-benchmark schema, and no committed evidence record currently
 satisfies it.
 
@@ -21,16 +21,13 @@ Provider logs and independent review remain necessary.
 ## Registered cell
 
 The versioned registration is
-[`experiments/native-cuda-qualification-v5.json`](../experiments/native-cuda-qualification-v5.json).
+[`experiments/native-cuda-qualification-v6.json`](../experiments/native-cuda-qualification-v6.json).
 It fixes the source policy, backend revision, T4 worker profile, model,
 checkpoint, input, decode options, resource contract, measurement boundaries,
 sample counts, fault points, exclusion rule, and required invariants.
 
-Modal logs show that the single version-four attempt completed the registered
-GPU campaign on a T4. It then reached dependency inventory and failed because
-the environment exposed more than one visible metadata version for `idna`. It
-published no qualification record and supports no passing qualification claim.
-Version five remains unexecuted.
+The [evidence index](../evidence/README.md) records prior attempts and their
+limits. No version-six GPU attempt or qualification record exists.
 
 The record must bind the registration by repository-relative path, SHA-256
 digest, and runtime commit. These fields prove which tracked registration was
@@ -156,9 +153,8 @@ The record binds:
 - the backend patch manifest path and digest;
 - producer script, trace layer, schema, validator, and direct image-input paths
   and digests;
-- the Modal image object identifier, a sorted inventory of resolver-selected
-  Python distribution versions and its canonical digest, and exact environment
-  versions;
+- the Modal image object identifier, a sorted Python distribution metadata
+  inventory and its canonical digest, and exact environment versions;
 - the worker, provider, region, GPU, and monotonic clock;
 - checkpoint, input manifest, input bytes, decoded PCM, preprocessing options,
   decode options, and their digests; and
@@ -175,7 +171,11 @@ checkout's `HEAD`. It compares the repository-relative path and the SHA-256
 digest with the record. A matching digest at another path is not sufficient.
 Before GPU work begins, the producer also binds the tracked input manifest to
 that `HEAD`, verifies its digest, and checks its registered fixture fields
-against the cell.
+against the cell. It collects the dependency inventory before the campaign.
+Modal supplies its function module outside the image's distribution metadata;
+the worker records that module version independently. The Torch module and
+distribution versions must match exactly because the imported Torch module
+executes the registered workload.
 
 ## Run the registered cell
 
@@ -187,16 +187,24 @@ manifest:
 $env:WHISPER_RUNTIME_COMMIT = git rev-parse HEAD
 $env:WHISPER_MODAL_ENABLE_REMOTE_RESOURCES = "1"
 python -m modal run -m infra.modal_native_cuda_qualification `
-  --output artifacts/modal/native-cuda-qualification-v5.json `
+  --preflight-only
+
+python -m modal run -m infra.modal_native_cuda_qualification `
+  --output artifacts/modal/native-cuda-qualification-v6.json `
   --confirm-paid-gpu
 ```
 
-The command primes the pinned model cache and requests one T4 with the Modal
-selectors `aws` and `us-west`. The worker must report
+The first command runs the registered image definition on a CPU worker. It
+binds the source, checks the imported modules and dependency inventory, and
+runs the record and producer contract tests. It does not create an attempt
+receipt or guarantee the image object ID of a later invocation. The second
+command repeats that gate. Its CPU and GPU functions reference the same Modal
+Image object. It then primes the pinned model cache and requests one T4 with
+the Modal selectors `aws` and `us-west`. The GPU worker must report
 `CLOUD_PROVIDER_AWS` and `us-west-2`. The command then writes one record.
-Before it dispatches remote work, it creates the attempt receipt. The producer
-accepts only the registered output path shown above and refuses to overwrite
-its record or receipt.
+After the CPU gate passes and before the registered campaign begins, it creates
+the attempt receipt. The producer accepts only the registered output path shown
+above and refuses to overwrite its record or receipt.
 
 The module form is mandatory. A file-path invocation changes the local module
 identity and can make Modal unable to deserialize the remote function. The
@@ -208,7 +216,7 @@ producer rejects that form before it creates an attempt receipt.
 python -B tools/validate_modal_native_cuda_qualification.py <record.json> `
   --runtime-checkout . `
   --backend-checkout <clean-patched-whisper-checkout> `
-  --qualification-manifest experiments/native-cuda-qualification-v5.json `
+  --qualification-manifest experiments/native-cuda-qualification-v6.json `
   --patch-manifest patches/openai-whisper/SHA256SUMS `
   --producer-script infra/modal_native_cuda_qualification.py `
   --image-inputs infra/modal-native-cuda-image-inputs.lock
@@ -218,13 +226,16 @@ Repository URLs must use normalized credential-free HTTPS. Published paths
 must be repository-relative.
 
 Modal exposes an opaque `im-...` image object identifier, not an OCI content
-digest. The record therefore stores that identifier. The tracked producer and
-direct image-input file bind the build recipe. The observed, sorted Python
-distribution inventory records one actively resolved version for each
-normalized package name. It is a resolver-selected metadata inventory, not
-proof of imported module bytes. Source and build-input hashes remain the
-integrity anchors. These fields do not turn the Modal identifier into a content
-digest.
+digest. The record therefore stores that identifier. The lock file binds the
+direct Python requirement specifiers passed to pip and uv. It is not a complete
+container package manifest and does not hash base-image layers, apt packages,
+or transitive wheel files. The tracked client constraint pins the Modal SDK
+used to define the function, and the worker records the injected runtime module
+version. The observed, sorted Python distribution inventory stores one metadata
+record returned by `importlib.metadata.distribution(name)` for each normalized
+name discovered by `importlib.metadata.distributions()`. It does not prove
+imported module bytes. Source and build-input hashes remain the integrity
+anchors. These fields do not turn the Modal identifier into a content digest.
 
 The resource contract is the logical capacity of this one-lane runtime
 profile. It equals the per-run reservation, so the available logical vector is
@@ -240,8 +251,9 @@ derived-invariant failure must mark the affected derived values as false.
 Malformed provenance, inconsistent summaries, and broken raw-field derivations
 are validation errors, not experimental failures.
 
-The registration permits one attempt and no exclusions. Before any remote call,
-the producer creates `<record>.attempt.jsonl` with exclusive-create semantics.
+The registration permits one attempt and no exclusions. After the CPU preflight
+passes and before cache-prime or GPU campaign dispatch, the producer creates
+`<record>.attempt.jsonl` with exclusive-create semantics.
 It appends either `record-published` or `attempt-failed` after an ordinary
 Python exception. A process termination can leave only `attempt-started`; the
 producer does not relabel that incomplete attempt. A second invocation refuses

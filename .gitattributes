@@ -4,6 +4,7 @@
 
 *.json text eol=lf
 *.lean text eol=lf
+*.lock text eol=lf
 *.md text eol=lf
 *.patch text eol=lf -whitespace
 *.ps1 text eol=lf

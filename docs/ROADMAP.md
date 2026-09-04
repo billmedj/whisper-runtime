@@ -5,18 +5,14 @@ page records implementation order. A target is incomplete until its stated
 evidence is committed to the repository.
 
 The next Modal step is the single-worker cell in the
-[versioned CUDA qualification registration](../experiments/native-cuda-qualification-v5.json).
+[versioned CUDA qualification registration](../experiments/native-cuda-qualification-v6.json).
 Its evidence contract is qualification-only. A later performance matrix follows
 the fixed comparison, cost order, metrics, falsifiers, and publication rules in
 the [CUDA experiment protocol](EXPERIMENT_PROTOCOL.md) under a new evidence
 schema or version.
 
-Modal logs show that the single version-four attempt completed its registered
-GPU campaign on a T4, then failed at the post-campaign dependency-inventory
-step because more than one `idna` metadata version was visible. It published no
-qualification record and supports no passing qualification claim. Version five
-records one resolver-selected active distribution version per normalized
-package name and remains unexecuted.
+The [evidence index](../evidence/README.md) records prior attempts and their
+limits. No version-six GPU attempt or qualification record exists.
 
 ## Now: establish the reference boundary
 
