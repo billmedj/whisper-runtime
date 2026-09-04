@@ -45,15 +45,25 @@ and owner-death takeover. A legacy adapter executes an unmodified synchronous
 reservation. A native CPU adapter exposes request-local run creation, prefill,
 token steps, finalization, and cleanup through a pinned patched backend. Its
 default profile admits one transaction. An experimental profile admits two
-transactions while serializing run construction and encoder preparation. Four
-CPU reference/candidate pairs cover greedy decoding, beam search, word
-timestamps, and translation. Real-backend evidence for the two-transaction
-profile, batching, streaming, managed cache slots, optimized backends, and the
-complete conformance matrix remain design targets.
+transactions while serializing run construction and encoder preparation. One
+committed Windows CPU record exercises that profile through the runtime
+adapter. Four CPU reference/candidate pairs cover greedy decoding, beam search,
+word timestamps, and translation. A strict single-lane CUDA profile has two
+committed T4 records for the same pinned `tiny.en` FP32 case on separate AWS and
+GCP workers. They cover admission, a private stream, completion-fence ordering,
+cooperative cancellation, retained capacity after an injected fence failure,
+manual recovery, and reuse. The injected failure occurs in the harness before
+the delegate synchronization call; it is not evidence of a physical CUDA
+driver failure. Safe batching, CUDA concurrency, other models and devices,
+streaming, managed cache slots, optimized backends, measured memory bounds,
+performance, and the complete conformance matrix remain design targets.
 
-The current formal model covers abstract lease provenance, lifecycle,
-capacity, stale commits, and independent-session commits. It does not model
-threads, backend execution, the submission gate, or completion fences.
+The formal models cover abstract lease provenance, lifecycle, capacity, stale
+commits, independent-session commits, and a small completion-boundary state
+machine. The latter makes publication and capacity release depend on an
+observed completion fence or explicit recovery. The models do not establish
+Python thread behavior, backend execution, submission-gate refinement, CUDA
+event validity, or correspondence with the adapter implementation.
 
 ## Problem
 
@@ -360,9 +370,10 @@ publication of request state, session state, and random state. Publication is
 the revocation boundary. A stop accepted before it prevents publication; a stop
 after it does not roll back the committed state.
 
-This revocation rule is covered by executable concurrency tests. The current
-Lean model does not represent threads, cancellation races, backend fences, or
-the publication critical section.
+This revocation rule is covered by executable concurrency tests. The Lean
+completion-boundary model represents fence outcomes and publication at the
+abstract state-machine level. It does not represent threads, cancellation
+races, concrete backend fences, or the Python publication critical section.
 
 ## Functional kernel
 

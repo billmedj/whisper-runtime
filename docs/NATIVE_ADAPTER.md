@@ -120,8 +120,9 @@ weights to the declared `ModelSnapshot`; metadata alone is not a strong
 checkpoint identity.
 
 This adapter does not yet support audio batches, stage-specific resource costs,
-durable mid-window checkpoints, alignment, or streaming. No committed record
-establishes CUDA correctness, memory bounds, latency, or throughput.
+durable mid-window checkpoints, alignment, or streaming. The committed CUDA
+records cover only the pinned single-lane case described below. They do not
+establish general CUDA compatibility, memory bounds, latency, or throughput.
 
 ## Strict CUDA profile
 

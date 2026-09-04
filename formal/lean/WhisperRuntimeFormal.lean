@@ -1,1 +1,2 @@
 import WhisperRuntimeFormal.StateResource
+import WhisperRuntimeFormal.CompletionFence
