@@ -145,9 +145,10 @@ fallbacks are rejected.
 After the submission gate drains, the scope runs cleanup, records one CUDA
 event on the stream, and waits for the event. The session cannot commit and the
 worker cannot release its lease before that wait succeeds. A cleanup, event
-record, or event synchronization failure quarantines the transaction. Recovery
-retries idempotent cleanup and records a new event. `request_stop()` only sets a
-host-side latch; it does not call CUDA from the cancelling thread.
+creation, event record, or event synchronization failure quarantines the
+transaction. Recovery retries idempotent cleanup and records a new event.
+`request_stop()` only sets a host-side latch; it does not call CUDA from the
+cancelling thread.
 
 The first stream use performs a conservative device synchronization after
 admission. This establishes a boundary with model initialization before the

@@ -4,6 +4,13 @@
 page records implementation order. A target is incomplete until its stated
 evidence is committed to the repository.
 
+The next Modal step is the single-worker cell in the
+[versioned CUDA qualification registration](../experiments/native-cuda-qualification-v1.json).
+Its evidence contract is qualification-only. A later performance matrix follows
+the fixed comparison, cost order, metrics, falsifiers, and publication rules in
+the [CUDA experiment protocol](EXPERIMENT_PROTOCOL.md) under a new evidence
+schema or version.
+
 ## Now: establish the reference boundary
 
 - Expand the four-case CPU conformance corpus beyond one input.
@@ -14,7 +21,10 @@ evidence is committed to the repository.
   overlapping outer decoder calls in two operating-system threads.
 - Maintain the adapter-level two-lane CPU record.
 - Select and document one random-generator contract.
-- Extend the recorded single-lane T4 case to more inputs and model sizes.
+- Run and publish the fixed single-worker T4 qualification cell after its
+  registration has an external public timestamp.
+- Extend the recorded single-lane T4 case to more inputs and model sizes only
+  under separately versioned registrations.
 - Derive measured resource profiles only after the expanded CUDA corpus is
   stable across repeated workers.
 
@@ -39,8 +49,7 @@ isolate requests, and remain within the measured resource bound.
 - Publish versioned provisional segments and immutable commit watermarks.
 - Keep offline-compatible and stable-streaming profiles separate.
 - Add compiled or exported backends behind declared capabilities.
-- Validate a second Whisper model size and decode configuration against the
-  same ownership and close rules.
+- Apply the same ownership and close rules to every added backend.
 
 Exit condition: committed text does not change, session memory stays bounded as
 input duration grows, and each adapter passes the cases for every capability it
