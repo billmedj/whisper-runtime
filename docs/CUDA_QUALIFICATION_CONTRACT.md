@@ -146,9 +146,10 @@ The record binds:
 - clean runtime and backend repositories, commits, and trees;
 - the qualification registration path and digest;
 - the backend patch manifest path and digest;
-- producer script, schema, validator, and dependency-inventory paths and
+- producer script, schema, validator, and direct image-input paths and
   digests;
-- the container image digest and resolved environment versions;
+- the Modal image object identifier, a sorted resolved Python distribution
+  inventory and its canonical digest, and exact environment versions;
 - the worker, provider, region, GPU, and monotonic clock;
 - checkpoint, input manifest, input bytes, decoded PCM, preprocessing options,
   decode options, and their digests; and
@@ -164,6 +165,26 @@ The validator also requires each artifact to be tracked at the runtime
 checkout's `HEAD`. It compares the repository-relative path and the SHA-256
 digest with the record. A matching digest at another path is not sufficient.
 
+## Run the registered cell
+
+Run this command only from the clean public commit that contains the producer,
+registration, schema, validator, trace layer, and image-input file:
+
+```powershell
+$env:WHISPER_RUNTIME_COMMIT = git rev-parse HEAD
+$env:WHISPER_MODAL_ENABLE_REMOTE_RESOURCES = "1"
+python -m modal run infra/modal_native_cuda_qualification.py `
+  --output artifacts/modal/native-cuda-qualification-v1.json `
+  --confirm-paid-gpu
+```
+
+The command primes the pinned model cache, starts one AWS `us-west-2` T4
+worker, and writes one record. It creates the attempt receipt before it
+dispatches remote work. The producer accepts only the registered output path
+shown above and refuses to overwrite its record or receipt.
+
+## Validate a record
+
 ```powershell
 python -B tools/validate_modal_native_cuda_qualification.py <record.json> `
   --runtime-checkout . `
@@ -171,11 +192,23 @@ python -B tools/validate_modal_native_cuda_qualification.py <record.json> `
   --qualification-manifest experiments/native-cuda-qualification-v1.json `
   --patch-manifest patches/openai-whisper/SHA256SUMS `
   --producer-script infra/modal_native_cuda_qualification.py `
-  --dependency-inventory infra/modal-native-cuda-requirements.lock
+  --image-inputs infra/modal-native-cuda-image-inputs.lock
 ```
 
 Repository URLs must use normalized credential-free HTTPS. Published paths
 must be repository-relative.
+
+Modal exposes an opaque `im-...` image object identifier, not an OCI content
+digest. The record therefore stores that identifier. The tracked producer and
+direct image-input file bind the build recipe. The observed, sorted Python
+distribution inventory binds the resolved environment. These fields do not
+turn the Modal identifier into a content digest.
+
+The resource contract is the logical capacity of this one-lane runtime
+profile. It equals the per-run reservation, so the available logical vector is
+zero while a run owns the lane. `gpu.total_memory_bytes` separately records
+the physical device capacity. The logical budget is not a physical GPU memory
+enforcement mechanism.
 
 ## Failed cells and hygiene
 
@@ -185,10 +218,19 @@ derived-invariant failure must mark the affected derived values as false.
 Malformed provenance, inconsistent summaries, and broken raw-field derivations
 are validation errors, not experimental failures.
 
-The registration permits one attempt and no exclusions. Worker allocation or
-startup failures that occur before a record can be produced therefore require
-an external campaign log. The local record validator cannot establish that the
-log is complete.
+The registration permits one attempt and no exclusions. Before any remote call,
+the producer creates `<record>.attempt.jsonl` with exclusive-create semantics.
+It appends either `record-published` or `attempt-failed` after an ordinary
+Python exception. A process termination can leave only `attempt-started`; the
+producer does not relabel that incomplete attempt. A second invocation refuses
+the existing receipt and cannot dispatch another worker for the same output.
+
+The receipt is not a qualification record. Startup, allocation, and incomplete
+campaign failures cannot satisfy the full evidence schema because the required
+GPU observations do not exist. `publish_all_attempts` means that every local
+dispatch attempt has this append-only receipt; it does not mean that an invalid
+campaign is padded into a qualification record. External logs remain necessary
+to establish behavior outside the local process boundary.
 
 The validator rejects duplicate JSON keys, non-finite values, absolute home
 paths, unsafe repository URLs, and several known credential formats. This is a

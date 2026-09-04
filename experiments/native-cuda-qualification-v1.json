@@ -17,8 +17,8 @@
     "backend_tree": "c011d2563c26763b5f147026e6b18ef85bccd4fb",
     "artifacts": "tracked-at-runtime-head",
     "producer_script_path": "infra/modal_native_cuda_qualification.py",
-    "container_image": "sha256-digest-required",
-    "dependencies": "complete-resolved-inventory-required"
+    "container_image": "modal-object-id-required",
+    "dependencies": "tracked-image-inputs-and-observed-resolved-inventory-required"
   },
   "cell": {
     "registered_cell_id": "t4-tiny-en-jfk-qualification-v1",
@@ -27,7 +27,7 @@
     "region": "us-west-2",
     "gpu_name": "Tesla T4",
     "model": "tiny.en",
-    "checkpoint_source": "https://openaipublic.azureedge.net/whisper/tiny.en.pt",
+    "checkpoint_source": "https://openaipublic.azureedge.net/main/whisper/models/d3dd57d32accea0b295c96e26691aa14d8822fac7d9d27d5dc00b4ca2826dd03/tiny.en.pt",
     "checkpoint_sha256": "d3dd57d32accea0b295c96e26691aa14d8822fac7d9d27d5dc00b4ca2826dd03",
     "fixture_id": "openai-whisper-jfk-flac",
     "input_manifest_source": "https://github.com/billmedj/whisper-runtime/blob/3ea09422106615b12a01ffe118fea57c10ab1050/conformance/audio-manifest.json",
@@ -72,8 +72,8 @@
   },
   "resource_contract": {
     "capacity": {
-      "memory_bytes": 15637086208,
-      "compute_units": 40,
+      "memory_bytes": 2147483648,
+      "compute_units": 1,
       "stream_slots": 1
     },
     "reservation": {

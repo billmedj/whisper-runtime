@@ -40,12 +40,12 @@ PATCH_MANIFEST_SHA256 = "4" * 64
 PRODUCER_SCRIPT_SHA256 = "5" * 64
 SCHEMA_SHA256 = "6" * 64
 VALIDATOR_SHA256 = "7" * 64
-DEPENDENCY_INVENTORY_SHA256 = "8" * 64
+IMAGE_INPUTS_SHA256 = "8" * 64
 PATCH_MANIFEST_PATH = "patches/openai-whisper/SHA256SUMS"
 PRODUCER_SCRIPT_PATH = "infra/modal_native_cuda_qualification.py"
 SCHEMA_PATH = "evidence/modal-native-cuda-qualification.schema.json"
 VALIDATOR_PATH = "tools/validate_modal_native_cuda_qualification.py"
-DEPENDENCY_INVENTORY_PATH = "infra/modal-native-cuda-requirements.lock"
+IMAGE_INPUTS_PATH = "infra/modal-native-cuda-image-inputs.lock"
 QUALIFICATION_MANIFEST_PATH = "experiments/native-cuda-qualification-v1.json"
 QUALIFICATION_MANIFEST_SHA256 = sha256_file(DEFAULT_QUALIFICATION_MANIFEST)
 QUALIFICATION_MANIFEST = read_json(DEFAULT_QUALIFICATION_MANIFEST)
@@ -104,8 +104,8 @@ def _make_git_checkout(
 
 
 def _budget() -> dict[str, Any]:
-    capacity = _resource(15_637_086_208, 40, 1)
-    held = _resource(13_489_602_560, 39, 0)
+    capacity = _resource(2_147_483_648, 1, 1)
+    held = _resource(0, 0, 0)
     return {
         "available_before": capacity,
         "available_while_held": held,
@@ -199,7 +199,6 @@ def _fault(point: str, repetition: int, index: int) -> dict[str, Any]:
 
 
 def _append_control_events(events: list[dict[str, Any]], run: dict[str, Any]) -> None:
-    start = len(events) * 10
     for event_name in CONTROL_EVENTS:
         events.append(
             {
@@ -211,7 +210,11 @@ def _append_control_events(events: list[dict[str, Any]], run: dict[str, Any]) ->
                 "event": event_name,
             }
         )
-    run["wall_ns"] = events[-1]["offset_ns"] - start
+    run_events = [event for event in events if event["run_id"] == run["run_id"]]
+    by_name = {event["event"]: event for event in run_events}
+    run["wall_ns"] = (
+        by_name["backend-quiescent"]["offset_ns"] - by_name["run-start"]["offset_ns"]
+    )
 
 
 def _append_transaction_events(
@@ -220,7 +223,6 @@ def _append_transaction_events(
     run_kind: str,
     event_names: tuple[str, ...],
 ) -> None:
-    start = len(events) * 10
     fault_trigger_ordinal = 0
     for event_name in event_names:
         event = {
@@ -251,10 +253,12 @@ def _append_transaction_events(
         elif event_name == "new-work-rejected":
             event["blocked_request_id"] = run["blocked_request_id"]
         events.append(event)
-    run["wall_ns"] = events[-1]["offset_ns"] - start
     by_name = {
         event["event"]: event for event in events if event["run_id"] == run["run_id"]
     }
+    run["wall_ns"] = (
+        by_name["budget-restored"]["offset_ns"] - by_name["run-start"]["offset_ns"]
+    )
     if run_kind == "cancellation":
         run["cancel_to_quiescence_ns"] = (
             by_name["backend-quiescent"]["offset_ns"]
@@ -319,6 +323,10 @@ def valid_record() -> dict[str, Any]:
         _append_transaction_events(
             events, run["post_recovery_reuse"], "reuse", SUCCESS_EVENTS
         )
+    resolved_dependencies = [
+        {"name": "modal", "version": "1.5.5"},
+        {"name": "torch", "version": "2.8.0"},
+    ]
     record = {
         "schema_version": "1-draft",
         "recorded_at": "2026-09-04T12:00:00Z",
@@ -371,9 +379,11 @@ def valid_record() -> dict[str, Any]:
             "schema_sha256": SCHEMA_SHA256,
             "validator_path": VALIDATOR_PATH,
             "validator_sha256": VALIDATOR_SHA256,
-            "dependency_inventory_path": DEPENDENCY_INVENTORY_PATH,
-            "dependency_inventory_sha256": DEPENDENCY_INVENTORY_SHA256,
-            "container_image_digest": f"sha256:{'d' * 64}",
+            "image_inputs_path": IMAGE_INPUTS_PATH,
+            "image_inputs_sha256": IMAGE_INPUTS_SHA256,
+            "resolved_dependencies": resolved_dependencies,
+            "resolved_dependencies_sha256": canonical_sha256(resolved_dependencies),
+            "container_image_id": "im-qualificationfixture",
         },
         "worker": {
             "campaign_id": "t4-tiny-en-jfk-v1",
@@ -409,7 +419,7 @@ def valid_record() -> dict[str, Any]:
         "workload": {
             "profile_id": "tiny.en-cuda0-float32-v1",
             "model": "tiny.en",
-            "checkpoint_source": "https://openaipublic.azureedge.net/whisper/tiny.en.pt",
+            "checkpoint_source": "https://openaipublic.azureedge.net/main/whisper/models/d3dd57d32accea0b295c96e26691aa14d8822fac7d9d27d5dc00b4ca2826dd03/tiny.en.pt",
             "checkpoint_sha256": "d3dd57d32accea0b295c96e26691aa14d8822fac7d9d27d5dc00b4ca2826dd03",
             "fixture_id": "openai-whisper-jfk-flac",
             "input_manifest_source": "https://github.com/billmedj/whisper-runtime/blob/3ea09422106615b12a01ffe118fea57c10ab1050/conformance/audio-manifest.json",
@@ -450,7 +460,7 @@ def valid_record() -> dict[str, Any]:
             "measured_iterations": len(measured),
             "cancellation_iterations": len(cancellations),
             "fault_repetitions_per_point": 2,
-            "resource_capacity": _resource(15_637_086_208, 40, 1),
+            "resource_capacity": _resource(2_147_483_648, 1, 1),
             "resource_reservation": _resource(2_147_483_648, 1, 1),
             "allocation_tolerance_bytes": 67_108_864,
             "reserved_tolerance_bytes": 67_108_864,
@@ -536,8 +546,8 @@ def validation_kwargs() -> dict[str, Any]:
         "expected_schema_sha256": SCHEMA_SHA256,
         "expected_validator_path": VALIDATOR_PATH,
         "expected_validator_sha256": VALIDATOR_SHA256,
-        "expected_dependency_inventory_path": DEPENDENCY_INVENTORY_PATH,
-        "expected_dependency_inventory_sha256": DEPENDENCY_INVENTORY_SHA256,
+        "expected_image_inputs_path": IMAGE_INPUTS_PATH,
+        "expected_image_inputs_sha256": IMAGE_INPUTS_SHA256,
     }
 
 
@@ -597,9 +607,9 @@ class NativeCudaQualificationContractTests(unittest.TestCase):
             ("producer", "validator_sha256", "f" * 64, "validator_sha256"),
             (
                 "producer",
-                "dependency_inventory_sha256",
+                "image_inputs_sha256",
                 "f" * 64,
-                "dependency_inventory_sha256",
+                "image_inputs_sha256",
             ),
         )
         for section, field, value, fragment in mutations:
@@ -607,6 +617,25 @@ class NativeCudaQualificationContractTests(unittest.TestCase):
                 record = valid_record()
                 record[section][field] = value
                 self.assert_rejected(record, fragment)
+
+    def test_resolved_environment_inventory_is_canonical_and_bound(self) -> None:
+        record = valid_record()
+        record["producer"]["resolved_dependencies"].reverse()
+        record["producer"]["resolved_dependencies_sha256"] = canonical_sha256(
+            record["producer"]["resolved_dependencies"]
+        )
+        self.assert_rejected(record, "resolved_dependencies must be sorted")
+
+        record = valid_record()
+        record["producer"]["resolved_dependencies"][1]["version"] = "2.8.1"
+        self.assert_rejected(record, "resolved_dependencies_sha256 is not canonical")
+
+        record = valid_record()
+        record["producer"]["resolved_dependencies"][1]["version"] = "2.8.1"
+        record["producer"]["resolved_dependencies_sha256"] = canonical_sha256(
+            record["producer"]["resolved_dependencies"]
+        )
+        self.assert_rejected(record, "torch version does not match environment")
 
     def test_arbitrary_git_hashes_cannot_replace_checkout_identity(self) -> None:
         record = valid_record()
@@ -638,7 +667,7 @@ class NativeCudaQualificationContractTests(unittest.TestCase):
             str(DEFAULT_QUALIFICATION_MANIFEST),
             "--producer-script",
             str(DEFAULT_QUALIFICATION_MANIFEST),
-            "--dependency-inventory",
+            "--image-inputs",
             str(DEFAULT_QUALIFICATION_MANIFEST),
             "--expected-runtime-commit",
             "f" * 40,
@@ -728,7 +757,7 @@ class NativeCudaQualificationContractTests(unittest.TestCase):
             ("producer", "script_path"),
             ("producer", "schema_path"),
             ("producer", "validator_path"),
-            ("producer", "dependency_inventory_path"),
+            ("producer", "image_inputs_path"),
         )
         for section, field in mutations:
             with self.subTest(field=f"{section}.{field}"):
@@ -772,10 +801,10 @@ class NativeCudaQualificationContractTests(unittest.TestCase):
             ),
             (
                 "producer",
-                "dependency_inventory_path",
-                "dependency_inventory_sha256",
-                "expected_dependency_inventory_path",
-                "expected_dependency_inventory_sha256",
+                "image_inputs_path",
+                "image_inputs_sha256",
+                "expected_image_inputs_path",
+                "expected_image_inputs_sha256",
             ),
         )
         with tempfile.TemporaryDirectory(dir=ROOT) as directory:

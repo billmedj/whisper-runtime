@@ -494,12 +494,24 @@ def _validate_run_event_identity(
 
 
 def _validate_wall_time(
-    failures: list[str], run: dict[str, Any], events: list[dict[str, Any]], label: str
+    failures: list[str],
+    run: dict[str, Any],
+    events: list[dict[str, Any]],
+    label: str,
+    *,
+    end_event: str,
 ) -> bool:
     if not events:
         failures.append(f"{label} has no raw events")
         return False
-    observed = events[-1]["offset_ns"] - events[0]["offset_ns"]
+    starts = [event for event in events if event["event"] == "run-start"]
+    ends = [event for event in events if event["event"] == end_event]
+    if len(starts) != 1 or len(ends) != 1:
+        failures.append(
+            f"{label} must have one run-start and one {end_event} for wall_ns"
+        )
+        return False
+    observed = ends[0]["offset_ns"] - starts[0]["offset_ns"]
     if run["wall_ns"] != observed:
         failures.append(f"{label}.wall_ns is not derived from run events")
         return False
@@ -522,7 +534,9 @@ def _validate_success_run(
     complete = _require_raw_events(failures, events, SUCCESS_EVENTS, label)
     pattern = _event_kinds(events) == SUCCESS_EVENTS
     version = run["session_version_after"] == run["session_version_before"] + 1
-    wall = _validate_wall_time(failures, run, events, label)
+    wall = _validate_wall_time(
+        failures, run, events, label, end_event="budget-restored"
+    )
     budget = _validate_budget(failures, run["budget"], workload, f"{label}.budget")
     memory = _validate_memory(failures, run["memory"], workload, gpu, f"{label}.memory")
     return {
@@ -558,7 +572,9 @@ def _validate_control_run(
         identity &= _validate_event_details(failures, event, f"{label}.events[{index}]")
     complete = _require_raw_events(failures, events, CONTROL_EVENTS, label)
     pattern = _event_kinds(events) == CONTROL_EVENTS
-    wall = _validate_wall_time(failures, run, events, label)
+    wall = _validate_wall_time(
+        failures, run, events, label, end_event="backend-quiescent"
+    )
     memory = _validate_memory(failures, run["memory"], workload, gpu, f"{label}.memory")
     return {"control": identity and complete and pattern and wall, "memory": memory}
 
@@ -578,7 +594,9 @@ def _validate_cancellation_run(
     complete = _require_raw_events(failures, events, CANCELLATION_EVENTS, label)
     pattern = _event_kinds(events) == CANCELLATION_EVENTS
     version = run["session_version_after"] == run["session_version_before"]
-    wall = _validate_wall_time(failures, run, events, label)
+    wall = _validate_wall_time(
+        failures, run, events, label, end_event="budget-restored"
+    )
     latency = False
     step = False
     if complete:
@@ -622,7 +640,9 @@ def _validate_fault_run(
     complete = _require_raw_events(failures, events, FAULT_EVENTS, label)
     pattern = _event_kinds(events) == FAULT_EVENTS
     version = run["session_version_after"] == run["session_version_before"]
-    wall = _validate_wall_time(failures, run, events, label)
+    wall = _validate_wall_time(
+        failures, run, events, label, end_event="budget-restored"
+    )
     exact_fault = False
     blocked = False
     latency = False
@@ -816,8 +836,10 @@ def validate_qualification_manifest(
             "backend_tree": "c011d2563c26763b5f147026e6b18ef85bccd4fb",
             "artifacts": "tracked-at-runtime-head",
             "producer_script_path": "infra/modal_native_cuda_qualification.py",
-            "container_image": "sha256-digest-required",
-            "dependencies": "complete-resolved-inventory-required",
+            "container_image": "modal-object-id-required",
+            "dependencies": (
+                "tracked-image-inputs-and-observed-resolved-inventory-required"
+            ),
         }
         if source_policy != expected_policy:
             failures.append(f"{location}.source_policy does not match version 1")
@@ -927,8 +949,8 @@ def validate_qualification_manifest(
     if resource is not None:
         expected_resource = {
             "capacity": {
-                "memory_bytes": 15_637_086_208,
-                "compute_units": 40,
+                "memory_bytes": 2_147_483_648,
+                "compute_units": 1,
                 "stream_slots": 1,
             },
             "reservation": {
@@ -1210,8 +1232,8 @@ def _validate_source_bindings(
     expected_schema_sha256: str,
     expected_validator_path: str,
     expected_validator_sha256: str,
-    expected_dependency_inventory_path: str,
-    expected_dependency_inventory_sha256: str,
+    expected_image_inputs_path: str,
+    expected_image_inputs_sha256: str,
 ) -> None:
     runtime = record["runtime"]
     backend = record["backend"]
@@ -1281,9 +1303,9 @@ def _validate_source_bindings(
             "producer.validator_path",
         ),
         (
-            producer["dependency_inventory_path"],
-            expected_dependency_inventory_path,
-            "producer.dependency_inventory_path",
+            producer["image_inputs_path"],
+            expected_image_inputs_path,
+            "producer.image_inputs_path",
         ),
     ):
         if not _safe_relative_path(expected):
@@ -1300,7 +1322,7 @@ def _validate_source_bindings(
     for field, expected in (
         ("schema_sha256", expected_schema_sha256),
         ("validator_sha256", expected_validator_sha256),
-        ("dependency_inventory_sha256", expected_dependency_inventory_sha256),
+        ("image_inputs_sha256", expected_image_inputs_sha256),
     ):
         _check_bound_value(
             failures,
@@ -1329,10 +1351,27 @@ def _validate_source_bindings(
         ("producer.script_path", producer["script_path"]),
         ("producer.schema_path", producer["schema_path"]),
         ("producer.validator_path", producer["validator_path"]),
-        ("producer.dependency_inventory_path", producer["dependency_inventory_path"]),
+        ("producer.image_inputs_path", producer["image_inputs_path"]),
     ):
         if not _safe_relative_path(value):
             failures.append(f"{label} must be a normalized repository-relative path")
+    resolved = producer["resolved_dependencies"]
+    names_and_versions = [
+        (dependency["name"], dependency["version"]) for dependency in resolved
+    ]
+    if names_and_versions != sorted(names_and_versions):
+        failures.append("producer.resolved_dependencies must be sorted")
+    names = [name for name, _ in names_and_versions]
+    if len(names) != len(set(names)):
+        failures.append("producer.resolved_dependencies must have unique names")
+    if producer["resolved_dependencies_sha256"] != canonical_sha256(resolved):
+        failures.append("producer.resolved_dependencies_sha256 is not canonical")
+    observed_versions = dict(names_and_versions)
+    for name, environment_field in (("modal", "modal_sdk"), ("torch", "torch")):
+        if observed_versions.get(name) != record["environment"][environment_field]:
+            failures.append(
+                f"producer resolved {name} version does not match environment"
+            )
 
 
 def _validate_global_events(
@@ -1480,8 +1519,8 @@ def validate_semantics(
     expected_schema_sha256: str,
     expected_validator_path: str,
     expected_validator_sha256: str,
-    expected_dependency_inventory_path: str,
-    expected_dependency_inventory_sha256: str,
+    expected_image_inputs_path: str,
+    expected_image_inputs_sha256: str,
 ) -> list[str]:
     """Return failures for relations across raw qualification observations."""
 
@@ -1501,8 +1540,8 @@ def validate_semantics(
         expected_schema_sha256=expected_schema_sha256,
         expected_validator_path=expected_validator_path,
         expected_validator_sha256=expected_validator_sha256,
-        expected_dependency_inventory_path=expected_dependency_inventory_path,
-        expected_dependency_inventory_sha256=expected_dependency_inventory_sha256,
+        expected_image_inputs_path=expected_image_inputs_path,
+        expected_image_inputs_sha256=expected_image_inputs_sha256,
     )
     _validate_registration_binding(
         failures,
@@ -1815,8 +1854,8 @@ def validate_record(
     expected_schema_sha256: str,
     expected_validator_path: str,
     expected_validator_sha256: str,
-    expected_dependency_inventory_path: str,
-    expected_dependency_inventory_sha256: str,
+    expected_image_inputs_path: str,
+    expected_image_inputs_sha256: str,
 ) -> list[str]:
     failures: list[str] = []
     try:
@@ -1853,8 +1892,8 @@ def validate_record(
                 expected_schema_sha256=expected_schema_sha256,
                 expected_validator_path=expected_validator_path,
                 expected_validator_sha256=expected_validator_sha256,
-                expected_dependency_inventory_path=expected_dependency_inventory_path,
-                expected_dependency_inventory_sha256=expected_dependency_inventory_sha256,
+                expected_image_inputs_path=expected_image_inputs_path,
+                expected_image_inputs_sha256=expected_image_inputs_sha256,
             )
         )
     return failures
@@ -1905,7 +1944,7 @@ def parse_args() -> argparse.Namespace:
         type=lambda value: _required_path(parser, value),
     )
     parser.add_argument(
-        "--dependency-inventory",
+        "--image-inputs",
         required=True,
         type=lambda value: _required_path(parser, value),
     )
@@ -1939,8 +1978,8 @@ def main() -> int:
         validator_path, validator_sha256 = bind_tracked_artifact(
             Path(__file__), runtime_identity
         )
-        dependency_inventory_path, dependency_inventory_sha256 = bind_tracked_artifact(
-            args.dependency_inventory, runtime_identity
+        image_inputs_path, image_inputs_sha256 = bind_tracked_artifact(
+            args.image_inputs, runtime_identity
         )
     except (OSError, json.JSONDecodeError, ValueError) as error:
         print(f"FAIL: cannot bind qualification input: {error}")
@@ -1961,8 +2000,8 @@ def main() -> int:
         expected_schema_sha256=schema_sha256,
         expected_validator_path=validator_path,
         expected_validator_sha256=validator_sha256,
-        expected_dependency_inventory_path=dependency_inventory_path,
-        expected_dependency_inventory_sha256=dependency_inventory_sha256,
+        expected_image_inputs_path=image_inputs_path,
+        expected_image_inputs_sha256=image_inputs_sha256,
     )
     if failures:
         for failure in failures:

@@ -13,6 +13,7 @@ recursive-include evidence *.json *.md
 recursive-include experiments *.json
 recursive-include examples *.py
 recursive-include infra *.py
+recursive-include infra *.lock
 recursive-include formal/lean *.lean *.toml lean-toolchain lake-manifest.json
 recursive-include patches LICENSE *.md *.patch SHA256SUMS
 recursive-include tools *.py *.ps1

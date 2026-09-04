@@ -247,8 +247,9 @@ PyTorch kernels, the concrete submission gate, CUDA events, or adapter code.
 The next fixed CUDA qualification cell is defined by the
 [versioned registration](https://github.com/billmedj/whisper-runtime/blob/main/experiments/native-cuda-qualification-v1.json)
 and the [qualification evidence contract](https://github.com/billmedj/whisper-runtime/blob/main/docs/CUDA_QUALIFICATION_CONTRACT.md).
-It uses one worker and a small diagnostic sample. It does not make a latency or
-throughput claim. The broader
+The contract includes the exact Modal command, an append-only attempt receipt,
+and an offline validator. The cell uses one worker and a small diagnostic
+sample. It does not make a latency or throughput claim. The broader
 [experiment protocol](https://github.com/billmedj/whisper-runtime/blob/main/docs/EXPERIMENT_PROTOCOL.md)
 defines requirements for a future performance campaign, which will require a
 new evidence schema or version.
