@@ -151,8 +151,16 @@ host-side latch; it does not call CUDA from the cancelling thread.
 The first stream use performs a conservative device synchronization after
 admission. This establishes a boundary with model initialization before the
 private stream starts. This path does not support CUDA concurrency, word
-alignment, or external mutation of the bound model. The resource vector remains
-trusted configuration rather than measured GPU memory.
+alignment, or external mutation of the bound model. The adapter does not derive
+its resource vector from measured GPU memory.
+
+Two validated integration records exercise this boundary with the same pinned
+`tiny.en` FP32 case on separate AWS and GCP T4 workers. They observe admission,
+one private stream, cleanup, the completion event, publication ordering,
+cooperative cancellation, retained failure, manual recovery, and native reuse.
+See [the native CUDA validation guide](MODAL_NATIVE_CUDA_VALIDATION.md). The
+records do not convert the declared memory vector into an enforced limit or a
+general CUDA compatibility claim.
 
 ```python
 cuda_cost = ResourceVector(

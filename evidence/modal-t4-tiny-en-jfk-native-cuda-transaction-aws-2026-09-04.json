@@ -1,0 +1,5991 @@
+{
+  "schema_version": "2",
+  "recorded_at": "2026-09-04T05:31:28.733222Z",
+  "status": "passed",
+  "scope": {
+    "evidence_kind": "native-whisper-cuda-transaction",
+    "statement": "One pinned runtime completed, cancelled, quarantined, recovered, and reused NativeWhisperAdapter transactions on one Modal T4.",
+    "fault_injection_used": true
+  },
+  "claims": {
+    "native_cuda_adapter_exercised": true,
+    "worker_admission_exercised": true,
+    "transaction_lifecycle_exercised": true,
+    "cuda_completion_fence_exercised": true,
+    "cooperative_cancellation_exercised": true,
+    "quarantine_recovery_exercised": true,
+    "unproxied_native_reuse_exercised": true,
+    "physical_gpu_memory_enforced": false,
+    "performance_benchmark": false,
+    "production_readiness": false
+  },
+  "runtime": {
+    "repository": "https://github.com/billmedj/whisper-runtime.git",
+    "git_commit": "28415364d167f71d5b0cdf441b0738ae4689b683",
+    "git_tree": "9b0c3f5788635bb4a8044307d3f13dfec5690131",
+    "clean": true,
+    "source_files": [
+      {
+        "path": "src/whisper_runtime/adapters/native_whisper.py",
+        "sha256": "1e8aef1728d9f8d16af9ac54810696faece47726de84b29a476acf951c493e8d"
+      },
+      {
+        "path": "src/whisper_runtime/adapters/_model_binding.py",
+        "sha256": "2c749b630c8736234ab844a104a2367be90cfd5004cbb74962016410d216dc74"
+      },
+      {
+        "path": "src/whisper_runtime/execution.py",
+        "sha256": "ea758adb9ea4204f29f5b444ecf54331d751b66e3b4373014179522a225cef44"
+      },
+      {
+        "path": "src/whisper_runtime/resources.py",
+        "sha256": "5beec172371839ab73bb3ca594b22460f37723f1347db74841a43a4a102716d5"
+      },
+      {
+        "path": "src/whisper_runtime/state.py",
+        "sha256": "0578e4879a1c1e606ba41d73bea834ce2a1f25d5b990bf6bbb7d01701c929347"
+      },
+      {
+        "path": "src/whisper_runtime/transaction.py",
+        "sha256": "aecd8dadb99db0bc18f0b4653e58b799e3366ff48e31acf37a6f89060c070bdc"
+      },
+      {
+        "path": "src/whisper_runtime/worker.py",
+        "sha256": "25d03023400f13af95216ce1b9557d8eaf350e05a45aa7ec85f7dd01c08424fe"
+      }
+    ]
+  },
+  "backend": {
+    "repository": "https://github.com/openai/whisper.git",
+    "base_commit": "86098128c0b4f24f0e2aa2994de830614b474227",
+    "base_tree": "f7b3cb8e12a2e84dccacc4c858c33d5a9c114688",
+    "applied_commit": "a0b9695ae1cc52bad4b8626fe9fb6ea4ac0ee650",
+    "git_tree": "c011d2563c26763b5f147026e6b18ef85bccd4fb",
+    "clean": true,
+    "patch_manifest": "patches/openai-whisper/SHA256SUMS",
+    "patch_manifest_sha256": "0fa1a833b0c489056d77da21188519c7e16fde7825d06bc5b902ba23a01abeb5"
+  },
+  "modal": {
+    "sdk_version": "1.5.5",
+    "function_call_id": "fc-01M1NECJX6F2X8TSH5B7ZZ0P4B",
+    "image_id": "im-j8J7yQEvRZC7Dp2AkNpUXy",
+    "task_id": "ta-01M1NECKBFEVPMESRM5982ZFQR",
+    "environment": "main",
+    "cloud_provider": "CLOUD_PROVIDER_AWS",
+    "region": "us-west-2",
+    "network_blocked": true,
+    "modal_access_restricted": true,
+    "model_cache": {
+      "name": "whisper-runtime-model-cache-v1",
+      "generation": 1,
+      "mount_path": "/models",
+      "read_only": true,
+      "write_probe": {
+        "denied": true,
+        "exception_type": "OSError",
+        "errno": 30
+      }
+    },
+    "network_probe": {
+      "target": "1.1.1.1:443",
+      "denied": true,
+      "exception_type": "OSError",
+      "errno": 101
+    }
+  },
+  "environment": {
+    "python": "3.13.3",
+    "platform": "Linux-4.19.0-gvisor-x86_64-with-glibc2.36",
+    "torch": "2.6.0+cu124",
+    "torch_git_version": "2236df1770800ffea5697b11b0bb0d910b2e59e1",
+    "cuda_runtime": "12.4",
+    "cudnn": "90100",
+    "nvidia_driver": "580.95.05",
+    "ffmpeg": "ffmpeg version 5.1.9-0+deb12u1 Copyright (c) 2000-2026 the FFmpeg developers",
+    "numpy": "2.5.2",
+    "tiktoken": "0.14.0",
+    "numba": "0.67.0",
+    "tqdm": "4.70.0",
+    "more_itertools": "11.1.0"
+  },
+  "gpu": {
+    "requested": "T4",
+    "visible_device_count": 1,
+    "device_index": 0,
+    "name": "Tesla T4",
+    "capability_major": 7,
+    "capability_minor": 5,
+    "total_memory_bytes": 15637086208
+  },
+  "model": {
+    "name": "tiny.en",
+    "device": "cuda:0",
+    "dtype": "torch.float32",
+    "evaluation_mode": true,
+    "parameter_tensor_count": 166,
+    "buffer_tensor_count": 3,
+    "all_parameters_and_buffers_on_profile_device": true,
+    "all_floating_tensors_fp32": true,
+    "checkpoint_path": "model-cache-v1/tiny.en.pt",
+    "checkpoint_sha256": "d3dd57d32accea0b295c96e26691aa14d8822fac7d9d27d5dc00b4ca2826dd03",
+    "loaded_state_sha256_before": "sha256:8041a80119a588f542472da35e97d0372fce1d9709ed9874475e9c03deac5de6",
+    "loaded_state_sha256_after": "sha256:8041a80119a588f542472da35e97d0372fce1d9709ed9874475e9c03deac5de6"
+  },
+  "input": {
+    "fixture_id": "openai-whisper-jfk-flac",
+    "path": "openai-whisper/tests/jfk.flac",
+    "sha256": "63a4b1e4c1dc655ac70961ffbf518acd249df237e5a0152faae9a4a836949715",
+    "size_bytes": 1152693,
+    "sample_rate_hz": 16000,
+    "sample_count": 176000,
+    "decoded_pcm_sha256": "59be237a0814faee9f1279bc54c8a482fa7edc09a640ff0fdd18d14d41519065",
+    "mel_device_at_boundary": "cpu",
+    "mel_dtype_at_boundary": "torch.float32"
+  },
+  "profile": {
+    "profile_id": "tiny.en/cuda-0-float32-v1",
+    "device": "cuda:0",
+    "max_concurrent_decodes": 1,
+    "resources": {
+      "memory_bytes": 1000000000,
+      "compute_units": 1,
+      "stream_slots": 1
+    },
+    "fp16": false,
+    "gpu_memory_measured": true,
+    "gpu_memory_enforced": false
+  },
+  "success": {
+    "outcome": "committed",
+    "request_status": "committed",
+    "transaction_status": "committed",
+    "session_version_before": 0,
+    "session_version_after": 1,
+    "window_count_after": 1,
+    "text": "And so my fellow Americans ask not what your country can do for you, ask what you can do for your country.",
+    "expected_text_matched": true,
+    "queue_depth_after": 0,
+    "budget_available_before": {
+      "memory_bytes": 1000000000,
+      "compute_units": 1,
+      "stream_slots": 1
+    },
+    "budget_available_after": {
+      "memory_bytes": 1000000000,
+      "compute_units": 1,
+      "stream_slots": 1
+    },
+    "backend_instrumented": true,
+    "child_generator_checks": 1,
+    "child_generators_on_profile_device": true,
+    "child_generators_distinct": true,
+    "traced_cleanup_calls": 1,
+    "traced_stream_count": 1,
+    "traced_event_count": 1,
+    "wall_seconds": 1.129751206,
+    "memory_before": {
+      "allocated_bytes": 152201216,
+      "reserved_bytes": 255852544,
+      "peak_allocated_bytes": 228704256,
+      "peak_reserved_bytes": 255852544
+    },
+    "memory_after": {
+      "allocated_bytes": 160720896,
+      "reserved_bytes": 320864256,
+      "peak_allocated_bytes": 189328896,
+      "peak_reserved_bytes": 320864256
+    },
+    "trace": [
+      {
+        "sequence": 1,
+        "offset_ns": 1266881,
+        "name": "budget:lease:acquired",
+        "kind": "runtime",
+        "thread": "decode",
+        "stream": null
+      },
+      {
+        "sequence": 2,
+        "offset_ns": 1415140,
+        "name": "worker:admitted",
+        "kind": "runtime",
+        "thread": "decode",
+        "stream": null
+      },
+      {
+        "sequence": 3,
+        "offset_ns": 1564565,
+        "name": "cuda:device:enter",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": null
+      },
+      {
+        "sequence": 4,
+        "offset_ns": 1572746,
+        "name": "cuda:device-synchronize:begin",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": null
+      },
+      {
+        "sequence": 5,
+        "offset_ns": 1645901,
+        "name": "cuda:device-synchronize:return",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": null
+      },
+      {
+        "sequence": 6,
+        "offset_ns": 5078208,
+        "name": "cuda:stream:create",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 7,
+        "offset_ns": 5086053,
+        "name": "cuda:device:exit",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": null
+      },
+      {
+        "sequence": 8,
+        "offset_ns": 5118317,
+        "name": "cuda:device:enter",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": null
+      },
+      {
+        "sequence": 9,
+        "offset_ns": 5191053,
+        "name": "cuda:stream:enter",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 10,
+        "offset_ns": 5262037,
+        "name": "model:identity:verified",
+        "kind": "backend",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 11,
+        "offset_ns": 5333233,
+        "name": "task:construct:begin",
+        "kind": "backend",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 12,
+        "offset_ns": 226050003,
+        "name": "task:construct:return",
+        "kind": "backend",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 13,
+        "offset_ns": 232507697,
+        "name": "run:start:begin",
+        "kind": "backend",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 14,
+        "offset_ns": 715518889,
+        "name": "run:start:submitted",
+        "kind": "backend",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 15,
+        "offset_ns": 715561985,
+        "name": "run:child-generator:verified",
+        "kind": "backend",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 16,
+        "offset_ns": 715689873,
+        "name": "cuda:stream:exit",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 17,
+        "offset_ns": 715700700,
+        "name": "cuda:device:exit",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": null
+      },
+      {
+        "sequence": 18,
+        "offset_ns": 715868309,
+        "name": "cuda:device:enter",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": null
+      },
+      {
+        "sequence": 19,
+        "offset_ns": 715950805,
+        "name": "cuda:stream:enter",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 20,
+        "offset_ns": 715972471,
+        "name": "run:prefill:begin",
+        "kind": "backend",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 21,
+        "offset_ns": 867199610,
+        "name": "run:prefill:submitted",
+        "kind": "backend",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 22,
+        "offset_ns": 867227207,
+        "name": "cuda:stream:exit",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 23,
+        "offset_ns": 867238679,
+        "name": "cuda:device:exit",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": null
+      },
+      {
+        "sequence": 24,
+        "offset_ns": 867403926,
+        "name": "cuda:device:enter",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": null
+      },
+      {
+        "sequence": 25,
+        "offset_ns": 867469286,
+        "name": "cuda:stream:enter",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 26,
+        "offset_ns": 867492183,
+        "name": "run:step:begin",
+        "kind": "backend",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 27,
+        "offset_ns": 957256701,
+        "name": "run:step:submitted",
+        "kind": "backend",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 28,
+        "offset_ns": 957278960,
+        "name": "cuda:stream:exit",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 29,
+        "offset_ns": 957289232,
+        "name": "cuda:device:exit",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": null
+      },
+      {
+        "sequence": 30,
+        "offset_ns": 957439944,
+        "name": "cuda:device:enter",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": null
+      },
+      {
+        "sequence": 31,
+        "offset_ns": 957503816,
+        "name": "cuda:stream:enter",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 32,
+        "offset_ns": 957524206,
+        "name": "run:step:begin",
+        "kind": "backend",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 33,
+        "offset_ns": 987575599,
+        "name": "run:step:submitted",
+        "kind": "backend",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 34,
+        "offset_ns": 987598345,
+        "name": "cuda:stream:exit",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 35,
+        "offset_ns": 987607613,
+        "name": "cuda:device:exit",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": null
+      },
+      {
+        "sequence": 36,
+        "offset_ns": 987736342,
+        "name": "cuda:device:enter",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": null
+      },
+      {
+        "sequence": 37,
+        "offset_ns": 987799844,
+        "name": "cuda:stream:enter",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 38,
+        "offset_ns": 987818405,
+        "name": "run:step:begin",
+        "kind": "backend",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 39,
+        "offset_ns": 992560155,
+        "name": "run:step:submitted",
+        "kind": "backend",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 40,
+        "offset_ns": 992576868,
+        "name": "cuda:stream:exit",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 41,
+        "offset_ns": 992584091,
+        "name": "cuda:device:exit",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": null
+      },
+      {
+        "sequence": 42,
+        "offset_ns": 992676794,
+        "name": "cuda:device:enter",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": null
+      },
+      {
+        "sequence": 43,
+        "offset_ns": 992728275,
+        "name": "cuda:stream:enter",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 44,
+        "offset_ns": 992746519,
+        "name": "run:step:begin",
+        "kind": "backend",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 45,
+        "offset_ns": 997332045,
+        "name": "run:step:submitted",
+        "kind": "backend",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 46,
+        "offset_ns": 997346518,
+        "name": "cuda:stream:exit",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 47,
+        "offset_ns": 997353172,
+        "name": "cuda:device:exit",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": null
+      },
+      {
+        "sequence": 48,
+        "offset_ns": 997432449,
+        "name": "cuda:device:enter",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": null
+      },
+      {
+        "sequence": 49,
+        "offset_ns": 997478501,
+        "name": "cuda:stream:enter",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 50,
+        "offset_ns": 997496000,
+        "name": "run:step:begin",
+        "kind": "backend",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 51,
+        "offset_ns": 1002112003,
+        "name": "run:step:submitted",
+        "kind": "backend",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 52,
+        "offset_ns": 1002125935,
+        "name": "cuda:stream:exit",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 53,
+        "offset_ns": 1002132218,
+        "name": "cuda:device:exit",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": null
+      },
+      {
+        "sequence": 54,
+        "offset_ns": 1002213046,
+        "name": "cuda:device:enter",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": null
+      },
+      {
+        "sequence": 55,
+        "offset_ns": 1002259175,
+        "name": "cuda:stream:enter",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 56,
+        "offset_ns": 1002276296,
+        "name": "run:step:begin",
+        "kind": "backend",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 57,
+        "offset_ns": 1006831366,
+        "name": "run:step:submitted",
+        "kind": "backend",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 58,
+        "offset_ns": 1006844192,
+        "name": "cuda:stream:exit",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 59,
+        "offset_ns": 1006849997,
+        "name": "cuda:device:exit",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": null
+      },
+      {
+        "sequence": 60,
+        "offset_ns": 1006931124,
+        "name": "cuda:device:enter",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": null
+      },
+      {
+        "sequence": 61,
+        "offset_ns": 1006974167,
+        "name": "cuda:stream:enter",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 62,
+        "offset_ns": 1006990467,
+        "name": "run:step:begin",
+        "kind": "backend",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 63,
+        "offset_ns": 1011546925,
+        "name": "run:step:submitted",
+        "kind": "backend",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 64,
+        "offset_ns": 1011558931,
+        "name": "cuda:stream:exit",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 65,
+        "offset_ns": 1011564823,
+        "name": "cuda:device:exit",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": null
+      },
+      {
+        "sequence": 66,
+        "offset_ns": 1011636249,
+        "name": "cuda:device:enter",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": null
+      },
+      {
+        "sequence": 67,
+        "offset_ns": 1011692599,
+        "name": "cuda:stream:enter",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 68,
+        "offset_ns": 1011710916,
+        "name": "run:step:begin",
+        "kind": "backend",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 69,
+        "offset_ns": 1016284180,
+        "name": "run:step:submitted",
+        "kind": "backend",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 70,
+        "offset_ns": 1016295477,
+        "name": "cuda:stream:exit",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 71,
+        "offset_ns": 1016301334,
+        "name": "cuda:device:exit",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": null
+      },
+      {
+        "sequence": 72,
+        "offset_ns": 1016372541,
+        "name": "cuda:device:enter",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": null
+      },
+      {
+        "sequence": 73,
+        "offset_ns": 1016414160,
+        "name": "cuda:stream:enter",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 74,
+        "offset_ns": 1016431825,
+        "name": "run:step:begin",
+        "kind": "backend",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 75,
+        "offset_ns": 1020990252,
+        "name": "run:step:submitted",
+        "kind": "backend",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 76,
+        "offset_ns": 1021000572,
+        "name": "cuda:stream:exit",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 77,
+        "offset_ns": 1021006268,
+        "name": "cuda:device:exit",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": null
+      },
+      {
+        "sequence": 78,
+        "offset_ns": 1021076162,
+        "name": "cuda:device:enter",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": null
+      },
+      {
+        "sequence": 79,
+        "offset_ns": 1021117035,
+        "name": "cuda:stream:enter",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 80,
+        "offset_ns": 1021133589,
+        "name": "run:step:begin",
+        "kind": "backend",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 81,
+        "offset_ns": 1025664485,
+        "name": "run:step:submitted",
+        "kind": "backend",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 82,
+        "offset_ns": 1025676286,
+        "name": "cuda:stream:exit",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 83,
+        "offset_ns": 1025681781,
+        "name": "cuda:device:exit",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": null
+      },
+      {
+        "sequence": 84,
+        "offset_ns": 1025751421,
+        "name": "cuda:device:enter",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": null
+      },
+      {
+        "sequence": 85,
+        "offset_ns": 1025791423,
+        "name": "cuda:stream:enter",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 86,
+        "offset_ns": 1025808595,
+        "name": "run:step:begin",
+        "kind": "backend",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 87,
+        "offset_ns": 1030371328,
+        "name": "run:step:submitted",
+        "kind": "backend",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 88,
+        "offset_ns": 1030382962,
+        "name": "cuda:stream:exit",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 89,
+        "offset_ns": 1030388889,
+        "name": "cuda:device:exit",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": null
+      },
+      {
+        "sequence": 90,
+        "offset_ns": 1030461055,
+        "name": "cuda:device:enter",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": null
+      },
+      {
+        "sequence": 91,
+        "offset_ns": 1030505100,
+        "name": "cuda:stream:enter",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 92,
+        "offset_ns": 1030522174,
+        "name": "run:step:begin",
+        "kind": "backend",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 93,
+        "offset_ns": 1035079987,
+        "name": "run:step:submitted",
+        "kind": "backend",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 94,
+        "offset_ns": 1035091727,
+        "name": "cuda:stream:exit",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 95,
+        "offset_ns": 1035097158,
+        "name": "cuda:device:exit",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": null
+      },
+      {
+        "sequence": 96,
+        "offset_ns": 1035164044,
+        "name": "cuda:device:enter",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": null
+      },
+      {
+        "sequence": 97,
+        "offset_ns": 1035204363,
+        "name": "cuda:stream:enter",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 98,
+        "offset_ns": 1035220703,
+        "name": "run:step:begin",
+        "kind": "backend",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 99,
+        "offset_ns": 1039740303,
+        "name": "run:step:submitted",
+        "kind": "backend",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 100,
+        "offset_ns": 1039750917,
+        "name": "cuda:stream:exit",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 101,
+        "offset_ns": 1039756311,
+        "name": "cuda:device:exit",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": null
+      },
+      {
+        "sequence": 102,
+        "offset_ns": 1039820425,
+        "name": "cuda:device:enter",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": null
+      },
+      {
+        "sequence": 103,
+        "offset_ns": 1039859777,
+        "name": "cuda:stream:enter",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 104,
+        "offset_ns": 1039883842,
+        "name": "run:step:begin",
+        "kind": "backend",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 105,
+        "offset_ns": 1044405782,
+        "name": "run:step:submitted",
+        "kind": "backend",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 106,
+        "offset_ns": 1044415722,
+        "name": "cuda:stream:exit",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 107,
+        "offset_ns": 1044421213,
+        "name": "cuda:device:exit",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": null
+      },
+      {
+        "sequence": 108,
+        "offset_ns": 1044485787,
+        "name": "cuda:device:enter",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": null
+      },
+      {
+        "sequence": 109,
+        "offset_ns": 1044524790,
+        "name": "cuda:stream:enter",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 110,
+        "offset_ns": 1044544289,
+        "name": "run:step:begin",
+        "kind": "backend",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 111,
+        "offset_ns": 1049092671,
+        "name": "run:step:submitted",
+        "kind": "backend",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 112,
+        "offset_ns": 1049103457,
+        "name": "cuda:stream:exit",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 113,
+        "offset_ns": 1049109134,
+        "name": "cuda:device:exit",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": null
+      },
+      {
+        "sequence": 114,
+        "offset_ns": 1049175805,
+        "name": "cuda:device:enter",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": null
+      },
+      {
+        "sequence": 115,
+        "offset_ns": 1049215910,
+        "name": "cuda:stream:enter",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 116,
+        "offset_ns": 1049232020,
+        "name": "run:step:begin",
+        "kind": "backend",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 117,
+        "offset_ns": 1053758716,
+        "name": "run:step:submitted",
+        "kind": "backend",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 118,
+        "offset_ns": 1053769888,
+        "name": "cuda:stream:exit",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 119,
+        "offset_ns": 1053775486,
+        "name": "cuda:device:exit",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": null
+      },
+      {
+        "sequence": 120,
+        "offset_ns": 1053842695,
+        "name": "cuda:device:enter",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": null
+      },
+      {
+        "sequence": 121,
+        "offset_ns": 1053890157,
+        "name": "cuda:stream:enter",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 122,
+        "offset_ns": 1053906317,
+        "name": "run:step:begin",
+        "kind": "backend",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 123,
+        "offset_ns": 1058453344,
+        "name": "run:step:submitted",
+        "kind": "backend",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 124,
+        "offset_ns": 1058465714,
+        "name": "cuda:stream:exit",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 125,
+        "offset_ns": 1058471754,
+        "name": "cuda:device:exit",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": null
+      },
+      {
+        "sequence": 126,
+        "offset_ns": 1058546715,
+        "name": "cuda:device:enter",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": null
+      },
+      {
+        "sequence": 127,
+        "offset_ns": 1058588777,
+        "name": "cuda:stream:enter",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 128,
+        "offset_ns": 1058605033,
+        "name": "run:step:begin",
+        "kind": "backend",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 129,
+        "offset_ns": 1063176906,
+        "name": "run:step:submitted",
+        "kind": "backend",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 130,
+        "offset_ns": 1063191797,
+        "name": "cuda:stream:exit",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 131,
+        "offset_ns": 1063197450,
+        "name": "cuda:device:exit",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": null
+      },
+      {
+        "sequence": 132,
+        "offset_ns": 1063267790,
+        "name": "cuda:device:enter",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": null
+      },
+      {
+        "sequence": 133,
+        "offset_ns": 1063308295,
+        "name": "cuda:stream:enter",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 134,
+        "offset_ns": 1063324794,
+        "name": "run:step:begin",
+        "kind": "backend",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 135,
+        "offset_ns": 1067877776,
+        "name": "run:step:submitted",
+        "kind": "backend",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 136,
+        "offset_ns": 1067889227,
+        "name": "cuda:stream:exit",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 137,
+        "offset_ns": 1067894966,
+        "name": "cuda:device:exit",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": null
+      },
+      {
+        "sequence": 138,
+        "offset_ns": 1067963059,
+        "name": "cuda:device:enter",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": null
+      },
+      {
+        "sequence": 139,
+        "offset_ns": 1068004502,
+        "name": "cuda:stream:enter",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 140,
+        "offset_ns": 1068020986,
+        "name": "run:step:begin",
+        "kind": "backend",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 141,
+        "offset_ns": 1072545388,
+        "name": "run:step:submitted",
+        "kind": "backend",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 142,
+        "offset_ns": 1072556696,
+        "name": "cuda:stream:exit",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 143,
+        "offset_ns": 1072562455,
+        "name": "cuda:device:exit",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": null
+      },
+      {
+        "sequence": 144,
+        "offset_ns": 1072627700,
+        "name": "cuda:device:enter",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": null
+      },
+      {
+        "sequence": 145,
+        "offset_ns": 1072667820,
+        "name": "cuda:stream:enter",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 146,
+        "offset_ns": 1072684364,
+        "name": "run:step:begin",
+        "kind": "backend",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 147,
+        "offset_ns": 1077228409,
+        "name": "run:step:submitted",
+        "kind": "backend",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 148,
+        "offset_ns": 1077239212,
+        "name": "cuda:stream:exit",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 149,
+        "offset_ns": 1077244646,
+        "name": "cuda:device:exit",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": null
+      },
+      {
+        "sequence": 150,
+        "offset_ns": 1077312951,
+        "name": "cuda:device:enter",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": null
+      },
+      {
+        "sequence": 151,
+        "offset_ns": 1077352839,
+        "name": "cuda:stream:enter",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 152,
+        "offset_ns": 1077369112,
+        "name": "run:step:begin",
+        "kind": "backend",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 153,
+        "offset_ns": 1081918410,
+        "name": "run:step:submitted",
+        "kind": "backend",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 154,
+        "offset_ns": 1081929536,
+        "name": "cuda:stream:exit",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 155,
+        "offset_ns": 1081935446,
+        "name": "cuda:device:exit",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": null
+      },
+      {
+        "sequence": 156,
+        "offset_ns": 1082000393,
+        "name": "cuda:device:enter",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": null
+      },
+      {
+        "sequence": 157,
+        "offset_ns": 1082039729,
+        "name": "cuda:stream:enter",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 158,
+        "offset_ns": 1082056836,
+        "name": "run:step:begin",
+        "kind": "backend",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 159,
+        "offset_ns": 1086578107,
+        "name": "run:step:submitted",
+        "kind": "backend",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 160,
+        "offset_ns": 1086588954,
+        "name": "cuda:stream:exit",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 161,
+        "offset_ns": 1086594439,
+        "name": "cuda:device:exit",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": null
+      },
+      {
+        "sequence": 162,
+        "offset_ns": 1086659218,
+        "name": "cuda:device:enter",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": null
+      },
+      {
+        "sequence": 163,
+        "offset_ns": 1086699094,
+        "name": "cuda:stream:enter",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 164,
+        "offset_ns": 1086715458,
+        "name": "run:step:begin",
+        "kind": "backend",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 165,
+        "offset_ns": 1091283142,
+        "name": "run:step:submitted",
+        "kind": "backend",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 166,
+        "offset_ns": 1091294528,
+        "name": "cuda:stream:exit",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 167,
+        "offset_ns": 1091299999,
+        "name": "cuda:device:exit",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": null
+      },
+      {
+        "sequence": 168,
+        "offset_ns": 1091371821,
+        "name": "cuda:device:enter",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": null
+      },
+      {
+        "sequence": 169,
+        "offset_ns": 1091416008,
+        "name": "cuda:stream:enter",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 170,
+        "offset_ns": 1091432799,
+        "name": "run:step:begin",
+        "kind": "backend",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 171,
+        "offset_ns": 1096045348,
+        "name": "run:step:submitted",
+        "kind": "backend",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 172,
+        "offset_ns": 1096058598,
+        "name": "cuda:stream:exit",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 173,
+        "offset_ns": 1096064217,
+        "name": "cuda:device:exit",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": null
+      },
+      {
+        "sequence": 174,
+        "offset_ns": 1096139839,
+        "name": "cuda:device:enter",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": null
+      },
+      {
+        "sequence": 175,
+        "offset_ns": 1096182274,
+        "name": "cuda:stream:enter",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 176,
+        "offset_ns": 1096201869,
+        "name": "run:finalize:begin",
+        "kind": "backend",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 177,
+        "offset_ns": 1129749701,
+        "name": "run:finalize:submitted",
+        "kind": "backend",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 178,
+        "offset_ns": 1129771870,
+        "name": "cuda:stream:exit",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 179,
+        "offset_ns": 1129781854,
+        "name": "cuda:device:exit",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": null
+      },
+      {
+        "sequence": 180,
+        "offset_ns": 1129949832,
+        "name": "cuda:device:enter",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": null
+      },
+      {
+        "sequence": 181,
+        "offset_ns": 1130024958,
+        "name": "cuda:stream:enter",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 182,
+        "offset_ns": 1130112212,
+        "name": "model:identity:verified",
+        "kind": "backend",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 183,
+        "offset_ns": 1130123216,
+        "name": "cuda:stream:exit",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 184,
+        "offset_ns": 1130127223,
+        "name": "cuda:device:exit",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": null
+      },
+      {
+        "sequence": 185,
+        "offset_ns": 1130281030,
+        "name": "cuda:device:enter",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": null
+      },
+      {
+        "sequence": 186,
+        "offset_ns": 1130310784,
+        "name": "cuda:stream:enter",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 187,
+        "offset_ns": 1130328962,
+        "name": "run:cleanup:begin",
+        "kind": "backend",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 188,
+        "offset_ns": 1130340768,
+        "name": "run:cleanup:submitted",
+        "kind": "backend",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 189,
+        "offset_ns": 1130345257,
+        "name": "cuda:stream:exit",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 190,
+        "offset_ns": 1130348644,
+        "name": "cuda:device:exit",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": null
+      },
+      {
+        "sequence": 191,
+        "offset_ns": 1130360333,
+        "name": "cuda:device:enter",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": null
+      },
+      {
+        "sequence": 192,
+        "offset_ns": 1130384091,
+        "name": "cuda:stream:enter",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 193,
+        "offset_ns": 1130400459,
+        "name": "cuda:event-1:create",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": null
+      },
+      {
+        "sequence": 194,
+        "offset_ns": 1130446024,
+        "name": "cuda:event-1:record",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 195,
+        "offset_ns": 1130450545,
+        "name": "cuda:stream:exit",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 196,
+        "offset_ns": 1130454258,
+        "name": "cuda:device:exit",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": null
+      },
+      {
+        "sequence": 197,
+        "offset_ns": 1130460890,
+        "name": "cuda:event-1:synchronize:begin",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 198,
+        "offset_ns": 1130477730,
+        "name": "cuda:event-1:query:return",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 199,
+        "offset_ns": 1130499301,
+        "name": "cuda:event-1:synchronize:return",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": "stream-1",
+        "state": {
+          "request_status": "running",
+          "session_version": 0,
+          "queue_depth": 1,
+          "lease_count": 1,
+          "budget_available": {
+            "memory_bytes": 0,
+            "compute_units": 0,
+            "stream_slots": 0
+          }
+        }
+      },
+      {
+        "sequence": 200,
+        "offset_ns": 1130634939,
+        "name": "session:commit:begin",
+        "kind": "runtime",
+        "thread": "decode",
+        "stream": null
+      },
+      {
+        "sequence": 201,
+        "offset_ns": 1130651626,
+        "name": "session:commit:return",
+        "kind": "runtime",
+        "thread": "decode",
+        "stream": null
+      },
+      {
+        "sequence": 202,
+        "offset_ns": 1130674133,
+        "name": "budget:lease:release:begin",
+        "kind": "runtime",
+        "thread": "decode",
+        "stream": null
+      },
+      {
+        "sequence": 203,
+        "offset_ns": 1130690518,
+        "name": "budget:lease:release:return",
+        "kind": "runtime",
+        "thread": "decode",
+        "stream": null
+      }
+    ]
+  },
+  "cancellation": {
+    "outcome": "cancelled",
+    "exception_type": "RequestCancelledError",
+    "cancel_returned": true,
+    "request_status": "cancelled",
+    "transaction_status": "aborted",
+    "session_version_at_cancel": 0,
+    "session_version_after": 0,
+    "window_count_after": 0,
+    "queue_depth_at_cancel": 1,
+    "lease_count_at_cancel": 1,
+    "queue_depth_after": 0,
+    "budget_available_after": {
+      "memory_bytes": 1000000000,
+      "compute_units": 1,
+      "stream_slots": 1
+    },
+    "backend_instrumented": true,
+    "first_step_returned": false,
+    "run_complete_after_first_step": false,
+    "child_generator_checks": 1,
+    "child_generators_on_profile_device": true,
+    "child_generators_distinct": true,
+    "traced_cleanup_calls": 1,
+    "traced_stream_count": 1,
+    "traced_event_count": 1,
+    "controller_cuda_calls": 0,
+    "trace": [
+      {
+        "sequence": 1,
+        "offset_ns": 980010,
+        "name": "budget:lease:acquired",
+        "kind": "runtime",
+        "thread": "decode",
+        "stream": null
+      },
+      {
+        "sequence": 2,
+        "offset_ns": 1138770,
+        "name": "worker:admitted",
+        "kind": "runtime",
+        "thread": "decode",
+        "stream": null
+      },
+      {
+        "sequence": 3,
+        "offset_ns": 1305650,
+        "name": "cuda:device:enter",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": null
+      },
+      {
+        "sequence": 4,
+        "offset_ns": 1312959,
+        "name": "cuda:device-synchronize:begin",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": null
+      },
+      {
+        "sequence": 5,
+        "offset_ns": 1412240,
+        "name": "cuda:device-synchronize:return",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": null
+      },
+      {
+        "sequence": 6,
+        "offset_ns": 1455672,
+        "name": "cuda:stream:create",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 7,
+        "offset_ns": 1460414,
+        "name": "cuda:device:exit",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": null
+      },
+      {
+        "sequence": 8,
+        "offset_ns": 1472800,
+        "name": "cuda:device:enter",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": null
+      },
+      {
+        "sequence": 9,
+        "offset_ns": 1530495,
+        "name": "cuda:stream:enter",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 10,
+        "offset_ns": 1592121,
+        "name": "model:identity:verified",
+        "kind": "backend",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 11,
+        "offset_ns": 1661317,
+        "name": "task:construct:begin",
+        "kind": "backend",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 12,
+        "offset_ns": 1996643,
+        "name": "task:construct:return",
+        "kind": "backend",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 13,
+        "offset_ns": 3281198,
+        "name": "run:start:begin",
+        "kind": "backend",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 14,
+        "offset_ns": 31652591,
+        "name": "run:start:submitted",
+        "kind": "backend",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 15,
+        "offset_ns": 31677702,
+        "name": "run:child-generator:verified",
+        "kind": "backend",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 16,
+        "offset_ns": 31727583,
+        "name": "cuda:stream:exit",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 17,
+        "offset_ns": 31734488,
+        "name": "cuda:device:exit",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": null
+      },
+      {
+        "sequence": 18,
+        "offset_ns": 31834374,
+        "name": "cuda:device:enter",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": null
+      },
+      {
+        "sequence": 19,
+        "offset_ns": 31889634,
+        "name": "cuda:stream:enter",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 20,
+        "offset_ns": 31908734,
+        "name": "run:prefill:begin",
+        "kind": "backend",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 21,
+        "offset_ns": 37372095,
+        "name": "run:prefill:submitted",
+        "kind": "backend",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 22,
+        "offset_ns": 37385695,
+        "name": "cuda:stream:exit",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 23,
+        "offset_ns": 37391886,
+        "name": "cuda:device:exit",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": null
+      },
+      {
+        "sequence": 24,
+        "offset_ns": 37475512,
+        "name": "cuda:device:enter",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": null
+      },
+      {
+        "sequence": 25,
+        "offset_ns": 37520289,
+        "name": "cuda:stream:enter",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 26,
+        "offset_ns": 37537603,
+        "name": "run:step:begin",
+        "kind": "backend",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 27,
+        "offset_ns": 38738260,
+        "name": "run:step:submitted",
+        "kind": "backend",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 28,
+        "offset_ns": 38779990,
+        "name": "run:cancellation-rendezvous:incomplete",
+        "kind": "backend",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 29,
+        "offset_ns": 38861670,
+        "name": "controller:cancel:begin",
+        "kind": "controller",
+        "thread": "controller",
+        "stream": null
+      },
+      {
+        "sequence": 30,
+        "offset_ns": 38911385,
+        "name": "controller:cancel:return",
+        "kind": "controller",
+        "thread": "controller",
+        "stream": null
+      },
+      {
+        "sequence": 31,
+        "offset_ns": 39030221,
+        "name": "cuda:stream:exit",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 32,
+        "offset_ns": 39044609,
+        "name": "cuda:device:exit",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": null
+      },
+      {
+        "sequence": 33,
+        "offset_ns": 39205360,
+        "name": "cuda:device:enter",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": null
+      },
+      {
+        "sequence": 34,
+        "offset_ns": 39268354,
+        "name": "cuda:stream:enter",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 35,
+        "offset_ns": 39291816,
+        "name": "run:cleanup:begin",
+        "kind": "backend",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 36,
+        "offset_ns": 39392461,
+        "name": "run:cleanup:submitted",
+        "kind": "backend",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 37,
+        "offset_ns": 39398800,
+        "name": "cuda:stream:exit",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 38,
+        "offset_ns": 39403029,
+        "name": "cuda:device:exit",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": null
+      },
+      {
+        "sequence": 39,
+        "offset_ns": 39416792,
+        "name": "cuda:device:enter",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": null
+      },
+      {
+        "sequence": 40,
+        "offset_ns": 39443245,
+        "name": "cuda:stream:enter",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 41,
+        "offset_ns": 39458902,
+        "name": "cuda:event-1:create",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": null
+      },
+      {
+        "sequence": 42,
+        "offset_ns": 39509938,
+        "name": "cuda:event-1:record",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 43,
+        "offset_ns": 39514345,
+        "name": "cuda:stream:exit",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 44,
+        "offset_ns": 39518915,
+        "name": "cuda:device:exit",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": null
+      },
+      {
+        "sequence": 45,
+        "offset_ns": 39525919,
+        "name": "cuda:event-1:synchronize:begin",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 46,
+        "offset_ns": 39547816,
+        "name": "cuda:event-1:query:return",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 47,
+        "offset_ns": 39564575,
+        "name": "cuda:event-1:synchronize:return",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": "stream-1",
+        "state": {
+          "request_status": "cancelled",
+          "session_version": 0,
+          "queue_depth": 1,
+          "lease_count": 1,
+          "budget_available": {
+            "memory_bytes": 0,
+            "compute_units": 0,
+            "stream_slots": 0
+          }
+        }
+      },
+      {
+        "sequence": 48,
+        "offset_ns": 39607181,
+        "name": "budget:lease:release:begin",
+        "kind": "runtime",
+        "thread": "decode",
+        "stream": null
+      },
+      {
+        "sequence": 49,
+        "offset_ns": 39632506,
+        "name": "budget:lease:release:return",
+        "kind": "runtime",
+        "thread": "decode",
+        "stream": null
+      }
+    ]
+  },
+  "recovery": {
+    "outcome": "recovered",
+    "injected_failure": "cuda-event-synchronize-before-delegate",
+    "injected_failure_count": 2,
+    "retained_exception_type": "TransactionRetainedError",
+    "retained_transaction_status": "quarantined",
+    "retained_queue_depth": 1,
+    "retained_lease_count": 1,
+    "retained_budget_available": {
+      "memory_bytes": 0,
+      "compute_units": 0,
+      "stream_slots": 0
+    },
+    "retained_session_version": 0,
+    "retained_window_count": 0,
+    "blocked_error_same_instance": true,
+    "blocked_request_status": "created",
+    "blocked_session_version": 0,
+    "blocked_queue_depth": 1,
+    "blocked_lease_count": 1,
+    "recovery_returned": true,
+    "recovered_transaction_status": "aborted",
+    "queue_depth_after_recovery": 0,
+    "budget_available_after_recovery": {
+      "memory_bytes": 1000000000,
+      "compute_units": 1,
+      "stream_slots": 1
+    },
+    "session_version_after_recovery": 0,
+    "request_status_after_recovery": "aborted",
+    "child_generator_checks": 1,
+    "child_generators_on_profile_device": true,
+    "child_generators_distinct": true,
+    "traced_cleanup_calls_before_recovery_complete": 3,
+    "traced_event_count_before_recovery_complete": 3,
+    "trace": [
+      {
+        "sequence": 1,
+        "offset_ns": 306609,
+        "name": "budget:lease:acquired",
+        "kind": "runtime",
+        "thread": "decode",
+        "stream": null
+      },
+      {
+        "sequence": 2,
+        "offset_ns": 429157,
+        "name": "worker:admitted",
+        "kind": "runtime",
+        "thread": "decode",
+        "stream": null
+      },
+      {
+        "sequence": 3,
+        "offset_ns": 522241,
+        "name": "cuda:device:enter",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": null
+      },
+      {
+        "sequence": 4,
+        "offset_ns": 527153,
+        "name": "cuda:device-synchronize:begin",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": null
+      },
+      {
+        "sequence": 5,
+        "offset_ns": 576464,
+        "name": "cuda:device-synchronize:return",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": null
+      },
+      {
+        "sequence": 6,
+        "offset_ns": 601876,
+        "name": "cuda:stream:create",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 7,
+        "offset_ns": 605397,
+        "name": "cuda:device:exit",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": null
+      },
+      {
+        "sequence": 8,
+        "offset_ns": 614925,
+        "name": "cuda:device:enter",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": null
+      },
+      {
+        "sequence": 9,
+        "offset_ns": 657207,
+        "name": "cuda:stream:enter",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 10,
+        "offset_ns": 711008,
+        "name": "model:identity:verified",
+        "kind": "backend",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 11,
+        "offset_ns": 756763,
+        "name": "task:construct:begin",
+        "kind": "backend",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 12,
+        "offset_ns": 970266,
+        "name": "task:construct:return",
+        "kind": "backend",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 13,
+        "offset_ns": 1700677,
+        "name": "run:start:begin",
+        "kind": "backend",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 14,
+        "offset_ns": 22373633,
+        "name": "run:start:submitted",
+        "kind": "backend",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 15,
+        "offset_ns": 22388317,
+        "name": "run:child-generator:verified",
+        "kind": "backend",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 16,
+        "offset_ns": 22418593,
+        "name": "cuda:stream:exit",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 17,
+        "offset_ns": 22424351,
+        "name": "cuda:device:exit",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": null
+      },
+      {
+        "sequence": 18,
+        "offset_ns": 22497122,
+        "name": "cuda:device:enter",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": null
+      },
+      {
+        "sequence": 19,
+        "offset_ns": 22540492,
+        "name": "cuda:stream:enter",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 20,
+        "offset_ns": 22556888,
+        "name": "run:prefill:begin",
+        "kind": "backend",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 21,
+        "offset_ns": 27928602,
+        "name": "run:prefill:submitted",
+        "kind": "backend",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 22,
+        "offset_ns": 27940058,
+        "name": "cuda:stream:exit",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 23,
+        "offset_ns": 27946002,
+        "name": "cuda:device:exit",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": null
+      },
+      {
+        "sequence": 24,
+        "offset_ns": 28012165,
+        "name": "cuda:device:enter",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": null
+      },
+      {
+        "sequence": 25,
+        "offset_ns": 28051743,
+        "name": "cuda:stream:enter",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 26,
+        "offset_ns": 28068321,
+        "name": "run:step:begin",
+        "kind": "backend",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 27,
+        "offset_ns": 29005993,
+        "name": "run:step:submitted",
+        "kind": "backend",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 28,
+        "offset_ns": 29016428,
+        "name": "cuda:stream:exit",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 29,
+        "offset_ns": 29021053,
+        "name": "cuda:device:exit",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": null
+      },
+      {
+        "sequence": 30,
+        "offset_ns": 29083527,
+        "name": "cuda:device:enter",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": null
+      },
+      {
+        "sequence": 31,
+        "offset_ns": 29121449,
+        "name": "cuda:stream:enter",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 32,
+        "offset_ns": 29137654,
+        "name": "run:step:begin",
+        "kind": "backend",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 33,
+        "offset_ns": 33350625,
+        "name": "run:step:submitted",
+        "kind": "backend",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 34,
+        "offset_ns": 33362010,
+        "name": "cuda:stream:exit",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 35,
+        "offset_ns": 33367264,
+        "name": "cuda:device:exit",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": null
+      },
+      {
+        "sequence": 36,
+        "offset_ns": 33427265,
+        "name": "cuda:device:enter",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": null
+      },
+      {
+        "sequence": 37,
+        "offset_ns": 33464538,
+        "name": "cuda:stream:enter",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 38,
+        "offset_ns": 33480656,
+        "name": "run:step:begin",
+        "kind": "backend",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 39,
+        "offset_ns": 37639702,
+        "name": "run:step:submitted",
+        "kind": "backend",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 40,
+        "offset_ns": 37650566,
+        "name": "cuda:stream:exit",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 41,
+        "offset_ns": 37655357,
+        "name": "cuda:device:exit",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": null
+      },
+      {
+        "sequence": 42,
+        "offset_ns": 37718681,
+        "name": "cuda:device:enter",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": null
+      },
+      {
+        "sequence": 43,
+        "offset_ns": 37757293,
+        "name": "cuda:stream:enter",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 44,
+        "offset_ns": 37773371,
+        "name": "run:step:begin",
+        "kind": "backend",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 45,
+        "offset_ns": 41949827,
+        "name": "run:step:submitted",
+        "kind": "backend",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 46,
+        "offset_ns": 41961867,
+        "name": "cuda:stream:exit",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 47,
+        "offset_ns": 41967347,
+        "name": "cuda:device:exit",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": null
+      },
+      {
+        "sequence": 48,
+        "offset_ns": 42036556,
+        "name": "cuda:device:enter",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": null
+      },
+      {
+        "sequence": 49,
+        "offset_ns": 42076447,
+        "name": "cuda:stream:enter",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 50,
+        "offset_ns": 42093286,
+        "name": "run:step:begin",
+        "kind": "backend",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 51,
+        "offset_ns": 46264862,
+        "name": "run:step:submitted",
+        "kind": "backend",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 52,
+        "offset_ns": 46284281,
+        "name": "cuda:stream:exit",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 53,
+        "offset_ns": 46289680,
+        "name": "cuda:device:exit",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": null
+      },
+      {
+        "sequence": 54,
+        "offset_ns": 46355625,
+        "name": "cuda:device:enter",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": null
+      },
+      {
+        "sequence": 55,
+        "offset_ns": 46396012,
+        "name": "cuda:stream:enter",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 56,
+        "offset_ns": 46412536,
+        "name": "run:step:begin",
+        "kind": "backend",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 57,
+        "offset_ns": 50560302,
+        "name": "run:step:submitted",
+        "kind": "backend",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 58,
+        "offset_ns": 50571116,
+        "name": "cuda:stream:exit",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 59,
+        "offset_ns": 50576343,
+        "name": "cuda:device:exit",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": null
+      },
+      {
+        "sequence": 60,
+        "offset_ns": 50635725,
+        "name": "cuda:device:enter",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": null
+      },
+      {
+        "sequence": 61,
+        "offset_ns": 50685484,
+        "name": "cuda:stream:enter",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 62,
+        "offset_ns": 50702280,
+        "name": "run:step:begin",
+        "kind": "backend",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 63,
+        "offset_ns": 54844775,
+        "name": "run:step:submitted",
+        "kind": "backend",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 64,
+        "offset_ns": 54855071,
+        "name": "cuda:stream:exit",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 65,
+        "offset_ns": 54860059,
+        "name": "cuda:device:exit",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": null
+      },
+      {
+        "sequence": 66,
+        "offset_ns": 54920784,
+        "name": "cuda:device:enter",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": null
+      },
+      {
+        "sequence": 67,
+        "offset_ns": 54958197,
+        "name": "cuda:stream:enter",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 68,
+        "offset_ns": 54974361,
+        "name": "run:step:begin",
+        "kind": "backend",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 69,
+        "offset_ns": 59116045,
+        "name": "run:step:submitted",
+        "kind": "backend",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 70,
+        "offset_ns": 59126296,
+        "name": "cuda:stream:exit",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 71,
+        "offset_ns": 59131434,
+        "name": "cuda:device:exit",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": null
+      },
+      {
+        "sequence": 72,
+        "offset_ns": 59189413,
+        "name": "cuda:device:enter",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": null
+      },
+      {
+        "sequence": 73,
+        "offset_ns": 59226118,
+        "name": "cuda:stream:enter",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 74,
+        "offset_ns": 59242202,
+        "name": "run:step:begin",
+        "kind": "backend",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 75,
+        "offset_ns": 63412580,
+        "name": "run:step:submitted",
+        "kind": "backend",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 76,
+        "offset_ns": 63422475,
+        "name": "cuda:stream:exit",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 77,
+        "offset_ns": 63427081,
+        "name": "cuda:device:exit",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": null
+      },
+      {
+        "sequence": 78,
+        "offset_ns": 63485310,
+        "name": "cuda:device:enter",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": null
+      },
+      {
+        "sequence": 79,
+        "offset_ns": 63521863,
+        "name": "cuda:stream:enter",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 80,
+        "offset_ns": 63538173,
+        "name": "run:step:begin",
+        "kind": "backend",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 81,
+        "offset_ns": 67661885,
+        "name": "run:step:submitted",
+        "kind": "backend",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 82,
+        "offset_ns": 67671682,
+        "name": "cuda:stream:exit",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 83,
+        "offset_ns": 67676234,
+        "name": "cuda:device:exit",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": null
+      },
+      {
+        "sequence": 84,
+        "offset_ns": 67733569,
+        "name": "cuda:device:enter",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": null
+      },
+      {
+        "sequence": 85,
+        "offset_ns": 67769943,
+        "name": "cuda:stream:enter",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 86,
+        "offset_ns": 67785790,
+        "name": "run:step:begin",
+        "kind": "backend",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 87,
+        "offset_ns": 71918958,
+        "name": "run:step:submitted",
+        "kind": "backend",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 88,
+        "offset_ns": 71928751,
+        "name": "cuda:stream:exit",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 89,
+        "offset_ns": 71933399,
+        "name": "cuda:device:exit",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": null
+      },
+      {
+        "sequence": 90,
+        "offset_ns": 71990994,
+        "name": "cuda:device:enter",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": null
+      },
+      {
+        "sequence": 91,
+        "offset_ns": 72028524,
+        "name": "cuda:stream:enter",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 92,
+        "offset_ns": 72044709,
+        "name": "run:step:begin",
+        "kind": "backend",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 93,
+        "offset_ns": 76179133,
+        "name": "run:step:submitted",
+        "kind": "backend",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 94,
+        "offset_ns": 76190027,
+        "name": "cuda:stream:exit",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 95,
+        "offset_ns": 76194662,
+        "name": "cuda:device:exit",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": null
+      },
+      {
+        "sequence": 96,
+        "offset_ns": 76251486,
+        "name": "cuda:device:enter",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": null
+      },
+      {
+        "sequence": 97,
+        "offset_ns": 76296473,
+        "name": "cuda:stream:enter",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 98,
+        "offset_ns": 76312806,
+        "name": "run:step:begin",
+        "kind": "backend",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 99,
+        "offset_ns": 80451965,
+        "name": "run:step:submitted",
+        "kind": "backend",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 100,
+        "offset_ns": 80461185,
+        "name": "cuda:stream:exit",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 101,
+        "offset_ns": 80476560,
+        "name": "cuda:device:exit",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": null
+      },
+      {
+        "sequence": 102,
+        "offset_ns": 80532191,
+        "name": "cuda:device:enter",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": null
+      },
+      {
+        "sequence": 103,
+        "offset_ns": 80567343,
+        "name": "cuda:stream:enter",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 104,
+        "offset_ns": 80582549,
+        "name": "run:step:begin",
+        "kind": "backend",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 105,
+        "offset_ns": 84677671,
+        "name": "run:step:submitted",
+        "kind": "backend",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 106,
+        "offset_ns": 84687076,
+        "name": "cuda:stream:exit",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 107,
+        "offset_ns": 84691031,
+        "name": "cuda:device:exit",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": null
+      },
+      {
+        "sequence": 108,
+        "offset_ns": 84744999,
+        "name": "cuda:device:enter",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": null
+      },
+      {
+        "sequence": 109,
+        "offset_ns": 84780013,
+        "name": "cuda:stream:enter",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 110,
+        "offset_ns": 84800292,
+        "name": "run:step:begin",
+        "kind": "backend",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 111,
+        "offset_ns": 88900218,
+        "name": "run:step:submitted",
+        "kind": "backend",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 112,
+        "offset_ns": 88909686,
+        "name": "cuda:stream:exit",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 113,
+        "offset_ns": 88913589,
+        "name": "cuda:device:exit",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": null
+      },
+      {
+        "sequence": 114,
+        "offset_ns": 88967519,
+        "name": "cuda:device:enter",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": null
+      },
+      {
+        "sequence": 115,
+        "offset_ns": 89001950,
+        "name": "cuda:stream:enter",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 116,
+        "offset_ns": 89017309,
+        "name": "run:step:begin",
+        "kind": "backend",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 117,
+        "offset_ns": 93113514,
+        "name": "run:step:submitted",
+        "kind": "backend",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 118,
+        "offset_ns": 93122863,
+        "name": "cuda:stream:exit",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 119,
+        "offset_ns": 93126874,
+        "name": "cuda:device:exit",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": null
+      },
+      {
+        "sequence": 120,
+        "offset_ns": 93192477,
+        "name": "cuda:device:enter",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": null
+      },
+      {
+        "sequence": 121,
+        "offset_ns": 93227837,
+        "name": "cuda:stream:enter",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 122,
+        "offset_ns": 93243502,
+        "name": "run:step:begin",
+        "kind": "backend",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 123,
+        "offset_ns": 97366926,
+        "name": "run:step:submitted",
+        "kind": "backend",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 124,
+        "offset_ns": 97376326,
+        "name": "cuda:stream:exit",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 125,
+        "offset_ns": 97380658,
+        "name": "cuda:device:exit",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": null
+      },
+      {
+        "sequence": 126,
+        "offset_ns": 97436849,
+        "name": "cuda:device:enter",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": null
+      },
+      {
+        "sequence": 127,
+        "offset_ns": 97471826,
+        "name": "cuda:stream:enter",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 128,
+        "offset_ns": 97486931,
+        "name": "run:step:begin",
+        "kind": "backend",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 129,
+        "offset_ns": 101583636,
+        "name": "run:step:submitted",
+        "kind": "backend",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 130,
+        "offset_ns": 101595957,
+        "name": "cuda:stream:exit",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 131,
+        "offset_ns": 101600150,
+        "name": "cuda:device:exit",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": null
+      },
+      {
+        "sequence": 132,
+        "offset_ns": 101654430,
+        "name": "cuda:device:enter",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": null
+      },
+      {
+        "sequence": 133,
+        "offset_ns": 101689082,
+        "name": "cuda:stream:enter",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 134,
+        "offset_ns": 101704195,
+        "name": "run:step:begin",
+        "kind": "backend",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 135,
+        "offset_ns": 105792517,
+        "name": "run:step:submitted",
+        "kind": "backend",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 136,
+        "offset_ns": 105802109,
+        "name": "cuda:stream:exit",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 137,
+        "offset_ns": 105806412,
+        "name": "cuda:device:exit",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": null
+      },
+      {
+        "sequence": 138,
+        "offset_ns": 105862736,
+        "name": "cuda:device:enter",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": null
+      },
+      {
+        "sequence": 139,
+        "offset_ns": 105910440,
+        "name": "cuda:stream:enter",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 140,
+        "offset_ns": 105926273,
+        "name": "run:step:begin",
+        "kind": "backend",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 141,
+        "offset_ns": 110075010,
+        "name": "run:step:submitted",
+        "kind": "backend",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 142,
+        "offset_ns": 110087041,
+        "name": "cuda:stream:exit",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 143,
+        "offset_ns": 110091333,
+        "name": "cuda:device:exit",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": null
+      },
+      {
+        "sequence": 144,
+        "offset_ns": 110147179,
+        "name": "cuda:device:enter",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": null
+      },
+      {
+        "sequence": 145,
+        "offset_ns": 110182830,
+        "name": "cuda:stream:enter",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 146,
+        "offset_ns": 110198628,
+        "name": "run:step:begin",
+        "kind": "backend",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 147,
+        "offset_ns": 114349210,
+        "name": "run:step:submitted",
+        "kind": "backend",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 148,
+        "offset_ns": 114359314,
+        "name": "cuda:stream:exit",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 149,
+        "offset_ns": 114363550,
+        "name": "cuda:device:exit",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": null
+      },
+      {
+        "sequence": 150,
+        "offset_ns": 114422568,
+        "name": "cuda:device:enter",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": null
+      },
+      {
+        "sequence": 151,
+        "offset_ns": 114458741,
+        "name": "cuda:stream:enter",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 152,
+        "offset_ns": 114474391,
+        "name": "run:step:begin",
+        "kind": "backend",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 153,
+        "offset_ns": 118582752,
+        "name": "run:step:submitted",
+        "kind": "backend",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 154,
+        "offset_ns": 118592530,
+        "name": "cuda:stream:exit",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 155,
+        "offset_ns": 118596665,
+        "name": "cuda:device:exit",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": null
+      },
+      {
+        "sequence": 156,
+        "offset_ns": 118652627,
+        "name": "cuda:device:enter",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": null
+      },
+      {
+        "sequence": 157,
+        "offset_ns": 118688793,
+        "name": "cuda:stream:enter",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 158,
+        "offset_ns": 118704216,
+        "name": "run:step:begin",
+        "kind": "backend",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 159,
+        "offset_ns": 122824807,
+        "name": "run:step:submitted",
+        "kind": "backend",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 160,
+        "offset_ns": 122834767,
+        "name": "cuda:stream:exit",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 161,
+        "offset_ns": 122838997,
+        "name": "cuda:device:exit",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": null
+      },
+      {
+        "sequence": 162,
+        "offset_ns": 122896046,
+        "name": "cuda:device:enter",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": null
+      },
+      {
+        "sequence": 163,
+        "offset_ns": 122931421,
+        "name": "cuda:stream:enter",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 164,
+        "offset_ns": 122947284,
+        "name": "run:step:begin",
+        "kind": "backend",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 165,
+        "offset_ns": 127066987,
+        "name": "run:step:submitted",
+        "kind": "backend",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 166,
+        "offset_ns": 127076407,
+        "name": "cuda:stream:exit",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 167,
+        "offset_ns": 127080437,
+        "name": "cuda:device:exit",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": null
+      },
+      {
+        "sequence": 168,
+        "offset_ns": 127135468,
+        "name": "cuda:device:enter",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": null
+      },
+      {
+        "sequence": 169,
+        "offset_ns": 127170412,
+        "name": "cuda:stream:enter",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 170,
+        "offset_ns": 127185650,
+        "name": "run:step:begin",
+        "kind": "backend",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 171,
+        "offset_ns": 131314287,
+        "name": "run:step:submitted",
+        "kind": "backend",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 172,
+        "offset_ns": 131323715,
+        "name": "cuda:stream:exit",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 173,
+        "offset_ns": 131327959,
+        "name": "cuda:device:exit",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": null
+      },
+      {
+        "sequence": 174,
+        "offset_ns": 131389070,
+        "name": "cuda:device:enter",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": null
+      },
+      {
+        "sequence": 175,
+        "offset_ns": 131423784,
+        "name": "cuda:stream:enter",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 176,
+        "offset_ns": 131441124,
+        "name": "run:finalize:begin",
+        "kind": "backend",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 177,
+        "offset_ns": 132079328,
+        "name": "run:finalize:submitted",
+        "kind": "backend",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 178,
+        "offset_ns": 132089071,
+        "name": "cuda:stream:exit",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 179,
+        "offset_ns": 132096919,
+        "name": "cuda:device:exit",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": null
+      },
+      {
+        "sequence": 180,
+        "offset_ns": 132152265,
+        "name": "cuda:device:enter",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": null
+      },
+      {
+        "sequence": 181,
+        "offset_ns": 132186695,
+        "name": "cuda:stream:enter",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 182,
+        "offset_ns": 132254024,
+        "name": "model:identity:verified",
+        "kind": "backend",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 183,
+        "offset_ns": 132263235,
+        "name": "cuda:stream:exit",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 184,
+        "offset_ns": 132266614,
+        "name": "cuda:device:exit",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": null
+      },
+      {
+        "sequence": 185,
+        "offset_ns": 132387109,
+        "name": "cuda:device:enter",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": null
+      },
+      {
+        "sequence": 186,
+        "offset_ns": 132414627,
+        "name": "cuda:stream:enter",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 187,
+        "offset_ns": 132429660,
+        "name": "run:cleanup:begin",
+        "kind": "backend",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 188,
+        "offset_ns": 132436452,
+        "name": "run:cleanup:submitted",
+        "kind": "backend",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 189,
+        "offset_ns": 132441150,
+        "name": "cuda:stream:exit",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 190,
+        "offset_ns": 132444244,
+        "name": "cuda:device:exit",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": null
+      },
+      {
+        "sequence": 191,
+        "offset_ns": 132452417,
+        "name": "cuda:device:enter",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": null
+      },
+      {
+        "sequence": 192,
+        "offset_ns": 132474348,
+        "name": "cuda:stream:enter",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 193,
+        "offset_ns": 132496590,
+        "name": "cuda:event-1:create",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": null
+      },
+      {
+        "sequence": 194,
+        "offset_ns": 132521949,
+        "name": "cuda:event-1:record",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 195,
+        "offset_ns": 132526012,
+        "name": "cuda:stream:exit",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 196,
+        "offset_ns": 132528744,
+        "name": "cuda:device:exit",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": null
+      },
+      {
+        "sequence": 197,
+        "offset_ns": 132533205,
+        "name": "cuda:event-1:synchronize:begin",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 198,
+        "offset_ns": 132543484,
+        "name": "cuda:event-1:synchronize:injected-failure",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 199,
+        "offset_ns": 132620823,
+        "name": "cuda:device:enter",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": null
+      },
+      {
+        "sequence": 200,
+        "offset_ns": 132645391,
+        "name": "cuda:stream:enter",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 201,
+        "offset_ns": 132658404,
+        "name": "run:cleanup:begin",
+        "kind": "backend",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 202,
+        "offset_ns": 132663296,
+        "name": "run:cleanup:submitted",
+        "kind": "backend",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 203,
+        "offset_ns": 132667343,
+        "name": "cuda:stream:exit",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 204,
+        "offset_ns": 132669934,
+        "name": "cuda:device:exit",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": null
+      },
+      {
+        "sequence": 205,
+        "offset_ns": 132677777,
+        "name": "cuda:device:enter",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": null
+      },
+      {
+        "sequence": 206,
+        "offset_ns": 132697526,
+        "name": "cuda:stream:enter",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 207,
+        "offset_ns": 132702619,
+        "name": "cuda:event-2:create",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": null
+      },
+      {
+        "sequence": 208,
+        "offset_ns": 132714070,
+        "name": "cuda:event-2:record",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 209,
+        "offset_ns": 132717785,
+        "name": "cuda:stream:exit",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 210,
+        "offset_ns": 132720295,
+        "name": "cuda:device:exit",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": null
+      },
+      {
+        "sequence": 211,
+        "offset_ns": 132723775,
+        "name": "cuda:event-2:synchronize:begin",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 212,
+        "offset_ns": 132726228,
+        "name": "cuda:event-2:synchronize:injected-failure",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 213,
+        "offset_ns": 132955843,
+        "name": "runtime:manual-recovery:begin",
+        "kind": "runtime",
+        "thread": "decode",
+        "stream": null
+      },
+      {
+        "sequence": 214,
+        "offset_ns": 132987779,
+        "name": "cuda:device:enter",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": null
+      },
+      {
+        "sequence": 215,
+        "offset_ns": 133013888,
+        "name": "cuda:stream:enter",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 216,
+        "offset_ns": 133027426,
+        "name": "run:cleanup:begin",
+        "kind": "backend",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 217,
+        "offset_ns": 133031849,
+        "name": "run:cleanup:submitted",
+        "kind": "backend",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 218,
+        "offset_ns": 133040534,
+        "name": "cuda:stream:exit",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 219,
+        "offset_ns": 133043382,
+        "name": "cuda:device:exit",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": null
+      },
+      {
+        "sequence": 220,
+        "offset_ns": 133051470,
+        "name": "cuda:device:enter",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": null
+      },
+      {
+        "sequence": 221,
+        "offset_ns": 133072130,
+        "name": "cuda:stream:enter",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 222,
+        "offset_ns": 133077763,
+        "name": "cuda:event-3:create",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": null
+      },
+      {
+        "sequence": 223,
+        "offset_ns": 133090583,
+        "name": "cuda:event-3:record",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 224,
+        "offset_ns": 133094572,
+        "name": "cuda:stream:exit",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 225,
+        "offset_ns": 133097090,
+        "name": "cuda:device:exit",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": null
+      },
+      {
+        "sequence": 226,
+        "offset_ns": 133100455,
+        "name": "cuda:event-3:synchronize:begin",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 227,
+        "offset_ns": 133112638,
+        "name": "cuda:event-3:query:return",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": "stream-1"
+      },
+      {
+        "sequence": 228,
+        "offset_ns": 133124981,
+        "name": "cuda:event-3:synchronize:return",
+        "kind": "cuda",
+        "thread": "decode",
+        "stream": "stream-1",
+        "state": {
+          "request_status": "running",
+          "session_version": 0,
+          "queue_depth": 1,
+          "lease_count": 1,
+          "budget_available": {
+            "memory_bytes": 0,
+            "compute_units": 0,
+            "stream_slots": 0
+          }
+        }
+      },
+      {
+        "sequence": 229,
+        "offset_ns": 133151407,
+        "name": "budget:lease:release:begin",
+        "kind": "runtime",
+        "thread": "decode",
+        "stream": null
+      },
+      {
+        "sequence": 230,
+        "offset_ns": 133167235,
+        "name": "budget:lease:release:return",
+        "kind": "runtime",
+        "thread": "decode",
+        "stream": null
+      },
+      {
+        "sequence": 231,
+        "offset_ns": 133175974,
+        "name": "runtime:manual-recovery:return",
+        "kind": "runtime",
+        "thread": "decode",
+        "stream": null
+      }
+    ],
+    "post_recovery_reuse": {
+      "outcome": "committed",
+      "request_status": "committed",
+      "transaction_status": "committed",
+      "session_version_before": 0,
+      "session_version_after": 1,
+      "window_count_after": 1,
+      "text": "And so my fellow Americans ask not what your country can do for you, ask what you can do for your country.",
+      "expected_text_matched": true,
+      "queue_depth_after": 0,
+      "budget_available_before": {
+        "memory_bytes": 1000000000,
+        "compute_units": 1,
+        "stream_slots": 1
+      },
+      "budget_available_after": {
+        "memory_bytes": 1000000000,
+        "compute_units": 1,
+        "stream_slots": 1
+      },
+      "backend_instrumented": true,
+      "child_generator_checks": 1,
+      "child_generators_on_profile_device": true,
+      "child_generators_distinct": true,
+      "traced_cleanup_calls": 1,
+      "traced_stream_count": 1,
+      "traced_event_count": 1,
+      "wall_seconds": 0.1258487370000001,
+      "memory_before": {
+        "allocated_bytes": 180065280,
+        "reserved_bytes": 450887680,
+        "peak_allocated_bytes": 206368256,
+        "peak_reserved_bytes": 450887680
+      },
+      "memory_after": {
+        "allocated_bytes": 188584960,
+        "reserved_bytes": 515899392,
+        "peak_allocated_bytes": 217192960,
+        "peak_reserved_bytes": 515899392
+      },
+      "trace": [
+        {
+          "sequence": 1,
+          "offset_ns": 778578,
+          "name": "budget:lease:acquired",
+          "kind": "runtime",
+          "thread": "decode",
+          "stream": null
+        },
+        {
+          "sequence": 2,
+          "offset_ns": 890131,
+          "name": "worker:admitted",
+          "kind": "runtime",
+          "thread": "decode",
+          "stream": null
+        },
+        {
+          "sequence": 3,
+          "offset_ns": 958577,
+          "name": "cuda:device:enter",
+          "kind": "cuda",
+          "thread": "decode",
+          "stream": null
+        },
+        {
+          "sequence": 4,
+          "offset_ns": 962431,
+          "name": "cuda:device-synchronize:begin",
+          "kind": "cuda",
+          "thread": "decode",
+          "stream": null
+        },
+        {
+          "sequence": 5,
+          "offset_ns": 1003668,
+          "name": "cuda:device-synchronize:return",
+          "kind": "cuda",
+          "thread": "decode",
+          "stream": null
+        },
+        {
+          "sequence": 6,
+          "offset_ns": 1027538,
+          "name": "cuda:stream:create",
+          "kind": "cuda",
+          "thread": "decode",
+          "stream": "stream-1"
+        },
+        {
+          "sequence": 7,
+          "offset_ns": 1030060,
+          "name": "cuda:device:exit",
+          "kind": "cuda",
+          "thread": "decode",
+          "stream": null
+        },
+        {
+          "sequence": 8,
+          "offset_ns": 1039463,
+          "name": "cuda:device:enter",
+          "kind": "cuda",
+          "thread": "decode",
+          "stream": null
+        },
+        {
+          "sequence": 9,
+          "offset_ns": 1070082,
+          "name": "cuda:stream:enter",
+          "kind": "cuda",
+          "thread": "decode",
+          "stream": "stream-1"
+        },
+        {
+          "sequence": 10,
+          "offset_ns": 1126231,
+          "name": "model:identity:verified",
+          "kind": "backend",
+          "thread": "decode",
+          "stream": "stream-1"
+        },
+        {
+          "sequence": 11,
+          "offset_ns": 1168998,
+          "name": "task:construct:begin",
+          "kind": "backend",
+          "thread": "decode",
+          "stream": "stream-1"
+        },
+        {
+          "sequence": 12,
+          "offset_ns": 1364042,
+          "name": "task:construct:return",
+          "kind": "backend",
+          "thread": "decode",
+          "stream": "stream-1"
+        },
+        {
+          "sequence": 13,
+          "offset_ns": 2779135,
+          "name": "run:start:begin",
+          "kind": "backend",
+          "thread": "decode",
+          "stream": "stream-1"
+        },
+        {
+          "sequence": 14,
+          "offset_ns": 23465540,
+          "name": "run:start:submitted",
+          "kind": "backend",
+          "thread": "decode",
+          "stream": "stream-1"
+        },
+        {
+          "sequence": 15,
+          "offset_ns": 23478915,
+          "name": "run:child-generator:verified",
+          "kind": "backend",
+          "thread": "decode",
+          "stream": "stream-1"
+        },
+        {
+          "sequence": 16,
+          "offset_ns": 23503322,
+          "name": "cuda:stream:exit",
+          "kind": "cuda",
+          "thread": "decode",
+          "stream": "stream-1"
+        },
+        {
+          "sequence": 17,
+          "offset_ns": 23507260,
+          "name": "cuda:device:exit",
+          "kind": "cuda",
+          "thread": "decode",
+          "stream": null
+        },
+        {
+          "sequence": 18,
+          "offset_ns": 23559292,
+          "name": "cuda:device:enter",
+          "kind": "cuda",
+          "thread": "decode",
+          "stream": null
+        },
+        {
+          "sequence": 19,
+          "offset_ns": 23594408,
+          "name": "cuda:stream:enter",
+          "kind": "cuda",
+          "thread": "decode",
+          "stream": "stream-1"
+        },
+        {
+          "sequence": 20,
+          "offset_ns": 23610870,
+          "name": "run:prefill:begin",
+          "kind": "backend",
+          "thread": "decode",
+          "stream": "stream-1"
+        },
+        {
+          "sequence": 21,
+          "offset_ns": 28934931,
+          "name": "run:prefill:submitted",
+          "kind": "backend",
+          "thread": "decode",
+          "stream": "stream-1"
+        },
+        {
+          "sequence": 22,
+          "offset_ns": 28944770,
+          "name": "cuda:stream:exit",
+          "kind": "cuda",
+          "thread": "decode",
+          "stream": "stream-1"
+        },
+        {
+          "sequence": 23,
+          "offset_ns": 28949039,
+          "name": "cuda:device:exit",
+          "kind": "cuda",
+          "thread": "decode",
+          "stream": null
+        },
+        {
+          "sequence": 24,
+          "offset_ns": 29004272,
+          "name": "cuda:device:enter",
+          "kind": "cuda",
+          "thread": "decode",
+          "stream": null
+        },
+        {
+          "sequence": 25,
+          "offset_ns": 29040525,
+          "name": "cuda:stream:enter",
+          "kind": "cuda",
+          "thread": "decode",
+          "stream": "stream-1"
+        },
+        {
+          "sequence": 26,
+          "offset_ns": 29056095,
+          "name": "run:step:begin",
+          "kind": "backend",
+          "thread": "decode",
+          "stream": "stream-1"
+        },
+        {
+          "sequence": 27,
+          "offset_ns": 29841992,
+          "name": "run:step:submitted",
+          "kind": "backend",
+          "thread": "decode",
+          "stream": "stream-1"
+        },
+        {
+          "sequence": 28,
+          "offset_ns": 29850969,
+          "name": "cuda:stream:exit",
+          "kind": "cuda",
+          "thread": "decode",
+          "stream": "stream-1"
+        },
+        {
+          "sequence": 29,
+          "offset_ns": 29855033,
+          "name": "cuda:device:exit",
+          "kind": "cuda",
+          "thread": "decode",
+          "stream": null
+        },
+        {
+          "sequence": 30,
+          "offset_ns": 29908747,
+          "name": "cuda:device:enter",
+          "kind": "cuda",
+          "thread": "decode",
+          "stream": null
+        },
+        {
+          "sequence": 31,
+          "offset_ns": 29942791,
+          "name": "cuda:stream:enter",
+          "kind": "cuda",
+          "thread": "decode",
+          "stream": "stream-1"
+        },
+        {
+          "sequence": 32,
+          "offset_ns": 29957850,
+          "name": "run:step:begin",
+          "kind": "backend",
+          "thread": "decode",
+          "stream": "stream-1"
+        },
+        {
+          "sequence": 33,
+          "offset_ns": 34064456,
+          "name": "run:step:submitted",
+          "kind": "backend",
+          "thread": "decode",
+          "stream": "stream-1"
+        },
+        {
+          "sequence": 34,
+          "offset_ns": 34074172,
+          "name": "cuda:stream:exit",
+          "kind": "cuda",
+          "thread": "decode",
+          "stream": "stream-1"
+        },
+        {
+          "sequence": 35,
+          "offset_ns": 34078309,
+          "name": "cuda:device:exit",
+          "kind": "cuda",
+          "thread": "decode",
+          "stream": null
+        },
+        {
+          "sequence": 36,
+          "offset_ns": 34142033,
+          "name": "cuda:device:enter",
+          "kind": "cuda",
+          "thread": "decode",
+          "stream": null
+        },
+        {
+          "sequence": 37,
+          "offset_ns": 34177025,
+          "name": "cuda:stream:enter",
+          "kind": "cuda",
+          "thread": "decode",
+          "stream": "stream-1"
+        },
+        {
+          "sequence": 38,
+          "offset_ns": 34192330,
+          "name": "run:step:begin",
+          "kind": "backend",
+          "thread": "decode",
+          "stream": "stream-1"
+        },
+        {
+          "sequence": 39,
+          "offset_ns": 38285189,
+          "name": "run:step:submitted",
+          "kind": "backend",
+          "thread": "decode",
+          "stream": "stream-1"
+        },
+        {
+          "sequence": 40,
+          "offset_ns": 38294737,
+          "name": "cuda:stream:exit",
+          "kind": "cuda",
+          "thread": "decode",
+          "stream": "stream-1"
+        },
+        {
+          "sequence": 41,
+          "offset_ns": 38298806,
+          "name": "cuda:device:exit",
+          "kind": "cuda",
+          "thread": "decode",
+          "stream": null
+        },
+        {
+          "sequence": 42,
+          "offset_ns": 38354125,
+          "name": "cuda:device:enter",
+          "kind": "cuda",
+          "thread": "decode",
+          "stream": null
+        },
+        {
+          "sequence": 43,
+          "offset_ns": 38389081,
+          "name": "cuda:stream:enter",
+          "kind": "cuda",
+          "thread": "decode",
+          "stream": "stream-1"
+        },
+        {
+          "sequence": 44,
+          "offset_ns": 38404220,
+          "name": "run:step:begin",
+          "kind": "backend",
+          "thread": "decode",
+          "stream": "stream-1"
+        },
+        {
+          "sequence": 45,
+          "offset_ns": 42900253,
+          "name": "run:step:submitted",
+          "kind": "backend",
+          "thread": "decode",
+          "stream": "stream-1"
+        },
+        {
+          "sequence": 46,
+          "offset_ns": 42909924,
+          "name": "cuda:stream:exit",
+          "kind": "cuda",
+          "thread": "decode",
+          "stream": "stream-1"
+        },
+        {
+          "sequence": 47,
+          "offset_ns": 42914085,
+          "name": "cuda:device:exit",
+          "kind": "cuda",
+          "thread": "decode",
+          "stream": null
+        },
+        {
+          "sequence": 48,
+          "offset_ns": 42968101,
+          "name": "cuda:device:enter",
+          "kind": "cuda",
+          "thread": "decode",
+          "stream": null
+        },
+        {
+          "sequence": 49,
+          "offset_ns": 43003294,
+          "name": "cuda:stream:enter",
+          "kind": "cuda",
+          "thread": "decode",
+          "stream": "stream-1"
+        },
+        {
+          "sequence": 50,
+          "offset_ns": 43018397,
+          "name": "run:step:begin",
+          "kind": "backend",
+          "thread": "decode",
+          "stream": "stream-1"
+        },
+        {
+          "sequence": 51,
+          "offset_ns": 47116394,
+          "name": "run:step:submitted",
+          "kind": "backend",
+          "thread": "decode",
+          "stream": "stream-1"
+        },
+        {
+          "sequence": 52,
+          "offset_ns": 47125787,
+          "name": "cuda:stream:exit",
+          "kind": "cuda",
+          "thread": "decode",
+          "stream": "stream-1"
+        },
+        {
+          "sequence": 53,
+          "offset_ns": 47129862,
+          "name": "cuda:device:exit",
+          "kind": "cuda",
+          "thread": "decode",
+          "stream": null
+        },
+        {
+          "sequence": 54,
+          "offset_ns": 47183648,
+          "name": "cuda:device:enter",
+          "kind": "cuda",
+          "thread": "decode",
+          "stream": null
+        },
+        {
+          "sequence": 55,
+          "offset_ns": 47218222,
+          "name": "cuda:stream:enter",
+          "kind": "cuda",
+          "thread": "decode",
+          "stream": "stream-1"
+        },
+        {
+          "sequence": 56,
+          "offset_ns": 47233011,
+          "name": "run:step:begin",
+          "kind": "backend",
+          "thread": "decode",
+          "stream": "stream-1"
+        },
+        {
+          "sequence": 57,
+          "offset_ns": 51328811,
+          "name": "run:step:submitted",
+          "kind": "backend",
+          "thread": "decode",
+          "stream": "stream-1"
+        },
+        {
+          "sequence": 58,
+          "offset_ns": 51338174,
+          "name": "cuda:stream:exit",
+          "kind": "cuda",
+          "thread": "decode",
+          "stream": "stream-1"
+        },
+        {
+          "sequence": 59,
+          "offset_ns": 51342205,
+          "name": "cuda:device:exit",
+          "kind": "cuda",
+          "thread": "decode",
+          "stream": null
+        },
+        {
+          "sequence": 60,
+          "offset_ns": 51397385,
+          "name": "cuda:device:enter",
+          "kind": "cuda",
+          "thread": "decode",
+          "stream": null
+        },
+        {
+          "sequence": 61,
+          "offset_ns": 51431782,
+          "name": "cuda:stream:enter",
+          "kind": "cuda",
+          "thread": "decode",
+          "stream": "stream-1"
+        },
+        {
+          "sequence": 62,
+          "offset_ns": 51446907,
+          "name": "run:step:begin",
+          "kind": "backend",
+          "thread": "decode",
+          "stream": "stream-1"
+        },
+        {
+          "sequence": 63,
+          "offset_ns": 55549945,
+          "name": "run:step:submitted",
+          "kind": "backend",
+          "thread": "decode",
+          "stream": "stream-1"
+        },
+        {
+          "sequence": 64,
+          "offset_ns": 55559260,
+          "name": "cuda:stream:exit",
+          "kind": "cuda",
+          "thread": "decode",
+          "stream": "stream-1"
+        },
+        {
+          "sequence": 65,
+          "offset_ns": 55563476,
+          "name": "cuda:device:exit",
+          "kind": "cuda",
+          "thread": "decode",
+          "stream": null
+        },
+        {
+          "sequence": 66,
+          "offset_ns": 55618260,
+          "name": "cuda:device:enter",
+          "kind": "cuda",
+          "thread": "decode",
+          "stream": null
+        },
+        {
+          "sequence": 67,
+          "offset_ns": 55652994,
+          "name": "cuda:stream:enter",
+          "kind": "cuda",
+          "thread": "decode",
+          "stream": "stream-1"
+        },
+        {
+          "sequence": 68,
+          "offset_ns": 55668108,
+          "name": "run:step:begin",
+          "kind": "backend",
+          "thread": "decode",
+          "stream": "stream-1"
+        },
+        {
+          "sequence": 69,
+          "offset_ns": 59797914,
+          "name": "run:step:submitted",
+          "kind": "backend",
+          "thread": "decode",
+          "stream": "stream-1"
+        },
+        {
+          "sequence": 70,
+          "offset_ns": 59807853,
+          "name": "cuda:stream:exit",
+          "kind": "cuda",
+          "thread": "decode",
+          "stream": "stream-1"
+        },
+        {
+          "sequence": 71,
+          "offset_ns": 59811953,
+          "name": "cuda:device:exit",
+          "kind": "cuda",
+          "thread": "decode",
+          "stream": null
+        },
+        {
+          "sequence": 72,
+          "offset_ns": 59868552,
+          "name": "cuda:device:enter",
+          "kind": "cuda",
+          "thread": "decode",
+          "stream": null
+        },
+        {
+          "sequence": 73,
+          "offset_ns": 59904661,
+          "name": "cuda:stream:enter",
+          "kind": "cuda",
+          "thread": "decode",
+          "stream": "stream-1"
+        },
+        {
+          "sequence": 74,
+          "offset_ns": 59920612,
+          "name": "run:step:begin",
+          "kind": "backend",
+          "thread": "decode",
+          "stream": "stream-1"
+        },
+        {
+          "sequence": 75,
+          "offset_ns": 64070807,
+          "name": "run:step:submitted",
+          "kind": "backend",
+          "thread": "decode",
+          "stream": "stream-1"
+        },
+        {
+          "sequence": 76,
+          "offset_ns": 64093427,
+          "name": "cuda:stream:exit",
+          "kind": "cuda",
+          "thread": "decode",
+          "stream": "stream-1"
+        },
+        {
+          "sequence": 77,
+          "offset_ns": 64097984,
+          "name": "cuda:device:exit",
+          "kind": "cuda",
+          "thread": "decode",
+          "stream": null
+        },
+        {
+          "sequence": 78,
+          "offset_ns": 64165054,
+          "name": "cuda:device:enter",
+          "kind": "cuda",
+          "thread": "decode",
+          "stream": null
+        },
+        {
+          "sequence": 79,
+          "offset_ns": 64204639,
+          "name": "cuda:stream:enter",
+          "kind": "cuda",
+          "thread": "decode",
+          "stream": "stream-1"
+        },
+        {
+          "sequence": 80,
+          "offset_ns": 64220404,
+          "name": "run:step:begin",
+          "kind": "backend",
+          "thread": "decode",
+          "stream": "stream-1"
+        },
+        {
+          "sequence": 81,
+          "offset_ns": 68351172,
+          "name": "run:step:submitted",
+          "kind": "backend",
+          "thread": "decode",
+          "stream": "stream-1"
+        },
+        {
+          "sequence": 82,
+          "offset_ns": 68361728,
+          "name": "cuda:stream:exit",
+          "kind": "cuda",
+          "thread": "decode",
+          "stream": "stream-1"
+        },
+        {
+          "sequence": 83,
+          "offset_ns": 68366589,
+          "name": "cuda:device:exit",
+          "kind": "cuda",
+          "thread": "decode",
+          "stream": null
+        },
+        {
+          "sequence": 84,
+          "offset_ns": 68429535,
+          "name": "cuda:device:enter",
+          "kind": "cuda",
+          "thread": "decode",
+          "stream": null
+        },
+        {
+          "sequence": 85,
+          "offset_ns": 68466923,
+          "name": "cuda:stream:enter",
+          "kind": "cuda",
+          "thread": "decode",
+          "stream": "stream-1"
+        },
+        {
+          "sequence": 86,
+          "offset_ns": 68483171,
+          "name": "run:step:begin",
+          "kind": "backend",
+          "thread": "decode",
+          "stream": "stream-1"
+        },
+        {
+          "sequence": 87,
+          "offset_ns": 72625234,
+          "name": "run:step:submitted",
+          "kind": "backend",
+          "thread": "decode",
+          "stream": "stream-1"
+        },
+        {
+          "sequence": 88,
+          "offset_ns": 72635961,
+          "name": "cuda:stream:exit",
+          "kind": "cuda",
+          "thread": "decode",
+          "stream": "stream-1"
+        },
+        {
+          "sequence": 89,
+          "offset_ns": 72640423,
+          "name": "cuda:device:exit",
+          "kind": "cuda",
+          "thread": "decode",
+          "stream": null
+        },
+        {
+          "sequence": 90,
+          "offset_ns": 72703540,
+          "name": "cuda:device:enter",
+          "kind": "cuda",
+          "thread": "decode",
+          "stream": null
+        },
+        {
+          "sequence": 91,
+          "offset_ns": 72741362,
+          "name": "cuda:stream:enter",
+          "kind": "cuda",
+          "thread": "decode",
+          "stream": "stream-1"
+        },
+        {
+          "sequence": 92,
+          "offset_ns": 72757721,
+          "name": "run:step:begin",
+          "kind": "backend",
+          "thread": "decode",
+          "stream": "stream-1"
+        },
+        {
+          "sequence": 93,
+          "offset_ns": 76900545,
+          "name": "run:step:submitted",
+          "kind": "backend",
+          "thread": "decode",
+          "stream": "stream-1"
+        },
+        {
+          "sequence": 94,
+          "offset_ns": 76911677,
+          "name": "cuda:stream:exit",
+          "kind": "cuda",
+          "thread": "decode",
+          "stream": "stream-1"
+        },
+        {
+          "sequence": 95,
+          "offset_ns": 76916395,
+          "name": "cuda:device:exit",
+          "kind": "cuda",
+          "thread": "decode",
+          "stream": null
+        },
+        {
+          "sequence": 96,
+          "offset_ns": 76980988,
+          "name": "cuda:device:enter",
+          "kind": "cuda",
+          "thread": "decode",
+          "stream": null
+        },
+        {
+          "sequence": 97,
+          "offset_ns": 77019909,
+          "name": "cuda:stream:enter",
+          "kind": "cuda",
+          "thread": "decode",
+          "stream": "stream-1"
+        },
+        {
+          "sequence": 98,
+          "offset_ns": 77036076,
+          "name": "run:step:begin",
+          "kind": "backend",
+          "thread": "decode",
+          "stream": "stream-1"
+        },
+        {
+          "sequence": 99,
+          "offset_ns": 81196116,
+          "name": "run:step:submitted",
+          "kind": "backend",
+          "thread": "decode",
+          "stream": "stream-1"
+        },
+        {
+          "sequence": 100,
+          "offset_ns": 81206677,
+          "name": "cuda:stream:exit",
+          "kind": "cuda",
+          "thread": "decode",
+          "stream": "stream-1"
+        },
+        {
+          "sequence": 101,
+          "offset_ns": 81211996,
+          "name": "cuda:device:exit",
+          "kind": "cuda",
+          "thread": "decode",
+          "stream": null
+        },
+        {
+          "sequence": 102,
+          "offset_ns": 81275927,
+          "name": "cuda:device:enter",
+          "kind": "cuda",
+          "thread": "decode",
+          "stream": null
+        },
+        {
+          "sequence": 103,
+          "offset_ns": 81314468,
+          "name": "cuda:stream:enter",
+          "kind": "cuda",
+          "thread": "decode",
+          "stream": "stream-1"
+        },
+        {
+          "sequence": 104,
+          "offset_ns": 81330728,
+          "name": "run:step:begin",
+          "kind": "backend",
+          "thread": "decode",
+          "stream": "stream-1"
+        },
+        {
+          "sequence": 105,
+          "offset_ns": 84893478,
+          "name": "run:step:submitted",
+          "kind": "backend",
+          "thread": "decode",
+          "stream": "stream-1"
+        },
+        {
+          "sequence": 106,
+          "offset_ns": 84903988,
+          "name": "cuda:stream:exit",
+          "kind": "cuda",
+          "thread": "decode",
+          "stream": "stream-1"
+        },
+        {
+          "sequence": 107,
+          "offset_ns": 84909340,
+          "name": "cuda:device:exit",
+          "kind": "cuda",
+          "thread": "decode",
+          "stream": null
+        },
+        {
+          "sequence": 108,
+          "offset_ns": 84968862,
+          "name": "cuda:device:enter",
+          "kind": "cuda",
+          "thread": "decode",
+          "stream": null
+        },
+        {
+          "sequence": 109,
+          "offset_ns": 85006434,
+          "name": "cuda:stream:enter",
+          "kind": "cuda",
+          "thread": "decode",
+          "stream": "stream-1"
+        },
+        {
+          "sequence": 110,
+          "offset_ns": 85027261,
+          "name": "run:step:begin",
+          "kind": "backend",
+          "thread": "decode",
+          "stream": "stream-1"
+        },
+        {
+          "sequence": 111,
+          "offset_ns": 88585296,
+          "name": "run:step:submitted",
+          "kind": "backend",
+          "thread": "decode",
+          "stream": "stream-1"
+        },
+        {
+          "sequence": 112,
+          "offset_ns": 88595215,
+          "name": "cuda:stream:exit",
+          "kind": "cuda",
+          "thread": "decode",
+          "stream": "stream-1"
+        },
+        {
+          "sequence": 113,
+          "offset_ns": 88599530,
+          "name": "cuda:device:exit",
+          "kind": "cuda",
+          "thread": "decode",
+          "stream": null
+        },
+        {
+          "sequence": 114,
+          "offset_ns": 88657638,
+          "name": "cuda:device:enter",
+          "kind": "cuda",
+          "thread": "decode",
+          "stream": null
+        },
+        {
+          "sequence": 115,
+          "offset_ns": 88695025,
+          "name": "cuda:stream:enter",
+          "kind": "cuda",
+          "thread": "decode",
+          "stream": "stream-1"
+        },
+        {
+          "sequence": 116,
+          "offset_ns": 88711536,
+          "name": "run:step:begin",
+          "kind": "backend",
+          "thread": "decode",
+          "stream": "stream-1"
+        },
+        {
+          "sequence": 117,
+          "offset_ns": 92257190,
+          "name": "run:step:submitted",
+          "kind": "backend",
+          "thread": "decode",
+          "stream": "stream-1"
+        },
+        {
+          "sequence": 118,
+          "offset_ns": 92267093,
+          "name": "cuda:stream:exit",
+          "kind": "cuda",
+          "thread": "decode",
+          "stream": "stream-1"
+        },
+        {
+          "sequence": 119,
+          "offset_ns": 92271582,
+          "name": "cuda:device:exit",
+          "kind": "cuda",
+          "thread": "decode",
+          "stream": null
+        },
+        {
+          "sequence": 120,
+          "offset_ns": 92328206,
+          "name": "cuda:device:enter",
+          "kind": "cuda",
+          "thread": "decode",
+          "stream": null
+        },
+        {
+          "sequence": 121,
+          "offset_ns": 92365382,
+          "name": "cuda:stream:enter",
+          "kind": "cuda",
+          "thread": "decode",
+          "stream": "stream-1"
+        },
+        {
+          "sequence": 122,
+          "offset_ns": 92381909,
+          "name": "run:step:begin",
+          "kind": "backend",
+          "thread": "decode",
+          "stream": "stream-1"
+        },
+        {
+          "sequence": 123,
+          "offset_ns": 95902854,
+          "name": "run:step:submitted",
+          "kind": "backend",
+          "thread": "decode",
+          "stream": "stream-1"
+        },
+        {
+          "sequence": 124,
+          "offset_ns": 95912646,
+          "name": "cuda:stream:exit",
+          "kind": "cuda",
+          "thread": "decode",
+          "stream": "stream-1"
+        },
+        {
+          "sequence": 125,
+          "offset_ns": 95917294,
+          "name": "cuda:device:exit",
+          "kind": "cuda",
+          "thread": "decode",
+          "stream": null
+        },
+        {
+          "sequence": 126,
+          "offset_ns": 95974369,
+          "name": "cuda:device:enter",
+          "kind": "cuda",
+          "thread": "decode",
+          "stream": null
+        },
+        {
+          "sequence": 127,
+          "offset_ns": 96011568,
+          "name": "cuda:stream:enter",
+          "kind": "cuda",
+          "thread": "decode",
+          "stream": "stream-1"
+        },
+        {
+          "sequence": 128,
+          "offset_ns": 96027288,
+          "name": "run:step:begin",
+          "kind": "backend",
+          "thread": "decode",
+          "stream": "stream-1"
+        },
+        {
+          "sequence": 129,
+          "offset_ns": 99584759,
+          "name": "run:step:submitted",
+          "kind": "backend",
+          "thread": "decode",
+          "stream": "stream-1"
+        },
+        {
+          "sequence": 130,
+          "offset_ns": 99604869,
+          "name": "cuda:stream:exit",
+          "kind": "cuda",
+          "thread": "decode",
+          "stream": "stream-1"
+        },
+        {
+          "sequence": 131,
+          "offset_ns": 99609470,
+          "name": "cuda:device:exit",
+          "kind": "cuda",
+          "thread": "decode",
+          "stream": null
+        },
+        {
+          "sequence": 132,
+          "offset_ns": 99664819,
+          "name": "cuda:device:enter",
+          "kind": "cuda",
+          "thread": "decode",
+          "stream": null
+        },
+        {
+          "sequence": 133,
+          "offset_ns": 99700641,
+          "name": "cuda:stream:enter",
+          "kind": "cuda",
+          "thread": "decode",
+          "stream": "stream-1"
+        },
+        {
+          "sequence": 134,
+          "offset_ns": 99716560,
+          "name": "run:step:begin",
+          "kind": "backend",
+          "thread": "decode",
+          "stream": "stream-1"
+        },
+        {
+          "sequence": 135,
+          "offset_ns": 103294592,
+          "name": "run:step:submitted",
+          "kind": "backend",
+          "thread": "decode",
+          "stream": "stream-1"
+        },
+        {
+          "sequence": 136,
+          "offset_ns": 103304326,
+          "name": "cuda:stream:exit",
+          "kind": "cuda",
+          "thread": "decode",
+          "stream": "stream-1"
+        },
+        {
+          "sequence": 137,
+          "offset_ns": 103308581,
+          "name": "cuda:device:exit",
+          "kind": "cuda",
+          "thread": "decode",
+          "stream": null
+        },
+        {
+          "sequence": 138,
+          "offset_ns": 103364739,
+          "name": "cuda:device:enter",
+          "kind": "cuda",
+          "thread": "decode",
+          "stream": null
+        },
+        {
+          "sequence": 139,
+          "offset_ns": 103400770,
+          "name": "cuda:stream:enter",
+          "kind": "cuda",
+          "thread": "decode",
+          "stream": "stream-1"
+        },
+        {
+          "sequence": 140,
+          "offset_ns": 103416165,
+          "name": "run:step:begin",
+          "kind": "backend",
+          "thread": "decode",
+          "stream": "stream-1"
+        },
+        {
+          "sequence": 141,
+          "offset_ns": 106939354,
+          "name": "run:step:submitted",
+          "kind": "backend",
+          "thread": "decode",
+          "stream": "stream-1"
+        },
+        {
+          "sequence": 142,
+          "offset_ns": 106949788,
+          "name": "cuda:stream:exit",
+          "kind": "cuda",
+          "thread": "decode",
+          "stream": "stream-1"
+        },
+        {
+          "sequence": 143,
+          "offset_ns": 106953863,
+          "name": "cuda:device:exit",
+          "kind": "cuda",
+          "thread": "decode",
+          "stream": null
+        },
+        {
+          "sequence": 144,
+          "offset_ns": 107011428,
+          "name": "cuda:device:enter",
+          "kind": "cuda",
+          "thread": "decode",
+          "stream": null
+        },
+        {
+          "sequence": 145,
+          "offset_ns": 107047506,
+          "name": "cuda:stream:enter",
+          "kind": "cuda",
+          "thread": "decode",
+          "stream": "stream-1"
+        },
+        {
+          "sequence": 146,
+          "offset_ns": 107063301,
+          "name": "run:step:begin",
+          "kind": "backend",
+          "thread": "decode",
+          "stream": "stream-1"
+        },
+        {
+          "sequence": 147,
+          "offset_ns": 110619856,
+          "name": "run:step:submitted",
+          "kind": "backend",
+          "thread": "decode",
+          "stream": "stream-1"
+        },
+        {
+          "sequence": 148,
+          "offset_ns": 110630513,
+          "name": "cuda:stream:exit",
+          "kind": "cuda",
+          "thread": "decode",
+          "stream": "stream-1"
+        },
+        {
+          "sequence": 149,
+          "offset_ns": 110635034,
+          "name": "cuda:device:exit",
+          "kind": "cuda",
+          "thread": "decode",
+          "stream": null
+        },
+        {
+          "sequence": 150,
+          "offset_ns": 110692082,
+          "name": "cuda:device:enter",
+          "kind": "cuda",
+          "thread": "decode",
+          "stream": null
+        },
+        {
+          "sequence": 151,
+          "offset_ns": 110729113,
+          "name": "cuda:stream:enter",
+          "kind": "cuda",
+          "thread": "decode",
+          "stream": "stream-1"
+        },
+        {
+          "sequence": 152,
+          "offset_ns": 110745026,
+          "name": "run:step:begin",
+          "kind": "backend",
+          "thread": "decode",
+          "stream": "stream-1"
+        },
+        {
+          "sequence": 153,
+          "offset_ns": 114308532,
+          "name": "run:step:submitted",
+          "kind": "backend",
+          "thread": "decode",
+          "stream": "stream-1"
+        },
+        {
+          "sequence": 154,
+          "offset_ns": 114318480,
+          "name": "cuda:stream:exit",
+          "kind": "cuda",
+          "thread": "decode",
+          "stream": "stream-1"
+        },
+        {
+          "sequence": 155,
+          "offset_ns": 114323118,
+          "name": "cuda:device:exit",
+          "kind": "cuda",
+          "thread": "decode",
+          "stream": null
+        },
+        {
+          "sequence": 156,
+          "offset_ns": 114379230,
+          "name": "cuda:device:enter",
+          "kind": "cuda",
+          "thread": "decode",
+          "stream": null
+        },
+        {
+          "sequence": 157,
+          "offset_ns": 114415334,
+          "name": "cuda:stream:enter",
+          "kind": "cuda",
+          "thread": "decode",
+          "stream": "stream-1"
+        },
+        {
+          "sequence": 158,
+          "offset_ns": 114431201,
+          "name": "run:step:begin",
+          "kind": "backend",
+          "thread": "decode",
+          "stream": "stream-1"
+        },
+        {
+          "sequence": 159,
+          "offset_ns": 117956053,
+          "name": "run:step:submitted",
+          "kind": "backend",
+          "thread": "decode",
+          "stream": "stream-1"
+        },
+        {
+          "sequence": 160,
+          "offset_ns": 117966287,
+          "name": "cuda:stream:exit",
+          "kind": "cuda",
+          "thread": "decode",
+          "stream": "stream-1"
+        },
+        {
+          "sequence": 161,
+          "offset_ns": 117970617,
+          "name": "cuda:device:exit",
+          "kind": "cuda",
+          "thread": "decode",
+          "stream": null
+        },
+        {
+          "sequence": 162,
+          "offset_ns": 118027613,
+          "name": "cuda:device:enter",
+          "kind": "cuda",
+          "thread": "decode",
+          "stream": null
+        },
+        {
+          "sequence": 163,
+          "offset_ns": 118063865,
+          "name": "cuda:stream:enter",
+          "kind": "cuda",
+          "thread": "decode",
+          "stream": "stream-1"
+        },
+        {
+          "sequence": 164,
+          "offset_ns": 118079649,
+          "name": "run:step:begin",
+          "kind": "backend",
+          "thread": "decode",
+          "stream": "stream-1"
+        },
+        {
+          "sequence": 165,
+          "offset_ns": 121554371,
+          "name": "run:step:submitted",
+          "kind": "backend",
+          "thread": "decode",
+          "stream": "stream-1"
+        },
+        {
+          "sequence": 166,
+          "offset_ns": 121564135,
+          "name": "cuda:stream:exit",
+          "kind": "cuda",
+          "thread": "decode",
+          "stream": "stream-1"
+        },
+        {
+          "sequence": 167,
+          "offset_ns": 121568572,
+          "name": "cuda:device:exit",
+          "kind": "cuda",
+          "thread": "decode",
+          "stream": null
+        },
+        {
+          "sequence": 168,
+          "offset_ns": 121623459,
+          "name": "cuda:device:enter",
+          "kind": "cuda",
+          "thread": "decode",
+          "stream": null
+        },
+        {
+          "sequence": 169,
+          "offset_ns": 121658050,
+          "name": "cuda:stream:enter",
+          "kind": "cuda",
+          "thread": "decode",
+          "stream": "stream-1"
+        },
+        {
+          "sequence": 170,
+          "offset_ns": 121673300,
+          "name": "run:step:begin",
+          "kind": "backend",
+          "thread": "decode",
+          "stream": "stream-1"
+        },
+        {
+          "sequence": 171,
+          "offset_ns": 125125505,
+          "name": "run:step:submitted",
+          "kind": "backend",
+          "thread": "decode",
+          "stream": "stream-1"
+        },
+        {
+          "sequence": 172,
+          "offset_ns": 125135201,
+          "name": "cuda:stream:exit",
+          "kind": "cuda",
+          "thread": "decode",
+          "stream": "stream-1"
+        },
+        {
+          "sequence": 173,
+          "offset_ns": 125139565,
+          "name": "cuda:device:exit",
+          "kind": "cuda",
+          "thread": "decode",
+          "stream": null
+        },
+        {
+          "sequence": 174,
+          "offset_ns": 125194784,
+          "name": "cuda:device:enter",
+          "kind": "cuda",
+          "thread": "decode",
+          "stream": null
+        },
+        {
+          "sequence": 175,
+          "offset_ns": 125229179,
+          "name": "cuda:stream:enter",
+          "kind": "cuda",
+          "thread": "decode",
+          "stream": "stream-1"
+        },
+        {
+          "sequence": 176,
+          "offset_ns": 125244572,
+          "name": "run:finalize:begin",
+          "kind": "backend",
+          "thread": "decode",
+          "stream": "stream-1"
+        },
+        {
+          "sequence": 177,
+          "offset_ns": 125753270,
+          "name": "run:finalize:submitted",
+          "kind": "backend",
+          "thread": "decode",
+          "stream": "stream-1"
+        },
+        {
+          "sequence": 178,
+          "offset_ns": 125763286,
+          "name": "cuda:stream:exit",
+          "kind": "cuda",
+          "thread": "decode",
+          "stream": "stream-1"
+        },
+        {
+          "sequence": 179,
+          "offset_ns": 125767612,
+          "name": "cuda:device:exit",
+          "kind": "cuda",
+          "thread": "decode",
+          "stream": null
+        },
+        {
+          "sequence": 180,
+          "offset_ns": 125823693,
+          "name": "cuda:device:enter",
+          "kind": "cuda",
+          "thread": "decode",
+          "stream": null
+        },
+        {
+          "sequence": 181,
+          "offset_ns": 125860694,
+          "name": "cuda:stream:enter",
+          "kind": "cuda",
+          "thread": "decode",
+          "stream": "stream-1"
+        },
+        {
+          "sequence": 182,
+          "offset_ns": 125935047,
+          "name": "model:identity:verified",
+          "kind": "backend",
+          "thread": "decode",
+          "stream": "stream-1"
+        },
+        {
+          "sequence": 183,
+          "offset_ns": 125942919,
+          "name": "cuda:stream:exit",
+          "kind": "cuda",
+          "thread": "decode",
+          "stream": "stream-1"
+        },
+        {
+          "sequence": 184,
+          "offset_ns": 125946354,
+          "name": "cuda:device:exit",
+          "kind": "cuda",
+          "thread": "decode",
+          "stream": null
+        },
+        {
+          "sequence": 185,
+          "offset_ns": 126055651,
+          "name": "cuda:device:enter",
+          "kind": "cuda",
+          "thread": "decode",
+          "stream": null
+        },
+        {
+          "sequence": 186,
+          "offset_ns": 126097500,
+          "name": "cuda:stream:enter",
+          "kind": "cuda",
+          "thread": "decode",
+          "stream": "stream-1"
+        },
+        {
+          "sequence": 187,
+          "offset_ns": 126114071,
+          "name": "run:cleanup:begin",
+          "kind": "backend",
+          "thread": "decode",
+          "stream": "stream-1"
+        },
+        {
+          "sequence": 188,
+          "offset_ns": 126121397,
+          "name": "run:cleanup:submitted",
+          "kind": "backend",
+          "thread": "decode",
+          "stream": "stream-1"
+        },
+        {
+          "sequence": 189,
+          "offset_ns": 126126288,
+          "name": "cuda:stream:exit",
+          "kind": "cuda",
+          "thread": "decode",
+          "stream": "stream-1"
+        },
+        {
+          "sequence": 190,
+          "offset_ns": 126129254,
+          "name": "cuda:device:exit",
+          "kind": "cuda",
+          "thread": "decode",
+          "stream": null
+        },
+        {
+          "sequence": 191,
+          "offset_ns": 126138254,
+          "name": "cuda:device:enter",
+          "kind": "cuda",
+          "thread": "decode",
+          "stream": null
+        },
+        {
+          "sequence": 192,
+          "offset_ns": 126161870,
+          "name": "cuda:stream:enter",
+          "kind": "cuda",
+          "thread": "decode",
+          "stream": "stream-1"
+        },
+        {
+          "sequence": 193,
+          "offset_ns": 126172160,
+          "name": "cuda:event-1:create",
+          "kind": "cuda",
+          "thread": "decode",
+          "stream": null
+        },
+        {
+          "sequence": 194,
+          "offset_ns": 126199112,
+          "name": "cuda:event-1:record",
+          "kind": "cuda",
+          "thread": "decode",
+          "stream": "stream-1"
+        },
+        {
+          "sequence": 195,
+          "offset_ns": 126203827,
+          "name": "cuda:stream:exit",
+          "kind": "cuda",
+          "thread": "decode",
+          "stream": "stream-1"
+        },
+        {
+          "sequence": 196,
+          "offset_ns": 126206832,
+          "name": "cuda:device:exit",
+          "kind": "cuda",
+          "thread": "decode",
+          "stream": null
+        },
+        {
+          "sequence": 197,
+          "offset_ns": 126211441,
+          "name": "cuda:event-1:synchronize:begin",
+          "kind": "cuda",
+          "thread": "decode",
+          "stream": "stream-1"
+        },
+        {
+          "sequence": 198,
+          "offset_ns": 126223545,
+          "name": "cuda:event-1:query:return",
+          "kind": "cuda",
+          "thread": "decode",
+          "stream": "stream-1"
+        },
+        {
+          "sequence": 199,
+          "offset_ns": 126245707,
+          "name": "cuda:event-1:synchronize:return",
+          "kind": "cuda",
+          "thread": "decode",
+          "stream": "stream-1",
+          "state": {
+            "request_status": "running",
+            "session_version": 0,
+            "queue_depth": 1,
+            "lease_count": 1,
+            "budget_available": {
+              "memory_bytes": 0,
+              "compute_units": 0,
+              "stream_slots": 0
+            }
+          }
+        },
+        {
+          "sequence": 200,
+          "offset_ns": 126388152,
+          "name": "session:commit:begin",
+          "kind": "runtime",
+          "thread": "decode",
+          "stream": null
+        },
+        {
+          "sequence": 201,
+          "offset_ns": 126404061,
+          "name": "session:commit:return",
+          "kind": "runtime",
+          "thread": "decode",
+          "stream": null
+        },
+        {
+          "sequence": 202,
+          "offset_ns": 126416284,
+          "name": "budget:lease:release:begin",
+          "kind": "runtime",
+          "thread": "decode",
+          "stream": null
+        },
+        {
+          "sequence": 203,
+          "offset_ns": 126431150,
+          "name": "budget:lease:release:return",
+          "kind": "runtime",
+          "thread": "decode",
+          "stream": null
+        }
+      ]
+    }
+  },
+  "unproxied_reuse": {
+    "outcome": "committed",
+    "request_status": "committed",
+    "transaction_status": "committed",
+    "session_version_before": 0,
+    "session_version_after": 1,
+    "window_count_after": 1,
+    "text": "And so my fellow Americans ask not what your country can do for you, ask what you can do for your country.",
+    "expected_text_matched": true,
+    "queue_depth_after": 0,
+    "budget_available_before": {
+      "memory_bytes": 1000000000,
+      "compute_units": 1,
+      "stream_slots": 1
+    },
+    "budget_available_after": {
+      "memory_bytes": 1000000000,
+      "compute_units": 1,
+      "stream_slots": 1
+    },
+    "backend_instrumented": false,
+    "child_generator_checks": 0,
+    "child_generators_on_profile_device": true,
+    "child_generators_distinct": true,
+    "traced_cleanup_calls": 0,
+    "traced_stream_count": 0,
+    "traced_event_count": 0,
+    "wall_seconds": 0.14645724500000057,
+    "memory_before": {
+      "allocated_bytes": 188584960,
+      "reserved_bytes": 515899392,
+      "peak_allocated_bytes": 217192960,
+      "peak_reserved_bytes": 515899392
+    },
+    "memory_after": {
+      "allocated_bytes": 194799616,
+      "reserved_bytes": 580911104,
+      "peak_allocated_bytes": 225712640,
+      "peak_reserved_bytes": 580911104
+    },
+    "trace": [
+      {
+        "sequence": 1,
+        "offset_ns": 847118,
+        "name": "budget:lease:acquired",
+        "kind": "runtime",
+        "thread": "decode",
+        "stream": null
+      },
+      {
+        "sequence": 2,
+        "offset_ns": 979393,
+        "name": "worker:admitted",
+        "kind": "runtime",
+        "thread": "decode",
+        "stream": null
+      },
+      {
+        "sequence": 3,
+        "offset_ns": 147001740,
+        "name": "session:commit:begin",
+        "kind": "runtime",
+        "thread": "decode",
+        "stream": null
+      },
+      {
+        "sequence": 4,
+        "offset_ns": 147014465,
+        "name": "session:commit:return",
+        "kind": "runtime",
+        "thread": "decode",
+        "stream": null
+      },
+      {
+        "sequence": 5,
+        "offset_ns": 147023532,
+        "name": "budget:lease:release:begin",
+        "kind": "runtime",
+        "thread": "decode",
+        "stream": null
+      },
+      {
+        "sequence": 6,
+        "offset_ns": 147037860,
+        "name": "budget:lease:release:return",
+        "kind": "runtime",
+        "thread": "decode",
+        "stream": null
+      }
+    ]
+  },
+  "memory": {
+    "baseline": {
+      "allocated_bytes": 152201216,
+      "reserved_bytes": 255852544,
+      "peak_allocated_bytes": 228704256,
+      "peak_reserved_bytes": 255852544
+    },
+    "final": {
+      "allocated_bytes": 194799616,
+      "reserved_bytes": 580911104,
+      "peak_allocated_bytes": 225712640,
+      "peak_reserved_bytes": 580911104
+    },
+    "observed_success_peak_delta_bytes": 37127680,
+    "declared_memory_bytes": 1000000000,
+    "observed_peak_within_declaration": true
+  },
+  "timing": {
+    "total_seconds": 5.567187379,
+    "performance_benchmark": false
+  },
+  "assertions": {
+    "runtime_source_pinned": true,
+    "backend_source_pinned": true,
+    "checkpoint_verified_before_load": true,
+    "input_fixture_verified": true,
+    "network_probe_denied": true,
+    "model_cache_read_only": true,
+    "native_adapter_committed": true,
+    "success_exact_result_and_terminal_states": true,
+    "publication_followed_cuda_fence": true,
+    "success_fence_retained_transaction": true,
+    "success_used_one_private_stream": true,
+    "success_fence_and_cleanup_counts": true,
+    "cancellation_prevented_publication": true,
+    "cancellation_exact_terminal_state": true,
+    "cancellation_held_capacity_at_request": true,
+    "cancellation_fence_retained_transaction": true,
+    "cancellation_fence_preceded_release": true,
+    "cancelling_thread_made_no_cuda_call": true,
+    "failed_fence_retained_capacity": true,
+    "recovery_retained_exact_state": true,
+    "recovery_blocked_new_work": true,
+    "recovery_released_capacity": true,
+    "recovery_fence_retained_transaction": true,
+    "recovery_fence_preceded_release": true,
+    "post_recovery_reuse_committed": true,
+    "unproxied_native_reuse_committed": true,
+    "native_components_restored_for_unproxied_reuse": true,
+    "run_child_generators_verified": true,
+    "cancellation_rendezvous_proved": true,
+    "model_profile_verified": true,
+    "persistent_model_state_unchanged": true,
+    "model_hooks_unchanged": true,
+    "observed_peak_within_declared_memory": true
+  }
+}

@@ -15,8 +15,9 @@ explicit.
 
 > **Status:** pre-alpha research implementation. The native adapter handles one
 > unbatched 30-second mel window per transaction. CPU remains the default. A
-> strict single-lane CUDA path is implemented but has no real-GPU evidence in
-> this repository. This is not a production transcription service.
+> strict single-lane CUDA path is implemented and recorded for one pinned
+> `tiny.en` FP32 case on separate AWS and GCP T4 workers. This is not a
+> production transcription service.
 
 ## What it provides
 
@@ -24,7 +25,7 @@ explicit.
 | --- | --- |
 | Runtime core | Bounded admission, exact in-process leases, deadlines, versioned commits, cancellation, quarantine, and cleanup recovery |
 | Legacy adapter | Runs the existing synchronous `model.transcribe()` call as one serialized transaction |
-| Native adapter | Exposes run creation, prefill, token steps, finalization, and cleanup through the patched decoder; CPU is the validated path |
+| Native adapter | Exposes run creation, prefill, token steps, finalization, and cleanup through the patched decoder; CPU and one strict single-lane T4 profile have recorded integration cases |
 | Conformance data | Records four pinned JFK CPU comparisons: greedy, beam search, word timestamps, and translation |
 | Isolation checks | Exercises two staged decodes under a fixed schedule and in two operating-system threads, cleans one early, and checks the survivor against an isolated baseline |
 | Formal model | Proves lease, capacity, lifecycle, and stale-commit properties within an abstract Lean model |
@@ -43,7 +44,8 @@ request
 
 The declared budget is an admission ledger. It does not enforce operating
 system RAM or device-memory limits. The CUDA path has an event-backed completion
-fence, but its declared memory cost is not a measured or enforced device limit.
+fence. The T4 records measure observed allocation, but the declared 1 GB value
+remains a configured ledger value rather than an enforced device limit.
 
 ## Why this boundary exists
 
@@ -140,7 +142,9 @@ python -B tools/check_distribution.py dist
 The optional, paid Modal T4 transaction check has two confirmation guards. Run
 its local definition and adversarial record tests first; see the
 [native CUDA validation guide](https://github.com/billmedj/whisper-runtime/blob/main/docs/MODAL_NATIVE_CUDA_VALIDATION.md).
-The two committed direct-backend records use the frozen
+Two validated native-adapter records from AWS and GCP are committed under
+[`evidence/`](https://github.com/billmedj/whisper-runtime/tree/main/evidence).
+The earlier direct-backend records use the frozen
 [historical version-one guide](https://github.com/billmedj/whisper-runtime/blob/main/docs/MODAL_GPU_VALIDATION.md).
 
 The Windows check command also compiles the Python sources and builds the Lean
@@ -179,8 +183,9 @@ only verified request-local decoder runs to overlap.
 
 An explicit `cuda:N` profile admits one transaction, copies one CPU `float32`
 mel tensor after admission, and waits on a CUDA event before commit or resource
-release. This code path has unit coverage with a controlled CUDA double. It has
-not yet been validated on a real GPU.
+release. This code path has unit coverage with a controlled CUDA double. Two
+validated records also exercise the pinned `tiny.en` FP32 case on separate Modal
+T4 workers in AWS and GCP.
 
 See the [native adapter contract](https://github.com/billmedj/whisper-runtime/blob/main/docs/NATIVE_ADAPTER.md).
 
@@ -189,7 +194,7 @@ See the [native adapter contract](https://github.com/billmedj/whisper-runtime/bl
 | Evidence | Scope |
 | --- | --- |
 | 105 runtime tests | Resource accounting, queue bounds, commit races, deadlines, cancellation, quarantine, recovery, and adapter behavior |
-| 53 repository-tool tests | Provenance, source state, fixtures, portability, setup contracts, evidence schemas, semantic validation, and native smoke contracts |
+| 94 repository-tool tests | Provenance, source state, fixtures, portability, setup contracts, evidence schemas, semantic validation, and native smoke contracts |
 | 2,000-step deterministic state trace | State-machine transitions under generated operations |
 | 35 Lean theorem declarations | Abstract lease provenance, capacity conservation, lifecycle, and stale-commit properties |
 | One recorded native run | Patched `tiny.en` decoder, JFK fixture, CPU, exact transcript, queue returned to zero, declared budget restored |
@@ -197,6 +202,7 @@ See the [native adapter contract](https://github.com/billmedj/whisper-runtime/bl
 | One recorded OS-thread isolation check | Two native worker threads, overlapping outer decoder-call intervals, owner-thread cleanup, unchanged survivor, and model reuse |
 | One recorded adapter-level concurrency check | Two runtime-admitted transactions, serialized encoder preparation, cooperative cancellation, isolated commit, and exact budget restoration |
 | Two recorded Modal T4 readiness checks | Direct patched-backend CUDA decode on separate GCP and AWS workers, exact transcript and model reuse, verified source and model identities, blocked network, and read-only model cache |
+| Two recorded native CUDA transaction checks | The same public runtime revision on separate AWS and GCP T4 workers: admission, one private stream, exact transcript, fence-before-publication, cooperative cancellation, retained failure, manual recovery, and native reuse |
 | Four conformance pairs | Pinned greedy, beam-search, word-timestamp, and translation reference/candidate records |
 
 The recorded transaction identifies the imported source tree, checkpoint,
@@ -228,18 +234,22 @@ establish simultaneous PyTorch kernel execution or higher throughput. The
 checks cover one pinned CPU configuration and are not a general thread-safety
 guarantee.
 
-The T4 records establish the stated direct-backend CUDA cases. They do not run
-a transaction through the runtime adapter. These results do not establish
-runtime-level CUDA correctness, safe batching, live audio streaming, durable
-mid-window resume, portable worker migration, latency, throughput, or
-production readiness. The Lean model does not model Python threads, PyTorch
-kernels, submission gates, or adapter code.
+The version-one T4 records establish direct-backend CUDA execution. The
+version-two records additionally exercise the runtime adapter and its
+transaction boundary. All four records cover one `tiny.en` FP32 fixture. They
+do not establish other models or devices, safe batching, live audio streaming,
+durable mid-window resume, portable worker migration, latency, throughput, or
+production readiness. The injected synchronization failure is a harness fault,
+not a physical driver fault. The Lean model does not model Python threads,
+PyTorch kernels, submission gates, or adapter code.
 
 See the [transaction record](https://github.com/billmedj/whisper-runtime/blob/main/evidence/native-cpu-tiny-en-jfk-2026-09-03.json),
 [staged-run isolation record](https://github.com/billmedj/whisper-runtime/blob/main/evidence/native-cpu-tiny-en-jfk-interleaving-2026-09-03.json),
 [adapter concurrency record](https://github.com/billmedj/whisper-runtime/blob/main/evidence/native-cpu-tiny-en-jfk-runtime-concurrency-2026-09-04.json),
 [GCP T4 readiness record](https://github.com/billmedj/whisper-runtime/blob/main/evidence/modal-t4-tiny-en-jfk-cuda-readiness-gcp-2026-09-04.json),
 [AWS T4 readiness record](https://github.com/billmedj/whisper-runtime/blob/main/evidence/modal-t4-tiny-en-jfk-cuda-readiness-aws-2026-09-04.json),
+[AWS native CUDA transaction record](https://github.com/billmedj/whisper-runtime/blob/main/evidence/modal-t4-tiny-en-jfk-native-cuda-transaction-aws-2026-09-04.json),
+[GCP native CUDA transaction record](https://github.com/billmedj/whisper-runtime/blob/main/evidence/modal-t4-tiny-en-jfk-native-cuda-transaction-gcp-2026-09-04.json),
 [assurance map](https://github.com/billmedj/whisper-runtime/blob/main/docs/ASSURANCE.md),
 [conformance contract](https://github.com/billmedj/whisper-runtime/blob/main/docs/CONFORMANCE.md), and
 [development roadmap](https://github.com/billmedj/whisper-runtime/blob/main/docs/ROADMAP.md).

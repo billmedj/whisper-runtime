@@ -14,10 +14,9 @@ evidence is committed to the repository.
   overlapping outer decoder calls in two operating-system threads.
 - Maintain the adapter-level two-lane CPU record.
 - Select and document one random-generator contract.
-- Run and review the version-two native CUDA transaction harness on its pinned
-  T4 configuration. Commit a record only after schema and semantic validation.
-- Extend the single-lane T4 result to more inputs and model sizes before
-  defining measured resource profiles.
+- Extend the recorded single-lane T4 case to more inputs and model sizes.
+- Derive measured resource profiles only after the expanded CUDA corpus is
+  stable across repeated workers.
 
 Exit condition: the recorded compatibility matrix covers the declared adapter
 capabilities, and admitted work does not exceed its measured profile under the

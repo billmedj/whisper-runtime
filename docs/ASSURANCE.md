@@ -24,8 +24,8 @@ integration records are not general correctness or performance claims.
 | A terminal lease cannot run or resolve a second time. | `valid_terminal_id_rejects_all_transitions`, `successful_commit_is_single_use`, `successful_abort_is_single_use`, `second_abort_rejected` | Repeated commit, abort, cancellation, and cleanup tests in `tests/test_runtime.py` | Native records require one terminal outcome and one clean release. | Durable recovery after process loss is not implemented. |
 | A stale session revision cannot publish a result. | `stale_commit_rejected` | Stale-commit and commit-versus-cancel race tests in `tests/test_runtime.py` | The native smoke record binds the committed session version. | The Lean theorem models revisions, not storage-system transactions. |
 | Independent session commits commute in the abstract model. | `active_pair_commits_commute`, `independently_prepared_commits_commute` | Independent-session concurrency test in `tests/test_runtime.py` | Not yet recorded through two concurrent `NativeWhisperAdapter` transactions. | Same-session transactions intentionally conflict on a stale revision. |
-| A transaction does not release capacity before registered backend work reaches its completion fence. | Not modeled. | Submission-gate, fence, cancellation, quarantine, and recovery tests in `tests/test_runtime.py`; fake-CUDA adapter tests check stream, event, commit, failure, and recovery ordering. | The single recorded native transaction checks clean CPU terminal state and restored capacity. The optional version-two Modal harness can record the real T4 fence, publication, and release order. | No version-two GPU record is committed yet. Device memory is measured by that harness but not enforced. |
-| Failure to prove backend quiescence retains the reservation. | Not modeled. | Persistent-fence and quarantine-recovery tests in `tests/test_runtime.py` and adapter tests | Not forced in a real PyTorch run. | Recovery is in-process and backend-specific. |
+| A transaction does not release capacity before registered backend work reaches its completion fence. | Not modeled. | Submission-gate, fence, cancellation, quarantine, and recovery tests in `tests/test_runtime.py`; fake-CUDA adapter tests check stream, event, commit, failure, and recovery ordering. | Two version-two Modal records observe a real T4 event fence before session publication and lease release on separate AWS and GCP workers. | One `tiny.en` FP32 single-lane case. Device memory is measured but not enforced. |
+| Failure to prove backend quiescence retains the reservation. | Not modeled. | Persistent-fence and quarantine-recovery tests in `tests/test_runtime.py` and adapter tests | The version-two records inject two event-synchronization failures before the delegate call, retain the transaction and full reservation, block new work on the bound model, then recover through a third event. | The injected fault is not a physical CUDA driver failure. Recovery is in-process and backend-specific. |
 | Two patched decoder runs on one loaded model keep request cache state separate in the recorded CPU case. | Not modeled. | Backend contract tests and evidence validators in `tools/test_contract_tools.py` | Staged and operating-system-thread records compare the surviving run with an isolated baseline and verify model reuse. | One pinned `tiny.en` greedy CPU case. No CUDA, extension, word-timestamp, or throughput claim. |
 | Two outer decoder calls can have overlapping lifetimes in two operating-system threads in the recorded case. | Not modeled. | The verifier requires two owner threads, controlled rendezvous, interval overlap, and cleanup ownership. | `native-cpu-tiny-en-jfk-threaded-2026-09-04.json` | Overlapping Python call lifetimes do not prove simultaneous kernels or improved throughput. |
 | The experimental adapter profile admits two request-local decoder runs while serializing run construction and encoder preparation. | Not modeled. | Controlled adapter tests in `tests/test_native_adapter.py` require exact queue and budget capacity, overlap two fake decoder runs, isolate cancellation, and retain independent cleanup failures. | One pinned Windows `tiny.en` greedy CPU record checks two admitted adapter transactions, cancellation, one isolated survivor commit, and restored ledger capacity. | The caller threads belong to the verifier. The record does not establish runtime scheduling, PyTorch kernel overlap, throughput, or behavior beyond its stated configuration. |
@@ -38,7 +38,8 @@ The repository does not yet establish:
   Whisper backend;
 - runtime-owned scheduling of concurrent native transactions;
 - safe concurrent encoder calls;
-- CUDA correctness or device-memory enforcement;
+- CUDA correctness outside the recorded `tiny.en` FP32 single-lane T4 case;
+- device-memory enforcement or a calibrated admission profile;
 - batching, fairness, or bounded streaming;
 - a throughput or latency improvement;
 - equivalence across model sizes, languages, decode modes, or third-party
@@ -49,9 +50,9 @@ The repository does not yet establish:
 Each new public claim must add its acceptance test to this map and state the
 smallest configuration for which the claim holds.
 
-The version-two Modal harness is ready for a separately authorized paid run.
-Until a reviewed record is committed, it changes the available test procedure,
-not the integration evidence in this table.
+Two validated version-two records are committed for the same public runtime
+revision on AWS and GCP T4 workers. They establish only the integration facts
+listed in this table and in the closed record schema.
 
 ## How to verify the current evidence
 

@@ -1,6 +1,6 @@
 # Integration evidence
 
-This directory contains six committed records from real backend runs:
+This directory contains eight committed records from real backend runs:
 
 - `native-cpu-tiny-en-jfk-2026-09-03.json` records one
   `NativeWhisperAdapter` transaction.
@@ -15,6 +15,10 @@ This directory contains six committed records from real backend runs:
   `modal-t4-tiny-en-jfk-cuda-readiness-aws-2026-09-04.json` record two separate
   direct-backend CUDA executions on Modal T4 workers. The workers ran in GCP
   `asia-southeast2` and AWS `us-west-2`.
+- `modal-t4-tiny-en-jfk-native-cuda-transaction-aws-2026-09-04.json` and
+  `modal-t4-tiny-en-jfk-native-cuda-transaction-gcp-2026-09-04.json` record two
+  native-adapter transactions on Modal T4 workers. The workers ran in AWS
+  `us-west-2` and GCP `europe-west2`.
 
 Each record identifies the runtime revision, backend source tree, model
 checkpoint, input, environment, and observed outcome.
@@ -29,12 +33,21 @@ completion fence, or a performance benchmark. See
 [`docs/MODAL_GPU_VALIDATION.md`](../docs/MODAL_GPU_VALIDATION.md).
 
 `modal-native-cuda-transaction.schema.json` defines the separate version-two
-adapter transaction record. Its optional Modal harness covers one instrumented
-commit, cooperative cancellation, injected fence failure and recovery, and one
-unproxied native control transaction after recovery. It also binds source,
-model, input, environment, trace order, terminal state, and resource state.
-No version-two GPU record is committed yet. See
+adapter transaction record. Both committed records bind runtime commit
+`28415364d167f71d5b0cdf441b0738ae4689b683` and tree
+`9b0c3f5788635bb4a8044307d3f13dfec5690131`. Each record covers one
+instrumented successful transaction, cooperative cancellation, injected fence
+failure and recovery, post-recovery reuse, and one unproxied native control
+transaction. They also bind source, model, input, environment, trace order,
+terminal state, and resource state. See
 [`docs/MODAL_NATIVE_CUDA_VALIDATION.md`](../docs/MODAL_NATIVE_CUDA_VALIDATION.md).
+
+The version-two records passed the closed schema and semantic validator. Their
+trace event sequences, state snapshots, transcript, source identities, model
+state, and resource outcomes match across the two providers. The injected
+synchronization failure occurs in the harness before the delegate call. It does
+not represent a physical CUDA driver failure. The records are not performance
+or production readiness claims.
 
 The native CI workflow repeats the same-model interleaving check and publishes
 its record as a 30-day artifact. The check covers state separation, early

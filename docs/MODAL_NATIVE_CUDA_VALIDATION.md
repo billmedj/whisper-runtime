@@ -52,10 +52,29 @@ The execution profile uses FP32. CUDA memory is measured around the successful
 case and compared with the declared ledger value. The ledger does not enforce
 physical device memory. The record is not a latency or throughput benchmark.
 Cancellation is cooperative between decode steps; it does not preempt a CUDA
-kernel. One passing T4 record does not establish support for other devices,
-models, decode modes, concurrent CUDA transactions, or production workloads.
+kernel. The two published T4 records do not establish support for other
+devices, models, decode modes, concurrent CUDA transactions, or production
+workloads.
 Manual recovery runs synchronously on the originating Python thread after the
 retained error. This case does not establish cross-thread or process recovery.
+
+## Published records
+
+Two validated records exercise the same public runtime commit
+`28415364d167f71d5b0cdf441b0738ae4689b683` and Git tree
+`9b0c3f5788635bb4a8044307d3f13dfec5690131`:
+
+- [`modal-t4-tiny-en-jfk-native-cuda-transaction-aws-2026-09-04.json`](../evidence/modal-t4-tiny-en-jfk-native-cuda-transaction-aws-2026-09-04.json)
+  records AWS `us-west-2` and has SHA-256
+  `26f5e2d91cbdb5ba74a43d3d69ebdb7f3ad2ab13ef741ff574c9d796a3c8b9dd`;
+- [`modal-t4-tiny-en-jfk-native-cuda-transaction-gcp-2026-09-04.json`](../evidence/modal-t4-tiny-en-jfk-native-cuda-transaction-gcp-2026-09-04.json)
+  records GCP `europe-west2` and has SHA-256
+  `fbc1a96dc15f94dde4cfaca9c00fafd09283c420449a4dfd73eebaf2a5419296`.
+
+Both records passed the closed schema and semantic validator. Their trace event
+sequences, state snapshots, source identities, model state, exact transcript,
+and resource outcomes match. Timestamps, Modal allocation identifiers, trace
+offsets, and timings are expected to differ.
 
 ## Isolation and source identity
 
@@ -129,12 +148,31 @@ bindings, exact claims, trace ordering, terminal states, fence state, resource
 restoration, failure containment, transcript equality, and secret and path
 sanitization.
 
+For a new record generated from the current checkout:
+
 ```powershell
 $commit = (git rev-parse HEAD).Trim()
 $tree = (git show -s --format=%T $commit).Trim()
 py -3.13 tools/validate_modal_native_cuda_record.py <record.json> `
   --expected-runtime-commit $commit `
   --expected-runtime-tree $tree
+```
+
+The published records bind the earlier runtime revision that they executed.
+Validate them against that recorded revision, not the current `HEAD`:
+
+```powershell
+$commit = "28415364d167f71d5b0cdf441b0738ae4689b683"
+$tree = "9b0c3f5788635bb4a8044307d3f13dfec5690131"
+$records = @(
+  "evidence/modal-t4-tiny-en-jfk-native-cuda-transaction-aws-2026-09-04.json",
+  "evidence/modal-t4-tiny-en-jfk-native-cuda-transaction-gcp-2026-09-04.json"
+)
+foreach ($record in $records) {
+  py -3.13 tools/validate_modal_native_cuda_record.py $record `
+    --expected-runtime-commit $commit `
+    --expected-runtime-tree $tree
+}
 ```
 
 Review the JSON and workflow log before committing a record. A future change to
