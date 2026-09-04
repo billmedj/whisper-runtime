@@ -138,7 +138,9 @@ See the [legacy adapter contract](https://github.com/billmedj/whisper-runtime/bl
 finalization. It requires the pinned backend and seven-patch integration series
 under [`patches/openai-whisper`](https://github.com/billmedj/whisper-runtime/tree/main/patches/openai-whisper). The wheel
 contains only the runtime package; the source distribution also contains the
-patch series.
+patch series. The default profile admits one transaction. An experimental CPU
+profile admits two transactions, serializes encoder preparation, and permits
+only verified request-local decoder runs to overlap.
 
 See the [native adapter contract](https://github.com/billmedj/whisper-runtime/blob/main/docs/NATIVE_ADAPTER.md).
 
@@ -146,7 +148,7 @@ See the [native adapter contract](https://github.com/billmedj/whisper-runtime/bl
 
 | Evidence | Scope |
 | --- | --- |
-| 89 runtime tests | Resource accounting, queue bounds, commit races, deadlines, cancellation, quarantine, recovery, and adapter behavior |
+| 94 runtime tests | Resource accounting, queue bounds, commit races, deadlines, cancellation, quarantine, recovery, and adapter behavior |
 | 31 repository-tool tests | Provenance, source state, fixtures, portability, evidence schemas, semantic validation, and native smoke contracts |
 | 2,000-step deterministic state trace | State-machine transitions under generated operations |
 | 35 Lean theorem declarations | Abstract lease provenance, capacity conservation, lifecycle, and stale-commit properties |
@@ -169,10 +171,10 @@ decode must show that the model remains usable.
 
 These checks exercise the patched Whisper backend below the runtime adapter.
 The threaded check does not exercise concurrent encoder calls, the scheduler,
-or concurrent `NativeWhisperAdapter` transactions. It does not measure kernel
-overlap or throughput. It covers one pinned CPU configuration and is not a
-general thread-safety guarantee. The current adapter still admits one
-transaction at a time.
+or concurrent `NativeWhisperAdapter` transactions. The experimental two-lane
+adapter profile currently has deterministic unit coverage only. It does not
+measure kernel overlap or throughput. The recorded check covers one pinned CPU
+configuration and is not a general thread-safety guarantee.
 
 These results do not establish CUDA correctness, safe batching, live audio
 streaming, durable mid-window resume, portable worker migration, latency,

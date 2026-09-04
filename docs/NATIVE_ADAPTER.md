@@ -24,10 +24,15 @@ PyTorch and Whisper are loaded when `decode_window()` starts. Importing
 
 ## Transaction boundary
 
-The adapter reserves the worker's full resource capacity. The worker must have
-`queue_capacity=1`. One model object is bound to one adapter kind for that
-object's lifetime. Load a new model object when migrating between the native
-and legacy adapters.
+`NativeExecutionProfile.resources` is the fixed cost of one transaction. The
+default profile admits one transaction and requires `queue_capacity=1`. An
+experimental profile can set `max_concurrent_decodes=2`. That profile requires
+`queue_capacity=2` and a worker capacity equal to twice the per-transaction
+resource vector. Admission fails before inference when either bound is wrong.
+
+One model object is bound to one adapter kind, worker, profile, and concurrency
+limit for that object's lifetime. Load a new model object when migrating
+between profiles or adapters.
 
 One call performs these operations:
 
@@ -107,6 +112,59 @@ checkpoint identity.
 This adapter does not yet support audio batches, CUDA fences, stage-specific
 resource costs, durable mid-window checkpoints, alignment, or streaming.
 
+## Experimental two-lane CPU profile
+
+The two-lane profile admits at most two transactions. It serializes task
+construction, language detection, and encoder preparation on the model
+binding. Once `_start_run()` returns, each admitted transaction can operate its
+own decoder run outside that preparation lock.
+
+The adapter enables this path only when the patched backend reports both the
+built-in decoder path and request-local KV-cache support. A legacy extension or
+hook-based cache fallback is rejected before admission. The created run is
+checked again before decode starts. The historical adapter remains strictly
+single-lane.
+
+```python
+transaction_cost = ResourceVector(
+    memory_bytes=500_000_000,
+    compute_units=1,
+    stream_slots=1,
+)
+capacity = ResourceVector(
+    memory_bytes=1_000_000_000,
+    compute_units=2,
+    stream_slots=2,
+)
+worker = Worker(
+    "tiny-en-cpu-dual",
+    snapshot,
+    Budget(capacity),
+    queue_capacity=2,
+)
+adapter = NativeWhisperAdapter(
+    worker,
+    model,
+    identity_probe,
+    NativeExecutionProfile(
+        "tiny.en/cpu-dual",
+        transaction_cost,
+        max_concurrent_decodes=2,
+    ),
+)
+```
+
+Cancellation and cleanup remain transaction-local. One cancelled run does not
+stop its peer. Each completion fence cleans its exact run before the worker
+releases that lease. A cleanup failure blocks new run creation immediately.
+Multiple failed fences retain separate recovery handles; recovering one does
+not clear another.
+
+The resource vector is trusted configuration, not a measurement. Two admitted
+transactions do not prove that PyTorch kernels overlap or improve throughput.
+The repository does not yet contain real-model evidence at the adapter
+boundary for this profile. Use it for controlled CPU experiments only.
+
 ## Local smoke test
 
 `tools/smoke_native_whisper.py` runs one real window and reports the committed
@@ -155,8 +213,9 @@ The tool emits a JSON record and validates every required assertion. The record
 format is defined in `evidence/native-interleaving.schema.json`.
 
 This check does not send two transactions through `NativeWhisperAdapter`. The
-adapter still requires `queue_capacity=1`. The check does not claim parallel
-kernel execution, thread-safe execution, or higher throughput.
+experimental two-lane adapter profile has separate controlled unit coverage;
+it is not part of this recorded check. The check does not claim parallel kernel
+execution, thread-safe execution, or higher throughput.
 
 ## Same-model OS-thread isolation check
 
@@ -199,5 +258,6 @@ concurrent encoder calls, the runtime scheduler, or adapter concurrency.
 Overlapping decoder-call bodies do not show that PyTorch kernels execute
 simultaneously. The check makes no claim about kernel overlap, throughput,
 CUDA, production readiness, or general thread safety across other models,
-devices, operating systems, or dependency versions. The adapter remains
-serialized.
+devices, operating systems, or dependency versions. The default adapter
+profile remains serialized; the experimental two-lane profile has not yet
+produced a real-model evidence record.

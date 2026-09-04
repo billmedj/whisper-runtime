@@ -2,8 +2,10 @@
 
 This adapter targets the opt-in ``DecodingTask._start_run`` API implemented by
 the companion Whisper prototype. PyTorch and Whisper are loaded only when a
-decode starts. The first implementation is deliberately CPU-only, accepts one
-unbatched 30-second mel window, and reserves one complete worker.
+decode starts. The adapter is deliberately CPU-only and accepts one unbatched
+30-second mel window. Its default profile remains single-lane. An explicit
+two-lane profile admits two request-local decoder runs while serializing their
+encoder preparation.
 """
 
 from __future__ import annotations
@@ -259,10 +261,11 @@ class NativeDecodeOptions:
 
 @dataclass(frozen=True, slots=True)
 class NativeExecutionProfile:
-    """Fixed full-worker resource reservation for one native model."""
+    """Fixed per-transaction resources and native decode concurrency."""
 
     profile_id: str
     resources: ResourceVector
+    max_concurrent_decodes: int = 1
 
     def __post_init__(self) -> None:
         if not self.profile_id or self.profile_id.isspace():
@@ -271,13 +274,60 @@ class NativeExecutionProfile:
             raise TypeError("resources must be a ResourceVector")
         if self.resources == ResourceVector():
             raise ValueError("a native execution profile must reserve resources")
+        if isinstance(self.max_concurrent_decodes, bool) or not isinstance(
+            self.max_concurrent_decodes, int
+        ):
+            raise TypeError("max_concurrent_decodes must be an integer")
+        if self.max_concurrent_decodes not in (1, 2):
+            raise ValueError("max_concurrent_decodes must be 1 or 2")
+
+    @property
+    def worker_capacity(self) -> ResourceVector:
+        """Return the exact capacity required by this execution profile."""
+
+        lanes = self.max_concurrent_decodes
+        return ResourceVector(
+            memory_bytes=self.resources.memory_bytes * lanes,
+            compute_units=self.resources.compute_units * lanes,
+            stream_slots=self.resources.stream_slots * lanes,
+        )
+
+
+def _require_dual_lane_task(task: object) -> None:
+    """Require the patched built-in path with request-local decoder cache."""
+
+    extension_probe = getattr(task, "_uses_legacy_extension", None)
+    if not callable(extension_probe) or extension_probe() is not False:
+        raise NativeDependencyError(
+            "dual-lane decoding requires the built-in suspendable decoder path"
+        )
+    inference = getattr(task, "inference", None)
+    if getattr(inference, "_use_legacy_cache", None) is not False:
+        raise NativeDependencyError(
+            "dual-lane decoding requires request-local decoder cache support"
+        )
+
+
+def _require_dual_lane_run(run: object) -> None:
+    """Reject a run that fell back to shared hook-based cache state."""
+
+    inference = getattr(run, "inference", None)
+    if getattr(inference, "_use_legacy_cache", None) is not False:
+        raise NativeDecodeContractError(
+            "a dual-lane run must own request-local decoder cache state"
+        )
+    if getattr(run, "_legacy_cache_lock", None) is not None:
+        raise NativeDecodeContractError(
+            "a dual-lane run cannot use the legacy decoder cache lock"
+        )
 
 
 class _CpuDecodeScope:
     """Fence one synchronous CPU run and clean it before lease release."""
 
-    def __init__(self) -> None:
+    def __init__(self, model_binding: ModelBinding) -> None:
         self._condition = Condition(RLock())
+        self._model_binding = model_binding
         self._run: object | None = None
         self._bound = False
         self._cleanup_in_flight = False
@@ -320,29 +370,38 @@ class _CpuDecodeScope:
             self._cleanup_in_flight = True
 
         try:
-            if not self._bound:
-                pass
-            elif run is None:
-                raise NativeDecodeContractError(
-                    "the decode handle has no callable cleanup method; "
-                    "quiescence cannot be proven"
-                )
-            else:
-                cleanup = getattr(run, "cleanup", None)
-                if not callable(cleanup):
-                    raise NativeDecodeContractError(
-                        "the decode handle has no callable cleanup method; "
-                        "quiescence cannot be proven"
-                    )
-                cleanup_result = cleanup()
-                if cleanup_result is not None:
-                    close = getattr(cleanup_result, "close", None)
-                    if callable(close):
-                        close()
-                    raise NativeDecodeContractError(
-                        "decode cleanup did not complete synchronously; "
-                        "quiescence cannot be proven"
-                    )
+            # A failed fence must become visible before another encoder
+            # preparation can enter the model binding.
+            with self._model_binding.lock:
+                try:
+                    if not self._bound:
+                        pass
+                    elif run is None:
+                        raise NativeDecodeContractError(
+                            "the decode handle has no callable cleanup method; "
+                            "quiescence cannot be proven"
+                        )
+                    else:
+                        cleanup = getattr(run, "cleanup", None)
+                        if not callable(cleanup):
+                            raise NativeDecodeContractError(
+                                "the decode handle has no callable cleanup method; "
+                                "quiescence cannot be proven"
+                            )
+                        cleanup_result = cleanup()
+                        if cleanup_result is not None:
+                            close = getattr(cleanup_result, "close", None)
+                            if callable(close):
+                                close()
+                            raise NativeDecodeContractError(
+                                "decode cleanup did not complete synchronously; "
+                                "quiescence cannot be proven"
+                            )
+                except BaseException:
+                    self._model_binding.record_cleanup_failure(self)
+                    raise
+                else:
+                    self._model_binding.clear_cleanup_failure(self)
         except BaseException:
             with self._condition:
                 self._cleanup_in_flight = False
@@ -382,11 +441,13 @@ class NativeWhisperAdapter:
             raise TypeError("identity_probe must be callable")
         if not isinstance(execution_profile, NativeExecutionProfile):
             raise TypeError("execution_profile must be a NativeExecutionProfile")
-        if worker.queue_capacity != 1:
-            raise ValueError("a native model worker must have queue_capacity=1")
-        if execution_profile.resources != worker.budget.capacity:
+        concurrency = execution_profile.max_concurrent_decodes
+        if worker.queue_capacity != concurrency:
+            raise ValueError("a native worker queue must match max_concurrent_decodes")
+        if execution_profile.worker_capacity != worker.budget.capacity:
             raise ValueError(
-                "a native execution profile must reserve the full worker capacity"
+                "the worker capacity must equal the per-transaction resources "
+                "times max_concurrent_decodes"
             )
 
         binding = get_model_binding(model, subject="native model")
@@ -406,6 +467,7 @@ class NativeWhisperAdapter:
                 profile_id=execution_profile.profile_id,
                 resources=execution_profile.resources,
                 subject="native model object",
+                concurrency=concurrency,
             )
 
         object.__setattr__(self, "worker", worker)
@@ -457,28 +519,34 @@ class NativeWhisperAdapter:
 
         components = _load_native_components()
         _require_mel_shape(mel, self._model, n_frames=components.n_frames)
-        execution = _CpuDecodeScope()
+        execution = _CpuDecodeScope(self._model_binding)
 
         def operation(transaction: WindowTransaction) -> WindowResult:
-            require_model_available(self._model_binding)
             seed = transaction.randrange(1 << 63)
 
             def start_run() -> NativeDecodeRun:
-                self._require_model_identity()
-                task, start = self._build_native_task(
-                    components,
-                    decode_options,
-                    seed=seed,
-                )
-                del task
-                batched_mel = unsqueeze(0)
-                run_value = start(batched_mel)
-                execution.bind(run_value)
-                if not isinstance(run_value, NativeDecodeRun):
-                    raise NativeDecodeContractError(
-                        "_start_run returned an incompatible decode handle"
+                # _start_run performs encoder preparation. Keep that stage
+                # serialized even when request-local decoder runs may overlap.
+                with self._model_binding.lock:
+                    require_model_available(self._model_binding)
+                    self._require_model_identity()
+                    task, start = self._build_native_task(
+                        components,
+                        decode_options,
+                        seed=seed,
                     )
-                return run_value
+                    if self.execution_profile.max_concurrent_decodes == 2:
+                        _require_dual_lane_task(task)
+                    batched_mel = unsqueeze(0)
+                    run_value = start(batched_mel)
+                    execution.bind(run_value)
+                    if not isinstance(run_value, NativeDecodeRun):
+                        raise NativeDecodeContractError(
+                            "_start_run returned an incompatible decode handle"
+                        )
+                    if self.execution_profile.max_concurrent_decodes == 2:
+                        _require_dual_lane_run(run_value)
+                    return run_value
 
             run = transaction.submit(start_run)
             transaction.checkpoint()
@@ -511,7 +579,8 @@ class NativeWhisperAdapter:
                 raise NativeDecodeContractError(
                     "the native decode result must contain text"
                 )
-            self._require_model_identity()
+            with self._model_binding.lock:
+                self._require_model_identity()
             return WindowResult(
                 window_id=window_id,
                 text=text,
@@ -519,10 +588,7 @@ class NativeWhisperAdapter:
                 end_ms=end_ms,
             )
 
-        with self._model_binding.lock:
-            require_model_available(self._model_binding)
-            self._require_model_identity()
-            self._preflight_native_backend(components, decode_options)
+        def execute_admitted() -> SessionState:
             try:
                 return self.worker.execute(
                     session=session,
@@ -533,8 +599,21 @@ class NativeWhisperAdapter:
                     operation=operation,
                 )
             except TransactionRetainedError as retained:
-                self._model_binding.retained_error = retained
+                self._model_binding.record_retained_error(retained)
                 raise
+
+        if self.execution_profile.max_concurrent_decodes == 1:
+            with self._model_binding.lock:
+                require_model_available(self._model_binding)
+                self._require_model_identity()
+                self._preflight_native_backend(components, decode_options)
+                return execute_admitted()
+
+        with self._model_binding.lock:
+            require_model_available(self._model_binding)
+            self._require_model_identity()
+            self._preflight_native_backend(components, decode_options)
+        return execute_admitted()
 
     def _require_model_identity(self) -> None:
         _require_cpu_device(self._model, subject="the model")
@@ -551,7 +630,9 @@ class NativeWhisperAdapter:
     ) -> None:
         """Validate the staged API without starting encoder or decoder kernels."""
 
-        self._build_native_task(components, options, seed=0)
+        task, _ = self._build_native_task(components, options, seed=0)
+        if self.execution_profile.max_concurrent_decodes == 2:
+            _require_dual_lane_task(task)
 
     def _build_native_task(
         self,

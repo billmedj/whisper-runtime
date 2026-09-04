@@ -14,22 +14,86 @@ _MODEL_BINDINGS_GUARD = Lock()
 
 
 class ModelBinding:
-    """Serialize one live model object across all runtime adapters."""
+    """Coordinate one live model object across all runtime adapters."""
 
     __slots__ = (
+        "_cleanup_failures",
+        "_retained_errors",
         "adapter_kind",
         "execution_profile",
         "lock",
-        "retained_error",
         "worker",
     )
 
     def __init__(self) -> None:
         self.lock = RLock()
         self.worker: Worker | None = None
-        self.execution_profile: tuple[str, ResourceVector] | None = None
+        self.execution_profile: tuple[str, ResourceVector, int] | None = None
         self.adapter_kind: str | None = None
-        self.retained_error: BaseException | None = None
+        self._cleanup_failures: set[int] = set()
+        self._retained_errors: dict[int, BaseException] = {}
+
+    @property
+    def retained_error(self) -> BaseException | None:
+        """Return the oldest retained error, if one still owns capacity."""
+
+        with self.lock:
+            return next(iter(self._retained_errors.values()), None)
+
+    @retained_error.setter
+    def retained_error(self, error: BaseException | None) -> None:
+        """Keep compatibility with single-lane adapters."""
+
+        with self.lock:
+            if error is None:
+                self._retained_errors.clear()
+                return
+            transaction = getattr(error, "transaction", None)
+            if not isinstance(transaction, WindowTransaction):
+                raise TypeError("a retained model error must expose its transaction")
+            self._retained_errors = {id(transaction): error}
+
+    def record_retained_error(self, error: BaseException) -> None:
+        """Record one exact retained transaction without replacing its peers."""
+
+        transaction = getattr(error, "transaction", None)
+        if not isinstance(transaction, WindowTransaction):
+            raise TypeError("a retained model error must expose its transaction")
+        with self.lock:
+            self._retained_errors[id(transaction)] = error
+
+    def record_cleanup_failure(self, scope: object) -> None:
+        """Block new model work as soon as a completion fence fails."""
+
+        with self.lock:
+            self._cleanup_failures.add(id(scope))
+
+    def clear_cleanup_failure(self, scope: object) -> None:
+        """Clear one completion-fence failure after cleanup succeeds."""
+
+        with self.lock:
+            self._cleanup_failures.discard(id(scope))
+
+    def unresolved_retained_error(self) -> BaseException | None:
+        """Discard recovered entries and return the oldest unresolved error."""
+
+        with self.lock:
+            for key, error in tuple(self._retained_errors.items()):
+                transaction = getattr(error, "transaction", None)
+                if not isinstance(transaction, WindowTransaction):
+                    raise RuntimeStateError(
+                        "a retained model error has no transaction handle"
+                    )
+                if transaction_is_fully_recovered(transaction):
+                    del self._retained_errors[key]
+            retained = next(iter(self._retained_errors.values()), None)
+            if retained is not None:
+                return retained
+            if self._cleanup_failures:
+                raise RuntimeStateError(
+                    "model cleanup failed; new work is blocked pending recovery"
+                )
+            return None
 
 
 _MODEL_BINDINGS: dict[int, tuple[ReferenceType[object], ModelBinding]] = {}
@@ -72,6 +136,7 @@ def bind_model(
     profile_id: str,
     resources: ResourceVector,
     subject: str,
+    concurrency: int = 1,
 ) -> None:
     """Bind one model to one adapter kind, worker, and fixed profile."""
 
@@ -81,7 +146,7 @@ def bind_model(
         )
     if binding.worker is not None and binding.worker is not worker:
         raise ValueError(f"one {subject} cannot use multiple workers")
-    profile = (profile_id, resources)
+    profile = (profile_id, resources, concurrency)
     if binding.execution_profile is not None and binding.execution_profile != profile:
         raise ValueError(f"one {subject} cannot use multiple execution profiles")
     binding.adapter_kind = adapter_kind
@@ -106,13 +171,7 @@ def transaction_is_fully_recovered(transaction: WindowTransaction) -> bool:
 def require_model_available(binding: ModelBinding) -> None:
     """Reject a model whose previous transaction still owns capacity."""
 
-    retained = binding.retained_error
+    retained = binding.unresolved_retained_error()
     if retained is None:
-        return
-    transaction = getattr(retained, "transaction", None)
-    if not isinstance(transaction, WindowTransaction):
-        raise RuntimeStateError("a retained model error has no transaction handle")
-    if transaction_is_fully_recovered(transaction):
-        binding.retained_error = None
         return
     raise retained

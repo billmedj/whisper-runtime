@@ -11,8 +11,8 @@ evidence is committed to the repository.
   multiple inputs, cancellation, and failure behavior.
 - Maintain the pinned CPU backend checks for deterministic interleaving and
   overlapping outer decoder calls in two operating-system threads.
-- Extend request-isolation evidence to two transactions admitted by the
-  runtime scheduler, then add CUDA coverage.
+- Record real-model request-isolation evidence for the experimental two-lane
+  adapter profile, then add CUDA coverage.
 - Select and document one random-generator contract.
 - Validate the native path on CUDA with source, model, input, environment,
   output, latency, and memory records.

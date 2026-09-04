@@ -1,7 +1,7 @@
 import random
 import unittest
 from collections.abc import Callable, Mapping
-from threading import Event, Thread
+from threading import Event, Lock, Thread
 from typing import cast
 from unittest.mock import patch
 
@@ -14,6 +14,7 @@ from whisper_runtime import (
     RequestStatus,
     ResourceVector,
     Session,
+    SessionState,
     TransactionRetainedError,
     TransactionStatus,
     WindowTransaction,
@@ -68,6 +69,11 @@ class FakeResult:
         self.text = text
 
 
+class FakeInference:
+    def __init__(self, *, use_legacy_cache: bool = False) -> None:
+        self._use_legacy_cache = use_legacy_cache
+
+
 class FakeRun:
     def __init__(
         self,
@@ -92,6 +98,8 @@ class FakeRun:
         self.finalize_calls = 0
         self.cleanup_calls = 0
         self._complete = False
+        self.inference = FakeInference()
+        self._legacy_cache_lock: object | None = None
 
     @property
     def complete(self) -> bool:
@@ -148,8 +156,14 @@ class InvalidRecoverableRun:
 class FakeTask:
     def __init__(self, harness: "BackendHarness") -> None:
         self._harness = harness
+        self.inference = FakeInference(use_legacy_cache=harness.use_legacy_cache)
+
+    def _uses_legacy_extension(self) -> bool:
+        return self._harness.use_legacy_extension
 
     def _start_run(self, mel: object) -> object:
+        if self._harness.on_start is not None:
+            self._harness.on_start()
         self._harness.batched_mels.append(mel)
         if not self._harness.runs:
             raise AssertionError("no fake decode run remains")
@@ -160,8 +174,18 @@ class FakeTask:
 
 
 class BackendHarness:
-    def __init__(self, runs: list[object]) -> None:
+    def __init__(
+        self,
+        runs: list[object],
+        *,
+        use_legacy_extension: bool = False,
+        use_legacy_cache: bool = False,
+        on_start: Callable[[], None] | None = None,
+    ) -> None:
         self._runs = runs
+        self.use_legacy_extension = use_legacy_extension
+        self.use_legacy_cache = use_legacy_cache
+        self.on_start = on_start
         self.generators: list[FakeGenerator] = []
         self.option_kwargs: list[dict[str, object]] = []
         self.models: list[object] = []
@@ -249,6 +273,43 @@ class NativeWhisperAdapterTests(unittest.TestCase):
             self.identity,
             rng_seed=7,
         )
+
+    def dual_adapter(
+        self,
+    ) -> tuple[
+        NativeWhisperAdapter,
+        Worker,
+        Budget,
+        ResourceVector,
+    ]:
+        transaction_cost = ResourceVector(
+            memory_bytes=512,
+            compute_units=1,
+            stream_slots=1,
+        )
+        capacity = ResourceVector(
+            memory_bytes=1_024,
+            compute_units=2,
+            stream_slots=2,
+        )
+        budget = Budget(capacity)
+        worker = Worker(
+            "native-dual-worker",
+            self.identity,
+            budget,
+            queue_capacity=2,
+        )
+        adapter = NativeWhisperAdapter(
+            worker,
+            FakeNativeModel(self.identity),
+            probe,
+            NativeExecutionProfile(
+                "tiny.en/cpu-dual",
+                transaction_cost,
+                max_concurrent_decodes=2,
+            ),
+        )
+        return adapter, worker, budget, transaction_cost
 
     def decode(
         self,
@@ -342,6 +403,402 @@ class NativeWhisperAdapterTests(unittest.TestCase):
         self.assertEqual(harness.generators[1].device, "cpu")
         self.assertIs(harness.option_kwargs[1]["generator"], harness.generators[1])
         self.assertIs(harness.option_kwargs[1]["fp16"], False)
+
+    def test_dual_lane_serializes_start_and_overlaps_request_local_decode(
+        self,
+    ) -> None:
+        adapter, worker, budget, transaction_cost = self.dual_adapter()
+        first_start_entered = Event()
+        release_first_start = Event()
+        second_start_entered = Event()
+        both_steps_entered = Event()
+        release_steps = Event()
+        counter_lock = Lock()
+        start_calls = 0
+        active_starts = 0
+        maximum_active_starts = 0
+        active_steps = 0
+        maximum_active_steps = 0
+
+        def on_start() -> None:
+            nonlocal start_calls, active_starts, maximum_active_starts
+            with counter_lock:
+                start_calls += 1
+                call = start_calls
+                active_starts += 1
+                maximum_active_starts = max(maximum_active_starts, active_starts)
+            try:
+                if call == 1:
+                    first_start_entered.set()
+                    if not release_first_start.wait(timeout=2):
+                        raise AssertionError(
+                            "first encoder preparation was not released"
+                        )
+                else:
+                    second_start_entered.set()
+            finally:
+                with counter_lock:
+                    active_starts -= 1
+
+        def on_step() -> None:
+            nonlocal active_steps, maximum_active_steps
+            with counter_lock:
+                active_steps += 1
+                maximum_active_steps = max(maximum_active_steps, active_steps)
+                if active_steps == 2:
+                    both_steps_entered.set()
+            try:
+                if not both_steps_entered.wait(timeout=2):
+                    raise AssertionError("both decoder steps did not overlap")
+                if not release_steps.wait(timeout=2):
+                    raise AssertionError("decoder steps were not released")
+            finally:
+                with counter_lock:
+                    active_steps -= 1
+
+        runs = [
+            FakeRun(complete_after=1, result_text=" first", on_step=on_step),
+            FakeRun(complete_after=1, result_text=" second", on_step=on_step),
+        ]
+        harness = BackendHarness(runs, on_start=on_start)
+        results: dict[str, object] = {}
+        errors: list[BaseException] = []
+        result_lock = Lock()
+
+        def decode(request_id: str) -> None:
+            try:
+                state = adapter.decode_window(
+                    session=Session(f"session-{request_id}"),
+                    request=RequestState(
+                        request_id,
+                        f"session-{request_id}",
+                        self.identity,
+                        rng_seed=7,
+                    ),
+                    window_id=f"window-{request_id}",
+                    mel=FakeMel(),
+                    start_ms=0,
+                    end_ms=30_000,
+                )
+                with result_lock:
+                    results[request_id] = state
+            except BaseException as exc:
+                with result_lock:
+                    errors.append(exc)
+
+        with patch.object(
+            native_whisper,
+            "_load_native_components",
+            return_value=harness.components(),
+        ):
+            first = Thread(target=decode, args=("first",))
+            second = Thread(target=decode, args=("second",))
+            first.start()
+            self.assertTrue(first_start_entered.wait(timeout=2))
+            second.start()
+            self.assertFalse(second_start_entered.wait(timeout=0.1))
+            release_first_start.set()
+            self.assertTrue(second_start_entered.wait(timeout=2))
+            self.assertTrue(both_steps_entered.wait(timeout=2))
+            self.assertEqual(worker.queue_depth, 2)
+            self.assertEqual(budget.available, ResourceVector())
+            release_steps.set()
+            first.join(timeout=3)
+            second.join(timeout=3)
+
+        self.assertFalse(first.is_alive())
+        self.assertFalse(second.is_alive())
+        self.assertEqual(errors, [])
+        self.assertEqual(set(results), {"first", "second"})
+        self.assertEqual(maximum_active_starts, 1)
+        self.assertEqual(maximum_active_steps, 2)
+        self.assertEqual(worker.queue_depth, 0)
+        self.assertEqual(budget.available, transaction_cost + transaction_cost)
+
+    def test_dual_lane_requires_exact_queue_and_budget_capacity(self) -> None:
+        transaction_cost = ResourceVector(
+            memory_bytes=512,
+            compute_units=1,
+            stream_slots=1,
+        )
+        capacity = transaction_cost + transaction_cost
+        profile = NativeExecutionProfile(
+            "tiny.en/cpu-dual",
+            transaction_cost,
+            max_concurrent_decodes=2,
+        )
+
+        with self.assertRaisesRegex(ValueError, "queue must match"):
+            NativeWhisperAdapter(
+                Worker(
+                    "wrong-queue",
+                    self.identity,
+                    Budget(capacity),
+                    queue_capacity=1,
+                ),
+                FakeNativeModel(self.identity),
+                probe,
+                profile,
+            )
+        with self.assertRaisesRegex(ValueError, "worker capacity"):
+            NativeWhisperAdapter(
+                Worker(
+                    "wrong-capacity",
+                    self.identity,
+                    Budget(transaction_cost),
+                    queue_capacity=2,
+                ),
+                FakeNativeModel(self.identity),
+                probe,
+                profile,
+            )
+        with self.assertRaisesRegex(ValueError, "must be 1 or 2"):
+            NativeExecutionProfile(
+                "unsupported-concurrency",
+                transaction_cost,
+                max_concurrent_decodes=3,
+            )
+
+    def test_dual_lane_rejects_shared_backend_state_before_admission(self) -> None:
+        adapter, worker, budget, transaction_cost = self.dual_adapter()
+        cases = (
+            (
+                "legacy-extension",
+                BackendHarness([], use_legacy_extension=True),
+                "built-in suspendable decoder path",
+            ),
+            (
+                "legacy-cache",
+                BackendHarness([], use_legacy_cache=True),
+                "request-local decoder cache support",
+            ),
+        )
+
+        for request_id, harness, message in cases:
+            with self.subTest(request_id=request_id):
+                request = self.request(request_id)
+                with patch.object(
+                    native_whisper,
+                    "_load_native_components",
+                    return_value=harness.components(),
+                ):
+                    with self.assertRaisesRegex(NativeDependencyError, message):
+                        adapter.decode_window(
+                            session=Session("session-1"),
+                            request=request,
+                            window_id="window-1",
+                            mel=FakeMel(),
+                            start_ms=0,
+                            end_ms=30_000,
+                        )
+                self.assertEqual(request.status, RequestStatus.CREATED)
+
+        self.assertEqual(worker.queue_depth, 0)
+        self.assertEqual(budget.available, transaction_cost + transaction_cost)
+
+    def test_dual_lane_cancellation_does_not_abort_its_peer(self) -> None:
+        adapter, worker, budget, transaction_cost = self.dual_adapter()
+        cancelled_request = RequestState(
+            "cancelled",
+            "session-cancelled",
+            self.identity,
+            rng_seed=7,
+        )
+        survivor_request = RequestState(
+            "survivor",
+            "session-survivor",
+            self.identity,
+            rng_seed=8,
+        )
+        first_step_entered = Event()
+        both_steps_entered = Event()
+        release_steps = Event()
+
+        def cancel_step() -> None:
+            first_step_entered.set()
+            if not both_steps_entered.wait(timeout=2):
+                raise AssertionError("survivor did not enter its decoder step")
+            if not release_steps.wait(timeout=2):
+                raise AssertionError("decoder steps were not released")
+            cancelled_request.cancel()
+
+        def survivor_step() -> None:
+            both_steps_entered.set()
+            if not release_steps.wait(timeout=2):
+                raise AssertionError("decoder steps were not released")
+
+        cancelled_run = FakeRun(complete_after=2, on_step=cancel_step)
+        survivor_run = FakeRun(
+            complete_after=1,
+            result_text=" survivor",
+            on_step=survivor_step,
+        )
+        harness = BackendHarness([cancelled_run, survivor_run])
+        cancelled_errors: list[BaseException] = []
+        survivor_states: list[SessionState] = []
+
+        def decode_cancelled() -> None:
+            try:
+                adapter.decode_window(
+                    session=Session("session-cancelled"),
+                    request=cancelled_request,
+                    window_id="window-cancelled",
+                    mel=FakeMel(),
+                    start_ms=0,
+                    end_ms=30_000,
+                )
+            except BaseException as exc:
+                cancelled_errors.append(exc)
+
+        def decode_survivor() -> None:
+            survivor_states.append(
+                adapter.decode_window(
+                    session=Session("session-survivor"),
+                    request=survivor_request,
+                    window_id="window-survivor",
+                    mel=FakeMel(),
+                    start_ms=0,
+                    end_ms=30_000,
+                )
+            )
+
+        with patch.object(
+            native_whisper,
+            "_load_native_components",
+            return_value=harness.components(),
+        ):
+            cancelled_thread = Thread(target=decode_cancelled)
+            survivor_thread = Thread(target=decode_survivor)
+            cancelled_thread.start()
+            self.assertTrue(first_step_entered.wait(timeout=2))
+            survivor_thread.start()
+            self.assertTrue(both_steps_entered.wait(timeout=2))
+            self.assertEqual(worker.queue_depth, 2)
+            self.assertEqual(budget.available, ResourceVector())
+            release_steps.set()
+            cancelled_thread.join(timeout=3)
+            survivor_thread.join(timeout=3)
+
+        self.assertFalse(cancelled_thread.is_alive())
+        self.assertFalse(survivor_thread.is_alive())
+        self.assertEqual(len(cancelled_errors), 1)
+        self.assertIsInstance(cancelled_errors[0], RequestCancelledError)
+        self.assertEqual(cancelled_request.status, RequestStatus.CANCELLED)
+        self.assertEqual(cancelled_run.cleanup_calls, 1)
+        self.assertEqual(len(survivor_states), 1)
+        self.assertEqual(survivor_states[0].windows[0].result.text, " survivor")
+        self.assertEqual(survivor_request.status, RequestStatus.COMMITTED)
+        self.assertEqual(survivor_run.cleanup_calls, 1)
+        self.assertEqual(worker.queue_depth, 0)
+        self.assertEqual(budget.available, transaction_cost + transaction_cost)
+
+    def test_two_quarantines_remain_independently_recoverable(self) -> None:
+        adapter, worker, budget, transaction_cost = self.dual_adapter()
+        both_steps_entered = Event()
+        release_steps = Event()
+        step_lock = Lock()
+        active_steps = 0
+
+        def on_step() -> None:
+            nonlocal active_steps
+            with step_lock:
+                active_steps += 1
+                if active_steps == 2:
+                    both_steps_entered.set()
+            if not both_steps_entered.wait(timeout=2):
+                raise AssertionError("both decoder steps did not overlap")
+            if not release_steps.wait(timeout=2):
+                raise AssertionError("decoder steps were not released")
+
+        failed_runs = [
+            FakeRun(complete_after=1, on_step=on_step, fail_cleanup=True),
+            FakeRun(complete_after=1, on_step=on_step, fail_cleanup=True),
+        ]
+        successful_run = FakeRun(complete_after=1)
+        harness = BackendHarness([*failed_runs, successful_run])
+        retained: list[TransactionRetainedError] = []
+        unexpected: list[BaseException] = []
+        result_lock = Lock()
+
+        def fail_decode(request_id: str) -> None:
+            try:
+                adapter.decode_window(
+                    session=Session(f"session-{request_id}"),
+                    request=RequestState(
+                        request_id,
+                        f"session-{request_id}",
+                        self.identity,
+                        rng_seed=7,
+                    ),
+                    window_id=f"window-{request_id}",
+                    mel=FakeMel(),
+                    start_ms=0,
+                    end_ms=30_000,
+                )
+            except TransactionRetainedError as exc:
+                with result_lock:
+                    retained.append(exc)
+            except BaseException as exc:
+                with result_lock:
+                    unexpected.append(exc)
+
+        with patch.object(
+            native_whisper,
+            "_load_native_components",
+            return_value=harness.components(),
+        ):
+            threads = [
+                Thread(target=fail_decode, args=("failed-a",)),
+                Thread(target=fail_decode, args=("failed-b",)),
+            ]
+            for thread in threads:
+                thread.start()
+            self.assertTrue(both_steps_entered.wait(timeout=2))
+            release_steps.set()
+            for thread in threads:
+                thread.join(timeout=3)
+
+            self.assertEqual(unexpected, [])
+            self.assertEqual(len(retained), 2)
+            self.assertEqual(worker.queue_depth, 2)
+            self.assertEqual(budget.available, ResourceVector())
+
+            for run in failed_runs:
+                run.fail_cleanup = False
+            self.assertTrue(worker.recover(retained[0].transaction))
+            blocked_request = self.request("blocked-by-second-quarantine")
+            with self.assertRaises(TransactionRetainedError):
+                adapter.decode_window(
+                    session=Session("session-1"),
+                    request=blocked_request,
+                    window_id="window-blocked",
+                    mel=FakeMel(),
+                    start_ms=0,
+                    end_ms=30_000,
+                )
+            self.assertEqual(blocked_request.status, RequestStatus.CREATED)
+            self.assertEqual(worker.queue_depth, 1)
+            self.assertEqual(budget.available, transaction_cost)
+
+            self.assertTrue(worker.recover(retained[1].transaction))
+            committed = adapter.decode_window(
+                session=Session("session-recovered"),
+                request=RequestState(
+                    "recovered",
+                    "session-recovered",
+                    self.identity,
+                    rng_seed=7,
+                ),
+                window_id="window-recovered",
+                mel=FakeMel(),
+                start_ms=0,
+                end_ms=30_000,
+            )
+
+        self.assertEqual(committed.version, 1)
+        self.assertEqual(successful_run.cleanup_calls, 1)
+        self.assertEqual(worker.queue_depth, 0)
+        self.assertEqual(budget.available, transaction_cost + transaction_cost)
 
     def test_cancellation_between_steps_cleans_without_commit(self) -> None:
         request = self.request()
