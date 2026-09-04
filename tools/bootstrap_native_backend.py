@@ -7,7 +7,7 @@ import json
 from pathlib import Path
 
 from native_backend_setup import (
-    RUNTIME_ROOT,
+    DEFAULT_SETUP_ROOT,
     NativeSetupError,
     SetupPaths,
     build_manifest,
@@ -17,6 +17,7 @@ from native_backend_setup import (
     load_validated_setup,
     require_prerequisites,
     require_runtime_identity,
+    require_safe_setup_root,
     verify_patch_manifest,
     write_manifest,
 )
@@ -32,7 +33,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--root",
         type=Path,
-        default=RUNTIME_ROOT / ".tmp-native",
+        default=DEFAULT_SETUP_ROOT,
         help="Setup directory (default: .tmp-native in the repository)",
     )
     parser.add_argument(
@@ -44,30 +45,45 @@ def parse_args() -> argparse.Namespace:
 
 
 def run_setup(paths: SetupPaths) -> dict[str, object]:
-    if paths.root == RUNTIME_ROOT or paths.root in RUNTIME_ROOT.parents:
-        raise NativeSetupError("--root cannot be the repository or its parent")
+    require_safe_setup_root(paths.root)
     if paths.root.exists() and not paths.root.is_dir():
         raise NativeSetupError(f"setup root is not a directory: {paths.root}")
-    paths.root.mkdir(parents=True, exist_ok=True)
+    try:
+        paths.root.mkdir(parents=True, exist_ok=True)
+    except OSError as error:
+        raise NativeSetupError(
+            f"cannot create setup root {paths.root}: {error}"
+        ) from error
 
     tools = require_prerequisites()
     runtime = require_runtime_identity()
     patches = verify_patch_manifest()
     backend = ensure_backend(paths, patches)
     python = ensure_environment(paths)
-    dependencies = install_dependencies(python)
+    environment = install_dependencies(python)
     manifest = build_manifest(
         paths=paths,
         runtime=runtime,
         backend=backend,
         python=python,
         patches=patches,
-        dependencies=dependencies,
+        environment=environment,
         tools=tools,
     )
     write_manifest(paths.manifest, manifest)
     load_validated_setup(paths.manifest)
     return manifest
+
+
+def next_example_command(paths: SetupPaths) -> list[str]:
+    """Return shell-independent arguments for the matching setup root."""
+
+    return [
+        "python",
+        "tools/run_native_example.py",
+        "--root",
+        str(paths.root),
+    ]
 
 
 def main() -> int:
@@ -95,7 +111,7 @@ def main() -> int:
                 "backend_tree": backend["tree"],
                 "python": manifest["environment"]["python"],
                 "bootstrap_downloaded_models": False,
-                "next_command": "python tools/run_native_example.py",
+                "next_command": next_example_command(paths),
             }
     except NativeSetupError as error:
         raise SystemExit(f"setup failed: {error}") from error

@@ -8,9 +8,11 @@ import subprocess
 from pathlib import Path
 
 from native_backend_setup import (
+    DEFAULT_SETUP_ROOT,
     RUNTIME_ROOT,
     NativeSetupError,
     SetupPaths,
+    isolated_command_environment,
     load_validated_setup,
 )
 
@@ -18,6 +20,20 @@ JFK_TRANSCRIPT = (
     "And so my fellow Americans ask not what your country can do for you, "
     "ask what you can do for your country."
 )
+
+
+def native_example_environment(
+    backend: Path,
+    *,
+    source: dict[str, str] | None = None,
+) -> dict[str, str]:
+    """Build an import path without ambient Python or pip injection settings."""
+
+    environment = isolated_command_environment(source)
+    environment["PYTHONPATH"] = os.pathsep.join(
+        (str(backend), str(RUNTIME_ROOT / "src"), str(RUNTIME_ROOT))
+    )
+    return environment
 
 
 def parse_args() -> argparse.Namespace:
@@ -30,7 +46,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--root",
         type=Path,
-        default=RUNTIME_ROOT / ".tmp-native",
+        default=DEFAULT_SETUP_ROOT,
         help="Setup directory created by bootstrap_native_backend.py",
     )
     parser.add_argument(
@@ -83,21 +99,16 @@ def main() -> int:
     if audio == default_audio.resolve():
         command.extend(("--expected-text", JFK_TRANSCRIPT))
 
-    environment = os.environ.copy()
-    environment.update(
-        {
-            "PYTHONNOUSERSITE": "1",
-            "PYTHONUTF8": "1",
-            "PYTHONPATH": os.pathsep.join(
-                (
-                    str(setup.paths.backend),
-                    str(RUNTIME_ROOT / "src"),
-                    str(RUNTIME_ROOT),
-                )
-            ),
-        }
-    )
-    completed = subprocess.run(command, cwd=RUNTIME_ROOT, env=environment, check=False)
+    environment = native_example_environment(setup.paths.backend)
+    try:
+        completed = subprocess.run(
+            command,
+            cwd=RUNTIME_ROOT,
+            env=environment,
+            check=False,
+        )
+    except OSError as error:
+        raise SystemExit(f"cannot start setup Python: {error}") from error
     return completed.returncode
 
 

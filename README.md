@@ -108,7 +108,9 @@ The pinned native dependency set requires CPython 3.12 or 3.13. The runtime
 core supports Python 3.10 and later.
 
 The bootstrap verifies the backend commit, source trees, and patch digests. It
-installs packages only in `.tmp-native/venv`. It does not download a model.
+uses pip's isolated mode, installs packages only in `.tmp-native/venv`, and
+records the complete resolved distribution inventory. It does not download a
+model.
 
 Run one real `tiny.en` CPU transaction. The flag gives explicit permission for
 the first checkpoint download:
@@ -177,7 +179,7 @@ See the [native adapter contract](https://github.com/billmedj/whisper-runtime/bl
 | Evidence | Scope |
 | --- | --- |
 | 94 runtime tests | Resource accounting, queue bounds, commit races, deadlines, cancellation, quarantine, recovery, and adapter behavior |
-| 41 repository-tool tests | Provenance, source state, fixtures, portability, setup contracts, evidence schemas, semantic validation, and native smoke contracts |
+| 49 repository-tool tests | Provenance, source state, fixtures, portability, setup contracts, evidence schemas, semantic validation, and native smoke contracts |
 | 2,000-step deterministic state trace | State-machine transitions under generated operations |
 | 35 Lean theorem declarations | Abstract lease provenance, capacity conservation, lifecycle, and stale-commit properties |
 | One recorded native run | Patched `tiny.en` decoder, JFK fixture, CPU, exact transcript, queue returned to zero, declared budget restored |

@@ -41,7 +41,8 @@ python -B tools/check_distribution.py dist
 
 The repository-tool tests include offline checks for the real-backend
 bootstrap. Run the networked native integration only when the change affects
-the backend, its adapter, or its setup:
+the backend, its adapter, or its setup. The pinned native environment requires
+CPython 3.12 or 3.13:
 
 ```sh
 python tools/bootstrap_native_backend.py

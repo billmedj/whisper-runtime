@@ -28,13 +28,13 @@ The command creates `.tmp-native` and performs these checks:
 2. The OpenAI Whisper source is checked out at the pinned commit.
 3. Each integration patch matches its recorded SHA-256 digest.
 4. The seven-patch series produces the expected Git tree.
-5. Python packages are installed only in `.tmp-native/venv` at the pinned
-   versions used by native CI.
-6. A local manifest records the runtime, backend, patches, tools, and package
-   versions.
+5. Required top-level Python packages are installed only in
+   `.tmp-native/venv` at the versions used by native CI.
+6. A local manifest records the runtime, backend, patches, tools, interpreter,
+   and complete resolved distribution inventory.
 
-The bootstrap does not download a Whisper checkpoint or an audio file. The
-default audio example already exists in the cloned Whisper test tree.
+The bootstrap does not download a Whisper model checkpoint or fetch a separate
+audio fixture. The pinned source checkout includes `tests/jfk.flac`.
 
 Verify an existing setup without network access or package installation:
 
@@ -42,9 +42,21 @@ Verify an existing setup without network access or package installation:
 python tools/bootstrap_native_backend.py --verify-only
 ```
 
-The command fails instead of replacing an existing backend or environment that
-does not match the contract. Use a different `--root` when you need a separate
-setup.
+Verification reads the actual interpreter and installed distributions from the
+setup environment. It fails if they differ from the manifest. It does not run
+pip, install packages, or use the network.
+
+Verification fails on any mismatch. The bootstrap does not delete an existing
+backend or environment that it cannot reuse safely. Use a different `--root`
+when you need a separate setup. A custom root must be outside the repository:
+
+```sh
+python tools/bootstrap_native_backend.py --root /path/to/native-setup
+python tools/run_native_example.py --root /path/to/native-setup --allow-model-download
+```
+
+The bootstrap result returns the second command as an argument array. This
+keeps paths with spaces unambiguous in every shell.
 
 ## Run one native transaction
 
@@ -98,11 +110,20 @@ files, or the generated manifest.
 
 ## Scope
 
-This setup reproduces the tested default single-lane CPU profile. It is not a
-hermetic binary build: Python and package wheels remain specific to the host
-platform, and FFmpeg is supplied by the host. Package versions are pinned, but
-wheel files are not locked by hash across all supported platforms.
+This setup builds the tested default single-lane CPU profile. Native CI runs the
+complete networked procedure on Ubuntu 24.04 x86-64 with CPython 3.13. Offline
+tests cover command construction and path handling for Windows and macOS, but
+the complete setup is not yet validated on those systems.
 
-The example handles one unbatched window of at most 30 seconds. It does not
-enable CUDA, live audio streaming, concurrent adapter transactions, or durable
-resume.
+This is not a hermetic binary build. Python, package wheels, and FFmpeg remain
+specific to the host. Required top-level package versions are pinned. Their
+transitive dependencies and wheel files are not locked by hash. The manifest
+records the complete environment that pip resolved, and later verification
+rejects any change to that inventory. It does not attest installed package
+file contents.
+
+The example handles one unbatched window of at most 30 seconds with the default
+single-lane profile. The runtime also contains an experimental two-lane CPU
+profile. This quick start does not exercise it, and the repository does not yet
+contain a real-model adapter-boundary record for that profile. CUDA, live audio
+streaming, and durable resume remain outside this example.

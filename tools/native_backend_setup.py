@@ -13,22 +13,26 @@ import subprocess
 import sys
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Sequence
+from typing import Any, Mapping, Sequence
 from urllib.parse import urlparse
 
 RUNTIME_ROOT = Path(__file__).resolve().parents[1]
 PATCH_DIRECTORY = RUNTIME_ROOT / "patches" / "openai-whisper"
 CONSTRAINTS_FILE = RUNTIME_ROOT / "constraints" / "native-integration.txt"
+DEFAULT_SETUP_ROOT = RUNTIME_ROOT / ".tmp-native"
 
-SCHEMA_VERSION = "1"
+SCHEMA_VERSION = "2"
 BACKEND_URL = "https://github.com/openai/whisper.git"
 BACKEND_BASE_COMMIT = "86098128c0b4f24f0e2aa2994de830614b474227"
 BACKEND_BASE_TREE = "f7b3cb8e12a2e84dccacc4c858c33d5a9c114688"
 BACKEND_PATCHED_TREE = "c011d2563c26763b5f147026e6b18ef85bccd4fb"
 TORCH_VERSION = "2.6.0"
 TORCH_CPU_INDEX = "https://download.pytorch.org/whl/cpu"
+PYPI_INDEX = "https://pypi.org/simple"
 NATIVE_PYTHON_MIN = (3, 12)
 NATIVE_PYTHON_MAX = (3, 13)
+PATCH_MANIFEST_PATH = "patches/openai-whisper/SHA256SUMS"
+CONSTRAINTS_PATH = "constraints/native-integration.txt"
 
 REQUIRED_DISTRIBUTIONS = {
     "jsonschema": "4.25.1",
@@ -43,6 +47,7 @@ REQUIRED_DISTRIBUTIONS = {
 _CHECKSUM_LINE = re.compile(r"([0-9a-f]{64})  ([A-Za-z0-9][A-Za-z0-9._-]*\.patch)")
 _DIGEST = re.compile(r"[0-9a-f]{64}")
 _GIT_OBJECT = re.compile(r"[0-9a-f]{40}")
+_DISTRIBUTION_SEPARATOR = re.compile(r"[-_.]+")
 
 
 class NativeSetupError(RuntimeError):
@@ -82,11 +87,43 @@ class ValidatedSetup:
     python: Path
 
 
+@dataclass(frozen=True, slots=True)
+class EnvironmentIdentity:
+    """Record the interpreter and every installed Python distribution."""
+
+    python_version: str
+    dependencies: dict[str, str]
+    distributions: dict[str, str]
+
+
+def require_safe_setup_root(
+    root: Path,
+    *,
+    runtime_root: Path = RUNTIME_ROOT,
+) -> Path:
+    """Reject setup paths that can add generated files to the source tree."""
+
+    resolved = root.expanduser().resolve()
+    repository = runtime_root.resolve()
+    default = repository / DEFAULT_SETUP_ROOT.name
+    if resolved == repository or resolved in repository.parents:
+        raise NativeSetupError("--root cannot be the repository or its parent")
+    if repository in resolved.parents and resolved != default:
+        raise NativeSetupError(
+            "--root inside the repository must be .tmp-native; "
+            "use a path outside the repository for another setup"
+        )
+    return resolved
+
+
 def sha256_file(path: Path) -> str:
     digest = hashlib.sha256()
-    with path.open("rb") as source:
-        for block in iter(lambda: source.read(1024 * 1024), b""):
-            digest.update(block)
+    try:
+        with path.open("rb") as source:
+            for block in iter(lambda: source.read(1024 * 1024), b""):
+                digest.update(block)
+    except OSError as error:
+        raise NativeSetupError(f"cannot read {path}: {error}") from error
     return digest.hexdigest()
 
 
@@ -161,23 +198,34 @@ def dependency_install_commands(
         str(python),
         "-m",
         "pip",
+        "--isolated",
         "install",
         "--disable-pip-version-check",
+        "--no-input",
         "--only-binary=:all:",
     )
     if selected_platform == "darwin":
-        torch_command = common + (f"torch=={TORCH_VERSION}",)
+        torch_command = common + (
+            "--index-url",
+            PYPI_INDEX,
+            f"torch=={TORCH_VERSION}",
+        )
     else:
         torch_command = common + (
             "--index-url",
             TORCH_CPU_INDEX,
             f"torch=={TORCH_VERSION}",
         )
-    requirements_command = common + ("-r", str(CONSTRAINTS_FILE))
+    requirements_command = common + (
+        "--index-url",
+        PYPI_INDEX,
+        "-r",
+        str(CONSTRAINTS_FILE),
+    )
     return (
         torch_command,
         requirements_command,
-        (str(python), "-m", "pip", "check"),
+        (str(python), "-m", "pip", "--isolated", "check"),
     )
 
 
@@ -201,6 +249,102 @@ def verify_dependency_versions(observed: object) -> dict[str, str]:
                 f"expected {expected}, observed {value}"
             )
     return versions
+
+
+def _canonical_distribution_name(name: str) -> str:
+    return _DISTRIBUTION_SEPARATOR.sub("-", name).lower()
+
+
+def verify_distribution_inventory(observed: object) -> dict[str, str]:
+    """Validate a complete, canonical distribution inventory."""
+
+    if not isinstance(observed, dict) or not all(
+        isinstance(name, str)
+        and bool(name)
+        and name == _canonical_distribution_name(name)
+        and isinstance(version, str)
+        and bool(version)
+        for name, version in observed.items()
+    ):
+        raise NativeSetupError("resolved distributions must be a canonical string map")
+    return dict(sorted(observed.items()))
+
+
+def _reject_json_constant(value: str) -> None:
+    raise NativeSetupError(f"JSON constant is not permitted: {value}")
+
+
+def _reject_duplicate_json_keys(pairs: list[tuple[str, object]]) -> dict[str, object]:
+    document: dict[str, object] = {}
+    for name, value in pairs:
+        if name in document:
+            raise NativeSetupError(f"duplicate JSON field is not permitted: {name}")
+        document[name] = value
+    return document
+
+
+def _load_json(text: str, *, subject: str) -> object:
+    try:
+        return json.loads(
+            text,
+            parse_constant=_reject_json_constant,
+            object_pairs_hook=_reject_duplicate_json_keys,
+        )
+    except json.JSONDecodeError as error:
+        raise NativeSetupError(f"invalid JSON from {subject}: {error}") from error
+
+
+def inspect_environment(python: Path) -> EnvironmentIdentity:
+    """Read the actual interpreter and installed distributions in one process."""
+
+    probe = """
+import importlib.metadata as metadata
+import json
+import platform
+import re
+
+canonical = lambda name: re.sub(r"[-_.]+", "-", name).lower()
+distributions = {}
+for distribution in metadata.distributions():
+    name = distribution.metadata.get("Name")
+    version = distribution.version
+    if name and version:
+        distributions[canonical(name)] = version
+required = {
+    name: metadata.version(name)
+    for name in %r
+}
+print(json.dumps({
+    "implementation": platform.python_implementation(),
+    "python_version": platform.python_version(),
+    "dependencies": required,
+    "distributions": distributions,
+}, sort_keys=True))
+""" % sorted(REQUIRED_DISTRIBUTIONS)
+    completed = _run((str(python), "-I", "-c", probe), capture=True)
+    document = _require_object(
+        _load_json(completed.stdout, subject="the setup Python environment"),
+        "environment probe",
+    )
+    if document.get("implementation") != "CPython":
+        raise NativeSetupError("the pinned native backend requires CPython")
+    version = document.get("python_version")
+    if not isinstance(version, str) or re.fullmatch(r"\d+\.\d+\.\d+", version) is None:
+        raise NativeSetupError("environment probe returned an invalid Python version")
+    major, minor, _ = (int(part) for part in version.split("."))
+    require_supported_python((major, minor))
+    dependencies = verify_dependency_versions(document.get("dependencies"))
+    distributions = verify_distribution_inventory(document.get("distributions"))
+    for name, dependency_version in dependencies.items():
+        if distributions.get(_canonical_distribution_name(name)) != dependency_version:
+            raise NativeSetupError(
+                f"resolved distribution inventory differs for {name}"
+            )
+    return EnvironmentIdentity(
+        python_version=f"Python {version}",
+        dependencies=dependencies,
+        distributions=distributions,
+    )
 
 
 def checkpoint_digest_from_url(url: str) -> str:
@@ -246,14 +390,18 @@ def require_cached_checkpoint(
     return path
 
 
-def _command_environment() -> dict[str, str]:
-    environment = os.environ.copy()
-    for name in ("PIP_PREFIX", "PIP_TARGET", "PIP_USER", "PYTHONHOME", "PYTHONPATH"):
-        environment.pop(name, None)
+def isolated_command_environment(
+    source: Mapping[str, str] | None = None,
+) -> dict[str, str]:
+    """Remove Python and pip injection settings from a child environment."""
+
+    environment = dict(os.environ if source is None else source)
+    for name in tuple(environment):
+        if name.upper().startswith("PIP_") or name.upper().startswith("PYTHON"):
+            environment.pop(name)
     environment.update(
         {
             "GIT_TERMINAL_PROMPT": "0",
-            "PIP_DISABLE_PIP_VERSION_CHECK": "1",
             "PYTHONNOUSERSITE": "1",
             "PYTHONUTF8": "1",
         }
@@ -275,7 +423,7 @@ def _run(
             capture_output=capture,
             text=True,
             encoding="utf-8",
-            env=_command_environment(),
+            env=isolated_command_environment(),
         )
     except OSError as error:
         raise NativeSetupError(f"cannot run {command[0]}: {error}") from error
@@ -356,7 +504,7 @@ def _backend_state(repository: Path) -> tuple[str, GitIdentity]:
         capture_output=True,
         text=True,
         encoding="utf-8",
-        env=_command_environment(),
+        env=isolated_command_environment(),
     )
     count = _git_output(
         repository, "rev-list", "--count", f"{BACKEND_BASE_COMMIT}..HEAD"
@@ -446,20 +594,15 @@ def ensure_environment(paths: SetupPaths) -> Path:
     return python
 
 
-def install_dependencies(python: Path) -> dict[str, str]:
+def install_dependencies(python: Path) -> EnvironmentIdentity:
     for command in dependency_install_commands(python):
         _run(command)
-    probe = (
-        "import importlib.metadata as m,json; "
-        f"names={sorted(REQUIRED_DISTRIBUTIONS)!r}; "
-        "print(json.dumps({name:m.version(name) for name in names},sort_keys=True))"
-    )
-    observed = json.loads(_run((str(python), "-I", "-c", probe), capture=True).stdout)
-    return verify_dependency_versions(observed)
+    return inspect_environment(python)
 
 
 def _tool_version(command: Sequence[str]) -> str:
-    output = _run(command, capture=True).stdout.splitlines()
+    completed = _run(command, capture=True)
+    output = (completed.stdout or completed.stderr).splitlines()
     return output[0].strip() if output else "unknown"
 
 
@@ -470,8 +613,7 @@ def require_supported_python(version: tuple[int, int]) -> None:
         )
 
 
-def require_prerequisites() -> dict[str, str]:
-    require_supported_python((sys.version_info.major, sys.version_info.minor))
+def current_tool_versions() -> dict[str, str]:
     for tool in ("git", "ffmpeg"):
         if shutil.which(tool) is None:
             raise NativeSetupError(f"required command not found on PATH: {tool}")
@@ -479,6 +621,11 @@ def require_prerequisites() -> dict[str, str]:
         "git": _tool_version(("git", "--version")),
         "ffmpeg": _tool_version(("ffmpeg", "-version")),
     }
+
+
+def require_prerequisites() -> dict[str, str]:
+    require_supported_python((sys.version_info.major, sys.version_info.minor))
+    return current_tool_versions()
 
 
 def _runtime_record(identity: GitIdentity) -> dict[str, object]:
@@ -497,7 +644,7 @@ def build_manifest(
     backend: GitIdentity,
     python: Path,
     patches: dict[str, str],
-    dependencies: dict[str, str],
+    environment: EnvironmentIdentity,
     tools: dict[str, str],
 ) -> dict[str, object]:
     return {
@@ -516,17 +663,18 @@ def build_manifest(
             "clean": backend.clean,
         },
         "patches": {
-            "manifest": "patches/openai-whisper/SHA256SUMS",
+            "manifest": PATCH_MANIFEST_PATH,
             "manifest_sha256": sha256_file(PATCH_DIRECTORY / "SHA256SUMS"),
             "files": patches,
         },
         "environment": {
             "path": str(paths.environment),
             "python": str(python),
-            "python_version": _tool_version((str(python), "--version")),
-            "constraints": "constraints/native-integration.txt",
+            "python_version": environment.python_version,
+            "constraints": CONSTRAINTS_PATH,
             "constraints_sha256": sha256_file(CONSTRAINTS_FILE),
-            "dependencies": dependencies,
+            "dependencies": environment.dependencies,
+            "resolved_distributions": environment.distributions,
         },
         "tools": tools,
         "bootstrap_downloaded_models": False,
@@ -535,11 +683,16 @@ def build_manifest(
 
 def write_manifest(path: Path, manifest: dict[str, object]) -> None:
     temporary = path.with_suffix(".json.tmp")
-    temporary.write_text(
-        json.dumps(manifest, ensure_ascii=False, indent=2, sort_keys=True) + "\n",
-        encoding="utf-8",
-    )
-    temporary.replace(path)
+    try:
+        temporary.write_text(
+            json.dumps(manifest, ensure_ascii=False, indent=2, sort_keys=True) + "\n",
+            encoding="utf-8",
+        )
+        temporary.replace(path)
+    except OSError as error:
+        raise NativeSetupError(
+            f"cannot write setup manifest {path}: {error}"
+        ) from error
 
 
 def _require_object(value: object, location: str) -> dict[str, Any]:
@@ -548,16 +701,81 @@ def _require_object(value: object, location: str) -> dict[str, Any]:
     return value
 
 
+def _require_exact_keys(
+    record: Mapping[str, object], expected: set[str], location: str
+) -> None:
+    if set(record) != expected:
+        raise NativeSetupError(
+            f"{location} fields do not match schema {SCHEMA_VERSION}"
+        )
+
+
+def _require_nonempty_strings(value: object, location: str) -> dict[str, str]:
+    if not isinstance(value, dict) or not all(
+        isinstance(name, str)
+        and bool(name)
+        and isinstance(text, str)
+        and bool(text.strip())
+        for name, text in value.items()
+    ):
+        raise NativeSetupError(f"{location} must be a non-empty string map")
+    return dict(value)
+
+
+def _validate_created_at(value: object) -> None:
+    if not isinstance(value, str) or not value.endswith("Z"):
+        raise NativeSetupError("manifest.created_at must be a UTC timestamp")
+    try:
+        timestamp = dt.datetime.fromisoformat(value[:-1] + "+00:00")
+    except ValueError as error:
+        raise NativeSetupError("manifest.created_at must be a UTC timestamp") from error
+    if timestamp.utcoffset() != dt.timedelta(0):
+        raise NativeSetupError("manifest.created_at must be a UTC timestamp")
+
+
+def verify_recorded_environment(
+    recorded: Mapping[str, object], python: Path
+) -> EnvironmentIdentity:
+    """Compare the manifest with the live isolated Python environment."""
+
+    actual = inspect_environment(python)
+    if recorded.get("python_version") != actual.python_version:
+        raise NativeSetupError("setup Python version no longer matches the manifest")
+    if recorded.get("dependencies") != actual.dependencies:
+        raise NativeSetupError("setup dependency versions no longer match the manifest")
+    if recorded.get("resolved_distributions") != actual.distributions:
+        raise NativeSetupError(
+            "setup distribution inventory no longer matches the manifest"
+        )
+    return actual
+
+
 def load_validated_setup(manifest_path: Path) -> ValidatedSetup:
     try:
-        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError) as error:
+        text = manifest_path.read_text(encoding="utf-8")
+    except OSError as error:
         raise NativeSetupError(
             f"cannot read setup manifest {manifest_path}: {error}"
         ) from error
+    manifest = _load_json(text, subject=f"setup manifest {manifest_path}")
     document = _require_object(manifest, "manifest")
     if document.get("schema_version") != SCHEMA_VERSION:
         raise NativeSetupError("unsupported setup manifest schema")
+    _require_exact_keys(
+        document,
+        {
+            "schema_version",
+            "created_at",
+            "runtime",
+            "backend",
+            "patches",
+            "environment",
+            "tools",
+            "bootstrap_downloaded_models",
+        },
+        "manifest",
+    )
+    _validate_created_at(document.get("created_at"))
     if document.get("bootstrap_downloaded_models") is not False:
         raise NativeSetupError("setup manifest must state that it downloaded no models")
 
@@ -567,6 +785,42 @@ def load_validated_setup(manifest_path: Path) -> ValidatedSetup:
         document.get("environment"), "manifest.environment"
     )
     patch_record = _require_object(document.get("patches"), "manifest.patches")
+    tool_record = _require_object(document.get("tools"), "manifest.tools")
+    _require_exact_keys(
+        runtime_record, {"path", "git_commit", "git_tree", "clean"}, "manifest.runtime"
+    )
+    _require_exact_keys(
+        backend_record,
+        {
+            "path",
+            "url",
+            "base_commit",
+            "base_tree",
+            "applied_commit",
+            "tree",
+            "clean",
+        },
+        "manifest.backend",
+    )
+    _require_exact_keys(
+        patch_record,
+        {"manifest", "manifest_sha256", "files"},
+        "manifest.patches",
+    )
+    _require_exact_keys(
+        environment_record,
+        {
+            "path",
+            "python",
+            "python_version",
+            "constraints",
+            "constraints_sha256",
+            "dependencies",
+            "resolved_distributions",
+        },
+        "manifest.environment",
+    )
+    _require_exact_keys(tool_record, {"git", "ffmpeg"}, "manifest.tools")
 
     paths = SetupPaths.from_root(manifest_path.resolve().parent)
     if paths.manifest != manifest_path.resolve():
@@ -599,15 +853,24 @@ def load_validated_setup(manifest_path: Path) -> ValidatedSetup:
         raise NativeSetupError("manifest backend patched tree does not match")
 
     patches = verify_patch_manifest()
+    if patch_record.get("manifest") != PATCH_MANIFEST_PATH:
+        raise NativeSetupError("manifest patch checksum path does not match")
     if patch_record.get("files") != patches:
         raise NativeSetupError("manifest patch list does not match the repository")
     if patch_record.get("manifest_sha256") != sha256_file(
         PATCH_DIRECTORY / "SHA256SUMS"
     ):
         raise NativeSetupError("manifest patch checksum file does not match")
+    if environment_record.get("constraints") != CONSTRAINTS_PATH:
+        raise NativeSetupError("manifest dependency constraints path does not match")
     if environment_record.get("constraints_sha256") != sha256_file(CONSTRAINTS_FILE):
         raise NativeSetupError("manifest dependency constraints do not match")
     verify_dependency_versions(environment_record.get("dependencies"))
+    verify_distribution_inventory(environment_record.get("resolved_distributions"))
+
+    recorded_tools = _require_nonempty_strings(tool_record, "manifest.tools")
+    if recorded_tools != current_tool_versions():
+        raise NativeSetupError("host tool versions no longer match the setup manifest")
 
     runtime = require_runtime_identity()
     if (
@@ -629,10 +892,18 @@ def load_validated_setup(manifest_path: Path) -> ValidatedSetup:
     python = environment_python(paths.environment)
     if not python.is_file():
         raise NativeSetupError(f"setup Python executable not found: {python}")
+    verify_recorded_environment(environment_record, python)
     return ValidatedSetup(paths=paths, runtime=runtime, backend=backend, python=python)
 
 
 def installed_versions() -> dict[str, str]:
     """Return required versions in the current interpreter without importing them."""
 
-    return {name: importlib.metadata.version(name) for name in REQUIRED_DISTRIBUTIONS}
+    try:
+        return {
+            name: importlib.metadata.version(name) for name in REQUIRED_DISTRIBUTIONS
+        }
+    except importlib.metadata.PackageNotFoundError as error:
+        raise NativeSetupError(
+            f"required distribution is not installed: {error}"
+        ) from error
