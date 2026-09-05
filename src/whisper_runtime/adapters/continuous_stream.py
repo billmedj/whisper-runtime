@@ -81,6 +81,7 @@ class ContinuousStreamConfig:
     source_units: bool = False
     endpointing: QuietEndpointConfig | None = None
     word_boundary_fallback: bool = False
+    word_context_limit_ms: int = 0
 
     def __post_init__(self) -> None:
         flags = (
@@ -130,6 +131,22 @@ class ContinuousStreamConfig:
                 "word_boundary_fallback requires source_units, input_evidence, "
                 "endpointing, and positive left context"
             )
+        if self.word_context_limit_ms:
+            if not self.word_boundary_fallback:
+                raise ValueError("word context requires word_boundary_fallback")
+            if self.word_context_limit_ms < self.left_context_ms:
+                raise ValueError(
+                    "word context limit must cover the desired left context"
+                )
+            if self.word_context_limit_ms % 20:
+                raise ValueError("word_context_limit_ms must be a multiple of 20 ms")
+            if (
+                self.word_context_limit_ms + 2 * self.preview_interval_ms
+                >= self.max_window_ms
+            ):
+                raise ValueError(
+                    "word context must leave room for two growing analyses"
+                )
         if self.endpointing is not None:
             if not isinstance(self.endpointing, QuietEndpointConfig):
                 raise TypeError("endpointing must be QuietEndpointConfig or None")
@@ -282,6 +299,7 @@ class ContinuousTranscriptStream:
         self._word_previous: NativeWordAlignment | None = None
         self._word_anchor: tuple[NativeTimestampSegment, ...] = ()
         self._word_pending: WordAgreementDecision | None = None
+        self._word_retained_pending: int | None = None
         self._retry_analysis: tuple[int, int, bool] | None = None
         self._unit: SourceUnit | None = None
         self._endpoints: deque[QuietEndpointProposal] = deque()
@@ -320,7 +338,7 @@ class ContinuousTranscriptStream:
                 COALESCED_WORD_BOUNDARY_QUIET_ENDPOINT_PROFILE
                 if self.config.coalesce_previews
                 else WORD_BOUNDARY_QUIET_ENDPOINT_PROFILE
-            )
+            ) + ("+word_context/v1" if self.config.word_context_limit_ms else "")
         if self.config.endpointing is not None:
             return (
                 COALESCED_QUIET_ENDPOINT_PROFILE
@@ -850,12 +868,24 @@ class ContinuousTranscriptStream:
             publication.text
         ):
             return self._defer_audio(run, result)
+        retained = None
+        reason = decision.reason
+        if publication is not None and not closed and self.config.word_context_limit_ms:
+            # A new window need not regenerate punctuation that led into its
+            # first spoken word. Keep the exact lexical suffix as the witness;
+            # publication text, internal punctuation and frozen times stay intact.
+            anchor = decision.next_anchor
+            while anchor and not any(c.isalnum() for c in anchor[0].text):
+                anchor = anchor[1:]
+            decision = WordAgreementDecision(decision.reason, publication, anchor)
+            retained = self._word_context_start(decision)
+            if retained is None:
+                publication = None
+                reason = "context_unresolved"
         self._trace(
             result,
             None,
-            "source_unit"
-            if closed_unit and publication is not None
-            else decision.reason,
+            "source_unit" if closed_unit and publication is not None else reason,
             "commit"
             if publication is not None
             else "unresolved"
@@ -866,6 +896,7 @@ class ContinuousTranscriptStream:
         )
         if publication is not None:
             self._word_pending = decision
+            self._word_retained_pending = retained
             self._pending_end = (
                 self._run_end if closed else publication.end_ms * _SAMPLES_PER_MS
             )
@@ -897,6 +928,43 @@ class ContinuousTranscriptStream:
             if word.span.start_ms >= self._head // _SAMPLES_PER_MS
         ).strip()
         return self._publish_preview(text)
+
+    def _word_context_start(self, decision: WordAgreementDecision) -> int | None:
+        """Select bounded context from this alignment before committing any output.
+
+        Word times are estimates. This preserves the matching witnesses and avoids
+        cutting through observed words; it does not prove sufficient model context.
+        """
+        publication = decision.publication
+        assert publication is not None
+        anchor = decision.next_anchor
+        if sum(any(c.isalnum() for c in word.text) for word in anchor) < 2:
+            return None
+        end = publication.end_ms * _SAMPLES_PER_MS
+        origin = max(
+            self._retained,
+            min(
+                end - self.config.left_context_ms * _SAMPLES_PER_MS,
+                anchor[0].span.start_ms * _SAMPLES_PER_MS,
+            ),
+        )
+        grid = 20 * _SAMPLES_PER_MS
+        origin -= (origin - self._retained) % grid
+        # Iterate backward: rounding one word's start can enter its predecessor.
+        for word in reversed(publication.alignment.words[: publication.word_end]):
+            start, stop = word.span.start_ms * 16, word.span.end_ms * 16
+            if start < origin < stop:
+                origin = max(self._retained, start)
+                origin -= (origin - self._retained) % grid
+        if (
+            end - origin > self.config.word_context_limit_ms * _SAMPLES_PER_MS
+            or any(word.span.start_ms * 16 < origin for word in anchor)
+            or origin
+            + (self.config.max_window_ms - self.config.preview_interval_ms) * 16
+            <= end
+        ):
+            return None
+        return origin
 
     def _publish_preview(self, text: str) -> tuple[TranscriptEvent, ...]:
         """Advance the preview cursor only after native cleanup has succeeded."""
@@ -1021,6 +1089,8 @@ class ContinuousTranscriptStream:
                 if self._pending_final
                 or self._silence_pending is not None
                 or self._run_unit is not None
+                else self._word_retained_pending
+                if self._word_retained_pending is not None
                 else max(self._retained, end - self.config.left_context_ms * 16)
             )
             del self._audio[: (retained - self._retained) * 2]
@@ -1056,6 +1126,7 @@ class ContinuousTranscriptStream:
                 else self._word_pending.next_anchor
             )
             self._word_pending = None
+        self._word_retained_pending = None
         self._pending_state = None
         self._retry_analysis = None
         self._segment += 1

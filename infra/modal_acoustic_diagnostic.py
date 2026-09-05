@@ -17,7 +17,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 REMOTE_ROOT = Path("/opt/whisper-runtime")
-MANIFEST = "experiments/modal-acoustic-diagnostic-v1.json"
+MANIFEST = "experiments/modal-acoustic-diagnostic-v2.json"
 PRODUCER = "infra/modal_acoustic_diagnostic.py"
 BUILDERS = ("tools/prepare_acoustic_cases.py", "tools/prepare_speech_corpus.py")
 CASES = [
@@ -26,11 +26,28 @@ CASES = [
     "mixed-continuous-noise64",
     "mixed-attenuated32",
 ]
-CELLS = [("quiet", CASES[0]), *(("hybrid", case) for case in CASES)]
+CONTROL_CELLS = [("quiet", CASES[0]), *(("hybrid", case) for case in CASES[1:3])]
+CANDIDATE_CELLS = [("context", case) for case in CASES]
+CELLS = [*CONTROL_CELLS, *CANDIDATE_CELLS]
+CONTROL_EXPECTATIONS = {
+    "quiet:mixed-control": {"stream_status": "completed", "qualified": True},
+    "hybrid:concatenated-no-added-pauses": {
+        "stream_status": "policy_failure",
+        "qualified": False,
+    },
+    "hybrid:mixed-continuous-noise64": {
+        "stream_status": "policy_failure",
+        "qualified": False,
+    },
+}
 ACCEPTANCE = {
     "real_final_and_full_coverage": True,
     "native_capacity_restored": True,
     "hybrid_human_edits_at_most_offline": True,
+    "context_human_edits_at_most_offline": True,
+    "all_cells_lifecycle_safe": True,
+    "all_candidate_cells_qualified": True,
+    "matched_control_outcomes": True,
     "legacy_normalized_control_edits": 0,
     "legacy_human_edits": 6,
     "legacy_reference_words": 88,
@@ -55,6 +72,9 @@ CHECK_NAMES = frozenset(
         "selected_text_matches_commit",
         "profile_identity",
     )
+)
+COMPLETION_CHECKS = frozenset(
+    ("completion_required", "final_event_once", "full_input_committed_at_eof")
 )
 
 
@@ -86,11 +106,20 @@ def registration(root=ROOT):
     value = json.loads((root / MANIFEST).read_text(encoding="utf-8"))
     expected = {
         "schema_version": "1-diagnostic",
-        "id": "modal-acoustic-diagnostic-v1",
+        "id": "modal-acoustic-diagnostic-v2",
         "modal_sdk": "1.5.5",
         "case_ids": CASES,
         "cells": [f"{profile}:{case}" for profile, case in CELLS],
+        "control_cells": [f"{profile}:{case}" for profile, case in CONTROL_CELLS],
+        "candidate_cells": [f"{profile}:{case}" for profile, case in CANDIDATE_CELLS],
+        "control_expectations": CONTROL_EXPECTATIONS,
+        "qualification_scope": "context_candidates_with_matched_controls",
         "hybrid_changes": {"word_boundary_fallback": True, "left_context_ms": 2000},
+        "context_changes": {
+            "word_boundary_fallback": True,
+            "left_context_ms": 2000,
+            "word_context_limit_ms": 6000,
+        },
         "chunk_ms": 1000,
         "rng_seed": 7,
         "acceptance": ACCEPTANCE,
@@ -257,16 +286,70 @@ def publication_checks(events, traces, pcm):
 
 def quality_gate(profile, recognition, offline):
     human = recognition["against_human_reference"]
-    if profile == "hybrid":
+    if profile in {"hybrid", "context"}:
         return (
             human["word_edit_distance"]
             <= offline["against_human_reference"]["word_edit_distance"]
         )
+    if profile != "quiet":
+        raise ValueError("unregistered profile")
     return (
         recognition["against_offline_control"]["word_edit_distance"] == 0
         and human["word_edit_distance"] == 6
         and human["reference_word_count"] == 88
     )
+
+
+def lifecycle_safe(cell):
+    checks = cell.get("checks", {})
+    if (
+        set(checks) != CHECK_NAMES
+        or any(type(value) is not bool for value in checks.values())
+        or cell.get("capacity_restored_after_close") is not True
+    ):
+        return False
+    if cell.get("stream_status") == "completed":
+        return cell.get("error") is None and all(checks.values())
+    return (
+        cell.get("stream_status") == "policy_failure"
+        and isinstance(cell.get("error"), dict)
+        and cell["error"].get("category") == "policy_resolution"
+        and all(value for key, value in checks.items() if key not in COMPLETION_CHECKS)
+    )
+
+
+def qualification_summary(cells, *, model_unchanged, capacity_restored):
+    """Controls retain their outcomes; policy failures cannot certify candidates."""
+    complete = [cell["id"] for cell in cells] == [f"{p}:{c}" for p, c in CELLS]
+    safe = (
+        complete
+        and model_unchanged is True
+        and capacity_restored is True
+        and all(lifecycle_safe(cell) for cell in cells)
+    )
+    outcomes = {
+        cell["id"]: {
+            "stream_status": cell["stream_status"],
+            "qualified": cell["qualified"],
+        }
+        for cell in cells
+        if cell["id"] in CONTROL_EXPECTATIONS
+    }
+    return {
+        "candidate_qualified": (
+            safe
+            and outcomes == CONTROL_EXPECTATIONS
+            and all(
+                cell["qualified"] is True
+                for cell in cells
+                if cell["profile"] == "context"
+            )
+        ),
+        "all_cells_qualified": safe
+        and all(cell["qualified"] is True for cell in cells),
+        "control_outcomes": outcomes,
+        "controls_match_expected": outcomes == CONTROL_EXPECTATIONS,
+    }
 
 
 def run_worker(expected_snapshot):
@@ -333,7 +416,7 @@ def run_worker(expected_snapshot):
         model,
         probe,
         adapters.NativeExecutionProfile(
-            "tiny.en/acoustic-diagnostic-v1", capacity, device="cuda:0"
+            "tiny.en/acoustic-diagnostic-v2", capacity, device="cuda:0"
         ),
     )
     options = adapters.NativeDecodeOptions(**base["decode_options"])
@@ -370,8 +453,8 @@ def run_worker(expected_snapshot):
                 )
                 controls[case_id] = control
             config = dict(corpus.AUTOMATIC_ENDPOINTS_PROFILE["stream_config"])
-            if profile == "hybrid":
-                config.update(settings["hybrid_changes"])
+            if profile in {"hybrid", "context"}:
+                config.update(settings[f"{profile}_changes"])
             endpoints = importlib.import_module(
                 "whisper_runtime.adapters.audio_endpoints"
             )
@@ -409,11 +492,12 @@ def run_worker(expected_snapshot):
                 error_record=error,
             )
             checks.update(publication_checks(events, traces, pcm))
-            expected_profile = (
-                "word_boundary_quiet_endpoint_stream/v1+input_evidence/v1"
-                if profile == "hybrid"
-                else corpus.AUTOMATIC_ENDPOINTS_PROFILE["profile_id"]
-            )
+            expected_profile = corpus.AUTOMATIC_ENDPOINTS_PROFILE["profile_id"]
+            if profile in {"hybrid", "context"}:
+                expected_profile = "word_boundary_quiet_endpoint_stream/v1"
+                if profile == "context":
+                    expected_profile += "+word_context/v1"
+                expected_profile += "+input_evidence/v1"
             checks["profile_identity"] = stream.profile_id == expected_profile
             recognition = {"text": c._normalized_committed_text(events)}
             recognition["against_human_reference"] = b._word_difference(
@@ -425,14 +509,7 @@ def run_worker(expected_snapshot):
             completed = error is None and stream.done and all(checks.values())
             quality = quality_gate(profile, recognition, controls[case_id])
             lifecycle = all(
-                value
-                for key, value in checks.items()
-                if key
-                not in {
-                    "completion_required",
-                    "final_event_once",
-                    "full_input_committed_at_eof",
-                }
+                value for key, value in checks.items() if key not in COMPLETION_CHECKS
             )
             policy_failure = (
                 error is not None
@@ -484,17 +561,18 @@ def run_worker(expected_snapshot):
                 cells.append(failure)
             break
     final = q._model_fingerprint(model) if available() else None
-    qualified = (
-        len(cells) == len(CELLS)
-        and all(cell["qualified"] for cell in cells)
-        and final == initial
+    summary = qualification_summary(
+        cells, model_unchanged=final == initial, capacity_restored=available()
     )
+    qualified = summary["candidate_qualified"]
     modal = importlib.import_module("modal")
     call_id = modal.current_function_call_id()
     return {
         "schema_version": "1-diagnostic",
         "status": "completed" if qualified else "failed",
         "qualified": qualified,
+        **summary,
+        "qualification_scope": settings["qualification_scope"],
         "claim_boundary": settings["claim_boundary"],
         "source": {
             "snapshot": expected_snapshot,
@@ -622,13 +700,15 @@ def validate_record(record, expected_snapshot):
     if not seen or seen != planned[: len(seen)]:
         raise ValueError("worker cell order differs")
     for cell in record["cells"]:
+        if (
+            cell["profile"] != cell["id"].split(":", 1)[0]
+            or type(cell["qualified"]) is not bool
+        ):
+            raise ValueError("worker profile or qualification differs")
         if cell["qualified"] and (
             cell.get("stream_status") != "completed"
-            or set(cell.get("checks", {})) != CHECK_NAMES
-            or any(type(value) is not bool for value in cell["checks"].values())
-            or not all(cell["checks"].values())
-            or not cell.get("quality_gate_passed")
-            or cell.get("capacity_restored_after_close") is not True
+            or not lifecycle_safe(cell)
+            or cell.get("quality_gate_passed") is not True
         ):
             raise ValueError("failed cell cannot qualify")
         if "recognition" in cell:
@@ -637,13 +717,20 @@ def validate_record(record, expected_snapshot):
                 cell["profile"], cell["recognition"], record["controls"][case_id]
             ):
                 raise ValueError("quality decision differs")
-    qualified = (
-        len(seen) == len(planned)
-        and all(c["qualified"] for c in record["cells"])
-        and record["model"]["unchanged"] is True
-        and record["model"]["initial_sha256"] == record["model"]["final_sha256"]
-        and record["capacity_restored"] is True
+    summary = qualification_summary(
+        record["cells"],
+        model_unchanged=(
+            record["model"]["unchanged"] is True
+            and record["model"]["initial_sha256"] == record["model"]["final_sha256"]
+        ),
+        capacity_restored=record["capacity_restored"],
     )
+    if record.get("qualification_scope") != "context_candidates_with_matched_controls":
+        raise ValueError("qualification scope differs")
+    for key, value in summary.items():
+        if _hash(record.get(key)) != _hash(value):
+            raise ValueError(f"false {key}")
+    qualified = summary["candidate_qualified"]
     if record["qualified"] is not qualified or record["status"] != (
         "completed" if qualified else "failed"
     ):

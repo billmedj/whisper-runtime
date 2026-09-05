@@ -194,6 +194,30 @@ Both inputs without detected pauses still stop before completion. This profile
 is not yet suitable for unattended continuous speech.
 All existing profile defaults remain unchanged.
 
+#### Bounded word-aware context
+
+Set `word_context_limit_ms=6000` on the configuration above to test a separate
+`+word_context/v1` profile, before the `+input_evidence/v1` suffix. The default is
+zero (disabled). `left_context_ms` remains the desired overlap; the new value
+limits how far the retained origin may move backward from a proposed commit.
+
+Before a partial commit, the controller preserves at least two lexical words
+in the next anchor and snaps the desired origin backward to avoid cutting
+through words in the current alignment. Leading standalone punctuation is
+excluded from the next anchor only. The published text, internal punctuation,
+native tokens and times stay unchanged. This does not loosen the matcher.
+
+If context and growth limits cannot both be met, the decision stays provisional
+with `context_unresolved`; no output is committed and no audio is evicted.
+The chosen origin is fixed before native commit and applied only after cleanup.
+Quiet-unit closure, digital silence and EOF keep their existing rules. A single
+word at a closed boundary can still publish if the existing checks accept it.
+
+The limit must cover the desired overlap, use a multiple of 20 ms, and leave
+room for two preview intervals plus positive growth within the analysis window.
+This heuristic uses estimated word boundaries, not a guarantee of sufficient
+acoustic context. See the [registered comparison](research/2026-09-05-word-context.md).
+
 ### Timestamp agreement
 
 Two successive analyses must start at the same source position and the second

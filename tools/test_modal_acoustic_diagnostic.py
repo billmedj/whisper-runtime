@@ -94,13 +94,18 @@ class AcousticDiagnosticTests(unittest.TestCase):
             "against_offline_control": {"word_edit_distance": 0},
         }
         self.assertTrue(diagnostic.quality_gate("hybrid", recognition, offline))
+        self.assertTrue(diagnostic.quality_gate("context", recognition, offline))
         self.assertTrue(diagnostic.quality_gate("quiet", recognition, offline))
         recognition["against_human_reference"]["word_edit_distance"] = 7
         self.assertFalse(diagnostic.quality_gate("hybrid", recognition, offline))
+        self.assertFalse(diagnostic.quality_gate("context", recognition, offline))
         self.assertFalse(diagnostic.quality_gate("quiet", recognition, offline))
         recognition["against_human_reference"]["word_edit_distance"] = 4
         self.assertTrue(diagnostic.quality_gate("hybrid", recognition, offline))
+        self.assertTrue(diagnostic.quality_gate("context", recognition, offline))
         self.assertFalse(diagnostic.quality_gate("quiet", recognition, offline))
+        with self.assertRaises(ValueError):
+            diagnostic.quality_gate("unknown", recognition, offline)
 
     def test_registration_freezes_cases_profiles_acceptance_and_resources(self):
         original = diagnostic.registration()
@@ -111,9 +116,14 @@ class AcousticDiagnosticTests(unittest.TestCase):
             for field in (
                 "case_ids",
                 "cells",
+                "candidate_cells",
+                "control_cells",
+                "control_expectations",
+                "qualification_scope",
                 "execution",
                 "acceptance",
                 "hybrid_changes",
+                "context_changes",
                 "claim_boundary",
             ):
                 mutated = copy.deepcopy(original)
@@ -122,8 +132,7 @@ class AcousticDiagnosticTests(unittest.TestCase):
                 with self.subTest(field=field), self.assertRaises(ValueError):
                     diagnostic.registration(root)
 
-    def test_quality_failure_cannot_be_relabelled_qualified(self):
-        events, traces, pcm = self.fixture()
+    def record_fixture(self):
         cells, controls = [], {}
         for profile, case_id in diagnostic.CELLS:
             controls[case_id] = {"against_human_reference": {"word_edit_distance": 6}}
@@ -133,6 +142,7 @@ class AcousticDiagnosticTests(unittest.TestCase):
                     "profile": profile,
                     "qualified": True,
                     "stream_status": "completed",
+                    "error": None,
                     "checks": dict.fromkeys(diagnostic.CHECK_NAMES, True),
                     "quality_gate_passed": True,
                     "capacity_restored_after_close": True,
@@ -145,6 +155,19 @@ class AcousticDiagnosticTests(unittest.TestCase):
                     },
                 }
             )
+            if profile == "hybrid":
+                cells[-1].update(
+                    qualified=False,
+                    stream_status="policy_failure",
+                    quality_gate_passed=False,
+                    error={"category": "policy_resolution"},
+                )
+                cells[-1]["checks"].update(
+                    dict.fromkeys(diagnostic.COMPLETION_CHECKS, False)
+                )
+                cells[-1]["recognition"]["against_human_reference"][
+                    "word_edit_distance"
+                ] = 7
         source = {"digest": "a"}
         record = {
             "source": {"snapshot": source},
@@ -154,7 +177,17 @@ class AcousticDiagnosticTests(unittest.TestCase):
             "capacity_restored": True,
             "qualified": True,
             "status": "completed",
+            "qualification_scope": "context_candidates_with_matched_controls",
         }
+        record.update(
+            diagnostic.qualification_summary(
+                cells, model_unchanged=True, capacity_restored=True
+            )
+        )
+        return record, source
+
+    def test_quality_failure_cannot_be_relabelled_qualified(self):
+        record, source = self.record_fixture()
         diagnostic.validate_record(record, source)
         for field in (
             "quality",
@@ -168,27 +201,145 @@ class AcousticDiagnosticTests(unittest.TestCase):
         ):
             changed = copy.deepcopy(record)
             if field == "quality":
-                changed["cells"][1]["recognition"]["against_human_reference"][
+                changed["cells"][3]["recognition"]["against_human_reference"][
                     "word_edit_distance"
                 ] = 7
             elif field == "runtime":
-                changed["cells"][1]["stream_status"] = "policy_failure"
+                changed["cells"][3]["stream_status"] = "policy_failure"
             elif field == "capacity":
-                changed["cells"][1]["capacity_restored_after_close"] = False
+                changed["cells"][3]["capacity_restored_after_close"] = False
             elif field == "model":
                 changed["model"]["final_sha256"] = "y"
             elif field == "empty_checks":
-                changed["cells"][1]["checks"] = {}
+                changed["cells"][3]["checks"] = {}
             elif field == "missing_check":
-                changed["cells"][1]["checks"].pop("native_pcm_binding")
+                changed["cells"][3]["checks"].pop("native_pcm_binding")
             elif field == "numeric_check":
-                changed["cells"][1]["checks"]["native_pcm_binding"] = 1
+                changed["cells"][3]["checks"]["native_pcm_binding"] = 1
             else:
                 changed["cells"].reverse()
             with self.subTest(field=field), self.assertRaises(ValueError):
                 diagnostic.validate_record(changed, source)
 
+    def test_expected_control_failures_remain_unqualified_without_failing_candidate(
+        self,
+    ):
+        record, source = self.record_fixture()
+        diagnostic.validate_record(record, source)
+        self.assertTrue(record["candidate_qualified"])
+        self.assertTrue(record["qualified"])
+        self.assertFalse(record["all_cells_qualified"])
+        self.assertTrue(record["controls_match_expected"])
+        self.assertEqual(record["control_outcomes"], diagnostic.CONTROL_EXPECTATIONS)
+        self.assertEqual(
+            [cell["qualified"] for cell in record["cells"]],
+            [True, False, False, True, True, True, True],
+        )
+
+    def test_control_integrity_and_reproduction_cannot_be_bypassed(self):
+        record, source = self.record_fixture()
+        for field in (
+            "error",
+            "check",
+            "missing_check",
+            "numeric_check",
+            "capacity",
+            "status",
+            "quiet_quality",
+            "profile",
+            "missing_cell",
+        ):
+            changed = copy.deepcopy(record)
+            cell = changed["cells"][1]
+            if field == "error":
+                cell["error"] = {"category": "native_execution"}
+            elif field == "check":
+                cell["checks"]["native_pcm_binding"] = False
+            elif field == "missing_check":
+                cell["checks"].pop("aligned_word_identity")
+            elif field == "numeric_check":
+                cell["checks"]["bounded_audio_buffer"] = 1
+            elif field == "capacity":
+                cell["capacity_restored_after_close"] = False
+            elif field == "status":
+                cell["stream_status"] = "completed"
+            elif field == "quiet_quality":
+                changed["cells"][0]["recognition"]["against_offline_control"][
+                    "word_edit_distance"
+                ] = 1
+            elif field == "profile":
+                cell["profile"] = "context"
+            else:
+                changed["cells"].pop()
+            with self.subTest(field=field), self.assertRaises(ValueError):
+                diagnostic.validate_record(changed, source)
+
+    def test_summary_cannot_relabel_failed_controls_or_candidate(self):
+        record, source = self.record_fixture()
+        for field in (
+            "candidate_qualified",
+            "all_cells_qualified",
+            "controls_match_expected",
+            "control_outcomes",
+            "qualification_scope",
+        ):
+            changed = copy.deepcopy(record)
+            changed[field] = (
+                not changed[field] if isinstance(changed[field], bool) else {}
+            )
+            with self.subTest(field=field), self.assertRaises(ValueError):
+                diagnostic.validate_record(changed, source)
+
+    def test_unexpected_passing_controls_invalidate_matched_comparison(self):
+        record, source = self.record_fixture()
+        for cell in record["cells"][1:3]:
+            cell.update(
+                qualified=True,
+                stream_status="completed",
+                error=None,
+                quality_gate_passed=True,
+            )
+            cell["checks"].update(dict.fromkeys(diagnostic.COMPLETION_CHECKS, True))
+            cell["recognition"]["against_human_reference"]["word_edit_distance"] = 6
+        record.update(
+            diagnostic.qualification_summary(
+                record["cells"], model_unchanged=True, capacity_restored=True
+            )
+        )
+        self.assertTrue(record["all_cells_qualified"])
+        self.assertFalse(record["candidate_qualified"])
+        self.assertFalse(record["controls_match_expected"])
+        with self.assertRaises(ValueError):
+            diagnostic.validate_record(record, source)
+        record.update(qualified=False, status="failed")
+        diagnostic.validate_record(record, source)
+
+    def test_candidate_policy_failure_is_not_waived_by_expected_control_failures(self):
+        record, source = self.record_fixture()
+        candidate = copy.deepcopy(record["cells"][1])
+        candidate.update(id="context:mixed-control", profile="context")
+        record["cells"][3] = candidate
+        record.update(
+            diagnostic.qualification_summary(
+                record["cells"], model_unchanged=True, capacity_restored=True
+            )
+        )
+        record.update(qualified=False, status="failed")
+        diagnostic.validate_record(record, source)
+        self.assertTrue(record["controls_match_expected"])
+        self.assertFalse(record["candidate_qualified"])
+        self.assertFalse(record["all_cells_qualified"])
+        candidate["qualified"] = True
+        with self.assertRaises(ValueError):
+            diagnostic.validate_record(record, source)
+
     def test_real_hybrid_driver_checks_closed_quiet_without_false_stream_eof(self):
+        self._assert_real_driver(0)
+
+    def test_real_context_driver_preserves_publication_integrity(self):
+        self._assert_real_driver(600)
+
+    def _assert_real_driver(self, context_limit):
         with patch.object(
             sys,
             "path",
@@ -215,6 +366,7 @@ class AcousticDiagnosticTests(unittest.TestCase):
             input_evidence=True,
             source_units=True,
             word_boundary_fallback=True,
+            word_context_limit_ms=context_limit,
             endpointing=QuietEndpointConfig(max_quiet_unit_ms=2000),
         )
         stream = ContinuousTranscriptStream(
@@ -248,7 +400,9 @@ class AcousticDiagnosticTests(unittest.TestCase):
         )
         checks.update(diagnostic.publication_checks(events, traces, pcm))
         checks["profile_identity"] = stream.profile_id == (
-            "word_boundary_quiet_endpoint_stream/v1+input_evidence/v1"
+            "word_boundary_quiet_endpoint_stream/v1"
+            + ("+word_context/v1" if context_limit else "")
+            + "+input_evidence/v1"
         )
         self.assertEqual(set(checks), diagnostic.CHECK_NAMES)
         self.assertTrue(all(checks.values()), checks)
