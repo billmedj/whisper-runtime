@@ -16,7 +16,7 @@ A gate closes only when its acceptance cases and results are committed.
 | Gate | Deliverable | Status | Depends on |
 | --- | --- | --- | --- |
 | D0 | Governed decoding and timed publication | Validated within the recorded pre-alpha scope | None |
-| D1 | Continuous transcription with progressive commits | Next; prerequisites implemented | D0 |
+| D1 | Continuous transcription with progressive commits | Experimental rolling profile implemented; long-session gate open | D0 |
 | D2 | A usable local live-transcription entry point | Planned | D1 |
 | D3 | Broader quality and failure coverage | Initial coverage; expand alongside D1-D2 | D0; release gate for D2 |
 | D4 | Measured compute and memory improvements | Not demonstrated | D1 and matched D3 baselines |
@@ -38,7 +38,7 @@ A gate closes only when its acceptance cases and results are committed.
 - [x] Select complete segments from a larger analysis span without rewriting
   already committed output.
 
-Evidence includes 217 runtime tests, 198 repository-tool tests, 55 Lean theorem
+Evidence includes 270 runtime tests, 208 repository-tool tests, 55 Lean theorem
 declarations for the abstract protocol, built-package tests, CPU runs, and a
 narrow T4 qualification. The [evidence index](../evidence/README.md) defines each
 record's scope. The [timed-publication smoke](../evidence/native-cpu-tiny-en-jfk-timed-publication-2026-09-05.json)
@@ -57,7 +57,14 @@ Limits:
 
 ## D1. Continuous transcription with progressive commits
 
-**Status: next.**
+**Status: experimental profile implemented; acceptance gate remains open.**
+
+The [timestamp agreement stream](CONTINUOUS_STREAMING.md) implements growing
+native hypotheses, prefix publication, bounded rolling PCM, thread-safe input
+admission, and explicit backpressure. Deterministic tests cover rolling windows,
+chunk partitions, cancellation, and retained-resource recovery. Gaps and
+unstable prefixes can still stop this conservative profile. These tests do not
+close the real-audio 30-minute gate below.
 
 Deliver a separately named continuous profile. Keep the existing
 offline-compatible and bounded-preview paths.

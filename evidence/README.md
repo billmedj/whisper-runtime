@@ -1,5 +1,38 @@
 # Integration evidence
 
+The [33-second rolling-stream diagnostic](modal-t4-tiny-en-continuous-smoke-v2-2026-09-05.json)
+and [receipt](modal-t4-tiny-en-continuous-smoke-v2-2026-09-05.attempt.jsonl) extend
+the first T4 case with three exact concatenations of the converted JFK PCM.
+The stream made four pre-EOF commits and one EOF commit. All 528,000 samples
+were accounted for; the peak input buffer held 168,960 samples (10.56 seconds).
+The 40 ordered events and resource-release checks passed. The 34 decodes were
+not paced in real time. This is a synthetic rolling-input test, not a diverse
+corpus or a 30-minute live qualification.
+
+**Recognition quality did not match the segmented reference.** The final text
+contains "am I fellow Americans" where the reference contains "my fellow
+Americans". The record retains this difference and both complete transcripts.
+Its `passed` status applies to the registered lifecycle checks, not recognition
+quality. The reference is one same-options 11-second decode repeated three
+times, not a full 33-second decode. Legacy `full_window_control` check aliases
+remain in the record; `segmented_control.scope` defines the actual comparison.
+GPU allocation and reservation peaks are observations, not general memory
+bounds. Independent review checked source hashes, receipts, all event revisions,
+input accounting, the quality difference, and sanitization before this copy.
+
+The [rolling-stream T4 diagnostic](modal-t4-tiny-en-continuous-smoke-v1-2026-09-05.json)
+and its [attempt receipt](modal-t4-tiny-en-continuous-smoke-v1-2026-09-05.attempt.jsonl)
+record the first native `timestamp_agreement_stream/v1` case on Modal. The
+11-second JFK input produced one pre-EOF commit at 7,440 ms and a final commit at
+11,000 ms. Committed text matches a same-options full-window control after
+whitespace normalization. All recorded lifecycle checks passed and capacity
+was released. The exact 18-file source snapshot is preserved in local commit
+`2f47111`; the record does not claim a public preregistration or public source
+commit at execution time. The 1.76694553-second loop was not paced in real time.
+It does not establish live latency, rolling operation beyond 30 seconds, or a
+performance improvement. Independent review checked the source snapshot,
+receipt digest, event sequence, scope, and sanitization before this copy.
+
 The [timed-publication CPU smoke](native-cpu-tiny-en-jfk-timed-publication-2026-09-05.json)
 records one full-window timestamp-enabled control and two selected publications
 from that same audio. The decoded spans are 0–8 seconds and 8–11 seconds. Both
@@ -16,8 +49,8 @@ resource release. It is a diagnostic smoke record, not a registered CUDA
 qualification or a live-performance benchmark. See the
 [test scope](../docs/BOUNDED_STREAMING.md#local-cpu-smoke).
 
-In addition to the two local smoke records above, this directory contains nine
-committed records from real backend runs:
+In addition to the rolling-stream diagnostics and two local smoke records above,
+this directory contains nine earlier records from real backend runs:
 
 - `native-cpu-tiny-en-jfk-2026-09-03.json` records one
   `NativeWhisperAdapter` transaction.

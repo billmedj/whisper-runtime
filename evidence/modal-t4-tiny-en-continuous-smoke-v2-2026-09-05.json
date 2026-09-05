@@ -1,0 +1,762 @@
+{
+  "schema_version": "2-diagnostic",
+  "recorded_at": "2026-09-05T03:32:05.215308Z",
+  "status": "passed",
+  "attempt": 1,
+  "claim_boundary": {
+    "qualification": false,
+    "performance_benchmark": false,
+    "production_readiness": false,
+    "public_commit_reproducibility": false
+  },
+  "source": {
+    "public_base_commit": "9c2494234f08b24325d427ea422818b24f460c0c",
+    "snapshot": {
+      "algorithm": "sha256-file-manifest-v1",
+      "digest": "516a0060c81489e34961830ce057f8d8083948f890e604753d911fe713931f9c",
+      "files": [
+        {
+          "path": "experiments/modal-continuous-smoke-v2.json",
+          "size_bytes": 4540,
+          "sha256": "ccf1b66fd4d5410a9c31e247220f0fc89e3dabd720bf3d865536758bdb006477"
+        },
+        {
+          "path": "infra/modal_continuous_smoke.py",
+          "size_bytes": 36793,
+          "sha256": "5f88560cdacb0780e108cd9b222b95a361f5a8b1107b7db59da5b5db55596f70"
+        },
+        {
+          "path": "src/whisper_runtime/__init__.py",
+          "size_bytes": 1533,
+          "sha256": "6b6c549bf89264c59b8808cf5cba240599af10f0cd12610a859ff964d6fed2aa"
+        },
+        {
+          "path": "src/whisper_runtime/adapters/__init__.py",
+          "size_bytes": 2413,
+          "sha256": "9cfff44bff3655e2c300278d45cdb8b9d58011310f41e5ec397d9b0b5bbfd16a"
+        },
+        {
+          "path": "src/whisper_runtime/adapters/_model_binding.py",
+          "size_bytes": 6523,
+          "sha256": "2c749b630c8736234ab844a104a2367be90cfd5004cbb74962016410d216dc74"
+        },
+        {
+          "path": "src/whisper_runtime/adapters/continuous_stream.py",
+          "size_bytes": 16598,
+          "sha256": "f6ef9a39d44f7c52c64b89e19fe420dcc5655738a8459846df3d07d4e703ad9f"
+        },
+        {
+          "path": "src/whisper_runtime/adapters/legacy_whisper.py",
+          "size_bytes": 33513,
+          "sha256": "14b6f771c114238317d5118ba64c64334857e8e9da1d0f360baeeef48f3415e0"
+        },
+        {
+          "path": "src/whisper_runtime/adapters/native_result.py",
+          "size_bytes": 12573,
+          "sha256": "3198b3996e7445449d7c74092ecef79d5a3615c1ebb48951c9bc7bbba3c18d92"
+        },
+        {
+          "path": "src/whisper_runtime/adapters/native_stream.py",
+          "size_bytes": 27068,
+          "sha256": "01898983175014ac33e66c00be5bc92b96d0f300c0b20eb57a13cb4f384f0c39"
+        },
+        {
+          "path": "src/whisper_runtime/adapters/native_whisper.py",
+          "size_bytes": 54241,
+          "sha256": "1b2a3a22b4b5c30d0cca24602307aaa7154bd3a82519e412d52123ce7d41655a"
+        },
+        {
+          "path": "src/whisper_runtime/adapters/stream_policy.py",
+          "size_bytes": 6709,
+          "sha256": "454dd3729b8bbecff04415d9009dce43ffa3550f1027ad8f038fb5a673d16348"
+        },
+        {
+          "path": "src/whisper_runtime/errors.py",
+          "size_bytes": 2439,
+          "sha256": "87127fee36ff6706360f8ad82ea49a0dea870d9cd1831ceec3aeb31c2d8e89df"
+        },
+        {
+          "path": "src/whisper_runtime/execution.py",
+          "size_bytes": 7533,
+          "sha256": "ea758adb9ea4204f29f5b444ecf54331d751b66e3b4373014179522a225cef44"
+        },
+        {
+          "path": "src/whisper_runtime/model.py",
+          "size_bytes": 558,
+          "sha256": "bfe66fb074d308447e94af78851db46a1819d291cad9fde742b28dcc0be629c0"
+        },
+        {
+          "path": "src/whisper_runtime/resources.py",
+          "size_bytes": 6384,
+          "sha256": "5beec172371839ab73bb3ca594b22460f37723f1347db74841a43a4a102716d5"
+        },
+        {
+          "path": "src/whisper_runtime/state.py",
+          "size_bytes": 11988,
+          "sha256": "2b234b2a9b7618a4834cdc906052c3ca46ecab0a73eba04d9eb3f891dc01c312"
+        },
+        {
+          "path": "src/whisper_runtime/transaction.py",
+          "size_bytes": 37581,
+          "sha256": "d9e4622ff289b182d7a2b23ebc6243e661da9f9061484107b3da09feb1ed44e4"
+        },
+        {
+          "path": "src/whisper_runtime/worker.py",
+          "size_bytes": 11824,
+          "sha256": "92dc3f3366903c4304aaa7919dc84d8252bbdd02279d876701159bf0e092e077"
+        }
+      ]
+    },
+    "registration_sha256": "ccf1b66fd4d5410a9c31e247220f0fc89e3dabd720bf3d865536758bdb006477",
+    "public_commit_reproducibility": false
+  },
+  "worker": {
+    "function_call_id_sha256": "ca3048656ef27184fabb774a89e67506536db9d0d425ac656d15083db6282aab",
+    "python": "3.13.3",
+    "modal": "1.5.5",
+    "torch": "2.6.0+cu124"
+  },
+  "gpu": {
+    "name": "Tesla T4",
+    "compute_capability": [
+      7,
+      5
+    ],
+    "peak_allocated_bytes": 456675840,
+    "peak_reserved_bytes": 2338324480
+  },
+  "model": {
+    "name": "tiny.en",
+    "device": "cuda:0",
+    "checkpoint_sha256": "d3dd57d32accea0b295c96e26691aa14d8822fac7d9d27d5dc00b4ca2826dd03"
+  },
+  "input": {
+    "fixture": "openai-whisper-jfk-flac",
+    "sample_rate_hz": 16000,
+    "sample_count": 528000,
+    "pcm_s16le_sha256": "a3fd62a5bb6caecc25585b9f81bc6f379726c723f5fec6f1557e01508a192372",
+    "decoded_float32_fingerprint": "59be237a0814faee9f1279bc54c8a482fa7edc09a640ff0fdd18d14d41519065",
+    "fixture_duration_ms": 11000,
+    "fixture_repetitions": 3,
+    "construction": "repeat-converted-pcm-s16le"
+  },
+  "segmented_control": {
+    "scope": "One native decode of the 11-second fixture was normalized and repeated 3 times. This is a segmented reference, not a 33-second full-window decode. Exact equality is diagnostic because rolling windows change context.",
+    "step_count": 28,
+    "single_fixture_text": "And so my fellow Americans ask not what your country can do for you ask what you can do for your country.",
+    "single_fixture_text_sha256": "9f8e19cfc179e7b33762d18d6f394cf31f5b09f004a220dff3b28734748a7d5d",
+    "reference_text": "And so my fellow Americans ask not what your country can do for you ask what you can do for your country. And so my fellow Americans ask not what your country can do for you ask what you can do for your country. And so my fellow Americans ask not what your country can do for you ask what you can do for your country.",
+    "reference_text_sha256": "bcd61cc764682edee4b7998e5e82b718231be0f2ad1d40180172608bb9889878",
+    "fixture_repetitions": 3,
+    "reference_untimed_transcript_sha256": "dfe1af694958a82c9d89d31bf0378075a10d40f715e670b6e5169042c8680cec"
+  },
+  "stream": {
+    "profile_id": "timestamp_agreement_stream/v1",
+    "config": {
+      "preview_interval_ms": 1000,
+      "max_window_ms": 30000,
+      "max_buffer_ms": 40000,
+      "holdback_ms": 1000,
+      "timestamp_tolerance_ms": 200
+    },
+    "driver_steps": 603,
+    "events": [
+      {
+        "sequence_number": 1,
+        "kind": "provisional",
+        "segment_id": "modal-continuous-smoke-v2:attempt:1:stream:segment:0",
+        "revision": 1,
+        "start_sample": 0,
+        "end_sample": 16000,
+        "sample_rate_hz": 16000,
+        "text": "And so...",
+        "supersedes_revision": null,
+        "committed_through_sample": null,
+        "committed_through_ms": null,
+        "session_version": 0
+      },
+      {
+        "sequence_number": 2,
+        "kind": "replace",
+        "segment_id": "modal-continuous-smoke-v2:attempt:1:stream:segment:0",
+        "revision": 2,
+        "start_sample": 0,
+        "end_sample": 32000,
+        "sample_rate_hz": 16000,
+        "text": "And so my fellow American",
+        "supersedes_revision": 1,
+        "committed_through_sample": null,
+        "committed_through_ms": null,
+        "session_version": 0
+      },
+      {
+        "sequence_number": 3,
+        "kind": "replace",
+        "segment_id": "modal-continuous-smoke-v2:attempt:1:stream:segment:0",
+        "revision": 3,
+        "start_sample": 0,
+        "end_sample": 48000,
+        "sample_rate_hz": 16000,
+        "text": "And so am I fellow Americans.",
+        "supersedes_revision": 2,
+        "committed_through_sample": null,
+        "committed_through_ms": null,
+        "session_version": 0
+      },
+      {
+        "sequence_number": 4,
+        "kind": "replace",
+        "segment_id": "modal-continuous-smoke-v2:attempt:1:stream:segment:0",
+        "revision": 4,
+        "start_sample": 0,
+        "end_sample": 64000,
+        "sample_rate_hz": 16000,
+        "text": "And so my fellow Americans asked",
+        "supersedes_revision": 3,
+        "committed_through_sample": null,
+        "committed_through_ms": null,
+        "session_version": 0
+      },
+      {
+        "sequence_number": 5,
+        "kind": "replace",
+        "segment_id": "modal-continuous-smoke-v2:attempt:1:stream:segment:0",
+        "revision": 5,
+        "start_sample": 0,
+        "end_sample": 80000,
+        "sample_rate_hz": 16000,
+        "text": "And so my fellow Americans ask not",
+        "supersedes_revision": 4,
+        "committed_through_sample": null,
+        "committed_through_ms": null,
+        "session_version": 0
+      },
+      {
+        "sequence_number": 6,
+        "kind": "replace",
+        "segment_id": "modal-continuous-smoke-v2:attempt:1:stream:segment:0",
+        "revision": 6,
+        "start_sample": 0,
+        "end_sample": 96000,
+        "sample_rate_hz": 16000,
+        "text": "And so my fellow Americans ask not what your",
+        "supersedes_revision": 5,
+        "committed_through_sample": null,
+        "committed_through_ms": null,
+        "session_version": 0
+      },
+      {
+        "sequence_number": 7,
+        "kind": "replace",
+        "segment_id": "modal-continuous-smoke-v2:attempt:1:stream:segment:0",
+        "revision": 7,
+        "start_sample": 0,
+        "end_sample": 112000,
+        "sample_rate_hz": 16000,
+        "text": "And so my fellow Americans ask not what your country can do for",
+        "supersedes_revision": 6,
+        "committed_through_sample": null,
+        "committed_through_ms": null,
+        "session_version": 0
+      },
+      {
+        "sequence_number": 8,
+        "kind": "replace",
+        "segment_id": "modal-continuous-smoke-v2:attempt:1:stream:segment:0",
+        "revision": 8,
+        "start_sample": 0,
+        "end_sample": 128000,
+        "sample_rate_hz": 16000,
+        "text": "And so my fellow Americans ask not what your country can do for you.",
+        "supersedes_revision": 7,
+        "committed_through_sample": null,
+        "committed_through_ms": null,
+        "session_version": 0
+      },
+      {
+        "sequence_number": 9,
+        "kind": "replace",
+        "segment_id": "modal-continuous-smoke-v2:attempt:1:stream:segment:0",
+        "revision": 9,
+        "start_sample": 0,
+        "end_sample": 144000,
+        "sample_rate_hz": 16000,
+        "text": "And so my fellow Americans ask not what your country can do for you ask what you",
+        "supersedes_revision": 8,
+        "committed_through_sample": null,
+        "committed_through_ms": null,
+        "session_version": 0
+      },
+      {
+        "sequence_number": 10,
+        "kind": "replace",
+        "segment_id": "modal-continuous-smoke-v2:attempt:1:stream:segment:0",
+        "revision": 10,
+        "start_sample": 0,
+        "end_sample": 119040,
+        "sample_rate_hz": 16000,
+        "text": "And so my fellow Americans ask not what your country can do for you",
+        "supersedes_revision": 9,
+        "committed_through_sample": null,
+        "committed_through_ms": null,
+        "session_version": 1
+      },
+      {
+        "sequence_number": 11,
+        "kind": "commit",
+        "segment_id": "modal-continuous-smoke-v2:attempt:1:stream:segment:0",
+        "revision": 10,
+        "start_sample": 0,
+        "end_sample": 119040,
+        "sample_rate_hz": 16000,
+        "text": null,
+        "supersedes_revision": null,
+        "committed_through_sample": 119040,
+        "committed_through_ms": 7440,
+        "session_version": 1
+      },
+      {
+        "sequence_number": 12,
+        "kind": "provisional",
+        "segment_id": "modal-continuous-smoke-v2:attempt:1:stream:segment:1",
+        "revision": 1,
+        "start_sample": 119040,
+        "end_sample": 176000,
+        "sample_rate_hz": 16000,
+        "text": "ask what you can do for your country.",
+        "supersedes_revision": null,
+        "committed_through_sample": null,
+        "committed_through_ms": null,
+        "session_version": 1
+      },
+      {
+        "sequence_number": 13,
+        "kind": "replace",
+        "segment_id": "modal-continuous-smoke-v2:attempt:1:stream:segment:1",
+        "revision": 2,
+        "start_sample": 119040,
+        "end_sample": 192000,
+        "sample_rate_hz": 16000,
+        "text": "ask what you can do for your country and so",
+        "supersedes_revision": 1,
+        "committed_through_sample": null,
+        "committed_through_ms": null,
+        "session_version": 1
+      },
+      {
+        "sequence_number": 14,
+        "kind": "replace",
+        "segment_id": "modal-continuous-smoke-v2:attempt:1:stream:segment:1",
+        "revision": 3,
+        "start_sample": 119040,
+        "end_sample": 208000,
+        "sample_rate_hz": 16000,
+        "text": "ask what you can do for your country and so my fellow American",
+        "supersedes_revision": 2,
+        "committed_through_sample": null,
+        "committed_through_ms": null,
+        "session_version": 1
+      },
+      {
+        "sequence_number": 15,
+        "kind": "replace",
+        "segment_id": "modal-continuous-smoke-v2:attempt:1:stream:segment:1",
+        "revision": 4,
+        "start_sample": 119040,
+        "end_sample": 224000,
+        "sample_rate_hz": 16000,
+        "text": "ask what you can do for your country and so am I fellow Americans",
+        "supersedes_revision": 3,
+        "committed_through_sample": null,
+        "committed_through_ms": null,
+        "session_version": 1
+      },
+      {
+        "sequence_number": 16,
+        "kind": "replace",
+        "segment_id": "modal-continuous-smoke-v2:attempt:1:stream:segment:1",
+        "revision": 5,
+        "start_sample": 119040,
+        "end_sample": 240000,
+        "sample_rate_hz": 16000,
+        "text": "ask what you can do for your country and so my fellow Americans ask",
+        "supersedes_revision": 4,
+        "committed_through_sample": null,
+        "committed_through_ms": null,
+        "session_version": 1
+      },
+      {
+        "sequence_number": 17,
+        "kind": "replace",
+        "segment_id": "modal-continuous-smoke-v2:attempt:1:stream:segment:1",
+        "revision": 6,
+        "start_sample": 119040,
+        "end_sample": 256000,
+        "sample_rate_hz": 16000,
+        "text": "ask what you can do for your country and so my fellow Americans ask not",
+        "supersedes_revision": 5,
+        "committed_through_sample": null,
+        "committed_through_ms": null,
+        "session_version": 1
+      },
+      {
+        "sequence_number": 18,
+        "kind": "replace",
+        "segment_id": "modal-continuous-smoke-v2:attempt:1:stream:segment:1",
+        "revision": 7,
+        "start_sample": 119040,
+        "end_sample": 272000,
+        "sample_rate_hz": 16000,
+        "text": "ask what you can do for your country and so my fellow Americans ask not what your country",
+        "supersedes_revision": 6,
+        "committed_through_sample": null,
+        "committed_through_ms": null,
+        "session_version": 1
+      },
+      {
+        "sequence_number": 19,
+        "kind": "replace",
+        "segment_id": "modal-continuous-smoke-v2:attempt:1:stream:segment:1",
+        "revision": 8,
+        "start_sample": 119040,
+        "end_sample": 264640,
+        "sample_rate_hz": 16000,
+        "text": "ask what you can do for your country and so my fellow Americans ask not what",
+        "supersedes_revision": 7,
+        "committed_through_sample": null,
+        "committed_through_ms": null,
+        "session_version": 2
+      },
+      {
+        "sequence_number": 20,
+        "kind": "commit",
+        "segment_id": "modal-continuous-smoke-v2:attempt:1:stream:segment:1",
+        "revision": 8,
+        "start_sample": 119040,
+        "end_sample": 264640,
+        "sample_rate_hz": 16000,
+        "text": null,
+        "supersedes_revision": null,
+        "committed_through_sample": 264640,
+        "committed_through_ms": 16540,
+        "session_version": 2
+      },
+      {
+        "sequence_number": 21,
+        "kind": "provisional",
+        "segment_id": "modal-continuous-smoke-v2:attempt:1:stream:segment:2",
+        "revision": 1,
+        "start_sample": 264640,
+        "end_sample": 304000,
+        "sample_rate_hz": 16000,
+        "text": "your country can do for you.",
+        "supersedes_revision": null,
+        "committed_through_sample": null,
+        "committed_through_ms": null,
+        "session_version": 2
+      },
+      {
+        "sequence_number": 22,
+        "kind": "replace",
+        "segment_id": "modal-continuous-smoke-v2:attempt:1:stream:segment:2",
+        "revision": 2,
+        "start_sample": 264640,
+        "end_sample": 320000,
+        "sample_rate_hz": 16000,
+        "text": "your country can do for you ask what you",
+        "supersedes_revision": 1,
+        "committed_through_sample": null,
+        "committed_through_ms": null,
+        "session_version": 2
+      },
+      {
+        "sequence_number": 23,
+        "kind": "replace",
+        "segment_id": "modal-continuous-smoke-v2:attempt:1:stream:segment:2",
+        "revision": 3,
+        "start_sample": 264640,
+        "end_sample": 336000,
+        "sample_rate_hz": 16000,
+        "text": "your country can do for you ask what you can do for your",
+        "supersedes_revision": 2,
+        "committed_through_sample": null,
+        "committed_through_ms": null,
+        "session_version": 2
+      },
+      {
+        "sequence_number": 24,
+        "kind": "replace",
+        "segment_id": "modal-continuous-smoke-v2:attempt:1:stream:segment:2",
+        "revision": 4,
+        "start_sample": 264640,
+        "end_sample": 352000,
+        "sample_rate_hz": 16000,
+        "text": "your country can do for you ask what you can do for your country.",
+        "supersedes_revision": 3,
+        "committed_through_sample": null,
+        "committed_through_ms": null,
+        "session_version": 2
+      },
+      {
+        "sequence_number": 25,
+        "kind": "replace",
+        "segment_id": "modal-continuous-smoke-v2:attempt:1:stream:segment:2",
+        "revision": 5,
+        "start_sample": 264640,
+        "end_sample": 368000,
+        "sample_rate_hz": 16000,
+        "text": "your country can do for you ask what you can do for your country. And so",
+        "supersedes_revision": 4,
+        "committed_through_sample": null,
+        "committed_through_ms": null,
+        "session_version": 2
+      },
+      {
+        "sequence_number": 26,
+        "kind": "replace",
+        "segment_id": "modal-continuous-smoke-v2:attempt:1:stream:segment:2",
+        "revision": 6,
+        "start_sample": 264640,
+        "end_sample": 360640,
+        "sample_rate_hz": 16000,
+        "text": "your country can do for you ask what you can do for your country.",
+        "supersedes_revision": 5,
+        "committed_through_sample": null,
+        "committed_through_ms": null,
+        "session_version": 3
+      },
+      {
+        "sequence_number": 27,
+        "kind": "commit",
+        "segment_id": "modal-continuous-smoke-v2:attempt:1:stream:segment:2",
+        "revision": 6,
+        "start_sample": 264640,
+        "end_sample": 360640,
+        "sample_rate_hz": 16000,
+        "text": null,
+        "supersedes_revision": null,
+        "committed_through_sample": 360640,
+        "committed_through_ms": 22540,
+        "session_version": 3
+      },
+      {
+        "sequence_number": 28,
+        "kind": "provisional",
+        "segment_id": "modal-continuous-smoke-v2:attempt:1:stream:segment:3",
+        "revision": 1,
+        "start_sample": 360640,
+        "end_sample": 400000,
+        "sample_rate_hz": 16000,
+        "text": "and so am i fell america",
+        "supersedes_revision": null,
+        "committed_through_sample": null,
+        "committed_through_ms": null,
+        "session_version": 3
+      },
+      {
+        "sequence_number": 29,
+        "kind": "replace",
+        "segment_id": "modal-continuous-smoke-v2:attempt:1:stream:segment:3",
+        "revision": 2,
+        "start_sample": 360640,
+        "end_sample": 416000,
+        "sample_rate_hz": 16000,
+        "text": "And so am I fellow Americans.",
+        "supersedes_revision": 1,
+        "committed_through_sample": null,
+        "committed_through_ms": null,
+        "session_version": 3
+      },
+      {
+        "sequence_number": 30,
+        "kind": "replace",
+        "segment_id": "modal-continuous-smoke-v2:attempt:1:stream:segment:3",
+        "revision": 3,
+        "start_sample": 360640,
+        "end_sample": 408640,
+        "sample_rate_hz": 16000,
+        "text": "And so am I fellow Americans.",
+        "supersedes_revision": 2,
+        "committed_through_sample": null,
+        "committed_through_ms": null,
+        "session_version": 4
+      },
+      {
+        "sequence_number": 31,
+        "kind": "commit",
+        "segment_id": "modal-continuous-smoke-v2:attempt:1:stream:segment:3",
+        "revision": 3,
+        "start_sample": 360640,
+        "end_sample": 408640,
+        "sample_rate_hz": 16000,
+        "text": null,
+        "supersedes_revision": null,
+        "committed_through_sample": 408640,
+        "committed_through_ms": 25540,
+        "session_version": 4
+      },
+      {
+        "sequence_number": 32,
+        "kind": "provisional",
+        "segment_id": "modal-continuous-smoke-v2:attempt:1:stream:segment:4",
+        "revision": 1,
+        "start_sample": 408640,
+        "end_sample": 448000,
+        "sample_rate_hz": 16000,
+        "text": "ask not what you are coming.",
+        "supersedes_revision": null,
+        "committed_through_sample": null,
+        "committed_through_ms": null,
+        "session_version": 4
+      },
+      {
+        "sequence_number": 33,
+        "kind": "replace",
+        "segment_id": "modal-continuous-smoke-v2:attempt:1:stream:segment:4",
+        "revision": 2,
+        "start_sample": 408640,
+        "end_sample": 464000,
+        "sample_rate_hz": 16000,
+        "text": "ask not what your country can do.",
+        "supersedes_revision": 1,
+        "committed_through_sample": null,
+        "committed_through_ms": null,
+        "session_version": 4
+      },
+      {
+        "sequence_number": 34,
+        "kind": "replace",
+        "segment_id": "modal-continuous-smoke-v2:attempt:1:stream:segment:4",
+        "revision": 3,
+        "start_sample": 408640,
+        "end_sample": 480000,
+        "sample_rate_hz": 16000,
+        "text": "ask not what your country can do for you.",
+        "supersedes_revision": 2,
+        "committed_through_sample": null,
+        "committed_through_ms": null,
+        "session_version": 4
+      },
+      {
+        "sequence_number": 35,
+        "kind": "replace",
+        "segment_id": "modal-continuous-smoke-v2:attempt:1:stream:segment:4",
+        "revision": 4,
+        "start_sample": 408640,
+        "end_sample": 496000,
+        "sample_rate_hz": 16000,
+        "text": "ask not what your country can do for you. Ask what you",
+        "supersedes_revision": 3,
+        "committed_through_sample": null,
+        "committed_through_ms": null,
+        "session_version": 4
+      },
+      {
+        "sequence_number": 36,
+        "kind": "replace",
+        "segment_id": "modal-continuous-smoke-v2:attempt:1:stream:segment:4",
+        "revision": 5,
+        "start_sample": 408640,
+        "end_sample": 512000,
+        "sample_rate_hz": 16000,
+        "text": "ask not what your country can do for you. Ask what you can do for your",
+        "supersedes_revision": 4,
+        "committed_through_sample": null,
+        "committed_through_ms": null,
+        "session_version": 4
+      },
+      {
+        "sequence_number": 37,
+        "kind": "replace",
+        "segment_id": "modal-continuous-smoke-v2:attempt:1:stream:segment:4",
+        "revision": 6,
+        "start_sample": 408640,
+        "end_sample": 528000,
+        "sample_rate_hz": 16000,
+        "text": "ask not what your country can do for you. Ask what you can do for your country.",
+        "supersedes_revision": 5,
+        "committed_through_sample": null,
+        "committed_through_ms": null,
+        "session_version": 4
+      },
+      {
+        "sequence_number": 38,
+        "kind": "replace",
+        "segment_id": "modal-continuous-smoke-v2:attempt:1:stream:segment:4",
+        "revision": 7,
+        "start_sample": 408640,
+        "end_sample": 528000,
+        "sample_rate_hz": 16000,
+        "text": "ask not what your country can do for you. Ask what you can do for your country.",
+        "supersedes_revision": 6,
+        "committed_through_sample": null,
+        "committed_through_ms": null,
+        "session_version": 5
+      },
+      {
+        "sequence_number": 39,
+        "kind": "commit",
+        "segment_id": "modal-continuous-smoke-v2:attempt:1:stream:segment:4",
+        "revision": 7,
+        "start_sample": 408640,
+        "end_sample": 528000,
+        "sample_rate_hz": 16000,
+        "text": null,
+        "supersedes_revision": null,
+        "committed_through_sample": 528000,
+        "committed_through_ms": 33000,
+        "session_version": 5
+      },
+      {
+        "sequence_number": 40,
+        "kind": "final",
+        "segment_id": null,
+        "revision": null,
+        "start_sample": null,
+        "end_sample": null,
+        "sample_rate_hz": null,
+        "text": null,
+        "supersedes_revision": null,
+        "committed_through_sample": null,
+        "committed_through_ms": null,
+        "session_version": 5
+      }
+    ],
+    "metrics": {
+      "accepted_samples": 528000,
+      "committed_samples": 528000,
+      "buffered_samples": 0,
+      "peak_buffered_samples": 168960,
+      "decode_count": 34,
+      "decoded_source_samples": 3021440,
+      "events_emitted": 40,
+      "accepted_chunks": 33
+    },
+    "final_transcript": "And so my fellow Americans ask not what your country can do for you ask what you can do for your country and so my fellow Americans ask not what your country can do for you ask what you can do for your country. And so am I fellow Americans. ask not what your country can do for you. Ask what you can do for your country.",
+    "final_transcript_sha256": "35f431cc47be2c12fa46494ae7e350f091b3bb8c3a9420c66e6aa756ef5ba439",
+    "pre_eof_commit_count": 4,
+    "session_version": 5,
+    "committed_through_ms": 33000,
+    "error": null
+  },
+  "checks": {
+    "ordered_events": true,
+    "immutable_committed_revisions": true,
+    "monotonic_commit_watermarks": true,
+    "final_event_once": true,
+    "full_input_committed_at_eof": true,
+    "bounded_audio_buffer": true,
+    "runtime_capacity_restored": true,
+    "nonempty_final_transcript": true,
+    "nonempty_full_window_control": true,
+    "nonempty_segmented_control": true,
+    "pre_eof_commit_observed": true,
+    "continuous_matches_full_window_control": false,
+    "continuous_matches_segmented_control": false,
+    "reference_untimed_text_observed": false
+  },
+  "timing": {
+    "wall_ns": 3325695077,
+    "benchmark": false
+  }
+}

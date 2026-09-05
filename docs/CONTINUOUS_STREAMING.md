@@ -64,6 +64,18 @@ important cases to resolve before general live use.
 
 ## Verification scope
 
+The first two [recorded T4 diagnostics](../evidence/README.md) use `tiny.en`
+FP32. The 11-second case matches its same-options control after whitespace
+normalization. The 33-second synthetic concatenation exercises rolling commits
+and releases all resources, but its text differs from the segmented reference.
+Both were unpaced file replays. The larger test reached a 10.56-second peak PCM
+buffer; this is not a total process-memory bound.
+
+Next, test the effect of window boundaries and retained context on recognition
+with matched inputs. Do not tune the policy solely to one JFK phrase. Add real
+silence, distinct recordings, and long paced input before widening the profile's
+claims. Preserve the failed text comparison as a regression observation.
+
 Deterministic tests exercise agreement and runtime lifecycle behavior without
 requiring a model. Native GPU diagnostics must record the tested source snapshot,
 model, input, configuration, events, and outcome separately. A short diagnostic

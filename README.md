@@ -29,6 +29,7 @@ explicit.
 | Native adapter | Provides a managed, token-step run handle over the patched decoder; CPU and one strict single-lane T4 profile have recorded integration cases |
 | Timed publication | Retains decoder metadata and selects complete timestamped segments; analysis can overlap committed audio without rewriting published text |
 | Bounded audio previews | Accepts ordered PCM for a slice of up to 30 seconds, drives native token steps, and emits provisional, replacement, commit, and final events |
+| Rolling transcript profile | Accepts input on a producer thread and commits agreed timestamp segments before EOF; unresolved prefixes cause explicit backpressure rather than audio loss. See [scope and limits](docs/CONTINUOUS_STREAMING.md). |
 | Conformance data | Records four pinned JFK CPU comparisons: greedy, beam search, word timestamps, and translation |
 | Isolation checks | Exercises two staged decodes under a fixed schedule and in two operating-system threads, cleans one early, and checks the survivor against an isolated baseline |
 | Formal model | Proves abstract lease, capacity, lifecycle, stale-commit, committed-prefix, completion-fence, quarantine, and release properties in Lean |

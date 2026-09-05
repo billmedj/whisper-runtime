@@ -7,6 +7,8 @@ import json
 import os
 import tempfile
 import unittest
+from dataclasses import dataclass
+from enum import Enum
 from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import patch
@@ -26,6 +28,49 @@ class _Remote:
         if self.error is not None:
             raise self.error
         return self.result
+
+
+class _Kind(str, Enum):
+    PROVISIONAL = "provisional"
+
+
+@dataclass
+class _Event:
+    sequence_number: int
+    kind: _Kind
+
+
+class StreamNeedsResolutionError(Exception):
+    pass
+
+
+class _PartialThenUnresolvedStream:
+    def __init__(self) -> None:
+        self.chunks = 0
+        self.processed = 0
+
+    @property
+    def ready(self) -> bool:
+        return self.chunks > self.processed
+
+    def push(self, sequence: int, content: bytes) -> None:
+        del sequence, content
+        self.chunks += 1
+
+    def step(self) -> tuple[_Event, ...]:
+        if self.processed == 0:
+            self.processed += 1
+            return (_Event(1, _Kind.PROVISIONAL),)
+        raise StreamNeedsResolutionError("untrusted path or backend details")
+
+    def finish_input(self) -> None:
+        raise AssertionError("the failing stream must stop before EOF")
+
+    def __enter__(self) -> _PartialThenUnresolvedStream:
+        return self
+
+    def __exit__(self, *exc: object) -> None:
+        del exc
 
 
 class ModalContinuousSmokeTests(unittest.TestCase):
@@ -64,6 +109,59 @@ class ModalContinuousSmokeTests(unittest.TestCase):
         self.assertNotIn("expected_text_sha256", cell)
         self.assertEqual(len(cell["decoded_float32_fingerprint"]), 64)
         self.assertEqual(len(cell["converted_pcm_s16le_sha256"]), 64)
+
+    def test_second_registration_is_the_final_campaign_call(self) -> None:
+        manifest = json.loads(
+            (smoke.ROOT / "experiments" / "modal-continuous-smoke-v2.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        smoke._validate_registration(manifest)
+        self.assertEqual(manifest["paid_budget"]["maximum_gpu_function_calls"], 1)
+        self.assertEqual(manifest["campaign"]["this_manifest_call_ordinal"], 2)
+        self.assertEqual(manifest["cell"]["duration_ms"], 33_000)
+        self.assertEqual(manifest["cell"]["fixture_repetitions"], 3)
+        self.assertFalse(manifest["cell"]["control_reference"]["full_33_second_decode"])
+
+    def test_stream_resolution_failure_returns_partial_diagnostic(self) -> None:
+        events, commits, steps, error = smoke._drive_stream(
+            _PartialThenUnresolvedStream(), b"\x00\x00\x01\x00", chunk_bytes=2
+        )
+        self.assertEqual(len(events), 1)
+        self.assertEqual(commits, 0)
+        self.assertEqual(steps, 1)
+        self.assertEqual(
+            error,
+            {
+                "error_class": "StreamNeedsResolutionError",
+                "reason_code": "stable_prefix_not_found",
+                "reason": (
+                    "The bounded window reached its limit without a stable "
+                    "contiguous prefix."
+                ),
+            },
+        )
+        self.assertNotIn("untrusted", json.dumps(error))
+
+    def test_second_call_refuses_any_prior_second_receipt(self) -> None:
+        manifest = json.loads(
+            (smoke.ROOT / "experiments" / "modal-continuous-smoke-v2.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            receipts = root / "artifacts" / "modal"
+            receipts.mkdir(parents=True)
+            (receipts / "continuous-smoke-v1-attempt-1.attempt.jsonl").write_text(
+                "started\n", encoding="utf-8"
+            )
+            smoke._require_campaign_call_available(root, manifest)
+            (receipts / "continuous-smoke-v1-attempt-2.attempt.jsonl").write_text(
+                "failed or unknown\n", encoding="utf-8"
+            )
+            with self.assertRaisesRegex(RuntimeError, "budget is exhausted"):
+                smoke._require_campaign_call_available(root, manifest)
 
     def test_attempt_number_is_strictly_bounded(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:

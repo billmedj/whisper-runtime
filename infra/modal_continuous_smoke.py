@@ -24,9 +24,18 @@ from typing import Any, Mapping
 ROOT = Path(__file__).resolve().parents[1]
 RUNTIME_ROOT = Path("/opt/whisper-runtime")
 BACKEND_ROOT = Path("/opt/openai-whisper")
-MANIFEST_PATH = "experiments/modal-continuous-smoke-v1.json"
 PRODUCER_PATH = "infra/modal_continuous_smoke.py"
-APP_NAME = "whisper-runtime-continuous-smoke-v1"
+MANIFEST_VERSION_ENV = "WHISPER_MODAL_CONTINUOUS_SMOKE_VERSION"
+_MANIFEST_PATHS = {
+    "1": "experiments/modal-continuous-smoke-v1.json",
+    "2": "experiments/modal-continuous-smoke-v2.json",
+}
+MANIFEST_VERSION = os.environ.get(MANIFEST_VERSION_ENV, "1")
+if MANIFEST_VERSION not in _MANIFEST_PATHS:
+    raise RuntimeError(f"{MANIFEST_VERSION_ENV} must be 1 or 2")
+MANIFEST_PATH = _MANIFEST_PATHS[MANIFEST_VERSION]
+MANIFEST_ID = f"modal-continuous-smoke-v{MANIFEST_VERSION}"
+APP_NAME = f"whisper-runtime-continuous-smoke-v{MANIFEST_VERSION}"
 MODEL_CACHE_NAME = "whisper-runtime-model-cache-v1"
 MODEL_CACHE_MOUNT = "/models"
 MODEL_CHECKPOINT_PATH = Path(MODEL_CACHE_MOUNT) / "tiny.en.pt"
@@ -93,13 +102,20 @@ def _read_registration(root: Path = ROOT) -> dict[str, Any]:
     if not isinstance(manifest, dict):
         raise ValueError("the continuous smoke registration must be an object")
     _validate_registration(manifest)
+    if manifest.get("manifest_id") != MANIFEST_ID:
+        raise ValueError("the selected registration does not match the process")
     return manifest
 
 
 def _validate_registration(manifest: Mapping[str, Any]) -> None:
+    manifest_id = manifest.get("manifest_id")
+    expected_version = {
+        "modal-continuous-smoke-v1": "1",
+        "modal-continuous-smoke-v2": "2",
+    }.get(manifest_id)
     if (
-        manifest.get("manifest_version") != "1"
-        or manifest.get("manifest_id") != "modal-continuous-smoke-v1"
+        manifest.get("manifest_version") != expected_version
+        or expected_version is None
         or manifest.get("state") != "diagnostic"
     ):
         raise ValueError("unexpected continuous smoke registration identity")
@@ -117,13 +133,15 @@ def _validate_registration(manifest: Mapping[str, Any]) -> None:
         or _GIT_HASH.fullmatch(str(source.get("public_base_commit", ""))) is None
     ):
         raise ValueError("the source policy requires one full public base commit")
+    is_v2 = manifest_id == "modal-continuous-smoke-v2"
+    expected_calls = 1 if is_v2 else 2
     budget = manifest.get("paid_budget")
     if not isinstance(budget, Mapping) or any(
         budget.get(name) != value
         for name, value in (
-            ("maximum_gpu_function_calls", 2),
+            ("maximum_gpu_function_calls", expected_calls),
             ("gpu_seconds_per_call", 600),
-            ("maximum_gpu_seconds", 1_200),
+            ("maximum_gpu_seconds", expected_calls * 600),
             ("automatic_retries", 0),
             ("maximum_containers", 1),
             ("minimum_containers", 0),
@@ -132,9 +150,24 @@ def _validate_registration(manifest: Mapping[str, Any]) -> None:
         )
     ):
         raise ValueError("the paid diagnostic budget is not the registered budget")
+    if is_v2 and manifest.get("campaign") != {
+        "campaign_id": "modal-continuous-smoke-2026-09-05",
+        "maximum_gpu_function_calls": 2,
+        "completed_gpu_function_calls_before_this_manifest": 1,
+        "this_manifest_call_ordinal": 2,
+        "predecessor_record_sha256": (
+            "63f41d6d02227b0e36636210afbcbac92e489383922043608e013df6cda8ff13"
+        ),
+        "predecessor_source_snapshot_sha256": (
+            "0f3c5375aa6605df947d60d6f220471070449d84b39b34b56bd3ea0caefd929f"
+        ),
+    }:
+        raise ValueError("the second diagnostic is not bound to the first GPU call")
     cell = manifest.get("cell")
     if not isinstance(cell, Mapping):
         raise ValueError("the diagnostic cell is missing")
+    repetitions = 3 if is_v2 else 1
+    duration_ms = 33_000 if is_v2 else 11_000
     if any(
         cell.get(name) != value
         for name, value in (
@@ -142,8 +175,18 @@ def _validate_registration(manifest: Mapping[str, Any]) -> None:
             ("device", "cuda:0"),
             ("model", "tiny.en"),
             ("sample_rate_hz", 16_000),
-            ("duration_ms", 11_000),
+            ("duration_ms", duration_ms),
             ("chunk_ms", 1_000),
+        )
+    ) or (
+        is_v2
+        and any(
+            cell.get(name) != value
+            for name, value in (
+                ("fixture_duration_ms", 11_000),
+                ("fixture_repetitions", repetitions),
+                ("input_construction", "repeat-converted-pcm-s16le"),
+            )
         )
     ):
         raise ValueError("the diagnostic cell differs from the short T4 cell")
@@ -160,13 +203,52 @@ def _validate_registration(manifest: Mapping[str, Any]) -> None:
 
 
 def _attempt_paths(root: Path, attempt: int) -> tuple[Path, Path]:
-    maximum = int(_read_registration(root)["paid_budget"]["maximum_gpu_function_calls"])
+    manifest = _read_registration(root)
+    maximum = int(manifest["paid_budget"]["maximum_gpu_function_calls"])
     if isinstance(attempt, bool) or not isinstance(attempt, int):
         raise TypeError("attempt must be an integer")
     if not 1 <= attempt <= maximum:
         raise ValueError(f"attempt must be between 1 and {maximum}")
-    stem = root / "artifacts" / "modal" / f"continuous-smoke-v1-attempt-{attempt}"
+    artifact = str(manifest["manifest_id"]).removeprefix("modal-")
+    stem = root / "artifacts" / "modal" / f"{artifact}-attempt-{attempt}"
     return stem.with_suffix(".json"), stem.with_suffix(".attempt.jsonl")
+
+
+def _require_campaign_predecessor(root: Path, manifest: Mapping[str, Any]) -> None:
+    campaign = manifest.get("campaign")
+    if campaign is None:
+        return
+    if not isinstance(campaign, Mapping):
+        raise ValueError("campaign must be an object")
+    predecessor = root / "artifacts" / "modal" / "continuous-smoke-v1-attempt-1.json"
+    if (
+        not predecessor.is_file()
+        or _sha256_file(predecessor) != campaign["predecessor_record_sha256"]
+    ):
+        raise RuntimeError("the registered first GPU result is not present")
+    record = json.loads(predecessor.read_text(encoding="utf-8"))
+    if (
+        record.get("status") != "passed"
+        or record.get("source", {}).get("snapshot", {}).get("digest")
+        != campaign["predecessor_source_snapshot_sha256"]
+    ):
+        raise RuntimeError("the first GPU result does not match the campaign")
+
+
+def _require_campaign_call_available(root: Path, manifest: Mapping[str, Any]) -> None:
+    campaign = manifest.get("campaign")
+    if campaign is None:
+        return
+    if not isinstance(campaign, Mapping):
+        raise ValueError("campaign must be an object")
+    receipts = (
+        root / "artifacts" / "modal" / "continuous-smoke-v1-attempt-1.attempt.jsonl",
+        root / "artifacts" / "modal" / "continuous-smoke-v1-attempt-2.attempt.jsonl",
+        root / "artifacts" / "modal" / "continuous-smoke-v2-attempt-1.attempt.jsonl",
+    )
+    consumed = sum(path.exists() for path in receipts)
+    if consumed >= int(campaign["maximum_gpu_function_calls"]):
+        raise RuntimeError("the two-call diagnostic campaign budget is exhausted")
 
 
 def _append_receipt(path: Path, event: Mapping[str, Any], *, create: bool) -> None:
@@ -263,6 +345,70 @@ def _normalized_text(value: str) -> str:
     return " ".join(value.split())
 
 
+def _safe_stream_error(error: Exception) -> dict[str, str]:
+    name = type(error).__name__
+    reasons = {
+        "StreamNeedsResolutionError": (
+            "stable_prefix_not_found",
+            "The bounded window reached its limit without a stable contiguous prefix.",
+        ),
+        "AudioBufferFullError": (
+            "audio_buffer_full",
+            "The bounded input buffer could not admit the next chunk.",
+        ),
+        "TransactionRetainedError": (
+            "transaction_retained",
+            "The runtime retained recovery authority after a transaction failure.",
+        ),
+        "RuntimeError": (
+            "driver_runtime_error",
+            "The diagnostic driver stopped before the stream completed.",
+        ),
+    }
+    reason_code, reason = reasons.get(
+        name,
+        ("unexpected_stream_error", "The stream stopped before it completed."),
+    )
+    safe_name = (
+        name if re.fullmatch(r"[A-Za-z][A-Za-z0-9_]{0,79}", name) else "Exception"
+    )
+    return {"error_class": safe_name, "reason_code": reason_code, "reason": reason}
+
+
+def _drive_stream(
+    stream: Any, pcm: bytes, *, chunk_bytes: int
+) -> tuple[list[dict[str, Any]], int, int, dict[str, str] | None]:
+    events: list[dict[str, Any]] = []
+    pre_eof_commits = 0
+    driver_steps = 0
+    try:
+        with stream:
+            for sequence, offset in enumerate(range(0, len(pcm), chunk_bytes)):
+                stream.push(sequence, pcm[offset : offset + chunk_bytes])
+                while stream.ready:
+                    batch = stream.step()
+                    driver_steps += 1
+                    if driver_steps > MAX_DRIVER_STEPS:
+                        raise RuntimeError(
+                            "the continuous driver exceeded its step bound"
+                        )
+                    payloads = [_event_payload(event) for event in batch]
+                    pre_eof_commits += sum(
+                        item["kind"] == "commit" for item in payloads
+                    )
+                    events.extend(payloads)
+            stream.finish_input()
+            while stream.ready:
+                batch = stream.step()
+                driver_steps += 1
+                if driver_steps > MAX_DRIVER_STEPS:
+                    raise RuntimeError("the continuous driver exceeded its step bound")
+                events.extend(_event_payload(event) for event in batch)
+    except Exception as error:
+        return events, pre_eof_commits, driver_steps, _safe_stream_error(error)
+    return events, pre_eof_commits, driver_steps, None
+
+
 def _evaluate_events(
     events: list[Mapping[str, Any]],
     *,
@@ -341,8 +487,10 @@ def _evaluate_events(
         ),
         "nonempty_final_transcript": bool(transcript),
         "nonempty_full_window_control": bool(control),
+        "nonempty_segmented_control": bool(control),
         "pre_eof_commit_observed": pre_eof_commit_count > 0,
         "continuous_matches_full_window_control": transcript == control,
+        "continuous_matches_segmented_control": transcript == control,
         "reference_untimed_text_observed": reference_untimed_transcript_sha256
         in {_sha256_text(transcript), _sha256_text(control)},
     }
@@ -407,15 +555,23 @@ def _run_worker(
     ):
         raise RuntimeError("the loaded model differs from the registered FP32 profile")
     audio = whisper.load_audio(str(audio_path))
-    expected_samples = int(cell["sample_rate_hz"]) * int(cell["duration_ms"]) // 1_000
+    fixture_duration_ms = int(cell.get("fixture_duration_ms", cell["duration_ms"]))
+    fixture_samples = int(cell["sample_rate_hz"]) * fixture_duration_ms // 1_000
     if (
-        len(audio) != expected_samples
+        len(audio) != fixture_samples
         or _decoded_float32_fingerprint(audio) != cell["decoded_float32_fingerprint"]
     ):
         raise RuntimeError("the decoded fixture differs from the registration")
-    pcm = np.rint(audio * 32768.0).clip(-32768, 32767).astype("<i2").tobytes()
-    if hashlib.sha256(pcm).hexdigest() != cell["converted_pcm_s16le_sha256"]:
+    fixture_pcm = np.rint(audio * 32768.0).clip(-32768, 32767).astype("<i2").tobytes()
+    if hashlib.sha256(fixture_pcm).hexdigest() != cell["converted_pcm_s16le_sha256"]:
         raise RuntimeError("the registered float-to-s16 conversion differs")
+    repetitions = int(cell.get("fixture_repetitions", 1))
+    pcm = fixture_pcm * repetitions
+    expected_samples = int(cell["sample_rate_hz"]) * int(cell["duration_ms"]) // 1_000
+    if len(pcm) // 2 != expected_samples or hashlib.sha256(pcm).hexdigest() != cell.get(
+        "stream_pcm_s16le_sha256", cell["converted_pcm_s16le_sha256"]
+    ):
+        raise RuntimeError("the constructed stream input differs from the registration")
 
     capacity = runtime.ResourceVector(
         memory_bytes=2_147_483_648, compute_units=1, stream_slots=1
@@ -457,19 +613,20 @@ def _run_worker(
     stream_config = continuous.ContinuousStreamConfig(**cell["stream_config"])
     options = adapters.NativeDecodeOptions(**cell["decode_options"])
     control_steps = 0
-    control_session = runtime.Session(f"modal-continuous-smoke-{attempt}:control")
+    run_prefix = f"{manifest['manifest_id']}:attempt:{attempt}"
+    control_session = runtime.Session(f"{run_prefix}:control")
     with adapter.start_window(
         session=control_session,
         request=runtime.RequestState(
-            f"modal-continuous-smoke-{attempt}:control:request",
+            f"{run_prefix}:control:request",
             control_session.session_id,
             snapshot,
             rng_seed=7,
         ),
-        window_id=f"modal-continuous-smoke-{attempt}:control:window",
-        mel=mel_builder(pcm),
+        window_id=f"{run_prefix}:control:window",
+        mel=mel_builder(fixture_pcm),
         start_ms=0,
-        end_ms=int(cell["duration_ms"]),
+        end_ms=fixture_duration_ms,
         options=options,
     ) as control_run:
         while not control_run.complete:
@@ -479,40 +636,26 @@ def _run_worker(
                 raise RuntimeError("the full-window control exceeded its step bound")
         full_window_control = control_run.prepare_result()
     full_window_control_text = _normalized_text(full_window_control.text)
+    control_reference_text = " ".join(
+        full_window_control_text for _ in range(repetitions)
+    )
     if budget.available != capacity or worker.queue_depth != 0:
         raise RuntimeError("the full-window control retained runtime capacity")
 
-    events: list[dict[str, Any]] = []
-    pre_eof_commits = 0
-    driver_steps = 0
     torch.cuda.reset_peak_memory_stats(0)
     started_ns = time.perf_counter_ns()
-    with continuous.ContinuousTranscriptStream(
+    stream = continuous.ContinuousTranscriptStream(
         adapter,
-        stream_id=f"modal-continuous-smoke-{attempt}",
+        stream_id=f"{run_prefix}:stream",
         mel_builder=mel_builder,
         options=options,
         rng_seed=7,
         config=stream_config,
-    ) as stream:
-        chunk_bytes = int(cell["sample_rate_hz"]) * int(cell["chunk_ms"]) // 1_000 * 2
-        for sequence, offset in enumerate(range(0, len(pcm), chunk_bytes)):
-            stream.push(sequence, pcm[offset : offset + chunk_bytes])
-            while stream.ready:
-                batch = stream.step()
-                driver_steps += 1
-                if driver_steps > MAX_DRIVER_STEPS:
-                    raise RuntimeError("the continuous driver exceeded its step bound")
-                payloads = [_event_payload(event) for event in batch]
-                pre_eof_commits += sum(item["kind"] == "commit" for item in payloads)
-                events.extend(payloads)
-        stream.finish_input()
-        while stream.ready:
-            batch = stream.step()
-            driver_steps += 1
-            if driver_steps > MAX_DRIVER_STEPS:
-                raise RuntimeError("the continuous driver exceeded its step bound")
-            events.extend(_event_payload(event) for event in batch)
+    )
+    chunk_bytes = int(cell["sample_rate_hz"]) * int(cell["chunk_ms"]) // 1_000 * 2
+    events, pre_eof_commits, driver_steps, stream_error = _drive_stream(
+        stream, pcm, chunk_bytes=chunk_bytes
+    )
     torch.cuda.synchronize(0)
     elapsed_ns = time.perf_counter_ns() - started_ns
     state = stream.state
@@ -521,7 +664,7 @@ def _run_worker(
         events,
         pre_eof_commit_count=pre_eof_commits,
         input_samples=expected_samples,
-        full_window_control_text=full_window_control_text,
+        full_window_control_text=control_reference_text,
         reference_untimed_transcript_sha256=str(
             cell["reference_untimed_transcript_sha256"]
         ),
@@ -534,15 +677,28 @@ def _run_worker(
     )
     required_names = tuple(manifest["observations"]["required"])
     required_passed = all(checks.get(name) is True for name in required_names)
-    if not required_passed:
+    if stream_error is not None:
+        status = "diagnostic_error"
+    elif not required_passed:
         status = "failed"
     elif not checks["pre_eof_commit_observed"]:
         status = "completed_without_pre_eof_commit"
     else:
         status = "passed"
     function_call_id = str(modal_module.current_function_call_id())
+    control_label = "segmented_control" if repetitions > 1 else "full_window_control"
+    control_scope = (
+        "One native decode of the 11-second fixture was normalized and repeated "
+        f"{repetitions} times. This is a segmented reference, not a 33-second "
+        "full-window decode. Exact equality is diagnostic because rolling windows "
+        "change context."
+        if repetitions > 1
+        else "One native decode of the full fixture with the same model and decode "
+        "options. Exact text equality is diagnostic because rolling windows change "
+        "context."
+    )
     return {
-        "schema_version": "1-diagnostic",
+        "schema_version": f"{manifest['manifest_version']}-diagnostic",
         "recorded_at": _utc_now(),
         "status": status,
         "attempt": attempt,
@@ -576,12 +732,18 @@ def _run_worker(
             "sample_count": expected_samples,
             "pcm_s16le_sha256": hashlib.sha256(pcm).hexdigest(),
             "decoded_float32_fingerprint": cell["decoded_float32_fingerprint"],
+            "fixture_duration_ms": fixture_duration_ms,
+            "fixture_repetitions": repetitions,
+            "construction": cell.get("input_construction", "single-fixture"),
         },
-        "full_window_control": {
-            "scope": "One native decode of the full fixture with the same model and decode options. Exact text equality is diagnostic because rolling windows change context.",
+        control_label: {
+            "scope": control_scope,
             "step_count": control_steps,
-            "text": full_window_control_text,
-            "text_sha256": _sha256_text(full_window_control_text),
+            "single_fixture_text": full_window_control_text,
+            "single_fixture_text_sha256": _sha256_text(full_window_control_text),
+            "reference_text": control_reference_text,
+            "reference_text_sha256": _sha256_text(control_reference_text),
+            "fixture_repetitions": repetitions,
             "reference_untimed_transcript_sha256": cell[
                 "reference_untimed_transcript_sha256"
             ],
@@ -597,6 +759,7 @@ def _run_worker(
             "pre_eof_commit_count": pre_eof_commits,
             "session_version": state.version,
             "committed_through_ms": state.committed_through_ms,
+            "error": stream_error,
         },
         "checks": checks,
         "timing": {
@@ -615,6 +778,8 @@ def _execute_local_attempt(
 ) -> Path:
     _require_paid_confirmation(confirm_paid_gpu)
     manifest = _read_registration(root)
+    _require_campaign_predecessor(root, manifest)
+    _require_campaign_call_available(root, manifest)
     output_path, receipt_path = _attempt_paths(root, attempt)
     if output_path.exists() or receipt_path.exists():
         raise FileExistsError("this diagnostic attempt already exists")
@@ -721,6 +886,7 @@ def _define_modal_resources() -> tuple[Any, Any, Any]:
                 "PYTHONPATH": "/opt/openai-whisper:/opt/whisper-runtime/src:/opt/whisper-runtime",
                 "PYTHONUTF8": "1",
                 REMOTE_RESOURCES_ENV: "0",
+                MANIFEST_VERSION_ENV: MANIFEST_VERSION,
             }
         )
     )
