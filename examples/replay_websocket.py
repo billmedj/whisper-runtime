@@ -267,10 +267,34 @@ def _check_done(message: dict[str, Any], record: dict[str, Any]) -> None:
     if metrics.get("accepted_sha256") != record["sha256"]:
         raise ReplayError("accepted_hash_mismatch")
     admissions = message.get("admissions")
-    if not isinstance(admissions, list) or len(admissions) > len(
+    if not isinstance(admissions, list) or len(admissions) != len(
         record["send_records"]
     ):
         raise ReplayError("invalid_admissions")
+    previous_accepted_ns = 0
+    for admission, sent in zip(admissions, record["send_records"]):
+        if (
+            not isinstance(admission, dict)
+            or any(
+                not _integer(admission.get(key))
+                for key in (
+                    "sequence_number",
+                    "start_sample",
+                    "end_sample",
+                    "received_ns",
+                    "accepted_ns",
+                )
+            )
+            or any(
+                admission[key] != sent[key]
+                for key in ("sequence_number", "start_sample", "end_sample")
+            )
+            or not previous_accepted_ns
+            <= admission["received_ns"]
+            <= admission["accepted_ns"]
+        ):
+            raise ReplayError("invalid_admissions")
+        previous_accepted_ns = admission["accepted_ns"]
     if "events" in message and message["events"] != [
         {
             "type": "event",

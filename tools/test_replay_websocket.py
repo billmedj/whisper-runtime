@@ -91,7 +91,16 @@ class DuplexSocket:
                         "accepted_sha256": hashlib.sha256(self.pcm).hexdigest(),
                         "trace_count": 1,
                     },
-                    "admissions": [],
+                    "admissions": [
+                        {
+                            "sequence_number": sequence,
+                            "start_sample": sequence * 320,
+                            "end_sample": sequence * 320 + (len(frame) - 12) // 2,
+                            "received_ns": sequence * 2,
+                            "accepted_ns": sequence * 2 + 1,
+                        }
+                        for sequence, frame in enumerate(self.frames)
+                    ],
                 },
             ]
             if self.response_transform:
@@ -468,6 +477,22 @@ class ReplayWebSocketTests(unittest.IsolatedAsyncioTestCase):
                     DuplexSocket(self.pcm, response_transform=transform)
                 )
                 self.assertEqual(result["error_code"], expected, result)
+
+    async def test_missing_and_malformed_admission_evidence_fails(self):
+        def missing(response):
+            response[-1]["admissions"].pop()
+            return response
+
+        def malformed(response):
+            response[-1]["admissions"][1]["received_ns"] = 0
+            return response
+
+        for transform in (missing, malformed):
+            with self.subTest(transform=transform.__name__):
+                result = await self._run(
+                    DuplexSocket(self.pcm, response_transform=transform)
+                )
+                self.assertEqual(result["error_code"], "invalid_admissions", result)
 
     async def test_early_server_failure_preserves_only_safe_partial_counters(self):
         socket = DuplexSocket(self.pcm)

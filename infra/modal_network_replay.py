@@ -657,6 +657,8 @@ def _resources(modal, snapshot: dict, *, preflight: bool, pcm: bytes):
 
     label = f"wr-net-{'cpu' if preflight else 'gpu'}-{uuid.uuid4().hex[:16]}"
     app = modal.App(label)
+    # Modal 1.5.5 rejects the retries argument for ASGI, including retries=0.
+    # Omit it; the client still makes one connection without a reconnect loop.
     options = dict(
         image=image,
         serialized=True,
@@ -664,7 +666,6 @@ def _resources(modal, snapshot: dict, *, preflight: bool, pcm: bytes):
         max_containers=1,
         buffer_containers=0,
         scaledown_window=2,
-        retries=0,
         startup_timeout=180,
         single_use_containers=True,
         block_network=True,
@@ -709,6 +710,8 @@ def _attempt(
     manager = modal.Workspace.from_context().proxy_tokens
     token = None
     try:
+        # ASGI resource validation is local. Do it before creating a credential.
+        app, endpoint = resource_factory(modal, snapshot, preflight=preflight, pcm=pcm)
         environment = modal.Environment.from_context()
         environment.hydrate()
         if not isinstance(environment.name, str) or not environment.name:
@@ -720,7 +723,6 @@ def _attempt(
         record["proxy_token_scoped"] = bool(own_info.scoped)
         if own_info.scoped:
             manager.allow(token.token_id, environment.name)
-        app, endpoint = resource_factory(modal, snapshot, preflight=preflight, pcm=pcm)
         with app.run(detach=False, environment_name=environment.name):
             try:
                 record["app_id"] = app.app_id

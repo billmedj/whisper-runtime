@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 import copy
 import hashlib
+import importlib
 import inspect
 import json
 import tempfile
@@ -515,7 +516,6 @@ class NetworkDiagnosticTests(unittest.TestCase):
             self.assertEqual(len(inspect.signature(endpoint).parameters), 0)
             self.assertIs(auth["requires_proxy_auth"], True)
             for key, value in {
-                "retries": 0,
                 "min_containers": 0,
                 "max_containers": 1,
                 "buffer_containers": 0,
@@ -523,10 +523,51 @@ class NetworkDiagnosticTests(unittest.TestCase):
                 "startup_timeout": 180,
             }.items():
                 self.assertEqual(options[key], value)
+            self.assertNotIn("retries", options)
             self.assertEqual(options["timeout"], 30 if preflight else 180)
             self.assertEqual("gpu" in options, not preflight)
             if not preflight:
                 volume.with_mount_options.assert_called_once_with(read_only=True)
+
+    def test_invalid_resource_definition_cannot_create_a_proxy_token(self):
+        modal, _, _, order = self.fake_modal()
+        resources = Mock(side_effect=ValueError("invalid ASGI settings"))
+        record = network._attempt(
+            modal=modal,
+            snapshot=self.snapshot,
+            pcm=self.pcm,
+            preflight=True,
+            resource_factory=resources,
+        )
+        self.assertEqual(record["status"], "failed")
+        self.assertEqual(order, [])
+
+    def test_pinned_sdk_accepts_cpu_and_gpu_asgi_definitions_without_running(self):
+        try:
+            modal = importlib.import_module("modal")
+        except ImportError:
+            self.skipTest("Modal SDK is not installed")
+        if str(modal.__version__) != network.SDK_VERSION:
+            self.skipTest("The registered Modal SDK is not installed")
+        snapshot = {"files": [{"path": network.MANIFEST_PATH}]}
+        with (
+            patch.object(modal.App, "run", side_effect=AssertionError("remote run")),
+            patch.object(
+                modal.Workspace,
+                "from_context",
+                side_effect=AssertionError("credential lookup"),
+            ),
+        ):
+            for preflight in (True, False):
+                with self.subTest(preflight=preflight):
+                    app, endpoint = network._resources(
+                        modal,
+                        snapshot,
+                        preflight=preflight,
+                        pcm=self.pcm,
+                    )
+                    self.assertIsNotNone(app)
+                    self.assertIsNotNone(endpoint)
 
 
 if __name__ == "__main__":
