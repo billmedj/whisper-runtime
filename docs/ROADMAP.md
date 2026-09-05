@@ -17,7 +17,7 @@ A gate closes only when its acceptance cases and results are committed.
 | --- | --- | --- | --- |
 | D0 | Governed decoding and timed publication | Validated within the recorded pre-alpha scope | None |
 | D1 | Continuous transcription with progressive commits | Experimental rolling profile implemented; long-session gate open | D0 |
-| D2 | A usable local live-transcription entry point | Planned | D1 |
+| D2 | A usable local live-transcription entry point | Paced replay API implemented; microphone and CLI gate open | D1 |
 | D3 | Broader quality and failure coverage | Initial coverage; expand alongside D1-D2 | D0; release gate for D2 |
 | D4 | Measured compute and memory improvements | Not demonstrated | D1 and matched D3 baselines |
 | D5 | A reproducible developer release | Package builds; release gates remain open | D2 and D3; D4 for efficiency claims |
@@ -127,9 +127,18 @@ The [automatic-endpoint diagnostic](research/2026-09-05-automatic-endpoints.md)
 then completes the same mixture without supplied boundaries. A small opt-in
 quiet-run detector feeds the existing controller; it adds no model dependency
 and cannot authorize empty publication. Five inferred endpoints and EOF cover
-all input. Text matches both model controls exactly. The current suites pass
+all input. Text matches both model controls exactly. That iteration passed
 481 runtime and 291 repository-tool tests. Noisy pauses, weak speech, continuous
 speech without gaps, paced latency and the 30-minute gate remain open.
+
+The [paced T4 replay](research/2026-09-05-paced-replay.md) completes the same
+43.660-second mixture at source speed. An independent producer supplies 20 ms
+chunks while decoding continues. First text appears at 2.097 seconds; five
+commits precede EOF. All samples are committed, the final buffer is empty and
+text matches both model controls exactly. Current suites pass 500 runtime and
+296 repository-tool tests. Local tests cover slow decoding and consumers,
+input lag, overload, cancellation and delivery failures. This short same-worker
+test does not close the acoustic, network or 30-minute gates below.
 
 Deliver a separately named continuous profile. Keep the existing
 offline-compatible and bounded-preview paths.
@@ -169,10 +178,14 @@ another streaming system.
 
 ## D2. A usable local live-transcription entry point
 
-**Status: planned after D1.**
+**Status: paced replay API implemented; microphone and CLI gate remain open.**
 
 Deliver a small Python API and one local command, with microphone input and paced
 file replay. Do not require a server deployment or a desktop application.
+
+The [paced PCM API](PACED_REPLAY.md) is implemented and tested locally and on one
+T4. It accepts recorded bytes and emits timed events through callbacks. It does
+not yet provide microphone capture, a user-facing command or network transport.
 
 - [ ] Document input format, model selection, provisional and committed results,
   cancellation, and failure behavior.

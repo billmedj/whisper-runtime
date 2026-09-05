@@ -1,5 +1,14 @@
 # Integration evidence
 
+The [paced T4 replay](modal-t4-tiny-en-paced-replay-2026-09-05.json) completes
+43.660 seconds supplied in 20 ms chunks by an independent producer. First text
+appears at 2.097 seconds, and five commits precede EOF. All samples are accounted
+for; the final text matches both model controls exactly. Six human-reference
+edits remain. All 32 checks pass. See the
+[timing definitions and limits](../docs/research/2026-09-05-paced-replay.md).
+This is a short same-worker replay, not PC-to-Modal streaming or a microphone
+qualification. It demonstrates no GPU saving.
+
 The [automatic-endpoint T4 diagnostic](modal-t4-tiny-en-automatic-endpoints-2026-09-05.json)
 completes the 43.660-second mixture without supplied boundaries. Five quiet-run
 endpoints and EOF produce six contiguous commits. Text matches both model
