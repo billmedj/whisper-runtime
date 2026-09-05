@@ -189,6 +189,9 @@ This option does not guarantee that quiet intervals contain no speech, that
 word timing is correct, or that every anchor will resolve. Uncertain input and
 unresolved anchors retain the existing explicit failure behavior. See the
 [acoustic diagnostic plan and results](research/2026-09-05-acoustic-boundaries.md).
+The first T4 diagnostic completes normal and attenuated speech with pauses.
+Both inputs without detected pauses still stop before completion. This profile
+is not yet suitable for unattended continuous speech.
 All existing profile defaults remain unchanged.
 
 ### Timestamp agreement

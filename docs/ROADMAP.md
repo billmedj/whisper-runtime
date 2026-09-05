@@ -144,9 +144,20 @@ The [PC-to-Modal replay](research/2026-09-05-network-replay.md) then sends the
 same audio over an authenticated WebSocket. First text returns to the Windows
 client at 2.426 seconds; the native final event arrives 613.573 ms after EOF
 send completion. Full input coverage and exact control text are preserved.
-Current suites pass 514 runtime and 332 repository-tool tests. The short
+That iteration passed 514 runtime and 332 repository-tool tests. The short
 network integration passes; microphone, acoustic and long-session gates remain
 open. No GPU efficiency advantage is established.
+
+The [hybrid acoustic diagnostic](research/2026-09-05-acoustic-boundaries.md)
+combines word-prefix agreement with quiet endpoints in an opt-in profile.
+The normal and attenuated cells complete, but both inputs without detected
+pauses still fail. Concatenated speech commits 21.26 of 33.66 seconds; noisy
+input commits 6.10 seconds before stopping. No accepted input is silently lost
+and no false final event is emitted. The run used 534 passing runtime tests and
+352 repository-tool tests. Next, make context retention preserve complete
+published anchors and test whether this also avoids missing native continuation.
+Do not advance to long-session qualification or claim general noise tolerance
+from this failed diagnostic.
 
 Deliver a separately named continuous profile. Keep the existing
 offline-compatible and bounded-preview paths.

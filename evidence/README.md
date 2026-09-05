@@ -1,5 +1,15 @@
 # Integration evidence
 
+The [acoustic-boundary T4 diagnostic](modal-t4-tiny-en-acoustic-boundaries-2026-09-05.json)
+is **failed**. The quiet control and the new hybrid profile complete the normal
+43.66-second input; the attenuated hybrid also completes. Without detected
+pauses, publication stops at 21.26 seconds on concatenated speech and 6.10
+seconds on noisy input. Accepted, uncommitted audio is retained and no false
+final event is emitted. The [report](../docs/research/2026-09-05-acoustic-boundaries.md)
+separates missing native continuation from a fragile single-word anchor. One
+T4 invocation ran the five cells. This unpaced diagnostic does not qualify
+general live speech, noise tolerance or lower GPU cost.
+
 The [PC-to-Modal T4 replay](modal-t4-tiny-en-network-replay-2026-09-05.json)
 sends 43.660 seconds from Windows over an authenticated WebSocket. First text
 returns to the PC at 2.426 seconds; five commits precede EOF. All 698,560 samples

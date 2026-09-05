@@ -1,0 +1,2 @@
+{"event": "attempt-started", "preflight": true, "source_commit": "14e5218b4b7dd864c5e8ec2a3044ed7a678b15f6", "source_digest": "884136f2e1920432fc5ccc89951a16284228349fce545f083d217886320c6244"}
+{"event": "record-written", "status": "completed", "sha256": "a0d22ca6cf3af49c17d3160406e156241daabdc44de266d77d361dbcb8c0b029"}

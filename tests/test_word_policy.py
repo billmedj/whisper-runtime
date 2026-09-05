@@ -496,6 +496,90 @@ class WordAgreementTests(unittest.TestCase):
                 self.assertEqual(current.words[0].span, AudioSpan(10780, 11700))
                 self.assertEqual(anchor[0].span, AudioSpan(11660, 11720))
 
+    def test_acoustic_noise_anchor_cropped_to_for_cannot_expand_its_onset(self):
+        # 2026-09-05 acoustic diagnostic: trace 14 published ". For".
+        # Cropping at 4100 excludes punctuation, leaving one retained anchor word.
+        # Traces 15/16 move For's onset 1780 ms left while its end stays fixed.
+        anchor = (word(13, 3560, 5880, "."), word(1114, 5880, 6100, " For"))
+        observed = (
+            word(1114, 4100, 6100, " For"),
+            word(257, 6100, 6360, " a"),
+            word(981, 6360, 6420, " while"),
+        )
+        before = aligned(observed, start=4100, end=30000)
+        current = aligned(observed, start=4100, end=32000)
+        for final in (False, True):
+            with self.subTest(final=final):
+                decision = self.decide(
+                    None if final else before,
+                    current,
+                    committed_through_ms=6100,
+                    anchor=anchor,
+                    holdback_ms=2000,
+                    timestamp_tolerance_ms=200,
+                    final=final,
+                )
+                self.assertEqual(decision.reason, "anchor_missing")
+                self.assertIsNone(decision.publication)
+                self.assertEqual(decision.next_anchor, anchor)
+                self.assertEqual(current.words[0].span, AudioSpan(4100, 6100))
+                self.assertEqual(anchor[-1].span, AudioSpan(5880, 6100))
+
+    def test_acoustic_single_reappearing_anchor_cannot_supply_missing_eof_suffix(self):
+        # Reduced word slices from no-added-pauses traces 13-17. Only trace 15 has
+        # the frozen anchor and a new lexical word; both neighboring decodes lose it.
+        anchor = (
+            word(13, 20280, 20700, "."),
+            word(1114, 20700, 20920, " For"),
+            word(257, 20920, 21000, " a"),
+            word(981, 21000, 21260, " while"),
+        )
+        trace14 = aligned(
+            (word(20170, 19840, 20320, " tense"), word(13, 20320, 25960, ".")),
+            start=19260,
+            end=28000,
+        )
+        trace15 = aligned(
+            (
+                word(29804, 19780, 20340, " tents"),
+                word(13, 20340, 20720, "."),
+                word(1114, 20720, 20920, " For"),
+                word(257, 20920, 21040, " a"),
+                word(981, 21040, 21260, " while"),
+                word(673, 21260, 21540, " she"),
+            ),
+            start=19260,
+            end=30000,
+        )
+        trace16 = aligned(
+            (word(29804, 19760, 20320, " tents"), word(13, 20320, 28920, ".")),
+            start=19260,
+            end=32000,
+        )
+        trace17 = aligned(
+            (word(29804, 19760, 20320, " tents"), word(13, 20320, 25680, ".")),
+            start=19260,
+            end=33660,
+        )
+        for previous, current, final in (
+            (trace14, trace15, False),
+            (trace15, trace16, False),
+            (None, trace17, True),
+        ):
+            with self.subTest(end=current.native.end_ms, final=final):
+                decision = self.decide(
+                    previous,
+                    current,
+                    committed_through_ms=21260,
+                    anchor=anchor,
+                    holdback_ms=2000,
+                    timestamp_tolerance_ms=200,
+                    final=final,
+                )
+                self.assertEqual(decision.reason, "anchor_missing")
+                self.assertIsNone(decision.publication)
+                self.assertEqual(decision.next_anchor, anchor)
+
     def test_edge_onset_exception_keeps_anchor_identity_and_position_guards(
         self,
     ) -> None:
