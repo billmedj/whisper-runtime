@@ -1,5 +1,14 @@
 # Integration evidence
 
+The [three-speaker T4 diagnostic](modal-t4-tiny-en-word-corpus-v1-2026-09-05.json)
+completes three individual LibriSpeech clips but fails the constructed mixed
+input and digital silence. A punctuation-only commit advances audio coverage
+past untranscribed speech; silence produces a hallucinated word. Lifecycle
+checks pass, which does not establish recognition accuracy. The
+[report](../docs/research/2026-09-05-word-corpus-diagnostic.md) separates these
+GPU findings from the later local punctuation guard. No live or efficiency
+claim follows from this unpaced diagnostic.
+
 The [T4 window-edge repair replay](modal-t4-tiny-en-word-alignment-v6-2026-09-05.json)
 completes all 33 seconds in the word-aligned cell, with eight commits, unchanged
 committed revisions, and restored capacity. Its 66 words match the model controls

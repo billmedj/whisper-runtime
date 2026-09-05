@@ -101,6 +101,15 @@ Its 66 normalized words match the model controls, but exact strings differ.
 The segment profile still stops at 8 seconds. The last word commit covers
 11.26 seconds at EOF; paced latency and the long-session gate remain open.
 
+The [independent-reference diagnostic](research/2026-09-05-word-corpus-diagnostic.md)
+completes three individual LibriSpeech clips. The mixed input and digital
+silence expose two publication failures: punctuation can advance coverage past
+untranscribed speech, and repeated hypotheses can agree on a hallucination.
+The punctuation guard has local regression coverage; the mixed input has not
+been rerun with that correction. Silence and acoustic coverage remain the next
+gate before long-session qualification. Sample accounting alone does not prove
+that speech content was preserved.
+
 Deliver a separately named continuous profile. Keep the existing
 offline-compatible and bounded-preview paths.
 
@@ -164,6 +173,10 @@ alone is not cross-platform qualification.
 Keep the four-case compatibility corpus and recorded CPU/T4 cases. Add licensed
 inputs with reference transcripts. Record hashes, options, model identities,
 seeds, environments, and outputs.
+
+Three licensed English references, a constructed speaker/pause sequence, and
+digital silence now have frozen inputs and one T4 record. This small sample
+does not cover multilingual speech, noise, natural conversation, or long sessions.
 
 - [ ] Cover English and actual French and Spanish speech, multiple speakers,
   accents, noise, silence, names, and long sessions.

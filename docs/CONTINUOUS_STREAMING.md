@@ -259,3 +259,13 @@ completes the word profile with eight commits across 33 seconds, zero normalized
 word edits against the model controls, and restored capacity. Exact strings
 differ. This short unpaced test does not qualify long-session or live latency;
 its final 11.26 seconds are committed at EOF. The segment profile still stalls.
+
+The [independent-reference T4 diagnostic](research/2026-09-05-word-corpus-diagnostic.md)
+completes three separate speech clips but exposes a punctuation-only coverage
+advance and hallucinated text on digital silence. The later local guard requires
+a nonfinal publication to end on a unit containing a Unicode letter or number.
+Trailing standalone punctuation waits for a stable lexical unit or EOF; internal
+punctuation and native alignment data stay intact. A punctuation-only anchor
+cannot authorize nonfinal advancement. EOF authority is unchanged. This guard
+does not detect silence or reject lexical hallucinations, and has not yet been
+replayed on T4. The mixed-input and long-session gates remain open.
