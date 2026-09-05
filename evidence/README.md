@@ -1,5 +1,13 @@
 # Integration evidence
 
+The [caller-delimited source-unit T4 diagnostic](modal-t4-tiny-en-source-units-2026-09-05.json)
+completes the 43.660-second mixture through one continuous controller: six speech
+occurrences, five empty pauses, and exact contiguous input accounting. Normalized
+words match the model controls; six human-reference edits remain. Boundaries are
+supplied from the fixture construction, not detected acoustically. See the
+[report and limits](../docs/research/2026-09-05-source-units.md). This separate
+profile does not establish automatic live transcription or a speed advantage.
+
 The [input-evidence T4 comparison](modal-t4-tiny-en-input-evidence-2026-09-05.json)
 completes 32 seconds of digital silence with no emitted words. The three
 individual speech transcripts match the punctuation-repair baseline exactly.

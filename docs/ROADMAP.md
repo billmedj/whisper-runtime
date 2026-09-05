@@ -115,6 +115,14 @@ The mixed input remains unresolved. General acoustic coverage is the next gate b
 long-session qualification. Sample accounting alone does not prove
 that speech content was preserved.
 
+The [caller-delimited source-unit diagnostic](research/2026-09-05-source-units.md)
+completes the same 43.660-second mixture under a separate profile. Eleven
+source-owned units preserve all six speech occurrences and five empty pauses.
+Normalized words match the model controls; six human-reference edits remain.
+The boundaries come from fixture construction, not a detector. This closes the
+known-boundary integration test, not the general acoustic or long-session gate.
+The current suites contain 458 runtime and 287 repository-tool tests.
+
 Deliver a separately named continuous profile. Keep the existing
 offline-compatible and bounded-preview paths.
 
