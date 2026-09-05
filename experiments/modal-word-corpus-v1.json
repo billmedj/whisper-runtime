@@ -1,0 +1,285 @@
+{
+  "manifest_version": "1",
+  "manifest_id": "modal-word-corpus-v1",
+  "state": "diagnostic",
+  "purpose": "Test word publication on three LibriSpeech speakers, a constructed window-crossing sequence, and digital silence.",
+  "claim_boundary": {
+    "recognition_improvement": false,
+    "performance_benchmark": false,
+    "production_readiness": false,
+    "public_commit_reproducibility": false,
+    "generalization_beyond_this_input": false
+  },
+  "source_policy": {
+    "image_base_commit": "9c2494234f08b24325d427ea422818b24f460c0c",
+    "overlay": "deterministic-local-source-snapshot",
+    "snapshot_paths": [
+      "src/whisper_runtime/**/*.py",
+      "infra/modal_word_corpus.py",
+      "infra/modal_stream_boundary_diagnostic.py",
+      "infra/modal_continuous_smoke.py",
+      "experiments/modal-word-corpus-v1.json"
+    ],
+    "note": "The record binds the exact clean local source snapshot sent to Modal. The cached base image already contains the request-local alignment backend patch."
+  },
+  "replay_pacing": "unpaced-source-time",
+  "paid_budget": {
+    "maximum_gpu_function_calls": 1,
+    "gpu_seconds_per_call": 180,
+    "maximum_gpu_seconds": 180,
+    "automatic_retries": 0,
+    "maximum_containers": 1,
+    "minimum_containers": 0,
+    "startup_timeout_seconds": 300,
+    "scaledown_window_seconds": 2,
+    "t4_usd_per_hour": 0.59,
+    "cpu_cores": 2,
+    "cpu_usd_per_core_hour": 0.0473,
+    "memory_gib": 4,
+    "memory_usd_per_gib_hour": 0.008,
+    "maximum_execution_cost_estimate_usd": 0.03583,
+    "regional_price_multiplier_range": [
+      1.15,
+      1.75
+    ],
+    "maximum_execution_cost_at_registered_multiplier_ceiling_usd": 0.0627025,
+    "estimate_scope": "Planning estimate for one full 180-second execution. The ceiling applies the registered 1.75 regional multiplier. Neither value is a spending cap. Startup, image construction, storage, network, taxes, and price changes are excluded."
+  },
+  "result_transport": {
+    "encoding": "zlib-json-utf8-v1",
+    "modal_sdk_version": "1.5.5",
+    "invocation_type": "sync",
+    "modal_sync_serialized_limit_bytes": 2097152,
+    "modal_async_serialized_limit_bytes": 8192,
+    "modal_pickle_protocol": 4,
+    "modal_pickle_bytes_overhead": 9,
+    "inline_margin_bytes": 65536,
+    "maximum_inline_compressed_bytes": 2031607,
+    "maximum_decompressed_json_bytes": 33554432,
+    "oversize_behavior": "return-compact-transport-rejected-record",
+    "preflight": {
+      "required_before_gpu": true,
+      "gpu": null,
+      "maximum_function_calls": 1,
+      "timeout_seconds": 30,
+      "payload_raw_bytes": 65536,
+      "crosses_async_threshold": true
+    }
+  },
+  "dataset": {
+    "id": "openslr/librispeech_asr",
+    "configuration": "clean",
+    "split": "test",
+    "source_split_name": "test-clean",
+    "revision": "71cacbfb7e2354c4226d01e70d77d5fca3d04ba1",
+    "revision_url": "https://huggingface.co/datasets/openslr/librispeech_asr/tree/71cacbfb7e2354c4226d01e70d77d5fca3d04ba1/all/test.clean",
+    "canonical_source_url": "https://www.openslr.org/12",
+    "canonical_archive_url": "https://www.openslr.org/resources/12/test-clean.tar.gz",
+    "license": "CC BY 4.0",
+    "license_url": "https://creativecommons.org/licenses/by/4.0/",
+    "citation": "Vassil Panayotov, Guoguo Chen, Daniel Povey, and Sanjeev Khudanpur. LibriSpeech: An ASR Corpus Based on Public Domain Audio Books. ICASSP 2015.",
+    "citation_doi": "10.1109/ICASSP.2015.7178964",
+    "revision_scope": "Repository revision observed during acquisition. The rows endpoint is not revision-pinned; utterance ID, reference text, and the frozen FLAC hash determine accepted input.",
+    "acquisition_date": "2026-09-05",
+    "reference_origin": "Independent LibriSpeech reference transcript stored in the selected dataset row. It is not a model output."
+  },
+  "audio_format": {
+    "sample_rate_hz": 16000,
+    "channels": 1,
+    "encoding": "pcm_s16le",
+    "conversion": "Decode the registered mono 16 kHz FLAC with ffmpeg to signed 16-bit little-endian PCM. Do not trim, normalize, or pad. Accept only the registered output hash."
+  },
+  "model": {
+    "gpu": "T4",
+    "cloud": "aws",
+    "region": "us-west",
+    "device": "cuda:0",
+    "name": "tiny.en",
+    "numeric_precision": "float32",
+    "checkpoint_sha256": "d3dd57d32accea0b295c96e26691aa14d8822fac7d9d27d5dc00b4ca2826dd03",
+    "model_state_sha256": "sha256:8041a80119a588f542472da35e97d0372fce1d9709ed9874475e9c03deac5de6"
+  },
+  "decode_options": {
+    "language": "en",
+    "task": "transcribe",
+    "temperature": 0,
+    "without_timestamps": false
+  },
+  "offline_control_options": {
+    "language": "en",
+    "task": "transcribe",
+    "temperature": 0,
+    "fp16": false,
+    "compression_ratio_threshold": 2.4,
+    "logprob_threshold": -1,
+    "no_speech_threshold": 0.6,
+    "condition_on_previous_text": true,
+    "initial_prompt": null,
+    "carry_initial_prompt": false,
+    "word_timestamps": false,
+    "clip_timestamps": "0",
+    "hallucination_silence_threshold": null,
+    "without_timestamps": false,
+    "verbose": null
+  },
+  "rng_seed": 7,
+  "stream_config": {
+    "preview_interval_ms": 2000,
+    "max_window_ms": 30000,
+    "max_buffer_ms": 40000,
+    "timestamp_tolerance_ms": 200,
+    "coalesce_previews": false,
+    "holdback_ms": 2000,
+    "left_context_ms": 2000,
+    "word_alignment": true
+  },
+  "fixtures": [
+    {
+      "id": "6930-75918-0000",
+      "filename": "6930-75918-0000.pcm",
+      "pcm_sha256": "9afaada0c1b445dae8a3baae5bbaffdcedbd2c09eb66b86720b8045c854feefc",
+      "sample_count": 56080,
+      "reference_text": "CONCORD RETURNED TO ITS PLACE AMIDST THE TENTS",
+      "source": {
+        "filename": "6930-75918-0000.flac",
+        "sha256": "9ce35224156f071ab58eb7feb8a5ceae600f6f9f353da2a6cbf797b6b1ac8a23",
+        "size_bytes": 74138,
+        "metadata_url": "https://datasets-server.huggingface.co/rows?dataset=openslr%2Flibrispeech_asr&config=clean&split=test&offset=0&length=1",
+        "row_offset": 0,
+        "speaker_id": 6930,
+        "chapter_id": 75918
+      }
+    },
+    {
+      "id": "1995-1837-0024",
+      "filename": "1995-1837-0024.pcm",
+      "pcm_sha256": "c8161a085b6871c73e775254d8e578451cce924609e08d0778323630db8c7a2b",
+      "sample_count": 86160,
+      "reference_text": "FOR A WHILE SHE LAY IN HER CHAIR IN HAPPY DREAMY PLEASURE AT SUN AND BIRD AND TREE",
+      "source": {
+        "filename": "1995-1837-0024.flac",
+        "sha256": "c7dcb4a3e1d16c4301753ffdb71d5a7beabd2df4cfde745f7ba747a3e066632d",
+        "size_bytes": 104348,
+        "metadata_url": "https://datasets-server.huggingface.co/rows?dataset=openslr%2Flibrispeech_asr&config=clean&split=test&offset=801&length=1",
+        "row_offset": 801,
+        "speaker_id": 1995,
+        "chapter_id": 1837
+      }
+    },
+    {
+      "id": "672-122797-0072",
+      "filename": "672-122797-0072.pcm",
+      "pcm_sha256": "3bfeb4d05da42bcb00d1875e6dfe66e57ac1068afd957ab1851e74ad202becbc",
+      "sample_count": 127040,
+      "reference_text": "AND THE GARDENER'S BOY CHOPPED THE TREE INTO SMALL PIECES THERE WAS A WHOLE HEAP LYING THERE",
+      "source": {
+        "filename": "672-122797-0072.flac",
+        "sha256": "c279440fcc23dfec5f45beef3330dec8d4b35c21837aac6c48bf396d189ae6d8",
+        "size_bytes": 147867,
+        "metadata_url": "https://datasets-server.huggingface.co/rows?dataset=openslr%2Flibrispeech_asr&config=clean&split=test&offset=1601&length=1",
+        "row_offset": 1601,
+        "speaker_id": 672,
+        "chapter_id": 122797
+      }
+    }
+  ],
+  "cases": [
+    {
+      "id": "6930-75918-0000",
+      "parts": [
+        {
+          "fixture_id": "6930-75918-0000"
+        }
+      ],
+      "chunk_ms": 1000,
+      "pcm_sha256": "9afaada0c1b445dae8a3baae5bbaffdcedbd2c09eb66b86720b8045c854feefc",
+      "sample_count": 56080,
+      "reference_text": "CONCORD RETURNED TO ITS PLACE AMIDST THE TENTS"
+    },
+    {
+      "id": "1995-1837-0024",
+      "parts": [
+        {
+          "fixture_id": "1995-1837-0024"
+        }
+      ],
+      "chunk_ms": 1000,
+      "pcm_sha256": "c8161a085b6871c73e775254d8e578451cce924609e08d0778323630db8c7a2b",
+      "sample_count": 86160,
+      "reference_text": "FOR A WHILE SHE LAY IN HER CHAIR IN HAPPY DREAMY PLEASURE AT SUN AND BIRD AND TREE"
+    },
+    {
+      "id": "672-122797-0072",
+      "parts": [
+        {
+          "fixture_id": "672-122797-0072"
+        }
+      ],
+      "chunk_ms": 1000,
+      "pcm_sha256": "3bfeb4d05da42bcb00d1875e6dfe66e57ac1068afd957ab1851e74ad202becbc",
+      "sample_count": 127040,
+      "reference_text": "AND THE GARDENER'S BOY CHOPPED THE TREE INTO SMALL PIECES THERE WAS A WHOLE HEAP LYING THERE"
+    },
+    {
+      "id": "three-speakers-repeat-pauses",
+      "parts": [
+        {
+          "fixture_id": "6930-75918-0000"
+        },
+        {
+          "silence_ms": 2000
+        },
+        {
+          "fixture_id": "1995-1837-0024"
+        },
+        {
+          "silence_ms": 2000
+        },
+        {
+          "fixture_id": "672-122797-0072"
+        },
+        {
+          "silence_ms": 2000
+        },
+        {
+          "fixture_id": "6930-75918-0000"
+        },
+        {
+          "silence_ms": 2000
+        },
+        {
+          "fixture_id": "1995-1837-0024"
+        },
+        {
+          "silence_ms": 2000
+        },
+        {
+          "fixture_id": "672-122797-0072"
+        }
+      ],
+      "chunk_ms": 1000,
+      "pcm_sha256": "b6f8c541b55d2da4c9494dda2e5daebf8674c29286a3ea983206b9a99e9badad",
+      "sample_count": 698560,
+      "reference_text": "CONCORD RETURNED TO ITS PLACE AMIDST THE TENTS FOR A WHILE SHE LAY IN HER CHAIR IN HAPPY DREAMY PLEASURE AT SUN AND BIRD AND TREE AND THE GARDENER'S BOY CHOPPED THE TREE INTO SMALL PIECES THERE WAS A WHOLE HEAP LYING THERE CONCORD RETURNED TO ITS PLACE AMIDST THE TENTS FOR A WHILE SHE LAY IN HER CHAIR IN HAPPY DREAMY PLEASURE AT SUN AND BIRD AND TREE AND THE GARDENER'S BOY CHOPPED THE TREE INTO SMALL PIECES THERE WAS A WHOLE HEAP LYING THERE"
+    },
+    {
+      "id": "silence-32s",
+      "parts": [
+        {
+          "silence_ms": 32000
+        }
+      ],
+      "chunk_ms": 1000,
+      "pcm_sha256": "7b331c02e313c7599d5a90212e17e6d3cb729bd2e1c9b873c302a63c95a2f9bf",
+      "sample_count": 512000,
+      "reference_text": ""
+    }
+  ],
+  "measurement": {
+    "reference_normalization": "Case-fold text, split with Python regular expression \\w+, and compute token-level Levenshtein distance. Report an undefined rate for an empty reference.",
+    "partial_output": "Label text from an unresolved stream as partial. Comparing it with the full reference includes unpublished speech and is not an isolated recognition error estimate.",
+    "timing": "Unpaced replay timing is not live subtitle latency. Record source-time publication progress separately.",
+    "constructed_audio": "Concatenated utterances, repeated clips, and digital silence are stress fixtures, not natural conversation.",
+    "stop_rule": "Continue after policy resolution. Stop after infrastructure or lifecycle failure. Never retry the paid call automatically."
+  }
+}

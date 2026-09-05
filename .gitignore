@@ -13,5 +13,7 @@ formal/lean/.lake/
 
 benchmarks/results/
 artifacts/modal/
+artifacts/corpus/
+artifacts/speech-corpus-v1/
 conformance/fixtures/generated/
 conformance/cache/

@@ -876,10 +876,12 @@ class ModalStreamBoundaryDiagnosticTests(unittest.TestCase):
         retained: int,
         state_ms: int | None,
         error: dict[str, object] | None = None,
+        accepted: int | None = None,
     ) -> dict[str, bool]:
-        accepted = (
-            committed + buffered if retained == committed else retained + buffered
-        )
+        if accepted is None:
+            accepted = (
+                committed + buffered if retained == committed else retained + buffered
+            )
         metrics = SimpleNamespace(
             accepted_samples=accepted,
             committed_samples=committed,
@@ -975,6 +977,68 @@ class ModalStreamBoundaryDiagnosticTests(unittest.TestCase):
             state_ms=10,
         )
         self.assertFalse(checks["immutable_committed_revisions"])
+
+    def test_fractional_millisecond_eof_keeps_exact_sample_coverage(self) -> None:
+        for samples in (7, 15, 16, 1607):
+            with self.subTest(samples=samples):
+                events = self._complete_events(samples)
+                original = copy.deepcopy(events)
+                checks = self._checks(
+                    events,
+                    committed=samples,
+                    buffered=0,
+                    retained=samples,
+                    state_ms=samples // 16,
+                )
+                self.assertTrue(all(checks.values()), checks)
+                self.assertEqual(events, original)
+                self.assertEqual(events[1]["committed_through_sample"], samples)
+
+    def test_fractional_eof_rejects_wrong_millisecond_watermark(self) -> None:
+        for state_ms in (99, 101):
+            with self.subTest(state_ms=state_ms):
+                checks = self._checks(
+                    self._complete_events(1607),
+                    committed=1607,
+                    buffered=0,
+                    retained=1607,
+                    state_ms=state_ms,
+                )
+                self.assertFalse(checks["commit_watermark_matches_runtime"])
+                self.assertFalse(checks["accepted_input_accounted"])
+                self.assertFalse(checks["full_input_committed_at_eof"])
+
+    def test_fractional_eof_rejects_dropped_tail_even_with_matching_floor(self) -> None:
+        checks = self._checks(
+            self._complete_events(1600),
+            committed=1600,
+            buffered=0,
+            retained=1600,
+            state_ms=100,
+            accepted=1607,
+        )
+        self.assertTrue(checks["commit_watermark_matches_runtime"])
+        self.assertFalse(checks["accepted_input_accounted"])
+        self.assertFalse(checks["full_input_committed_at_eof"])
+
+    @staticmethod
+    def _complete_events(samples: int) -> list[dict[str, object]]:
+        span = {
+            "segment_id": "s",
+            "revision": 1,
+            "start_sample": 0,
+            "end_sample": samples,
+        }
+        return [
+            {**span, "sequence_number": 1, "kind": "provisional"},
+            {
+                **span,
+                "sequence_number": 2,
+                "kind": "commit",
+                "committed_through_sample": samples,
+            },
+            {"sequence_number": 3, "kind": "final"},
+        ]
 
 
 if __name__ == "__main__":

@@ -800,7 +800,7 @@ def _event_checks(
     ) or (
         isinstance(state_committed_ms, int)
         and isinstance(committed_samples, int)
-        and state_committed_ms * 16 == committed_samples
+        and state_committed_ms == committed_samples // 16
     )
     commit_watermark_matches_runtime = (
         isinstance(committed_samples, int)
