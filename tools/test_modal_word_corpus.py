@@ -71,6 +71,8 @@ class CorpusGuards(unittest.TestCase):
             self.assertIs(worker.call_args.kwargs["input_evidence"], True)
             self.assertEqual(execute({}, "registration", True, True), b"record")
             self.assertIs(worker.call_args.kwargs["source_units"], True)
+            self.assertEqual(execute({}, "registration", True, False, True), b"record")
+            self.assertIs(worker.call_args.kwargs["automatic_endpoints"], True)
 
     def root(self, path: Path) -> dict:
         for relative in (
@@ -285,6 +287,38 @@ class CorpusGuards(unittest.TestCase):
         self.assertEqual(adapter.worker.queue_depth, 0)
         with self.assertRaises(ValueError):
             corpus._drive_source_units(stream, b"wrong", units, chunk_bytes=3200)
+        self.assertTrue(all(corpus._unit_publication_checks(events, traces).values()))
+        for commit in commits:
+            changed = copy.deepcopy(events)
+            revision = next(
+                event
+                for event in changed
+                if event["kind"] in {"provisional", "replace"}
+                and (event["segment_id"], event["revision"])
+                == (commit["segment_id"], commit["revision"])
+            )
+            revision["text"] = "changed published text"
+            with self.subTest(span=(commit["start_sample"], commit["end_sample"])):
+                self.assertFalse(
+                    corpus._unit_publication_checks(changed, traces)[
+                        "unit_publication_matches_trace"
+                    ]
+                )
+        self.assertFalse(
+            corpus._unit_publication_checks(events, [])[
+                "unit_publication_matches_trace"
+            ]
+        )
+        self.assertTrue(
+            corpus._unit_publication_checks([], traces)[
+                "unit_publication_matches_trace"
+            ]
+        )
+        self.assertFalse(
+            corpus._unit_publication_checks([events[-1]], traces)[
+                "unit_publication_matches_trace"
+            ]
+        )
 
     def test_source_units_variant_binds_arguments_receipts_and_config(self) -> None:
         for value, replay_id in ((1, "units"), (True, "")):
@@ -335,6 +369,247 @@ class CorpusGuards(unittest.TestCase):
             self.assertEqual(
                 rows[0]["profile_id"], corpus.SOURCE_UNITS_PROFILE["profile_id"]
             )
+
+    def test_automatic_endpoint_registration_is_frozen(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            original = self.root(root)
+            self.assertEqual(
+                original["automatic_endpoints_profile"],
+                corpus.AUTOMATIC_ENDPOINTS_PROFILE,
+            )
+            for change in (
+                "absent",
+                "quiet_peak",
+                "quiet_ms",
+                "profile",
+                "source_units",
+            ):
+                manifest = copy.deepcopy(original)
+                profile = manifest["automatic_endpoints_profile"]
+                if change == "absent":
+                    manifest.pop("automatic_endpoints_profile")
+                elif change == "profile":
+                    profile["profile_id"] = "unregistered"
+                elif change == "source_units":
+                    profile["stream_config"]["source_units"] = False
+                else:
+                    profile["stream_config"]["endpointing"][change] += 1
+                (root / corpus.MANIFEST_PATH).write_text(
+                    json.dumps(manifest), encoding="utf-8"
+                )
+                with self.subTest(change=change), self.assertRaises(ValueError):
+                    corpus.read_registration(root)
+
+    def test_automatic_endpoints_bind_flags_and_exclusive_receipts(self) -> None:
+        for flags in (
+            {"automatic_endpoints": 1, "replay_id": "automatic"},
+            {"automatic_endpoints": True},
+            {
+                "automatic_endpoints": True,
+                "source_units": True,
+                "replay_id": "automatic",
+            },
+        ):
+            with self.subTest(flags=flags), self.assertRaises(ValueError):
+                corpus._execute_local_attempt(
+                    **flags, confirm_paid_gpu=True, remote_function=Echo()
+                )
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            self.root(root)
+            corpus._execute_transport_probe(
+                root=root, replay_id="automatic", remote_function=Echo()
+            )
+            record = {
+                "status": "diagnostic",
+                "worker": {"function_call_id": "fc-test"},
+                "source_units": False,
+                "input_evidence": True,
+                "automatic_endpoints": True,
+                **corpus.AUTOMATIC_ENDPOINTS_PROFILE,
+            }
+            with (
+                patch.object(corpus, "_inputs", return_value=[]),
+                patch.object(corpus.b, "_decode_worker_record", return_value=record),
+                patch.object(Echo, "remote", return_value=b"payload") as remote,
+            ):
+                output = corpus._execute_local_attempt(
+                    root=root,
+                    replay_id="automatic",
+                    automatic_endpoints=True,
+                    confirm_paid_gpu=True,
+                    remote_function=Echo(),
+                )
+                with self.assertRaises(FileExistsError):
+                    corpus._execute_local_attempt(
+                        root=root,
+                        replay_id="automatic",
+                        automatic_endpoints=True,
+                        confirm_paid_gpu=True,
+                        remote_function=Echo(),
+                    )
+            self.assertEqual(remote.call_args.args[2:], (True, False, True))
+            self.assertEqual(remote.call_count, 1)
+            self.assertEqual(json.loads(output.read_text()), record)
+            rows = [
+                json.loads(line)
+                for line in corpus._paths(root, "automatic")[1].read_text().splitlines()
+            ]
+            self.assertTrue(all(row["automatic_endpoints"] is True for row in rows))
+            self.assertTrue(all(row["source_units"] is False for row in rows))
+            self.assertEqual(
+                rows[0]["stream_config"],
+                corpus.AUTOMATIC_ENDPOINTS_PROFILE["stream_config"],
+            )
+
+    def test_automatic_endpoints_reject_wrong_worker_variant(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            self.root(root)
+            corpus._execute_transport_probe(
+                root=root, replay_id="automatic", remote_function=Echo()
+            )
+            record = {
+                "input_evidence": True,
+                "source_units": False,
+                "automatic_endpoints": False,
+                **corpus.AUTOMATIC_ENDPOINTS_PROFILE,
+            }
+            with (
+                patch.object(corpus, "_inputs", return_value=[]),
+                patch.object(corpus.b, "_decode_worker_record", return_value=record),
+                patch.object(Echo, "remote", return_value=b"payload"),
+                self.assertRaises(ValueError),
+            ):
+                corpus._execute_local_attempt(
+                    root=root,
+                    replay_id="automatic",
+                    automatic_endpoints=True,
+                    confirm_paid_gpu=True,
+                    remote_function=Echo(),
+                )
+            self.assertFalse(corpus._paths(root, "automatic")[0].exists())
+            rows = [
+                json.loads(line)
+                for line in corpus._paths(root, "automatic")[1].read_text().splitlines()
+            ]
+            self.assertEqual(rows[-1]["event"], "attempt-failed")
+            self.assertIs(rows[-1]["automatic_endpoints"], True)
+
+    def test_automatic_driver_uses_causal_audio_not_oracle_boundaries(self) -> None:
+        with patch.object(
+            sys,
+            "path",
+            [str(corpus.ROOT / "src"), str(corpus.ROOT / "tests"), *sys.path],
+        ):
+            fixture = corpus.importlib.import_module("test_continuous_evidence")
+            endpoints = corpus.importlib.import_module(
+                "whisper_runtime.adapters.audio_endpoints"
+            )
+        adapter = fixture.EvidenceNativeAdapter(fixture.you_result)
+        config = dict(corpus.AUTOMATIC_ENDPOINTS_PROFILE["stream_config"])
+        config["endpointing"] = endpoints.QuietEndpointConfig(**config["endpointing"])
+        stream = fixture.ContinuousTranscriptStream(
+            adapter,
+            stream_id="automatic-driver",
+            mel_builder=lambda content: content,
+            config=fixture.ContinuousStreamConfig(**config),
+        )
+        speech, quiet = b"\xe8\x03" * 16000, b"\x14\x00" * 12800
+        pcm = speech + quiet + speech + quiet + speech + b"\xe8\x03" * 17
+        with patch.object(
+            stream, "seal_unit", side_effect=AssertionError("oracle boundary called")
+        ):
+            events, traces, steps, chunks, error = corpus.b._drive_stream(
+                stream, pcm, chunk_bytes=1994
+            )
+        self.assertIsNone(error)
+        self.assertTrue(stream.done)
+        self.assertGreater(steps, 0)
+        self.assertEqual(chunks, (len(pcm) + 1993) // 1994)
+        self.assertEqual(stream.accepted_samples, len(pcm) // 2)
+        self.assertEqual(stream.metrics.buffered_samples, 0)
+        commits = [event for event in events if event["kind"] == "commit"]
+        self.assertEqual(
+            [(event["start_sample"], event["end_sample"]) for event in commits],
+            [(0, 25600), (25600, 54400), (54400, 73617)],
+        )
+        self.assertEqual(sum(event["kind"] == "final" for event in events), 1)
+        self.assertEqual(
+            [event["sequence_number"] for event in events],
+            list(range(1, len(events) + 1)),
+        )
+        self.assertTrue(
+            all(
+                corpus._trace_checks(
+                    traces,
+                    input_evidence=True,
+                    word_alignment=False,
+                    source_units=True,
+                    automatic_endpoints=True,
+                ).values()
+            )
+        )
+        self.assertTrue(all(corpus._automatic_endpoint_checks(traces, pcm).values()))
+        self.assertTrue(all(corpus._unit_publication_checks(events, traces).values()))
+        changed_events = copy.deepcopy(events)
+        committed = commits[-1]
+        published_revision = next(
+            event
+            for event in changed_events
+            if event["kind"] in {"provisional", "replace"}
+            and (event["segment_id"], event["revision"])
+            == (committed["segment_id"], committed["revision"])
+        )
+        published_revision["text"] += " fabricated"
+        self.assertFalse(
+            corpus._unit_publication_checks(changed_events, traces)[
+                "unit_publication_matches_trace"
+            ]
+        )
+        self.assertTrue(
+            all(trace.get("silence_publication") is None for trace in traces)
+        )
+        closed = [trace for trace in traces if trace.get("source_unit") is not None]
+        self.assertEqual(
+            [trace["source_unit"]["origin"] for trace in closed],
+            ["quiet_run", "quiet_run", "end_of_input"],
+        )
+        for change in (
+            "hash",
+            "quiet_start",
+            "peak",
+            "origin",
+            "silence_authority",
+            "eof",
+            "horizon",
+        ):
+            changed = copy.deepcopy(closed[-1] if change == "eof" else closed[0])
+            if change == "hash":
+                changed["audio_evidence"]["observation"]["pcm_sha256"] = "0" * 64
+            elif change in {"quiet_start", "peak"}:
+                key = "quiet_start_sample" if change == "quiet_start" else "peak"
+                changed["source_unit"]["endpoint"][key] += 1
+            elif change == "origin":
+                changed["source_unit"]["origin"] = "caller"
+            elif change == "silence_authority":
+                changed["silence_publication"] = {"text": ""}
+            elif change == "horizon":
+                changed["accepted_through_sample"] = changed["analysis_end_sample"] - 1
+            else:
+                changed["eof"] = False
+            with self.subTest(change=change):
+                self.assertFalse(
+                    all(corpus._automatic_endpoint_checks([changed], pcm).values())
+                )
+        self.assertFalse(
+            corpus._automatic_endpoint_checks(closed[1:], pcm)[
+                "automatic_endpoint_trace_contract"
+            ]
+        )
+        self.assertEqual(adapter.budget.available, adapter.capacity)
+        self.assertEqual(adapter.worker.queue_depth, 0)
 
     def test_modified_budget_paths_and_total_are_rejected(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
@@ -669,6 +944,10 @@ class CorpusGuards(unittest.TestCase):
                 replay_id="units", confirm_paid_gpu=True, source_units=True
             )
             self.assertTrue(attempt.call_args.kwargs["source_units"])
+            corpus._modal_main(
+                replay_id="automatic", confirm_paid_gpu=True, automatic_endpoints=True
+            )
+            self.assertTrue(attempt.call_args.kwargs["automatic_endpoints"])
 
     def test_rejected_evidence_trace_contract_and_silence_eof_coverage(self) -> None:
         native = {

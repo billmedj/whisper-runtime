@@ -7,12 +7,18 @@ the stream never evicts uncommitted audio to make room.
 
 from __future__ import annotations
 
+from collections import deque
 from dataclasses import dataclass
 from threading import RLock, current_thread
 from typing import Callable, Literal
 
 from ..errors import TransactionRetainedError
 from ..state import AudioSpan, RequestState, Session, SessionState
+from .audio_endpoints import (
+    QuietEndpointConfig,
+    QuietEndpointDetector,
+    QuietEndpointProposal,
+)
 from .audio_evidence import (
     AudioEvidenceDecision,
     AudioObservation,
@@ -47,6 +53,8 @@ COALESCED_CONTEXT_CONTINUOUS_PROFILE = "coalesced_context_agreement_stream/v1"
 WORD_CONTINUOUS_PROFILE = "word_agreement_stream/v1"
 SOURCE_UNIT_PROFILE = "source_unit_stream/v1"
 COALESCED_SOURCE_UNIT_PROFILE = "coalesced_source_unit_stream/v1"
+QUIET_ENDPOINT_PROFILE = "quiet_endpoint_stream/v1"
+COALESCED_QUIET_ENDPOINT_PROFILE = "coalesced_quiet_endpoint_stream/v1"
 COALESCED_WORD_CONTINUOUS_PROFILE = "coalesced_word_agreement_stream/v1"
 _SAMPLES_PER_MS = 16
 
@@ -67,6 +75,7 @@ class ContinuousStreamConfig:
     word_alignment: bool = False
     input_evidence: bool = False
     source_units: bool = False
+    endpointing: QuietEndpointConfig | None = None
 
     def __post_init__(self) -> None:
         flags = (
@@ -79,7 +88,7 @@ class ContinuousStreamConfig:
             if not isinstance(getattr(self, name), bool):
                 raise TypeError(f"{name} must be a boolean")
         for name in self.__dataclass_fields__:
-            if name in flags:
+            if name in flags or name == "endpointing":
                 continue
             value = getattr(self, name)
             if isinstance(value, bool) or not isinstance(value, int):
@@ -103,11 +112,18 @@ class ContinuousStreamConfig:
                 "source_units requires input_evidence, no word alignment, "
                 "and zero left context"
             )
+        if self.endpointing is not None:
+            if not isinstance(self.endpointing, QuietEndpointConfig):
+                raise TypeError("endpointing must be QuietEndpointConfig or None")
+            if not self.source_units:
+                raise ValueError("endpointing requires source_units")
+            if self.endpointing.max_quiet_unit_ms > self.max_window_ms:
+                raise ValueError("quiet units must fit the analysis window")
 
 
 @dataclass(frozen=True, slots=True)
 class SourceUnit:
-    """An externally closed input range, not a claim of correct recognition.
+    """A closed input range, not a claim of correct recognition.
 
     The origin records who closed the range. It does not certify silence or
     authorize publication without the selected input-evidence policy.
@@ -115,7 +131,8 @@ class SourceUnit:
 
     start_sample: int
     end_sample: int
-    origin: Literal["caller", "end_of_input"]
+    origin: Literal["caller", "end_of_input", "quiet_run"]
+    endpoint: QuietEndpointProposal | None = None
 
     def __post_init__(self) -> None:
         for value in (self.start_sample, self.end_sample):
@@ -123,8 +140,18 @@ class SourceUnit:
                 raise TypeError("source unit boundaries must be integers")
         if not 0 <= self.start_sample < self.end_sample:
             raise ValueError("source unit must have a nonempty nonnegative range")
-        if self.origin not in ("caller", "end_of_input"):
-            raise ValueError("source unit origin must be caller or end_of_input")
+        if self.origin not in ("caller", "end_of_input", "quiet_run"):
+            raise ValueError("unknown source unit origin")
+        if self.origin == "quiet_run":
+            if not isinstance(self.endpoint, QuietEndpointProposal):
+                raise TypeError("quiet_run requires a QuietEndpointProposal")
+            if (
+                self.endpoint.end_sample != self.end_sample
+                or self.endpoint.quiet_start_sample < self.start_sample
+            ):
+                raise ValueError("endpoint observation must be inside its source unit")
+        elif self.endpoint is not None:
+            raise ValueError("only quiet_run units can contain endpoint observations")
 
 
 @dataclass(frozen=True, slots=True)
@@ -164,6 +191,7 @@ class ContinuousDecodeTrace:
     audio_evidence: AudioEvidenceDecision | None = None
     silence_publication: SilencePublication | None = None
     source_unit: SourceUnit | None = None
+    accepted_through_sample: int | None = None
 
 
 class ContinuousTranscriptStream:
@@ -235,6 +263,12 @@ class ContinuousTranscriptStream:
         self._word_pending: WordAgreementDecision | None = None
         self._retry_analysis: tuple[int, int, bool] | None = None
         self._unit: SourceUnit | None = None
+        self._endpoints: deque[QuietEndpointProposal] = deque()
+        self._endpoint_detector = (
+            QuietEndpointDetector(self.config.endpointing)
+            if self.config.endpointing is not None
+            else None
+        )
         self._retry_unit: SourceUnit | None = None
         self._run_unit: SourceUnit | None = None
         self._run: NativeWindowRun | None = None
@@ -260,6 +294,12 @@ class ContinuousTranscriptStream:
         return f"{base}+input_evidence/v1" if self.config.input_evidence else base
 
     def _base_profile_id(self) -> str:
+        if self.config.endpointing is not None:
+            return (
+                COALESCED_QUIET_ENDPOINT_PROFILE
+                if self.config.coalesce_previews
+                else QUIET_ENDPOINT_PROFILE
+            )
         if self.config.source_units:
             return (
                 COALESCED_SOURCE_UNIT_PROFILE
@@ -326,6 +366,7 @@ class ContinuousTranscriptStream:
                 self.active
                 or self._eof
                 or self._unit is not None
+                or bool(self._endpoints)
                 or self._accepted
                 >= min(
                     self._next_endpoint,
@@ -372,6 +413,10 @@ class ContinuousTranscriptStream:
                     "audio buffer is full; retry after processing"
                 )
             self._audio.extend(pcm_s16le)
+            if self._endpoint_detector is not None:
+                self._endpoints.extend(
+                    self._endpoint_detector.observe(self._accepted, pcm_s16le)
+                )
             self._accepted += len(pcm_s16le) // 2
             self._chunk += 1
             self._peak = max(self._peak, len(self._audio) // 2)
@@ -396,6 +441,8 @@ class ContinuousTranscriptStream:
         with self._lock:
             if not self.config.source_units:
                 raise NativeStreamError("seal_unit requires source_units")
+            if self.config.endpointing is not None:
+                raise NativeStreamError("automatic endpointing owns source boundaries")
             if self._done:
                 raise NativeStreamError("input is closed")
             if (
@@ -476,6 +523,15 @@ class ContinuousTranscriptStream:
             unit = None
             if self.config.source_units:
                 unit = self._unit
+                if unit is None and self._endpoints and self._retry_analysis is None:
+                    proposal = self._endpoints[0]
+                    if proposal.end_sample > bound:
+                        raise StreamNeedsResolutionError(
+                            "automatic endpoint exceeds the analysis window; input retained"
+                        )
+                    unit = SourceUnit(
+                        self._head, proposal.end_sample, "quiet_run", proposal
+                    )
                 if unit is None and final:
                     unit = SourceUnit(self._head, self._accepted, "end_of_input")
                 if unit is not None:
@@ -645,7 +701,7 @@ class ContinuousTranscriptStream:
 
         Input closure does not establish word accuracy. Unlike the word profile,
         this profile makes no per-word finality or timing claim. Open-range text
-        can change until the caller closes it and its native run completes.
+        can change until an input boundary closes it and its native run completes.
         """
         unit = self._run_unit
         if unit is None:
@@ -849,6 +905,7 @@ class ContinuousTranscriptStream:
             self._audio_decision,
             silence_publication,
             self._run_unit,
+            self.accepted_samples,
         )
 
     def _publish_commit(self) -> tuple[TranscriptEvent, ...]:
@@ -867,6 +924,10 @@ class ContinuousTranscriptStream:
             raise NativeStreamError(
                 "committed result does not match the silence decision"
             )
+        if self._run_unit is not None and self._run_unit.origin == "quiet_run":
+            with self._lock:
+                if not self._endpoints or self._endpoints[0] != self._run_unit.endpoint:
+                    raise NativeStreamError("committed endpoint observation changed")
         if (
             self.config.word_alignment
             and self._silence_pending is None
@@ -914,6 +975,8 @@ class ContinuousTranscriptStream:
             self._done = self._pending_final
             if self._run_unit is not None:
                 self._unit = None
+                if self._run_unit.origin == "quiet_run":
+                    self._endpoints.popleft()
         # Establish a fresh growing pair after rebasing. Starting immediately at
         # the old endpoint can exhaust a full window before a second observation.
         self._last_endpoint = end

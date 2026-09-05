@@ -9,6 +9,7 @@ import os
 import re
 import sys
 import time
+from array import array
 from pathlib import Path
 from typing import Any, Mapping
 
@@ -58,6 +59,20 @@ SOURCE_UNITS_PROFILE = {
         "source_units": True,
         "word_alignment": False,
         "left_context_ms": 0,
+    },
+}
+QUIET_ENDPOINT_CONFIG = {
+    "frame_ms": 20,
+    "quiet_ms": 600,
+    "min_unit_ms": 1000,
+    "max_quiet_unit_ms": 10000,
+    "quiet_peak": 32,
+}
+AUTOMATIC_ENDPOINTS_PROFILE = {
+    "profile_id": "quiet_endpoint_stream/v1+input_evidence/v1",
+    "stream_config": {
+        **SOURCE_UNITS_PROFILE["stream_config"],
+        "endpointing": QUIET_ENDPOINT_CONFIG,
     },
 }
 SOURCE_UNIT_BOUNDARIES = {
@@ -136,6 +151,7 @@ def read_registration(root: Path = ROOT) -> dict[str, Any]:
         ("stream_config", STREAM_CONFIG),
         ("input_evidence_profile", INPUT_EVIDENCE_PROFILE),
         ("source_units_profile", SOURCE_UNITS_PROFILE),
+        ("automatic_endpoints_profile", AUTOMATIC_ENDPOINTS_PROFILE),
         ("source_unit_boundaries", SOURCE_UNIT_BOUNDARIES),
         ("rng_seed", 7),
     ):
@@ -379,10 +395,22 @@ def _source_progress(
 
 
 def _stream_profile(
-    manifest: Mapping[str, Any], input_evidence: bool, source_units: bool = False
+    manifest: Mapping[str, Any],
+    input_evidence: bool,
+    source_units: bool = False,
+    automatic_endpoints: bool = False,
 ) -> dict[str, Any]:
-    if type(input_evidence) is not bool or type(source_units) is not bool:
+    if any(
+        type(flag) is not bool
+        for flag in (input_evidence, source_units, automatic_endpoints)
+    ):
         raise ValueError("profile flags must be booleans")
+    if source_units and automatic_endpoints:
+        raise ValueError(
+            "caller source units and automatic endpoints are mutually exclusive"
+        )
+    if automatic_endpoints:
+        return manifest["automatic_endpoints_profile"]
     if source_units:
         return manifest["source_units_profile"]
     return (
@@ -402,6 +430,7 @@ def _trace_checks(
     word_alignment: bool = True,
     source_units: bool = False,
     registered_units: list[dict[str, Any]] | None = None,
+    automatic_endpoints: bool = False,
 ) -> dict[str, bool]:
     normal = [
         trace
@@ -432,7 +461,12 @@ def _trace_checks(
                 == trace["committed_before_sample"]
                 and unit.get("end_sample") == trace["analysis_end_sample"]
                 and unit.get("end_sample") > unit.get("start_sample")
-                and unit.get("origin") in {"caller", "end_of_input"}
+                and unit.get("origin")
+                in (
+                    {"quiet_run", "end_of_input"}
+                    if automatic_endpoints
+                    else {"caller", "end_of_input"}
+                )
                 and (unit["origin"] != "end_of_input" or trace.get("eof") is True)
                 and (
                     registered_units is None
@@ -519,6 +553,135 @@ def _trace_checks(
     checks["input_evidence_trace_contract"] = valid
     checks["source_unit_trace_contract"] = unit_valid
     return checks
+
+
+def _unit_publication_checks(
+    events: list[dict[str, Any]], traces: list[dict[str, Any]]
+) -> dict[str, bool]:
+    """Bind each committed revision to its prepared native or typed result."""
+    prepared = {}
+    for trace in traces:
+        if trace.get("action") == "commit" and trace.get("source_unit") is not None:
+            span = (trace["committed_before_sample"], trace["analysis_end_sample"])
+            publication = trace.get("silence_publication") or trace.get("result")
+            prepared[span] = (
+                publication.get("text") if isinstance(publication, Mapping) else None
+            )
+    revisions = {}
+    published = set()
+    valid = True
+    for event in events:
+        key = (event.get("segment_id"), event.get("revision"))
+        if event.get("kind") in {"provisional", "replace"}:
+            revisions[key] = event
+        elif event.get("kind") == "commit":
+            span = (event.get("start_sample"), event.get("end_sample"))
+            revision = revisions.get(key, {})
+            expected = prepared.get(span)
+            valid &= (
+                span not in published
+                and isinstance(expected, str)
+                and revision.get("text") == expected
+                and (revision.get("start_sample"), revision.get("end_sample")) == span
+            )
+            published.add(span)
+    # A failed prepared decision can have no event. Complete streams cannot.
+    if any(event.get("kind") == "final" for event in events):
+        valid &= published == set(prepared)
+    return {"unit_publication_matches_trace": valid}
+
+
+def _quiet_endpoint_reference(pcm: bytes) -> list[dict[str, int]]:
+    """Independent batch calculation of the registered causal frame rule."""
+    samples = array("h")
+    samples.frombytes(pcm)
+    if sys.byteorder != "little":
+        samples.byteswap()
+    config = QUIET_ENDPOINT_CONFIG
+    frame = config["frame_ms"] * 16
+    quiet_start = None
+    quiet_peak = previous = 0
+    nonquiet = False
+    endpoints = []
+    for start in range(0, len(samples) - frame + 1, frame):
+        end = start + frame
+        peak = max(abs(value) for value in samples[start:end])
+        if peak > config["quiet_peak"]:
+            quiet_start = None
+            quiet_peak = 0
+            nonquiet = True
+            continue
+        if quiet_start is None:
+            quiet_start = start
+        quiet_peak = max(quiet_peak, peak)
+        if (
+            end - quiet_start >= config["quiet_ms"] * 16
+            and end - previous >= config["min_unit_ms"] * 16
+            and (nonquiet or end - previous >= config["max_quiet_unit_ms"] * 16)
+        ):
+            endpoints.append(
+                {
+                    "end_sample": end,
+                    "quiet_start_sample": quiet_start,
+                    "peak": quiet_peak,
+                }
+            )
+            previous = end
+            quiet_start = None
+            quiet_peak = 0
+            nonquiet = False
+    return endpoints
+
+
+def _automatic_endpoint_checks(
+    traces: list[dict[str, Any]], pcm: bytes
+) -> dict[str, bool]:
+    """Check observed bytes and endpoint proposals without fixture boundaries."""
+    expected = {item["end_sample"]: item for item in _quiet_endpoint_reference(pcm)}
+    pcm_valid = endpoint_valid = authority_valid = True
+    observed_ends: list[int] = []
+    for trace in traces:
+        start, end = trace["analysis_start_sample"], trace["analysis_end_sample"]
+        accepted = trace.get("accepted_through_sample")
+        observation = trace.get("audio_evidence", {}).get("observation", {})
+        content = pcm[start * 2 : end * 2]
+        pcm_valid &= (
+            0 <= start < end <= len(pcm) // 2
+            and observation.get("sample_count") == end - start
+            and observation.get("pcm_sha256") == hashlib.sha256(content).hexdigest()
+            and observation.get("digital_silence") is (not any(content))
+        )
+        endpoint_valid &= type(accepted) is int and end <= accepted <= len(pcm) // 2
+        unit = trace.get("source_unit")
+        if unit is None:
+            continue
+        endpoint = unit.get("endpoint")
+        if unit.get("origin") == "quiet_run":
+            if not observed_ends or observed_ends[-1] != end:
+                observed_ends.append(end)
+            endpoint_valid &= (
+                isinstance(endpoint, Mapping)
+                and endpoint == expected.get(end)
+                and endpoint.get("end_sample") == unit.get("end_sample")
+            )
+        else:
+            endpoint_valid &= (
+                unit.get("origin") == "end_of_input"
+                and endpoint is None
+                and trace.get("eof") is True
+                and end == len(pcm) // 2
+                and observed_ends == list(expected)
+            )
+        if trace.get("silence_publication") is not None:
+            authority_valid &= observation.get("digital_silence") is True and not any(
+                content
+            )
+    return {
+        "observed_pcm_matches_input": pcm_valid,
+        "automatic_endpoint_trace_contract": endpoint_valid
+        and observed_ends == list(expected)[: len(observed_ends)],
+        "quiet_proposal_has_no_silence_authority": authority_valid,
+    }
 
 
 def _source_unit_plan(manifest: Mapping[str, Any]) -> list[dict[str, Any]]:
@@ -675,10 +838,14 @@ def _run_worker(
     modal_module: Any,
     input_evidence: bool = False,
     source_units: bool = False,
+    automatic_endpoints: bool = False,
 ) -> dict[str, Any]:
     manifest = read_registration(RUNTIME_ROOT)
-    profile = _stream_profile(manifest, input_evidence, source_units)
-    input_evidence = input_evidence or source_units
+    profile = _stream_profile(
+        manifest, input_evidence, source_units, automatic_endpoints
+    )
+    input_evidence = input_evidence or source_units or automatic_endpoints
+    unit_profile = source_units or automatic_endpoints
     _equal(source_snapshot(RUNTIME_ROOT), expected_snapshot, "remote source snapshot")
     _equal(
         c._sha256_file(RUNTIME_ROOT / MANIFEST_PATH),
@@ -798,13 +965,13 @@ def _run_worker(
     if budget.available != capacity or worker.queue_depth:
         raise RuntimeError("warmup retained capacity")
     cases, stopped = [], None
-    units = _source_unit_plan(manifest) if source_units else []
+    units = _source_unit_plan(manifest) if unit_profile else []
     fixture_controls = {}
     for case, pcm in zip(manifest["cases"], pcms):
-        if source_units and case["id"] != SOURCE_UNIT_BOUNDARIES["case_id"]:
+        if unit_profile and case["id"] != SOURCE_UNIT_BOUNDARIES["case_id"]:
             continue
         try:
-            if source_units:
+            if unit_profile:
                 for fixture in manifest["fixtures"]:
                     torch.manual_seed(seed)
                     torch.cuda.manual_seed_all(seed)
@@ -830,13 +997,21 @@ def _run_worker(
                 offline["text"], case["reference_text"]
             )
             torch.cuda.synchronize(0)
+            stream_config = dict(profile["stream_config"])
+            if automatic_endpoints:
+                endpoint_module = importlib.import_module(
+                    "whisper_runtime.adapters.audio_endpoints"
+                )
+                stream_config["endpointing"] = endpoint_module.QuietEndpointConfig(
+                    **stream_config["endpointing"]
+                )
             stream = adapters.ContinuousTranscriptStream(
                 adapter,
                 stream_id=f"{MANIFEST_ID}:{case['id']}",
                 mel_builder=mel_builder,
                 options=options,
                 rng_seed=seed,
-                config=adapters.ContinuousStreamConfig(**profile["stream_config"]),
+                config=adapters.ContinuousStreamConfig(**stream_config),
             )
             torch.cuda.reset_peak_memory_stats(0)
             allocated, reserved = (
@@ -878,13 +1053,18 @@ def _run_worker(
                     traces,
                     input_evidence=input_evidence,
                     word_alignment=profile["stream_config"]["word_alignment"],
-                    source_units=source_units,
+                    source_units=unit_profile,
                     registered_units=units if source_units else None,
+                    automatic_endpoints=automatic_endpoints,
                 )
             )
             checks["profile_id_matches_config"] = (
                 stream.profile_id == profile["profile_id"]
             )
+            if unit_profile:
+                checks.update(_unit_publication_checks(events, traces))
+            if automatic_endpoints:
+                checks.update(_automatic_endpoint_checks(traces, pcm))
             policy_resolution = (
                 error is not None and error["category"] == "policy_resolution"
             )
@@ -955,6 +1135,7 @@ def _run_worker(
                     "metrics": b._plain(stream.metrics),
                     "driver_steps": steps,
                     "accepted_chunks": accepted_chunks,
+                    "accepted_samples": accepted_samples,
                     "offline_control": offline,
                     **(
                         {
@@ -973,6 +1154,28 @@ def _run_worker(
                             ),
                         }
                         if source_units
+                        else {}
+                    ),
+                    **(
+                        {
+                            "endpoint_policy": {
+                                "kind": "online-quiet-run",
+                                "config": QUIET_ENDPOINT_CONFIG,
+                                "oracle_boundaries_used": False,
+                                "silence_publication_authority": False,
+                            },
+                            "fixture_boundaries_for_evaluation": units,
+                            "fixture_controls": fixture_controls,
+                            "against_concatenated_fixture_controls": b._word_difference(
+                                text,
+                                " ".join(
+                                    fixture_controls[unit["fixture_id"]]["text"]
+                                    for unit in units
+                                    if unit["kind"] == "fixture"
+                                ),
+                            ),
+                        }
+                        if automatic_endpoints
                         else {}
                     ),
                     "recognition": {
@@ -1032,6 +1235,7 @@ def _run_worker(
         "replay_pacing": "unpaced-source-time",
         "input_evidence": input_evidence,
         "source_units": source_units,
+        "automatic_endpoints": automatic_endpoints,
         **profile,
         "source": {
             "image_base_commit": BASE_COMMIT,
@@ -1091,6 +1295,7 @@ def _receipt(
     replay_id: str = "",
     input_evidence: bool | None = None,
     source_units: bool | None = None,
+    automatic_endpoints: bool | None = None,
     **fields: object,
 ) -> None:
     c._append_receipt(
@@ -1106,6 +1311,11 @@ def _receipt(
                 {"input_evidence": input_evidence} if input_evidence is not None else {}
             ),
             **({"source_units": source_units} if source_units is not None else {}),
+            **(
+                {"automatic_endpoints": automatic_endpoints}
+                if automatic_endpoints is not None
+                else {}
+            ),
             **fields,
         },
         create=sequence == 0,
@@ -1152,14 +1362,17 @@ def _execute_local_attempt(
     replay_id: str = "",
     input_evidence: bool = False,
     source_units: bool = False,
+    automatic_endpoints: bool = False,
     confirm_paid_gpu: bool = False,
     remote_function: object,
 ) -> Path:
     c._require_paid_confirmation(confirm_paid_gpu)
     _integer(attempt, 1, 1)
     manifest = read_registration(root)
-    profile = _stream_profile(manifest, input_evidence, source_units)
-    input_evidence = input_evidence or source_units
+    profile = _stream_profile(
+        manifest, input_evidence, source_units, automatic_endpoints
+    )
+    input_evidence = input_evidence or source_units or automatic_endpoints
     if input_evidence and not replay_id:
         raise ValueError("diagnostic variants require a named replay namespace")
     output, receipt, raw, probe = _paths(root, replay_id)
@@ -1189,6 +1402,7 @@ def _execute_local_attempt(
         replay_id=replay_id,
         input_evidence=input_evidence if replay_id else None,
         source_units=source_units if replay_id else None,
+        automatic_endpoints=automatic_endpoints if replay_id else None,
         **profile,
         source_snapshot_sha256=snapshot["digest"],
         registration_sha256=registration_hash,
@@ -1202,10 +1416,13 @@ def _execute_local_attempt(
             replay_id=replay_id,
             input_evidence=input_evidence if replay_id else None,
             source_units=source_units if replay_id else None,
+            automatic_endpoints=automatic_endpoints if replay_id else None,
         )
         sequence += 1
         args = (
-            (snapshot, registration_hash, True, True)
+            (snapshot, registration_hash, True, False, True)
+            if automatic_endpoints
+            else (snapshot, registration_hash, True, True)
             if source_units
             else (snapshot, registration_hash, True)
             if input_evidence
@@ -1220,6 +1437,7 @@ def _execute_local_attempt(
             replay_id=replay_id,
             input_evidence=input_evidence if replay_id else None,
             source_units=source_units if replay_id else None,
+            automatic_endpoints=automatic_endpoints if replay_id else None,
             sha256=c._sha256_file(raw),
             size_bytes=raw.stat().st_size,
         )
@@ -1232,6 +1450,11 @@ def _execute_local_attempt(
         )
         _equal(record.get("input_evidence"), input_evidence, "worker input evidence")
         _equal(record.get("source_units"), source_units, "worker source units")
+        _equal(
+            record.get("automatic_endpoints", False),
+            automatic_endpoints,
+            "worker automatic endpoints",
+        )
         for key, expected in profile.items():
             _equal(record.get(key), expected, f"worker {key}")
         c._write_json_exclusive(output, record)
@@ -1243,6 +1466,7 @@ def _execute_local_attempt(
             replay_id=replay_id,
             input_evidence=input_evidence if replay_id else None,
             source_units=source_units if replay_id else None,
+            automatic_endpoints=automatic_endpoints if replay_id else None,
             error_type=type(error).__name__,
             error_message_sha256=c._sha256_text(str(error)),
         )
@@ -1254,6 +1478,7 @@ def _execute_local_attempt(
         replay_id=replay_id,
         input_evidence=input_evidence if replay_id else None,
         source_units=source_units if replay_id else None,
+        automatic_endpoints=automatic_endpoints if replay_id else None,
         record_sha256=c._sha256_file(output),
         status=record["status"],
         function_call_id=record["worker"]["function_call_id"],
@@ -1268,6 +1493,7 @@ def _modal_main(
     replay_id: str = "",
     input_evidence: bool = False,
     source_units: bool = False,
+    automatic_endpoints: bool = False,
 ) -> None:
     if run_word_corpus is None or run_transport_probe is None:
         raise RuntimeError(f"set {REMOTE_RESOURCES_ENV}=1 before modal run")
@@ -1284,6 +1510,7 @@ def _modal_main(
                 replay_id=replay_id,
                 input_evidence=input_evidence,
                 source_units=source_units,
+                automatic_endpoints=automatic_endpoints,
                 confirm_paid_gpu=confirm_paid_gpu,
                 remote_function=run_word_corpus,
             )
@@ -1365,6 +1592,7 @@ def _define_modal_resources() -> tuple[Any, Any, Any, Any]:
         registration_sha256: str,
         input_evidence: bool = False,
         source_units: bool = False,
+        automatic_endpoints: bool = False,
     ) -> bytes:
         producer = importlib.import_module("infra.modal_word_corpus")
         return producer.b._encode_worker_record(
@@ -1374,6 +1602,7 @@ def _define_modal_resources() -> tuple[Any, Any, Any, Any]:
                 modal_module=modal,
                 input_evidence=input_evidence,
                 source_units=source_units,
+                automatic_endpoints=automatic_endpoints,
             )
         )
 

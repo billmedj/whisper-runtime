@@ -1,12 +1,19 @@
 """Optional adapters for existing speech-inference APIs."""
 
+from .audio_endpoints import (
+    QuietEndpointConfig,
+    QuietEndpointDetector,
+    QuietEndpointProposal,
+)
 from .continuous_stream import (
     COALESCED_CONTEXT_CONTINUOUS_PROFILE,
     COALESCED_CONTINUOUS_PROFILE,
+    COALESCED_QUIET_ENDPOINT_PROFILE,
     COALESCED_SOURCE_UNIT_PROFILE,
     COALESCED_WORD_CONTINUOUS_PROFILE,
     CONTEXT_CONTINUOUS_PROFILE,
     CONTINUOUS_PROFILE,
+    QUIET_ENDPOINT_PROFILE,
     SOURCE_UNIT_PROFILE,
     WORD_CONTINUOUS_PROFILE,
     ContinuousDecodeTrace,
@@ -70,10 +77,15 @@ from .word_policy import (
 __all__ = [
     "COALESCED_CONTEXT_CONTINUOUS_PROFILE",
     "COALESCED_CONTINUOUS_PROFILE",
+    "COALESCED_QUIET_ENDPOINT_PROFILE",
     "COALESCED_SOURCE_UNIT_PROFILE",
     "COALESCED_WORD_CONTINUOUS_PROFILE",
     "CONTEXT_CONTINUOUS_PROFILE",
     "CONTINUOUS_PROFILE",
+    "QUIET_ENDPOINT_PROFILE",
+    "QuietEndpointConfig",
+    "QuietEndpointDetector",
+    "QuietEndpointProposal",
     "SOURCE_UNIT_PROFILE",
     "WORD_CONTINUOUS_PROFILE",
     "AlignedPublication",

@@ -78,8 +78,9 @@ never emits a final-session event.
 A preview already in flight is not converted into a final analysis. Its retry
 keeps the original PCM, operation identity, and EOF snapshot. A subsequent
 closed-unit analysis has a distinct identity even at the same source endpoint.
-`last_trace.source_unit` records exact range boundaries and either `caller` or
-`end_of_input` as the origin. `last_trace.eof` means that this analysis reaches
+`last_trace.source_unit` records exact range boundaries and `caller`,
+`end_of_input`, or `quiet_run` as the origin. `last_trace.eof` means that this
+analysis reaches
 the global EOF observed at admission, not merely that input is closed.
 
 This is a full-result recognition contract, not a word-agreement contract or a
@@ -96,6 +97,61 @@ discard it automatically. Short units can lose context and increase fixed
 model overhead. Provisional captions can appear before a pause, but final text
 waits for closure. Automatic endpoint detection, overlap handling, and paced
 latency remain separate acceptance tests.
+
+### Automatic quiet-run endpoints
+
+To infer unit boundaries from the admitted PCM, configure the same controller:
+
+```python
+from whisper_runtime.adapters import ContinuousStreamConfig, QuietEndpointConfig
+
+config = ContinuousStreamConfig(
+    source_units=True,
+    input_evidence=True,
+    endpointing=QuietEndpointConfig(),
+)
+```
+
+The profile is `quiet_endpoint_stream/v1+input_evidence/v1`. Preview coalescing
+uses the `coalesced_quiet_endpoint_stream/v1` prefix. Push chunks, drive `step()`
+and call `finish_input()` as usual. Do not call `seal_unit()` in this mode.
+No additional model, dependency, worker or audio queue is required.
+
+The detector measures absolute peak amplitude in consecutive 20 ms frames.
+A frame is quiet when every signed 16-bit sample has magnitude at most 32.
+After a nonquiet frame, 600 ms of consecutive quiet can close a unit that is
+at least one second long. Sustained quiet can close a unit every ten seconds,
+including leading silence. Any nonquiet frame resets the quiet duration.
+These configurable thresholds describe a heuristic, not voice activity detection.
+
+The boundary is the detection endpoint, not the beginning of the quiet range.
+All samples remain in the same stream buffer until the native transaction
+commits and releases its resources. Admission scans PCM before model scheduling.
+Rejected pushes change neither the detector nor the pending endpoints. Partial
+frames survive chunk boundaries; EOF never pads the detector's input.
+
+Pending endpoints are sample positions, not copies of audio. Their count is
+bounded by the admitted buffer and minimum unit duration. Retries retain their
+original endpoint. A commit removes only that endpoint; it does not reset the
+detector, which may already have examined later admitted audio. EOF drains
+pending endpoints before closing the actual remaining samples.
+
+`source_unit.origin` is `quiet_run` for inferred boundaries. Its `endpoint`
+records the observed quiet start, end and peak. `accepted_through_sample` records
+the admission horizon when the decision trace is created. It is not the model's
+original admission snapshot. The trace remains a prepared decision, not proof
+that publication succeeded.
+
+Low amplitude never authorizes empty publication. Only the existing exact-zero
+rule does that. A closed nonzero range with uncertain output retains its PCM and
+stops. Conversely, a model-supported result can still be wrong: this detector
+does not prove the absence of speech or the correctness of recognition.
+
+Quiet speech can satisfy the threshold; noise can prevent a boundary. Keeping
+every sample does not guarantee that a split preserves word recognition. There
+is no forced cut for continuous speech at the analysis limit. Such input stops
+with explicit backpressure. Real microphones, background noise, faint voices,
+cross-boundary words and paced latency need separate validation.
 
 ### Timestamp agreement
 
