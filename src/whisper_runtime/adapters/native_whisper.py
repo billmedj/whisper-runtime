@@ -29,6 +29,7 @@ from ..errors import (
 from ..model import ModelSnapshot
 from ..resources import ResourceVector
 from ..state import (
+    AudioSpan,
     RequestState,
     Session,
     SessionState,
@@ -42,6 +43,12 @@ from ._model_binding import (
     bind_model,
     get_model_binding,
     require_model_available,
+)
+from .native_result import (
+    NativeTokenizer,
+    NativeWindowResult,
+    build_native_window_result,
+    select_native_publication,
 )
 
 
@@ -772,6 +779,7 @@ class NativeWindowRun:
         window_id: str,
         start_ms: int,
         end_ms: int,
+        tokenizer: NativeTokenizer | None = None,
     ) -> None:
         self._worker = worker
         self._model_binding = model_binding
@@ -783,6 +791,8 @@ class NativeWindowRun:
         self._window_id = window_id
         self._start_ms = start_ms
         self._end_ms = end_ms
+        self._tokenizer = tokenizer
+        self._prepared_result: NativeWindowResult | None = None
         self._step_count = 0
         self._complete = complete
         self._closed = False
@@ -892,15 +902,65 @@ class NativeWindowRun:
             changed = self._worker.recover(self._transaction) or changed
         return changed
 
+    def prepare_result(self) -> NativeWindowResult:
+        """Inspect completed decoding before choosing what to publish.
+
+        Finalization runs once. This snapshot does not publish text or release
+        capacity. Finish or close the run before its existing deadline.
+        """
+
+        self._require_open()
+        if not self.complete:
+            raise NativeDecodeContractError(
+                "a native result cannot be prepared before token generation completes"
+            )
+        try:
+            self._transaction.checkpoint()
+            return self._prepare_result()
+        except BaseException as operation_error:
+            self._close_owner(operation_error=operation_error, committed_state=None)
+            raise
+
+    def _prepare_result(self) -> NativeWindowResult:
+        if self._prepared_result is None:
+            results = self._submit(self._backend_run.finalize)
+            self._transaction.checkpoint()
+            if not isinstance(results, list) or len(results) != 1:
+                raise NativeDecodeContractError(
+                    "native decoding must return exactly one result"
+                )
+            try:
+                self._prepared_result = build_native_window_result(
+                    results[0],
+                    window_id=self._window_id,
+                    analysis_span=AudioSpan(self._start_ms, self._end_ms),
+                    tokenizer=self._tokenizer,
+                )
+            except (TypeError, ValueError) as exc:
+                raise NativeDecodeContractError(str(exc)) from exc
+        return self._prepared_result
+
     def finish(
         self,
         *,
         committed_through_ms: int | None = None,
+        publication_span: AudioSpan | None = None,
     ) -> SessionState:
-        """Finalize and commit a complete run without adding hidden steps."""
+        """Commit a complete run, optionally selecting whole timed segments.
+
+        Analysis may include previously committed audio. A selected publication
+        must match explicit segment bounds; it cannot rewrite committed output.
+        """
 
         self._require_open()
-        _validate_committed_boundary(committed_through_ms, end_ms=self._end_ms)
+        if publication_span is not None and not isinstance(publication_span, AudioSpan):
+            raise TypeError("publication_span must be an AudioSpan or None")
+        _validate_committed_boundary(
+            committed_through_ms,
+            end_ms=self._end_ms
+            if publication_span is None
+            else publication_span.end_ms,
+        )
         try:
             self._transaction.checkpoint()
         except BaseException as operation_error:
@@ -916,17 +976,12 @@ class NativeWindowRun:
 
         committed_state: SessionState | None = None
         try:
-            results = self._submit(self._backend_run.finalize)
-            self._transaction.checkpoint()
-            if not isinstance(results, list) or len(results) != 1:
-                raise NativeDecodeContractError(
-                    "native decoding must return exactly one result"
-                )
-            text = getattr(results[0], "text", None)
-            if not isinstance(text, str):
-                raise NativeDecodeContractError(
-                    "the native decode result must contain text"
-                )
+            result = self._prepare_result()
+            if publication_span is not None:
+                try:
+                    result = select_native_publication(result, publication_span)
+                except (TypeError, ValueError) as exc:
+                    raise NativeDecodeContractError(str(exc)) from exc
             if self._cuda_profile:
                 self._submit(self._require_model_identity)
                 self._transaction.checkpoint()
@@ -934,12 +989,7 @@ class NativeWindowRun:
                 with self._model_binding.lock:
                     self._require_model_identity()
             committed_state = self._transaction.commit(
-                WindowResult(
-                    window_id=self._window_id,
-                    text=text,
-                    start_ms=self._start_ms,
-                    end_ms=self._end_ms,
-                ),
+                result,
                 committed_through_ms=committed_through_ms,
             )
         except BaseException as operation_error:
@@ -1165,7 +1215,9 @@ class NativeWhisperAdapter:
 
             seed = transaction.randrange(1 << 63)
 
-            def prepare_run() -> tuple[Callable[[object], object], object]:
+            def prepare_run() -> tuple[
+                Callable[[object], object], object, NativeTokenizer | None
+            ]:
                 with self._model_binding.lock:
                     require_model_available(self._model_binding)
                     self._require_model_identity()
@@ -1174,6 +1226,21 @@ class NativeWhisperAdapter:
                         decode_options,
                         seed=seed,
                     )
+                    if (
+                        getattr(task, "tokenizer", None) is not None
+                        and not decode_options.without_timestamps
+                        and (
+                            components.n_frames != 3_000
+                            or getattr(
+                                getattr(self._model, "dims", None), "n_audio_ctx", None
+                            )
+                            != 1_500
+                        )
+                    ):
+                        raise NativeDependencyError(
+                            "timestamp extraction requires the standard Whisper "
+                            "3000-frame input and 1500-position audio context"
+                        )
                     if (
                         cuda_profile
                         or self.execution_profile.max_concurrent_decodes == 2
@@ -1195,9 +1262,13 @@ class NativeWhisperAdapter:
                             subject="the copied mel tensor",
                             expected=self.execution_profile.device,
                         )
-                    return start, batched_mel
+                    return (
+                        start,
+                        batched_mel,
+                        cast(NativeTokenizer | None, getattr(task, "tokenizer", None)),
+                    )
 
-            start, batched_mel = submit_native(prepare_run)
+            start, batched_mel, tokenizer = submit_native(prepare_run)
             transaction.checkpoint()
 
             def start_run() -> NativeDecodeRun:
@@ -1240,6 +1311,7 @@ class NativeWhisperAdapter:
                 window_id=window_id,
                 start_ms=start_ms,
                 end_ms=end_ms,
+                tokenizer=tokenizer,
             )
             owner_transferred = True
             return handle
@@ -1269,11 +1341,25 @@ class NativeWhisperAdapter:
         end_ms: int,
         options: NativeDecodeOptions | None = None,
         committed_through_ms: int | None = None,
+        publication_span: AudioSpan | None = None,
     ) -> SessionState:
         """Decode and atomically commit one unbatched 30-second mel window."""
 
         WindowResult(window_id=window_id, text="", start_ms=start_ms, end_ms=end_ms)
-        _validate_committed_boundary(committed_through_ms, end_ms=end_ms)
+        if publication_span is not None:
+            if not isinstance(publication_span, AudioSpan):
+                raise TypeError("publication_span must be an AudioSpan or None")
+            WindowResult(
+                window_id=window_id,
+                text="",
+                start_ms=publication_span.start_ms,
+                end_ms=publication_span.end_ms,
+                analysis_span=AudioSpan(start_ms, end_ms),
+            )
+        _validate_committed_boundary(
+            committed_through_ms,
+            end_ms=end_ms if publication_span is None else publication_span.end_ms,
+        )
         with self.start_window(
             session=session,
             request=request,
@@ -1285,7 +1371,10 @@ class NativeWhisperAdapter:
         ) as run:
             while not run.complete:
                 run.step()
-            return run.finish(committed_through_ms=committed_through_ms)
+            return run.finish(
+                committed_through_ms=committed_through_ms,
+                publication_span=publication_span,
+            )
 
     def _require_model_identity(self) -> None:
         if self.execution_profile.device == "cpu":

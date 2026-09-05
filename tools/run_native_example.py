@@ -64,10 +64,16 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help="Allow Whisper to download tiny.en into the model cache if needed",
     )
-    parser.add_argument(
+    mode = parser.add_mutually_exclusive_group()
+    mode.add_argument(
         "--stream-preview-ms",
         type=int,
         help="Replay PCM through the bounded stream profile at this interval",
+    )
+    mode.add_argument(
+        "--segment-publication-check",
+        action="store_true",
+        help="Verify whole-segment publication against a timestamp-enabled control",
     )
     parser.add_argument("--stream-chunk-ms", type=int, default=200)
     parser.add_argument(
@@ -108,9 +114,11 @@ def main() -> int:
     if args.stream_preview_ms is not None:
         command.extend(("--stream-preview-ms", str(args.stream_preview_ms)))
         command.extend(("--stream-chunk-ms", str(args.stream_chunk_ms)))
+    if args.segment_publication_check:
+        command.append("--segment-publication-check")
     if args.output is not None:
         command.extend(("--output", str(args.output.resolve())))
-    if audio == default_audio.resolve():
+    if audio == default_audio.resolve() and not args.segment_publication_check:
         command.extend(("--expected-text", JFK_TRANSCRIPT))
 
     environment = native_example_environment(setup.paths.backend)

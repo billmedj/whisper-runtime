@@ -25,6 +25,7 @@ from tools.smoke_native_whisper import (
     verify_terminal_invariants,
 )
 from whisper_runtime import (
+    AudioSpan,
     Budget,
     ModelSnapshot,
     RequestState,
@@ -39,6 +40,7 @@ from whisper_runtime.adapters import (
     NativeStreamConfig,
     NativeTranscriptStream,
     NativeWhisperAdapter,
+    NativeWindowResult,
     TranscriptEvent,
 )
 
@@ -55,10 +57,16 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--model-cache", type=Path, required=True)
     parser.add_argument("--allow-model-download", action="store_true")
     parser.add_argument("--expected-text")
-    parser.add_argument(
+    mode = parser.add_mutually_exclusive_group()
+    mode.add_argument(
         "--stream-preview-ms",
         type=int,
         help="Replay the file as PCM and revise the transcript at this interval",
+    )
+    mode.add_argument(
+        "--segment-publication-check",
+        action="store_true",
+        help="Check two whole-segment publications against a timestamp-enabled control",
     )
     parser.add_argument("--stream-chunk-ms", type=int, default=200)
     parser.add_argument(
@@ -155,6 +163,132 @@ def run_stream(
     )
 
 
+def run_segment_publication_check(
+    *, adapter: NativeWhisperAdapter, mel: object, duration_ms: int
+) -> tuple[SessionState, dict[str, object]]:
+    """Check conservative segment publication with identical full-window analyses."""
+
+    options = NativeDecodeOptions(
+        language="en", temperature=0.0, without_timestamps=False
+    )
+    analysis_span = AudioSpan(0, duration_ms)
+
+    def decode(
+        session: Session, name: str, selection: slice | None = None
+    ) -> SessionState:
+        request = RequestState(
+            name, session.session_id, adapter.model_identity, rng_seed=7
+        )
+        if selection is None:
+            state = adapter.decode_window(
+                session=session,
+                request=request,
+                window_id=name,
+                mel=mel,
+                start_ms=analysis_span.start_ms,
+                end_ms=analysis_span.end_ms,
+                options=options,
+            )
+        else:
+            before = session.snapshot()
+            with adapter.start_window(
+                session=session,
+                request=request,
+                window_id=name,
+                mel=mel,
+                start_ms=analysis_span.start_ms,
+                end_ms=analysis_span.end_ms,
+                options=options,
+            ) as run:
+                while not run.complete:
+                    run.step()
+                prepared = run.prepare_result()
+                if run.prepare_result() is not prepared:
+                    raise RuntimeError("prepared native result was not reused")
+                if session.snapshot() is not before:
+                    raise RuntimeError(
+                        "result inspection unexpectedly published output"
+                    )
+                if (
+                    prepared.metadata is None
+                    or not prepared.metadata.timestamps_complete
+                    or len(prepared.metadata.segments) < 2
+                ):
+                    raise RuntimeError(
+                        "prepared result lacks complete timestamp segments"
+                    )
+                selected = prepared.metadata.segments[selection]
+                publication_span = AudioSpan(
+                    selected[0].span.start_ms, selected[-1].span.end_ms
+                )
+                state = run.finish(
+                    publication_span=publication_span,
+                    committed_through_ms=publication_span.end_ms,
+                )
+        if request.status.value != "committed":
+            raise RuntimeError("segment publication request did not commit")
+        return state
+
+    control_state = decode(Session("native-segment-control"), "control")
+    control = control_state.windows[-1].result
+    if (
+        not isinstance(control, NativeWindowResult)
+        or control.metadata is None
+        or not control.metadata.timestamps_complete
+        or len(control.metadata.segments) < 2
+    ):
+        raise RuntimeError(
+            "segment publication check requires at least two complete timestamp "
+            "segments covering the full control transcript; this fixture did not provide them"
+        )
+    segments = control.metadata.segments
+    reassembled_text = "".join(segment.text for segment in segments).strip()
+    if reassembled_text != control.text:
+        raise RuntimeError("timestamp segments differ from the full control transcript")
+    spans = (
+        segments[0].span,
+        AudioSpan(segments[1].span.start_ms, segments[-1].span.end_ms),
+    )
+    session = Session("native-segment-publication")
+    first_state = decode(session, "segment-first", slice(0, 1))
+    first_record = first_state.windows[0]
+    first_snapshot = asdict(first_record)
+    state = decode(session, "segment-suffix", slice(1, None))
+    if state.windows[0] is not first_record or asdict(first_record) != first_snapshot:
+        raise RuntimeError(
+            "the first published record changed during suffix publication"
+        )
+    if state.version != 2 or state.committed_through_ms != segments[-1].span.end_ms:
+        raise RuntimeError("segment publication did not preserve its final watermark")
+    for record, span, selected in zip(
+        state.windows, spans, (segments[:1], segments[1:])
+    ):
+        result = record.result
+        if (
+            not isinstance(result, NativeWindowResult)
+            or result.metadata is None
+            or result.metadata.tokens != control.metadata.tokens
+            or result.metadata.segments != segments
+            or not result.metadata.timestamps_complete
+            or result.analyzed_span != analysis_span
+            or AudioSpan(result.start_ms, result.end_ms) != span
+            or result.text != "".join(segment.text for segment in selected).strip()
+        ):
+            raise RuntimeError(
+                "selected publication differs from the same-options control"
+            )
+    return state, {
+        "control": asdict(control),
+        "publication_spans": [asdict(span) for span in spans],
+        "published_windows": [asdict(record.result) for record in state.windows],
+        "reassembled_text": reassembled_text,
+        "same_options_control_matches": True,
+        "prepared_result_reused": True,
+        "previous_record_unchanged": True,
+        "committed_through_ms": state.committed_through_ms,
+    }
+
+
 def main() -> int:
     args = parse_args()
     setup = load_validated_setup(args.manifest.resolve())
@@ -220,32 +354,39 @@ def main() -> int:
     started = time.perf_counter()
     stream_events: list[dict[str, object]] | None = None
     stream_metrics: dict[str, object] | None = None
+    segment_publication: dict[str, object] | None = None
     if args.stream_preview_ms is None:
         mel = whisper.log_mel_spectrogram(
             whisper.pad_or_trim(audio),
             n_mels=model.dims.n_mels,
         )
-        session = Session("native-example")
-        request = RequestState(
-            "native-example-1",
-            session.session_id,
-            snapshot,
-            rng_seed=7,
-        )
-        state = adapter.decode_window(
-            session=session,
-            request=request,
-            window_id="window-0",
-            mel=mel,
-            start_ms=0,
-            end_ms=duration_ms,
-            options=NativeDecodeOptions(
-                language="en",
-                temperature=0.0,
-                without_timestamps=True,
-            ),
-        )
-        request_status = request.status.value
+        if args.segment_publication_check:
+            state, segment_publication = run_segment_publication_check(
+                adapter=adapter, mel=mel, duration_ms=duration_ms
+            )
+            request_status = "committed"
+        else:
+            session = Session("native-example")
+            request = RequestState(
+                "native-example-1",
+                session.session_id,
+                snapshot,
+                rng_seed=7,
+            )
+            state = adapter.decode_window(
+                session=session,
+                request=request,
+                window_id="window-0",
+                mel=mel,
+                start_ms=0,
+                end_ms=duration_ms,
+                options=NativeDecodeOptions(
+                    language="en",
+                    temperature=0.0,
+                    without_timestamps=True,
+                ),
+            )
+            request_status = request.status.value
     else:
         import numpy as np
 
@@ -273,7 +414,14 @@ def main() -> int:
             f"transcript mismatch: expected {args.expected_text!r}, "
             f"observed {result.text!r}"
         )
-    if args.stream_preview_ms is None:
+    if args.segment_publication_check:
+        if (
+            worker.queue_depth != 0
+            or budget.lease_count != 0
+            or budget.available != capacity
+        ):
+            raise RuntimeError("segment publication retained runtime capacity")
+    elif args.stream_preview_ms is None:
         verify_terminal_invariants(
             request_status=request_status,
             session_version=state.version,
@@ -296,8 +444,10 @@ def main() -> int:
             "request_status": request_status,
             "session_version": state.version,
             "text": result.text,
+            "result": asdict(result),
             "stream_events": stream_events,
             "stream_metrics": stream_metrics,
+            "segment_publication": segment_publication,
             "elapsed_seconds": elapsed,
             "queue_depth_after": worker.queue_depth,
             "resources_released": budget.available == capacity,

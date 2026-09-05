@@ -27,6 +27,7 @@ explicit.
 | Runtime core | Bounded admission, exact in-process leases, deadlines, versioned commits, an immutable committed-prefix boundary, cancellation, quarantine, and cleanup recovery |
 | Legacy adapter | Runs the existing synchronous `model.transcribe()` call as one serialized transaction |
 | Native adapter | Provides a managed, token-step run handle over the patched decoder; CPU and one strict single-lane T4 profile have recorded integration cases |
+| Timed publication | Retains decoder metadata and selects complete timestamped segments; analysis can overlap committed audio without rewriting published text |
 | Bounded audio previews | Accepts ordered PCM for a slice of up to 30 seconds, drives native token steps, and emits provisional, replacement, commit, and final events |
 | Conformance data | Records four pinned JFK CPU comparisons: greedy, beam search, word timestamps, and translation |
 | Isolation checks | Exercises two staged decodes under a fixed schedule and in two operating-system threads, cleans one early, and checks the survivor against an isolated baseline |
@@ -218,8 +219,8 @@ See the [native adapter contract](https://github.com/billmedj/whisper-runtime/bl
 
 | Evidence | Scope |
 | --- | --- |
-| 161 runtime tests | Resource accounting, queue bounds, commit races, committed-prefix enforcement, deadlines, cancellation, quarantine, recovery, bounded PCM previews, and adapter behavior |
-| 191 repository-tool tests | Provenance, source state, fixtures, portability, setup contracts, evidence schemas, semantic validation, qualification relations, and native smoke contracts |
+| 217 runtime tests | Resource accounting, queue bounds, commit races, committed-prefix enforcement, deadlines, cancellation, quarantine, recovery, bounded PCM previews, timed segment publication, and adapter behavior |
+| 198 repository-tool tests | Provenance, source state, fixtures, portability, setup contracts, evidence schemas, semantic validation, qualification relations, and native smoke contracts |
 | 2,000-step deterministic state trace | State-machine transitions under generated operations |
 | 55 Lean theorem declarations | Abstract lease provenance, capacity conservation, lifecycle, stale-commit and committed-prefix properties, completion-fence publication, quarantine, and recovery |
 | One recorded native run | Patched `tiny.en` decoder, JFK fixture, CPU, exact transcript, queue returned to zero, declared budget restored |

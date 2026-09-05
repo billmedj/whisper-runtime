@@ -18,6 +18,7 @@ from .execution import CompletionFence, ExecutionScope, ImmediateFence
 from .model import ModelSnapshot
 from .resources import Budget, ResourceVector
 from .state import (
+    AudioSpan,
     RequestState,
     RequestStatus,
     Session,
@@ -29,6 +30,7 @@ from .transaction import ExpirationAction, TransactionStatus, WindowTransaction
 from .worker import ReapReport, Worker
 
 __all__ = [
+    "AudioSpan",
     "Budget",
     "CompletionFence",
     "DuplicateRequestError",

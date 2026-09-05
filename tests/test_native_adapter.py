@@ -407,7 +407,7 @@ class FakeNativeModel:
     ) -> None:
         self.identity = identity
         self.device = device or FakeDevice("cpu")
-        self.dims = type("FakeDimensions", (), {"n_mels": 80})()
+        self.dims = type("FakeDimensions", (), {"n_mels": 80, "n_audio_ctx": 1_500})()
 
     def transcribe(
         self,

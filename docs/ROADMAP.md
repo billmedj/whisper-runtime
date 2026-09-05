@@ -69,8 +69,14 @@ offline-equivalence claim.
 
 ## Next streaming boundary: timestamped Local Agreement
 
-- Expose timed-token hypotheses with explicit source coordinates from the
-  native adapter.
+The native adapter now retains language, tokens, available scores, and complete
+timestamped segments. An optional publication span selects whole segments from
+a larger analysis span. The session's committed-prefix guard still applies to
+the selected output. See the [native result contract](NATIVE_ADAPTER.md#analysis-context-and-published-text).
+These model-predicted segment times are not word alignments or stability scores.
+
+- Carry timed hypotheses into the stream policy without changing the existing
+  bounded-preview event contract.
 - Align overlapping hypotheses and define a versioned Local Agreement policy
   for progressive commits. Do not infer token times from window endpoints.
 - Preserve immutable committed text and text-and-span revision identities

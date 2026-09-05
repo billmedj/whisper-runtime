@@ -166,9 +166,115 @@ weights to the declared `ModelSnapshot`; metadata alone is not a strong
 checkpoint identity.
 
 This adapter does not yet support audio batches, stage-specific resource costs,
-durable mid-window checkpoints, alignment, or streaming. The committed CUDA
+durable mid-window checkpoints, word alignment, or continuous streaming. The committed CUDA
 records cover only the pinned single-lane case described below. They do not
 establish general CUDA compatibility, memory bounds, latency, or throughput.
+
+## Analysis context and published text
+
+Native results retain language, token IDs, and available decoder scores in an
+immutable `NativeWindowResult.metadata` value. Missing scores and NaN defaults
+become `None`. Invalid metadata aborts publication. Public results do not retain
+the backend's audio-feature tensors. Text-only test backends remain supported
+with `metadata=None`.
+
+`NativeWindowResult` is a subclass of `WindowResult`. Existing field access and
+default text and bounds remain unchanged. Exact type checks, dataclass equality
+against a base-class instance, and serialized `asdict()` schemas must account for
+the new result type and fields.
+
+When timestamps are enabled, `metadata.segments` contains complete pairs of
+Whisper timestamp tokens and the text tokens between them. Timestamp offsets
+use the model's 20 ms grid and the caller's analysis start. These are predicted
+segment boundaries, not word alignments or evidence that the words are correct.
+An unfinished or malformed tail is not assigned a fabricated end time.
+`timestamps_complete` indicates whether the entire token sequence was parsed.
+The native adapter rejects timestamp extraction for models outside the standard
+3,000-frame input and 1,500-position audio context.
+
+The default result retains the full decoded text and the caller's input bounds.
+Its optional `analysis_span` identifies the audio analyzed by the model.
+`WindowResult.analyzed_span` also works for older results without that field:
+it returns their published bounds.
+
+To reuse context without republishing it, pass `publication_span` to
+`decode_window()` or `NativeWindowRun.finish()`:
+
+```python
+from whisper_runtime import AudioSpan
+
+# The mel contains audio from 17 to 26 seconds. Publish only a complete
+# predicted segment, or consecutive segments, from 20 to 24 seconds.
+state = adapter.decode_window(
+    session=session,
+    request=request,
+    window_id="next-window",
+    mel=mel,
+    start_ms=17_000,
+    end_ms=26_000,
+    options=NativeDecodeOptions(language="en", without_timestamps=False),
+    publication_span=AudioSpan(20_000, 24_000),
+    committed_through_ms=24_000,
+)
+```
+
+This example succeeds only if the decoder actually emits those segment bounds.
+A selection must fall within the analysis span and match complete segments
+exactly. The adapter rejects an untimed selection or a boundary through a
+segment. It selects the segment text; it does not relabel the full transcript.
+Metadata retains the full analysis tokens for inspection. Its scores describe
+that full analysis, not the selected output. `publication_segment_indices`
+identifies the selected entries in `metadata.segments`; `None` means full-text
+publication without segment selection.
+
+For a live driver, inspect the actual result before selecting its span:
+
+```python
+with adapter.start_window(
+    session=session, request=request, window_id="next-window",
+    mel=mel, start_ms=17_000, end_ms=26_000,
+    options=NativeDecodeOptions(language="en", without_timestamps=False),
+) as run:
+    while not run.complete:
+        run.step()
+    prepared = run.prepare_result()
+    # A caller-owned policy inspects prepared.metadata.segments and chooses
+    # complete segments. It can also decline to publish and close the run.
+    span = policy.choose_span(prepared)
+    if span is not None:
+        state = run.finish(publication_span=span, committed_through_ms=span.end_ms)
+```
+
+`policy` above is caller code, not an implemented stability policy.
+`prepare_result()` finalizes the decoder once and returns an immutable snapshot.
+Repeated inspection and `finish()` reuse that snapshot. Inspection does not
+publish, free capacity, or renew the deadline. Cancellation can still prevent
+publication after inspection.
+
+The result, metadata, and optional committed-prefix update enter the same
+transaction. The session still rejects output that starts before its committed
+boundary. Analysis can overlap that boundary; published text cannot. Native
+cleanup and failure recovery use the existing transaction path.
+
+This API does not decide when speech is stable. The caller chooses a publication
+span and asserts finality, including any gaps before it. The runtime does not
+infer silence from a timestamp gap or an empty decoded segment. A continuous
+transcription policy must account for those gaps before advancing its watermark.
+Rolling audio retention and a tested agreement policy
+are separate work. The bounded-preview API still emits whole-prefix revisions;
+it does not yet consume segment timestamps for progressive commits.
+
+To check the publication path with the pinned CPU backend and cached model:
+
+```shell
+python tools/run_native_example.py --segment-publication-check --output .tmp-segments/report.json
+```
+
+This check requires at least two complete predicted segments in the fixture.
+It compares two selected publications against a full-window, timestamp-enabled
+control, with identical audio, options, and seed. It also checks cached result
+inspection, preservation of the first record, and resource release. It is not a
+rolling-window or live-latency benchmark.
 
 ## Strict CUDA profile
 

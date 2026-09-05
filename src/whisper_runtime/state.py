@@ -19,17 +19,13 @@ RandomState = tuple[int, tuple[int, ...], float | None]
 
 
 @dataclass(frozen=True, slots=True)
-class WindowResult:
-    """The committed output for one audio window."""
+class AudioSpan:
+    """An ordered, nonnegative audio interval in integer milliseconds."""
 
-    window_id: str
-    text: str
     start_ms: int
     end_ms: int
 
     def __post_init__(self) -> None:
-        if not self.window_id or self.window_id.isspace():
-            raise ValueError("window_id must not be empty")
         if isinstance(self.start_ms, bool) or not isinstance(self.start_ms, int):
             raise TypeError("start_ms must be an integer")
         if isinstance(self.end_ms, bool) or not isinstance(self.end_ms, int):
@@ -38,6 +34,38 @@ class WindowResult:
             raise ValueError("start_ms must not be negative")
         if self.end_ms < self.start_ms:
             raise ValueError("end_ms must not precede start_ms")
+
+
+@dataclass(frozen=True, slots=True)
+class WindowResult:
+    """Published output bounds, optionally within a larger analyzed interval."""
+
+    window_id: str
+    text: str
+    start_ms: int
+    end_ms: int
+    analysis_span: AudioSpan | None = None
+
+    def __post_init__(self) -> None:
+        if not self.window_id or self.window_id.isspace():
+            raise ValueError("window_id must not be empty")
+        AudioSpan(self.start_ms, self.end_ms)
+        if self.analysis_span is not None:
+            if not isinstance(self.analysis_span, AudioSpan):
+                raise TypeError("analysis_span must be an AudioSpan or None")
+            if (
+                self.analysis_span.start_ms > self.start_ms
+                or self.analysis_span.end_ms < self.end_ms
+            ):
+                raise ValueError("analysis_span must contain the published output span")
+
+    @property
+    def analyzed_span(self) -> AudioSpan:
+        """Return explicit analysis bounds or the legacy published bounds."""
+
+        if self.analysis_span is not None:
+            return self.analysis_span
+        return AudioSpan(self.start_ms, self.end_ms)
 
 
 @dataclass(frozen=True, slots=True)
