@@ -39,11 +39,51 @@ Agreement between predictions does not establish that the words are correct.
 
 A provisional event may be replaced. A commit references its exact revision;
 that segment identifier is never reused. Audio is evicted only after the native
-transaction commits and releases its resources. Each new rolling window starts
-at the committed endpoint. This version does not retain left audio context or
-carry an unbounded text prompt across windows.
+transaction commits and releases its resources. In the default profile, each
+new rolling window starts at the committed endpoint, without retained left
+audio context. Neither profile carries an unbounded text prompt across windows.
 
-At EOF, the remaining window is finalized under the ordinary native decode
+## Optional retained context
+
+Set `ContinuousStreamConfig(left_context_ms=2000)` to select the experimental
+`context_agreement_stream/v1` profile. The default remains zero; the existing
+offline and bounded-preview paths do not change.
+
+This profile separates the committed position from `retained_from_sample`.
+Previously published audio can remain in the buffer for later analyses. The
+retained context counts toward both the input-buffer limit and the 30-second
+analysis limit. Context must be a multiple of Whisper's 20 ms timestamp grid
+and leave room for a growing analysis pair.
+
+Only new, complete timestamp segments may appear in previews or commits. A
+segment that crosses the committed boundary cannot be clipped or deduplicated
+by guessing. Such a boundary can remain unresolved; retaining context alone
+does not guarantee useful continuous recognition.
+
+At EOF with retained context, the remaining text must have complete, contiguous
+segments from the committed boundary to the analysis endpoint. Otherwise,
+`StreamNeedsResolutionError` retains the input and prevents identical EOF
+decodes from being retried. Close the stream before starting a different policy.
+Previously committed text is never rewritten. With zero retained context, the
+ordinary native EOF behavior described below remains unchanged.
+
+## Decision trace
+
+`last_trace` exposes one immutable `ContinuousDecodeTrace` on the owner thread.
+It includes the actual analysis sample range, previous committed position,
+retained origin, raw result metadata, selected publication span, and decision.
+Its monotonic `decode_index` lets an external diagnostic collect each new record.
+There is no internal trace history. Persisting a full trace is the caller's
+choice and can include recognized speech.
+
+The trace describes a prepared decision, not successful publication. A commit
+can still fail or await resource recovery. Check transcript events and runtime
+state for the outcome. Do not infer an analysis endpoint from a commit event:
+the latter describes the selected output range.
+
+## End of input
+
+At EOF with zero retained context, the remaining window uses the native decode
 contract. EOF finality does not assert two-hypothesis agreement. A final event
 means all admitted input was processed, not that recognition was error-free.
 
@@ -75,6 +115,10 @@ Next, test the effect of window boundaries and retained context on recognition
 with matched inputs. Do not tune the policy solely to one JFK phrase. Add real
 silence, distinct recordings, and long paced input before widening the profile's
 claims. Preserve the failed text comparison as a regression observation.
+
+The [boundary diagnosis](research/2026-09-05-stream-boundaries.md) traces the
+repeated recognition error, separates publication from context retention, and
+defines the next controlled comparisons. It is a plan, not a validated fix.
 
 Deterministic tests exercise agreement and runtime lifecycle behavior without
 requiring a model. Native GPU diagnostics must record the tested source snapshot,

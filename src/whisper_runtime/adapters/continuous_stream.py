@@ -12,8 +12,8 @@ from threading import RLock, current_thread
 from typing import Callable
 
 from ..errors import TransactionRetainedError
-from ..state import RequestState, Session, SessionState
-from .native_result import NativeWindowResult
+from ..state import AudioSpan, RequestState, Session, SessionState
+from .native_result import NativeWindowResult, select_native_publication
 from .native_stream import (
     AudioBufferFullError,
     AudioSequenceError,
@@ -25,6 +25,7 @@ from .native_whisper import NativeDecodeOptions, NativeWhisperAdapter, NativeWin
 from .stream_policy import compare_hypotheses
 
 CONTINUOUS_PROFILE = "timestamp_agreement_stream/v1"
+CONTEXT_CONTINUOUS_PROFILE = "context_agreement_stream/v1"
 _SAMPLES_PER_MS = 16
 
 
@@ -39,6 +40,7 @@ class ContinuousStreamConfig:
     max_buffer_ms: int = 40_000
     holdback_ms: int = 1_000
     timestamp_tolerance_ms: int = 200
+    left_context_ms: int = 0
 
     def __post_init__(self) -> None:
         for name in self.__dataclass_fields__:
@@ -53,6 +55,10 @@ class ContinuousStreamConfig:
             raise ValueError("max_buffer_ms must be between max_window_ms and 120000")
         if self.holdback_ms >= self.max_window_ms:
             raise ValueError("holdback_ms must be less than max_window_ms")
+        if self.left_context_ms + self.preview_interval_ms >= self.max_window_ms:
+            raise ValueError("left context must leave room for growing analyses")
+        if self.left_context_ms % 20:
+            raise ValueError("left_context_ms must be a multiple of 20 ms")
 
 
 @dataclass(frozen=True, slots=True)
@@ -65,6 +71,28 @@ class ContinuousStreamMetrics:
     decoded_source_samples: int
     events_emitted: int
     accepted_chunks: int
+
+
+@dataclass(frozen=True, slots=True)
+class ContinuousDecodeTrace:
+    """Latest prepared decision, not proof of publication or resource release.
+
+    The caller may persist these immutable values. Only one record is retained;
+    raw segment times describe the analysis, not the emitted event boundary.
+    ``action`` describes the intended operation. Inspect events and run state to
+    determine whether it committed, failed, or awaits resource recovery.
+    """
+
+    decode_index: int
+    analysis_start_sample: int
+    analysis_end_sample: int
+    committed_before_sample: int
+    retained_from_sample: int
+    eof: bool
+    reason: str
+    publication_span: AudioSpan | None
+    result: NativeWindowResult
+    action: str
 
 
 class ContinuousTranscriptStream:
@@ -111,12 +139,15 @@ class ContinuousTranscriptStream:
         self._session = Session(f"{stream_id}:session", history_limit=4)
         self._audio = bytearray()
         self._accepted = self._head = self._chunk = self._peak = 0
+        self._retained = 0
         self._eof = self._done = False
+        self._unresolved_eof = False
         self._next_endpoint = self.config.preview_interval_ms * _SAMPLES_PER_MS
         self._last_endpoint = 0
         self._previous: NativeWindowResult | None = None
         self._run: NativeWindowRun | None = None
         self._run_end = 0
+        self._run_start = 0
         self._run_window_id = ""
         self._run_final = False
         self._pending_state: SessionState | None = None
@@ -124,6 +155,8 @@ class ContinuousTranscriptStream:
         self._pending_final = False
         self._sequence = self._segment = self._revision = 0
         self._decode_count = self._decoded_samples = 0
+        self._trace_count = 0
+        self._last_trace: ContinuousDecodeTrace | None = None
 
     @property
     def config(self) -> ContinuousStreamConfig:
@@ -131,7 +164,22 @@ class ContinuousTranscriptStream:
 
     @property
     def profile_id(self) -> str:
-        return CONTINUOUS_PROFILE
+        return (
+            CONTEXT_CONTINUOUS_PROFILE
+            if self.config.left_context_ms
+            else CONTINUOUS_PROFILE
+        )
+
+    @property
+    def retained_from_sample(self) -> int:
+        with self._lock:
+            return self._retained
+
+    @property
+    def last_trace(self) -> ContinuousDecodeTrace | None:
+        """Inspect the latest decode decision on the model-work owner thread."""
+        self._require_owner()
+        return self._last_trace
 
     @property
     def expected_chunk(self) -> int:
@@ -166,7 +214,7 @@ class ContinuousTranscriptStream:
                 or self._accepted
                 >= min(
                     self._next_endpoint,
-                    self._head + self.config.max_window_ms * _SAMPLES_PER_MS,
+                    self._retained + self.config.max_window_ms * _SAMPLES_PER_MS,
                 )
             )
 
@@ -244,6 +292,8 @@ class ContinuousTranscriptStream:
                 self._run = None
                 if self._pending_state is not None:
                     return self._publish_commit()
+                if self._unresolved_eof:
+                    self._record_decode()
                 return ()
             try:
                 if not run.complete:
@@ -257,18 +307,25 @@ class ContinuousTranscriptStream:
                 if run.capacity_released:
                     self._run = None
                 raise
+        if self._unresolved_eof:
+            raise StreamNeedsResolutionError(
+                "EOF boundary is unresolved; close the stream before retrying "
+                "with a different policy"
+            )
         with self._lock:
-            if self._eof and not self._audio:
+            if self._eof and self._head == self._accepted:
+                self._audio.clear()
+                self._retained = self._head
                 self._done = True
                 return (self._final_event(),)
-            bound = self._head + self.config.max_window_ms * _SAMPLES_PER_MS
+            bound = self._retained + self.config.max_window_ms * _SAMPLES_PER_MS
             final = self._eof and self._accepted <= bound
             endpoint = self._accepted if final else min(self._next_endpoint, bound)
             if not final and endpoint <= self._last_endpoint:
                 raise StreamNeedsResolutionError(
                     "no stable contiguous prefix within the audio window; input retained"
                 )
-            start = self._head
+            start = self._retained
             pcm = bytes(memoryview(self._audio)[: (endpoint - start) * 2])
         window_id = f"{self._id}:window:{start}:{endpoint}"
         self._run = self._adapter.start_window(
@@ -285,7 +342,7 @@ class ContinuousTranscriptStream:
             end_ms=endpoint // _SAMPLES_PER_MS,
             options=self._options,
         )
-        self._run_end, self._run_final = endpoint, final
+        self._run_start, self._run_end, self._run_final = start, endpoint, final
         self._run_window_id = window_id
         return ()
 
@@ -293,7 +350,7 @@ class ContinuousTranscriptStream:
         result = run.prepare_result()
         if (
             result.window_id != self._run_window_id
-            or result.analyzed_span.start_ms != self._head // _SAMPLES_PER_MS
+            or result.analyzed_span.start_ms != self._run_start // _SAMPLES_PER_MS
             or result.analyzed_span.end_ms != self._run_end // _SAMPLES_PER_MS
         ):
             run.close()
@@ -306,6 +363,26 @@ class ContinuousTranscriptStream:
             timestamp_tolerance_ms=self.config.timestamp_tolerance_ms,
         )
         span = decision.publication_span
+        reason = decision.reason.value
+        if self._run_final:
+            reason = "eof"
+            if self._run_start < self._head:
+                span = self._context_span(result, final=True)
+                if span is None:
+                    self._trace(result, None, "eof_unresolved", "unresolved")
+                    self._unresolved_eof = True
+                    run.close()
+                    self._run = None
+                    self._record_decode()
+                    raise StreamNeedsResolutionError(
+                        "EOF has no exact contiguous suffix after retained context; "
+                        "input retained"
+                    )
+            else:
+                span = None  # Preserve the default native full-result EOF contract.
+        self._trace(
+            result, span, reason, "commit" if self._run_final or span else "preview"
+        )
         if self._run_final or span is not None:
             end = self._run_end
             if not self._run_final:
@@ -314,7 +391,7 @@ class ContinuousTranscriptStream:
             self._pending_end, self._pending_final = end, self._run_final
             self._pending_state = run.finish(
                 committed_through_ms=end // _SAMPLES_PER_MS,
-                publication_span=None if self._run_final else span,
+                publication_span=span,
             )
             self._run = None
             return self._publish_commit()
@@ -324,7 +401,60 @@ class ContinuousTranscriptStream:
         self._previous = result
         self._last_endpoint = self._run_end
         self._next_endpoint = self._run_end + self.config.preview_interval_ms * 16
-        return (self._text_event(result.text, self._head, self._run_end),)
+        text = result.text
+        if self._run_start < self._head:
+            preview_span = self._context_span(result, final=False)
+            text = (
+                select_native_publication(result, preview_span).text
+                if preview_span is not None
+                else ""
+            )
+        return (self._text_event(text, self._head, self._run_end),)
+
+    def _context_span(
+        self, result: NativeWindowResult, *, final: bool
+    ) -> AudioSpan | None:
+        """Select only complete, contiguous new segments; never clip a straddle."""
+        metadata = result.metadata
+        if metadata is None or (final and not metadata.timestamps_complete):
+            return None
+        start = end = self._head // _SAMPLES_PER_MS
+        for segment in metadata.segments:
+            if segment.span.end_ms <= start:
+                continue
+            if (
+                segment.span.start_ms != end
+                or segment.span.end_ms <= end
+                or segment.span.end_ms > result.analyzed_span.end_ms
+                or not segment.tokens
+                or not segment.text.strip()
+            ):
+                break
+            end = segment.span.end_ms
+        if end <= start or (final and end != result.analyzed_span.end_ms):
+            return None
+        return AudioSpan(start, end)
+
+    def _trace(
+        self,
+        result: NativeWindowResult,
+        span: AudioSpan | None,
+        reason: str,
+        action: str,
+    ) -> None:
+        self._trace_count += 1
+        self._last_trace = ContinuousDecodeTrace(
+            self._trace_count,
+            self._run_start,
+            self._run_end,
+            self._head,
+            self._retained,
+            self._run_final,
+            reason,
+            span,
+            result,
+            action,
+        )
 
     def _publish_commit(self) -> tuple[TranscriptEvent, ...]:
         state = self._pending_state
@@ -360,7 +490,13 @@ class ContinuousTranscriptStream:
             session_version=state.version,
         )
         with self._lock:
-            del self._audio[: (end - self._head) * 2]
+            retained = (
+                end
+                if self._pending_final
+                else max(self._retained, end - self.config.left_context_ms * 16)
+            )
+            del self._audio[: (retained - self._retained) * 2]
+            self._retained = retained
             self._head = end
             self._done = self._pending_final
         # Establish a fresh growing pair after rebasing. Starting immediately at
@@ -369,7 +505,7 @@ class ContinuousTranscriptStream:
         interval = self.config.preview_interval_ms * 16
         self._next_endpoint = min(
             self._run_end + interval,
-            end + self.config.max_window_ms * 16 - interval,
+            self._retained + self.config.max_window_ms * 16 - interval,
         )
         self._previous = None
         self._pending_state = None
@@ -379,7 +515,7 @@ class ContinuousTranscriptStream:
 
     def _record_decode(self) -> None:
         self._decode_count += 1
-        self._decoded_samples += self._run_end - self._head
+        self._decoded_samples += self._run_end - self._run_start
 
     def _text_event(self, text: str, start: int, end: int) -> TranscriptEvent:
         previous = self._revision

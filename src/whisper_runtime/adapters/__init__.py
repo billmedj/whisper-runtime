@@ -1,7 +1,9 @@
 """Optional adapters for existing speech-inference APIs."""
 
 from .continuous_stream import (
+    CONTEXT_CONTINUOUS_PROFILE,
     CONTINUOUS_PROFILE,
+    ContinuousDecodeTrace,
     ContinuousStreamConfig,
     ContinuousStreamMetrics,
     ContinuousTranscriptStream,
@@ -51,7 +53,9 @@ from .native_whisper import (
 )
 
 __all__ = [
+    "CONTEXT_CONTINUOUS_PROFILE",
     "CONTINUOUS_PROFILE",
+    "ContinuousDecodeTrace",
     "ContinuousStreamConfig",
     "ContinuousStreamMetrics",
     "ContinuousTranscriptStream",
