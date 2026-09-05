@@ -38,7 +38,7 @@ A gate closes only when its acceptance cases and results are committed.
 - [x] Select complete segments from a larger analysis span without rewriting
   already committed output.
 
-Evidence includes 288 runtime tests, 219 repository-tool tests, 55 Lean theorem
+Evidence includes 330 runtime tests, 249 repository-tool tests, 55 Lean theorem
 declarations for the abstract protocol, built-package tests, CPU runs, and a
 narrow T4 qualification. The [evidence index](../evidence/README.md) defines each
 record's scope. The [timed-publication smoke](../evidence/native-cpu-tiny-en-jfk-timed-publication-2026-09-05.json)
@@ -67,9 +67,14 @@ unstable prefixes can still stop this conservative profile. These tests do not
 close the real-audio 30-minute gate below.
 
 An opt-in context profile now separates retained audio from committed output.
-Its 18 additional scripted tests pass. The first GPU comparison completed at the
-function level, but a local deserialization failure lost its result. Recognition
-improvement remains unmeasured; see the [diagnostic status](research/2026-09-05-context-diagnostic-status.md).
+Its 18 additional scripted tests pass. The recovered four-cell T4 comparison
+shows that longer holdback removes two word edits on one synthetic input, but
+both retained-context cells stop at EOF after publishing only 7.44 seconds.
+See the [results and next gate](research/2026-09-05-boundary-comparison-results.md).
+
+Text-token agreement analysis and optional preview coalescing are implemented.
+The analyzer has no publication authority. Coalescing preserves admitted input
+across retries and is off by default. Its GPU benefit remains unmeasured.
 
 Deliver a separately named continuous profile. Keep the existing
 offline-compatible and bounded-preview paths.
@@ -163,7 +168,8 @@ authorize or start new GPU spending.
 
 Remove unnecessary work before adding scheduling or caching complexity.
 
-- [ ] Coalesce obsolete previews and measure the work avoided.
+- [x] Add opt-in preview coalescing with bounded state and immutable retries.
+- [ ] Measure avoided work and quality changes on matched paced input.
 - [ ] Reuse preprocessing or encoder output only when input identity and the
   chosen profile permit it. New audio does not make Whisper's noncausal encoder
   cache append-only.

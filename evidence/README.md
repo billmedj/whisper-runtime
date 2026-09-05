@@ -1,5 +1,20 @@
 # Integration evidence
 
+The [four-configuration boundary diagnostic](modal-t4-tiny-en-stream-boundaries-v3-2026-09-05.json)
+and [receipt](modal-t4-tiny-en-stream-boundaries-v3-2026-09-05.attempt.jsonl)
+compare holdback and retained context on the same 33-second synthetic input.
+Baseline completes with two word edits against the full-stream model control;
+two-second holdback completes with zero word edits. Both context configurations
+stop at EOF after publishing 7.44 seconds. All four pass lifecycle checks, which
+do not imply completion or recognition accuracy. The generic error description
+is imprecise; the raw `eof_unresolved` trace identifies the actual failure.
+See the [interpretation and next gate](../docs/research/2026-09-05-boundary-comparison-results.md).
+
+The [failed v2 receipt](modal-stream-boundaries-v2-failed-2026-09-05.attempt.jsonl)
+records the preceding result-transport failure, not an ASR result. The
+[CPU transport receipt](modal-stream-boundaries-v3-transport-2026-09-05.attempt.jsonl)
+records a synchronous byte-payload check before the v3 GPU call.
+
 The [33-second rolling-stream diagnostic](modal-t4-tiny-en-continuous-smoke-v2-2026-09-05.json)
 and [receipt](modal-t4-tiny-en-continuous-smoke-v2-2026-09-05.attempt.jsonl) extend
 the first T4 case with three exact concatenations of the converted JFK PCM.

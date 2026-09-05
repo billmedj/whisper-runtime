@@ -111,7 +111,9 @@ class ContinuousCoalescingTests(unittest.TestCase):
                 )
                 stream.push(0, source)
                 events = self.drain(stream)
-                self.assertEqual([call[2] for call in adapter.calls], expected_endpoints)
+                self.assertEqual(
+                    [call[2] for call in adapter.calls], expected_endpoints
+                )
                 counts.append(stream.metrics.decode_count)
                 stream.finish_input()
                 events.extend(self.drain(stream))
@@ -119,7 +121,10 @@ class ContinuousCoalescingTests(unittest.TestCase):
                 committed_text = []
                 watermark = 0
                 for event in events:
-                    if event.kind in (StreamEventKind.PROVISIONAL, StreamEventKind.REPLACE):
+                    if event.kind in (
+                        StreamEventKind.PROVISIONAL,
+                        StreamEventKind.REPLACE,
+                    ):
                         revisions[event.segment_id] = event.text
                     elif event.kind is StreamEventKind.COMMIT:
                         self.assertEqual(event.start_sample, watermark)
@@ -140,7 +145,9 @@ class ContinuousCoalescingTests(unittest.TestCase):
         stream = self.stream(adapter)
         stream.push(0, pcm_ms(600))
         events = self.decode(stream)
-        self.assertEqual([event.kind for event in events], [StreamEventKind.PROVISIONAL])
+        self.assertEqual(
+            [event.kind for event in events], [StreamEventKind.PROVISIONAL]
+        )
         self.assertEqual(adapter.calls[0][1:3], (0, 400))
         self.assertEqual(stream.state.version, 0)
         self.assertEqual(stream.metrics.committed_samples, 0)
@@ -148,7 +155,9 @@ class ContinuousCoalescingTests(unittest.TestCase):
         self.assertIsNone(stream.last_trace.publication_span)
         stream.close()
 
-    def test_an_existing_observation_still_limits_what_the_latest_can_commit(self) -> None:
+    def test_an_existing_observation_still_limits_what_the_latest_can_commit(
+        self,
+    ) -> None:
         adapter = ScriptedNativeAdapter()
         stream = self.stream(adapter)
         stream.push(0, pcm_ms(100))
@@ -175,7 +184,9 @@ class ContinuousCoalescingTests(unittest.TestCase):
         self.assertEqual([call[2] for call in adapter.calls], [250, 350])
         stream.close()
 
-    def test_first_endpoint_reserves_growth_for_large_intervals_and_context(self) -> None:
+    def test_first_endpoint_reserves_growth_for_large_intervals_and_context(
+        self,
+    ) -> None:
         for interval, context in ((1, 0), (100, 380), (250, 240), (400, 80), (499, 0)):
             with self.subTest(interval=interval, context=context):
                 adapter = ScriptedNativeAdapter()
@@ -232,7 +243,9 @@ class ContinuousCoalescingTests(unittest.TestCase):
         self.assertEqual(stream.metrics.buffered_samples, 580 * 16)
         stream.close()
 
-    def test_eof_within_window_preserves_the_existing_full_result_contract(self) -> None:
+    def test_eof_within_window_preserves_the_existing_full_result_contract(
+        self,
+    ) -> None:
         for source in (b"", pcm(7, 3), pcm_ms(260, 4) + pcm(7, 5)):
             with self.subTest(samples=len(source) // 2):
                 outputs = []
@@ -250,7 +263,9 @@ class ContinuousCoalescingTests(unittest.TestCase):
                     self.assertEqual(stream.metrics.committed_samples, len(source) // 2)
                     self.assertEqual(stream.metrics.buffered_samples, 0)
                     self.assert_released(adapter)
-                    outputs.append((adapter.calls, adapter.inputs, events, stream.state))
+                    outputs.append(
+                        (adapter.calls, adapter.inputs, events, stream.state)
+                    )
                 self.assertEqual(outputs[0], outputs[1])
 
     def test_eof_during_a_preview_does_not_change_its_admitted_audio(self) -> None:
@@ -268,7 +283,9 @@ class ContinuousCoalescingTests(unittest.TestCase):
         self.assertEqual(stream.metrics.committed_samples, 300 * 16)
         self.assert_released(adapter)
 
-    def test_cancelled_first_observation_retries_without_advancing_cadence(self) -> None:
+    def test_cancelled_first_observation_retries_without_advancing_cadence(
+        self,
+    ) -> None:
         adapter = ScriptedNativeAdapter()
         stream = self.stream(adapter)
         stream.push(0, pcm_ms(600, 10))
@@ -283,7 +300,9 @@ class ContinuousCoalescingTests(unittest.TestCase):
         events = self.decode(stream)
         self.assertEqual(adapter.calls[0], adapter.calls[1])
         self.assertEqual(adapter.inputs[0], adapter.inputs[1])
-        self.assertEqual([event.kind for event in events], [StreamEventKind.PROVISIONAL])
+        self.assertEqual(
+            [event.kind for event in events], [StreamEventKind.PROVISIONAL]
+        )
         self.assertEqual(stream.state.version, 0)
         stream.close()
 
@@ -362,7 +381,9 @@ class ContinuousCoalescingTests(unittest.TestCase):
                 self.assert_released(adapter)
                 stream.close()
 
-    def test_committed_release_recovery_publishes_once_without_another_decode(self) -> None:
+    def test_committed_release_recovery_publishes_once_without_another_decode(
+        self,
+    ) -> None:
         for context in (0, 100):
             with self.subTest(context=context):
                 adapter = ScriptedNativeAdapter()
@@ -400,6 +421,146 @@ class ContinuousCoalescingTests(unittest.TestCase):
                 self.assertEqual(adapter.calls[-1][1:3], (400 - context, 600))
                 self.assertEqual(stream.state.version, 1)
                 stream.close()
+
+    def test_cancel_retry_freezes_input_and_eof_despite_new_pcm(self) -> None:
+        for eof in (False, True):
+            with self.subTest(eof=eof):
+                adapter = ScriptedNativeAdapter()
+                stream = self.stream(adapter)
+                original = pcm_ms(250, 21)
+                added = pcm_ms(100, 22)
+                stream.push(0, original)
+                stream.step()
+                stream.push(1, added)
+                if eof:
+                    stream.finish_input()
+                self.assertTrue(stream.cancel_active())
+                with self.assertRaises(RuntimeStateError):
+                    stream.step()
+                events = self.decode(stream)
+                self.assertEqual(adapter.calls[0], adapter.calls[1])
+                self.assertEqual(adapter.inputs, [original, original])
+                self.assertEqual(
+                    [event.kind for event in events], [StreamEventKind.PROVISIONAL]
+                )
+                self.assertFalse(stream.last_trace.eof)
+                self.assertEqual(stream.state.version, 0)
+                self.assertEqual(stream.metrics.buffered_samples, 350 * 16)
+                self.drain(stream)
+                self.assertEqual(adapter.calls[-1][1:3], (0, 350))
+                self.assertEqual(adapter.inputs[-1], original + added)
+                if eof:
+                    self.assertTrue(stream.done)
+                self.assert_released(adapter)
+                stream.close()
+
+    def test_start_step_prepare_and_finish_retry_ignore_concurrent_arrival(
+        self,
+    ) -> None:
+        for stage in ("start", "step", "prepare", "finish"):
+            with self.subTest(stage=stage):
+                adapter = ScriptedNativeAdapter()
+                stream = self.stream(adapter)
+                source = pcm_ms(250, 23)
+                stream.push(0, source)
+                if stage == "finish":
+                    self.decode(stream)
+                    stream.push(1, pcm_ms(100, 24))
+                    source += pcm_ms(100, 24)
+                adapter.fail_once = stage
+                if stage == "start":
+                    original_start = adapter.start_window
+
+                    def start_with_arrival(**kwargs):
+                        stream.push(stream.expected_chunk, pcm_ms(100, 25))
+                        return original_start(**kwargs)
+
+                    with patch.object(adapter, "start_window", start_with_arrival):
+                        with self.assertRaises(RuntimeError):
+                            stream.step()
+                else:
+                    stream.step()
+                    stream.push(stream.expected_chunk, pcm_ms(100, 25))
+                    if stage != "step":
+                        stream.step()
+                    with self.assertRaises(RuntimeError):
+                        stream.step()
+                before_retry = stream.metrics
+                failed_call = adapter.calls[-1]
+                self.assert_released(adapter)
+                self.decode(stream)
+                self.assertEqual(adapter.calls[-1], failed_call)
+                self.assertEqual(adapter.inputs[-1], source)
+                self.assertEqual(adapter.inputs[-2], source)
+                self.assertEqual(
+                    stream.metrics.accepted_samples, before_retry.accepted_samples
+                )
+                self.assertEqual(
+                    stream.metrics.decode_count, before_retry.decode_count + 1
+                )
+                stream.close()
+
+    def test_precommit_recovery_keeps_original_input_when_more_pcm_arrives(
+        self,
+    ) -> None:
+        for previous_observation in (False, True):
+            with self.subTest(previous_observation=previous_observation):
+                adapter = ScriptedNativeAdapter()
+                stream = self.stream(adapter)
+                source = pcm_ms(250, 26)
+                stream.push(0, source)
+                if previous_observation:
+                    self.decode(stream)
+                    source += pcm_ms(100, 27)
+                    stream.push(1, pcm_ms(100, 27))
+                stream.step()
+                stream.step()
+                run = adapter.runs[-1]
+                run.fence.fail = True
+                with self.assertRaises(TransactionRetainedError) as raised:
+                    stream.step()
+                self.assertIsNone(raised.exception.committed_state)
+                stream.push(stream.expected_chunk, pcm_ms(100, 28))
+                before_retry = stream.metrics
+                run.fence.fail = False
+                self.assertTrue(adapter.worker.recover(raised.exception.transaction))
+                self.assertEqual(stream.step(), ())
+                self.assertEqual(stream.metrics, before_retry)
+                self.decode(stream)
+                self.assertEqual(adapter.calls[-1], adapter.calls[-2])
+                self.assertEqual(adapter.inputs[-1], source)
+                self.assertEqual(adapter.inputs[-2], source)
+                self.assert_released(adapter)
+                stream.close()
+
+    def test_failed_preprocessing_freezes_its_admitted_input(self) -> None:
+        adapter = ScriptedNativeAdapter()
+        attempts = []
+
+        def build(content: bytes) -> bytes:
+            attempts.append(content)
+            if len(attempts) == 1:
+                stream.push(1, pcm_ms(100, 30))
+                raise RuntimeError("injected preprocessing failure after new PCM")
+            return content
+
+        stream = ContinuousTranscriptStream(
+            adapter,
+            stream_id="coalescing-preprocess-test",
+            mel_builder=build,
+            config=self.config,
+        )
+        source = pcm_ms(250, 29)
+        stream.push(0, source)
+        with self.assertRaises(RuntimeError):
+            stream.step()
+        self.decode(stream)
+        self.assertEqual(attempts, [source, source])
+        self.assertEqual(adapter.calls[-1][1:3], (0, 250))
+        self.assertEqual(stream.state.version, 0)
+        self.decode(stream)
+        self.assertEqual(adapter.inputs[-1], source + pcm_ms(100, 30))
+        stream.close()
 
 
 if __name__ == "__main__":

@@ -2,6 +2,11 @@
 
 Date: 2026-09-05. Executed source commit: `9c10520`.
 
+This page records the first attempt. The later
+[four-cell comparison](2026-09-05-boundary-comparison-results.md) recovered the
+results and supersedes the next-test status below. Historical observations and
+failed receipts remain unchanged.
+
 ## Implementation
 
 The stream controller now separates three sample positions: retained audio,

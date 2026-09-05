@@ -2,12 +2,16 @@
 
 from __future__ import annotations
 
+import base64
 import importlib
 import json
 import os
+import pickle
+import random
 import sys
 import tempfile
 import unittest
+import zlib
 from dataclasses import dataclass
 from pathlib import Path
 from types import SimpleNamespace
@@ -51,16 +55,18 @@ class _Call:
         self.manifest = manifest
         self.arguments: tuple[object, ...] | None = None
 
-    def get(self) -> str:
+    def get(self) -> bytes:
         entries = [json.loads(line) for line in self.receipt.read_text().splitlines()]
         if [entry["event"] for entry in entries] != [
             "attempt-started",
-            "call-dispatched",
+            "synchronous-call-started",
         ]:
-            raise AssertionError("the call ID was not persisted before retrieval")
+            raise AssertionError(
+                "the synchronous call was not recorded before dispatch"
+            )
         assert self.arguments is not None
         snapshot, registration_sha256 = self.arguments
-        return json.dumps(
+        return diagnostic._encode_worker_record(
             {
                 "schema_version": "1-diagnostic",
                 "status": "completed",
@@ -69,14 +75,18 @@ class _Call:
                     "snapshot": snapshot,
                     "registration_sha256": registration_sha256,
                 },
+                "worker": {
+                    "function_call_id": self.object_id,
+                    "function_call_id_sha256": diagnostic._sha256_text(self.object_id),
+                },
             }
         )
 
 
 class _FailingCall(_Call):
-    def get(self) -> str:
+    def get(self) -> bytes:
         super().get()
-        raise RuntimeError("local retrieval failed")
+        return b"not-zlib"
 
 
 class _Remote:
@@ -84,10 +94,22 @@ class _Remote:
         self.call = call
         self.calls: list[tuple[object, ...]] = []
 
-    def spawn(self, *arguments: object) -> _Call:
+    def remote(self, *arguments: object) -> bytes:
         self.calls.append(arguments)
         self.call.arguments = arguments
-        return self.call
+        return self.call.get()
+
+    def spawn(self, *arguments: object) -> object:
+        raise AssertionError("the diagnostic must use a synchronous invocation")
+
+
+class _EchoRemote:
+    def __init__(self) -> None:
+        self.calls: list[bytes] = []
+
+    def remote(self, payload: bytes) -> bytes:
+        self.calls.append(payload)
+        return payload
 
 
 class ModalStreamBoundaryDiagnosticTests(unittest.TestCase):
@@ -130,6 +152,135 @@ class ModalStreamBoundaryDiagnosticTests(unittest.TestCase):
                     diagnostic._attempt_paths(root, value)
             with self.assertRaises(TypeError):
                 diagnostic._attempt_paths(root, True)
+            v2_output, v2_receipt = diagnostic._attempt_paths(
+                root, 1, registration="v2"
+            )
+            self.assertIn("diagnostic-v2-attempt-1", v2_output.name)
+            self.assertNotEqual(output, v2_output)
+            self.assertNotEqual(receipt, v2_receipt)
+            v3_output, v3_receipt = diagnostic._attempt_paths(
+                root, 1, registration="v3"
+            )
+            self.assertIn("diagnostic-v3-attempt-1", v3_output.name)
+            self.assertNotEqual(v2_output, v3_output)
+            self.assertNotEqual(v2_receipt, v3_receipt)
+
+    def test_v2_changes_only_transport_registration_and_call_timeout(self) -> None:
+        v1 = diagnostic._read_registration()
+        v2 = json.loads(
+            (
+                diagnostic.ROOT
+                / "experiments"
+                / "modal-stream-boundary-diagnostic-v2.json"
+            ).read_text(encoding="utf-8")
+        )
+        diagnostic._validate_registration(v2)
+        for key in (
+            "claim_boundary",
+            "input",
+            "model",
+            "decode_options",
+            "rng_seed",
+            "offline_control_options",
+            "native_segmented_control",
+            "common_stream_config",
+            "cells",
+            "decision_trace",
+            "outcomes",
+            "replay_pacing",
+        ):
+            self.assertEqual(v2[key], v1[key], key)
+        self.assertEqual(v2["paid_budget"]["maximum_gpu_function_calls"], 1)
+        self.assertEqual(v2["paid_budget"]["gpu_seconds_per_call"], 120)
+        self.assertEqual(v2["paid_budget"]["maximum_gpu_seconds"], 120)
+        self.assertEqual(v2["paid_budget"]["automatic_retries"], 0)
+        self.assertEqual(
+            v2["predecessor"]["manifest_id"],
+            "modal-stream-boundary-diagnostic-v1",
+        )
+
+    def test_v3_changes_only_result_transport_registration(self) -> None:
+        v2 = json.loads(
+            (
+                diagnostic.ROOT
+                / "experiments"
+                / "modal-stream-boundary-diagnostic-v2.json"
+            ).read_text(encoding="utf-8")
+        )
+        v3 = json.loads(
+            (
+                diagnostic.ROOT
+                / "experiments"
+                / "modal-stream-boundary-diagnostic-v3.json"
+            ).read_text(encoding="utf-8")
+        )
+        diagnostic._validate_registration(v3)
+        for key in (
+            "claim_boundary",
+            "input",
+            "model",
+            "decode_options",
+            "rng_seed",
+            "offline_control_options",
+            "native_segmented_control",
+            "common_stream_config",
+            "cells",
+            "decision_trace",
+            "outcomes",
+            "replay_pacing",
+            "paid_budget",
+        ):
+            self.assertEqual(v3[key], v2[key], key)
+        self.assertEqual(
+            v3["predecessor"]["manifest_id"],
+            "modal-stream-boundary-diagnostic-v2",
+        )
+        self.assertEqual(
+            v3["result_transport"]["maximum_inline_compressed_bytes"],
+            diagnostic.MAX_INLINE_COMPRESSED_BYTES,
+        )
+        self.assertEqual(v3["result_transport"]["invocation_type"], "sync")
+        self.assertEqual(
+            v3["result_transport"]["modal_async_serialized_limit_bytes"],
+            diagnostic.MODAL_ASYNC_SERIALIZED_LIMIT_BYTES,
+        )
+        self.assertEqual(
+            v3["result_transport"]["preflight"],
+            {
+                "required_before_gpu": True,
+                "gpu": None,
+                "maximum_function_calls": 1,
+                "timeout_seconds": 30,
+                "payload_raw_bytes": 65_536,
+                "crosses_async_threshold": True,
+            },
+        )
+
+    def test_cpu_preflight_crosses_async_limit_once_and_round_trips(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            remote = _EchoRemote()
+            receipt = diagnostic._execute_transport_probe(
+                root=root, remote_function=remote
+            )
+            self.assertEqual(len(remote.calls), 1)
+            payload = remote.calls[0]
+            serialized_bytes = len(pickle.dumps(payload, protocol=4))
+            self.assertGreater(
+                serialized_bytes, diagnostic.MODAL_ASYNC_SERIALIZED_LIMIT_BYTES
+            )
+            self.assertLessEqual(
+                serialized_bytes, diagnostic.MODAL_SYNC_SERIALIZED_LIMIT_BYTES
+            )
+            entries = [json.loads(line) for line in receipt.read_text().splitlines()]
+            self.assertEqual(
+                [entry["event"] for entry in entries],
+                ["attempt-started", "transport-passed"],
+            )
+            with self.assertRaises(FileExistsError):
+                diagnostic._execute_transport_probe(
+                    root=root, remote_function=_EchoRemote()
+                )
 
     def test_snapshot_includes_the_reused_image_helper(self) -> None:
         snapshot = diagnostic._source_snapshot()
@@ -159,8 +310,10 @@ class ModalStreamBoundaryDiagnosticTests(unittest.TestCase):
         self.assertIs(type(payload["event"]["kind"]), str)
         self.assertEqual(json.loads(json.dumps(payload)), payload)
         encoded = diagnostic._encode_worker_record(payload)
-        self.assertIs(type(encoded), str)
-        self.assertEqual(json.loads(encoded), payload)
+        self.assertIs(type(encoded), bytes)
+        self.assertEqual(
+            json.loads(diagnostic._bounded_decompress_worker_record(encoded)), payload
+        )
         with self.assertRaisesRegex(ValueError, "finite"):
             diagnostic._encode_worker_record({"value": float("nan")})
 
@@ -177,6 +330,10 @@ class ModalStreamBoundaryDiagnosticTests(unittest.TestCase):
                 "snapshot": snapshot,
                 "registration_sha256": registration_sha256,
             },
+            "worker": {
+                "function_call_id": "fc-test123",
+                "function_call_id_sha256": diagnostic._sha256_text("fc-test123"),
+            },
         }
         decoded = diagnostic._decode_worker_record(
             diagnostic._encode_worker_record(valid),
@@ -186,8 +343,8 @@ class ModalStreamBoundaryDiagnosticTests(unittest.TestCase):
         )
         self.assertEqual(decoded, valid)
         invalid_payloads = (
-            "[]",
-            '{"value":NaN}',
+            zlib.compress(b"[]"),
+            zlib.compress(b'{"value":NaN}'),
             diagnostic._encode_worker_record(
                 {
                     **valid,
@@ -206,7 +363,7 @@ class ModalStreamBoundaryDiagnosticTests(unittest.TestCase):
         )
         for payload in invalid_payloads:
             with (
-                self.subTest(payload=payload[:30]),
+                self.subTest(payload=payload[:20].hex()),
                 self.assertRaises((TypeError, ValueError)),
             ):
                 diagnostic._decode_worker_record(
@@ -216,7 +373,110 @@ class ModalStreamBoundaryDiagnosticTests(unittest.TestCase):
                     manifest=manifest,
                 )
 
-    def test_spawn_persists_call_id_before_validated_result_retrieval(self) -> None:
+    def test_compressible_raw_traces_stay_inline_as_bytes(self) -> None:
+        repeated_trace = "same timestamped segment metadata;" * 300_000
+        encoded = diagnostic._encode_worker_record({"traces": repeated_trace})
+        raw = diagnostic._bounded_decompress_worker_record(encoded)
+        self.assertGreater(len(raw), diagnostic.MODAL_SYNC_SERIALIZED_LIMIT_BYTES)
+        self.assertLessEqual(len(encoded), diagnostic.MAX_INLINE_COMPRESSED_BYTES)
+        self.assertLessEqual(
+            len(pickle.dumps(encoded, protocol=4)),
+            diagnostic.MODAL_SYNC_SERIALIZED_LIMIT_BYTES,
+        )
+        self.assertEqual(json.loads(raw)["traces"], repeated_trace)
+
+    def test_incompressible_record_returns_compact_transport_failure(self) -> None:
+        manifest = diagnostic._read_registration()
+        snapshot = diagnostic._source_snapshot()
+        registration_sha256 = diagnostic._sha256_file(
+            diagnostic.ROOT / diagnostic.MANIFEST_PATH
+        )
+        noise = base64.b64encode(random.Random(7).randbytes(2_600_000)).decode()
+        record = {
+            "schema_version": "1-diagnostic",
+            "status": "completed",
+            "claim_boundary": manifest["claim_boundary"],
+            "source": {
+                "snapshot": snapshot,
+                "registration_sha256": registration_sha256,
+            },
+            "worker": {
+                "function_call_id": "fc-test123",
+                "function_call_id_sha256": diagnostic._sha256_text("fc-test123"),
+            },
+            "traces": noise,
+        }
+        encoded = diagnostic._encode_worker_record(record)
+        self.assertIs(type(encoded), bytes)
+        self.assertLessEqual(
+            len(pickle.dumps(encoded, protocol=4)),
+            diagnostic.MODAL_SYNC_SERIALIZED_LIMIT_BYTES,
+        )
+        decoded = diagnostic._decode_worker_record(
+            encoded,
+            expected_snapshot=snapshot,
+            registration_sha256=registration_sha256,
+            manifest=manifest,
+        )
+        self.assertEqual(decoded["status"], "transport-rejected")
+        self.assertEqual(
+            decoded["transport"]["error"],
+            "compressed_result_exceeds_inline_limit",
+        )
+        self.assertGreater(
+            decoded["transport"]["compressed_bytes"],
+            diagnostic.MAX_INLINE_COMPRESSED_BYTES,
+        )
+        self.assertNotIn("traces", decoded)
+
+    def test_compressible_record_above_decode_limit_returns_compact_failure(
+        self,
+    ) -> None:
+        manifest = diagnostic._read_registration()
+        snapshot = diagnostic._source_snapshot()
+        registration_sha256 = diagnostic._sha256_file(
+            diagnostic.ROOT / diagnostic.MANIFEST_PATH
+        )
+        record = {
+            "schema_version": "1-diagnostic",
+            "status": "completed",
+            "claim_boundary": manifest["claim_boundary"],
+            "source": {
+                "snapshot": snapshot,
+                "registration_sha256": registration_sha256,
+            },
+            "worker": {
+                "function_call_id": "fc-test123",
+                "function_call_id_sha256": diagnostic._sha256_text("fc-test123"),
+            },
+            "traces": "repeated trace;" * 1_000,
+        }
+        with patch.object(diagnostic, "MAX_DECOMPRESSED_RESULT_BYTES", 512):
+            encoded = diagnostic._encode_worker_record(record)
+        decoded = diagnostic._decode_worker_record(
+            encoded,
+            expected_snapshot=snapshot,
+            registration_sha256=registration_sha256,
+            manifest=manifest,
+        )
+        self.assertEqual(decoded["status"], "transport-rejected")
+        self.assertEqual(
+            decoded["transport"]["error"],
+            "raw_result_exceeds_decompressed_limit",
+        )
+        self.assertIsNone(decoded["transport"]["compressed_bytes"])
+
+    def test_bounded_decoder_rejects_bad_data_and_zip_bombs(self) -> None:
+        for payload in (b"not-zlib", zlib.compress(b"{}") + b"trailing"):
+            with self.assertRaisesRegex(ValueError, "zlib|trailing"):
+                diagnostic._bounded_decompress_worker_record(payload)
+        bomb = zlib.compress(b"x" * (diagnostic.MAX_DECOMPRESSED_RESULT_BYTES + 1))
+        with self.assertRaisesRegex(ValueError, "size limit"):
+            diagnostic._bounded_decompress_worker_record(bomb)
+        with self.assertRaises(TypeError):
+            diagnostic._bounded_decompress_worker_record("not-bytes")
+
+    def test_sync_call_saves_raw_result_before_validated_record(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
             manifest = self.make_root(root)
@@ -234,19 +494,28 @@ class ModalStreamBoundaryDiagnosticTests(unittest.TestCase):
             entries = [json.loads(line) for line in receipt.read_text().splitlines()]
             self.assertEqual(
                 [entry["event"] for entry in entries],
-                ["attempt-started", "call-dispatched", "record-written"],
+                [
+                    "attempt-started",
+                    "synchronous-call-started",
+                    "compressed-result-written",
+                    "record-written",
+                ],
             )
-            self.assertEqual(entries[1]["function_call_id"], call.object_id)
+            self.assertEqual(entries[-1]["function_call_id"], call.object_id)
+            raw_result = diagnostic._raw_result_path(output)
+            self.assertTrue(raw_result.is_file())
+            self.assertEqual(entries[2]["sha256"], diagnostic._sha256_file(raw_result))
             self.assertEqual(len(remote.calls), 1)
 
-    def test_failed_get_preserves_call_id_and_blocks_another_spawn(self) -> None:
+    def test_failed_decode_preserves_raw_result_and_blocks_another_call(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
             manifest = self.make_root(root)
             _, receipt = diagnostic._attempt_paths(root, 1)
             call = _FailingCall(receipt, manifest)
             remote = _Remote(call)
-            with self.assertRaisesRegex(RuntimeError, "retrieval failed"):
+            output, _ = diagnostic._attempt_paths(root, 1)
+            with self.assertRaisesRegex(ValueError, "zlib"):
                 diagnostic._execute_local_attempt(
                     root=root,
                     attempt=1,
@@ -256,9 +525,16 @@ class ModalStreamBoundaryDiagnosticTests(unittest.TestCase):
             entries = [json.loads(line) for line in receipt.read_text().splitlines()]
             self.assertEqual(
                 [entry["event"] for entry in entries],
-                ["attempt-started", "call-dispatched", "attempt-failed"],
+                [
+                    "attempt-started",
+                    "synchronous-call-started",
+                    "compressed-result-written",
+                    "attempt-failed",
+                ],
             )
-            self.assertEqual(entries[1]["function_call_id"], call.object_id)
+            self.assertEqual(
+                diagnostic._raw_result_path(output).read_bytes(), b"not-zlib"
+            )
             second = _Remote(_Call(receipt, manifest))
             with self.assertRaises(FileExistsError):
                 diagnostic._execute_local_attempt(

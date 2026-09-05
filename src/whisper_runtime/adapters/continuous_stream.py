@@ -112,6 +112,7 @@ class ContinuousTranscriptStream:
     a decode does not discard its input; ``close`` abandons the whole stream.
     Opt-in preview coalescing skips obsolete endpoints under backlog. Its
     hypotheses depend on input arrival timing and can differ from the default.
+    Once admitted, a coalesced analysis keeps its input interval across retries.
     """
 
     def __init__(
@@ -154,6 +155,7 @@ class ContinuousTranscriptStream:
         self._next_endpoint = self.config.preview_interval_ms * _SAMPLES_PER_MS
         self._last_endpoint = 0
         self._previous: NativeWindowResult | None = None
+        self._retry_analysis: tuple[int, int, bool] | None = None
         self._run: NativeWindowRun | None = None
         self._run_end = 0
         self._run_start = 0
@@ -309,6 +311,7 @@ class ContinuousTranscriptStream:
                     return self._publish_commit()
                 if self._unresolved_eof:
                     self._record_decode()
+                    self._retry_analysis = None
                 return ()
             try:
                 if not run.complete:
@@ -347,11 +350,17 @@ class ContinuousTranscriptStream:
                         bound - self.config.preview_interval_ms * _SAMPLES_PER_MS,
                     )
                 endpoint = min(self._accepted, ceiling)
+            start = self._retained
+            if self._retry_analysis is not None:
+                start, endpoint, final = self._retry_analysis
             if not final and endpoint <= self._last_endpoint:
                 raise StreamNeedsResolutionError(
                     "no stable contiguous prefix within the audio window; input retained"
                 )
-            start = self._retained
+            if self.config.coalesce_previews and self._retry_analysis is None:
+                # Admission is immutable even if preprocessing/startup fails,
+                # or more PCM/EOF arrives while a failed run is recovered.
+                self._retry_analysis = (start, endpoint, final)
             pcm = bytes(memoryview(self._audio)[: (endpoint - start) * 2])
         window_id = f"{self._id}:window:{start}:{endpoint}"
         self._run = self._adapter.start_window(
@@ -400,6 +409,7 @@ class ContinuousTranscriptStream:
                     run.close()
                     self._run = None
                     self._record_decode()
+                    self._retry_analysis = None
                     raise StreamNeedsResolutionError(
                         "EOF has no exact contiguous suffix after retained context; "
                         "input retained"
@@ -423,6 +433,7 @@ class ContinuousTranscriptStream:
             return self._publish_commit()
         run.close()  # Fence before exposing a provisional result or retaining it.
         self._run = None
+        self._retry_analysis = None
         self._record_decode()
         self._previous = result
         self._last_endpoint = self._run_end
@@ -535,6 +546,7 @@ class ContinuousTranscriptStream:
         )
         self._previous = None
         self._pending_state = None
+        self._retry_analysis = None
         self._segment += 1
         self._revision = 0
         return (text, commit, self._final_event()) if self._done else (text, commit)
@@ -580,6 +592,7 @@ class ContinuousTranscriptStream:
                 )
             self._run = None
         with self._lock:
+            self._retry_analysis = None
             self._eof = self._done = True
         return True
 

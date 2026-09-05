@@ -145,10 +145,11 @@ and releases all resources, but its text differs from the segmented reference.
 Both were unpaced file replays. The larger test reached a 10.56-second peak PCM
 buffer; this is not a total process-memory bound.
 
-Next, test the effect of window boundaries and retained context on recognition
-with matched inputs. Do not tune the policy solely to one JFK phrase. Add real
-silence, distinct recordings, and long paced input before widening the profile's
-claims. Preserve the failed text comparison as a regression observation.
+The later [four-configuration comparison](research/2026-09-05-boundary-comparison-results.md)
+isolates holdback and left context. Longer holdback removes the two word edits
+on this input, but both left-context cells stop at EOF with an unresolved
+publication boundary. Defaults remain unchanged. Add real silence, distinct
+recordings, and long paced input before widening the profile's claims.
 
 The [boundary diagnosis](research/2026-09-05-stream-boundaries.md) traces the
 repeated recognition error, separates publication from context retention, and

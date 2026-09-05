@@ -14,6 +14,7 @@ import os
 import re
 import sys
 import time
+import zlib
 from dataclasses import fields, is_dataclass
 from enum import Enum
 from pathlib import Path
@@ -23,15 +24,57 @@ ROOT = Path(__file__).resolve().parents[1]
 RUNTIME_ROOT = Path("/opt/whisper-runtime")
 BACKEND_ROOT = Path("/opt/openai-whisper")
 PRODUCER_PATH = "infra/modal_stream_boundary_diagnostic.py"
-MANIFEST_PATH = "experiments/modal-stream-boundary-diagnostic-v1.json"
-MANIFEST_ID = "modal-stream-boundary-diagnostic-v1"
-APP_NAME = "whisper-runtime-stream-boundary-diagnostic-v1"
+REGISTRATION_ENV = "WHISPER_MODAL_STREAM_BOUNDARY_REGISTRATION"
+_REGISTRATIONS = {
+    "v1": {
+        "manifest_path": "experiments/modal-stream-boundary-diagnostic-v1.json",
+        "manifest_id": "modal-stream-boundary-diagnostic-v1",
+        "app_name": "whisper-runtime-stream-boundary-diagnostic-v1",
+        "artifact_stem": "stream-boundary-diagnostic-v1-attempt-1",
+        "timeout_seconds": 600,
+    },
+    "v2": {
+        "manifest_path": "experiments/modal-stream-boundary-diagnostic-v2.json",
+        "manifest_id": "modal-stream-boundary-diagnostic-v2",
+        "app_name": "whisper-runtime-stream-boundary-diagnostic-v2",
+        "artifact_stem": "stream-boundary-diagnostic-v2-attempt-1",
+        "timeout_seconds": 120,
+    },
+    "v3": {
+        "manifest_path": "experiments/modal-stream-boundary-diagnostic-v3.json",
+        "manifest_id": "modal-stream-boundary-diagnostic-v3",
+        "app_name": "whisper-runtime-stream-boundary-diagnostic-v3",
+        "artifact_stem": "stream-boundary-diagnostic-v3-attempt-1",
+        "timeout_seconds": 120,
+    },
+}
+REGISTRATION = os.environ.get(REGISTRATION_ENV, "v1")
+if REGISTRATION not in _REGISTRATIONS:
+    raise RuntimeError(f"{REGISTRATION_ENV} must be v1, v2, or v3")
+_REGISTRATION = _REGISTRATIONS[REGISTRATION]
+MANIFEST_PATH = str(_REGISTRATION["manifest_path"])
+MANIFEST_ID = str(_REGISTRATION["manifest_id"])
+APP_NAME = str(_REGISTRATION["app_name"])
 REMOTE_RESOURCES_ENV = "WHISPER_MODAL_ENABLE_STREAM_BOUNDARY_DIAGNOSTIC"
 MODEL_CACHE_NAME = "whisper-runtime-model-cache-v1"
 MODEL_CACHE_MOUNT = "/models"
 MODEL_CHECKPOINT_PATH = Path(MODEL_CACHE_MOUNT) / "tiny.en.pt"
 MODAL_SDK_VERSION = "1.5.5"
 MAX_DRIVER_STEPS = 20_000
+# Modal SDK 1.5.5 uploads a synchronous result when its protocol-4 pickle is
+# larger than 2 MiB. A bytes pickle adds 9 bytes. Keep a further 64 KiB margin.
+MODAL_SYNC_SERIALIZED_LIMIT_BYTES = 2 * 1_024 * 1_024
+MODAL_ASYNC_SERIALIZED_LIMIT_BYTES = 8 * 1_024
+MODAL_PICKLE4_BYTES_OVERHEAD = 9
+INLINE_RESULT_MARGIN_BYTES = 64 * 1_024
+MAX_INLINE_COMPRESSED_BYTES = (
+    MODAL_SYNC_SERIALIZED_LIMIT_BYTES
+    - MODAL_PICKLE4_BYTES_OVERHEAD
+    - INLINE_RESULT_MARGIN_BYTES
+)
+MAX_DECOMPRESSED_RESULT_BYTES = 32 * 1_024 * 1_024
+WORKER_RESULT_ENCODING = "zlib-json-utf8-v1"
+TRANSPORT_PROBE_RAW_BYTES = 64 * 1_024
 _GIT_HASH = re.compile(r"[0-9a-f]{40}\Z")
 COMMON_PRODUCER_PATH = "infra/modal_continuous_smoke.py"
 
@@ -88,9 +131,12 @@ def _read_registration(root: Path = ROOT) -> dict[str, Any]:
 
 
 def _validate_registration(manifest: Mapping[str, Any]) -> None:
+    manifest_id = manifest.get("manifest_id")
+    registrations = {item["manifest_id"]: item for item in _REGISTRATIONS.values()}
+    identity = registrations.get(manifest_id)
     if (
         manifest.get("manifest_version") != "1"
-        or manifest.get("manifest_id") != MANIFEST_ID
+        or identity is None
         or manifest.get("state") != "diagnostic"
     ):
         raise ValueError("unexpected stream-boundary registration identity")
@@ -112,7 +158,7 @@ def _validate_registration(manifest: Mapping[str, Any]) -> None:
         "src/whisper_runtime/**/*.py",
         PRODUCER_PATH,
         COMMON_PRODUCER_PATH,
-        MANIFEST_PATH,
+        identity["manifest_path"],
     ]:
         raise ValueError("the source snapshot declaration is not fixed")
     if manifest.get("replay_pacing") != "unpaced-source-time":
@@ -120,12 +166,13 @@ def _validate_registration(manifest: Mapping[str, Any]) -> None:
     if manifest.get("rng_seed") != 7:
         raise ValueError("the diagnostic seed is not fixed")
     budget = manifest.get("paid_budget")
+    timeout_seconds = identity["timeout_seconds"]
     if not isinstance(budget, Mapping) or any(
         budget.get(name) != value
         for name, value in (
             ("maximum_gpu_function_calls", 1),
-            ("gpu_seconds_per_call", 600),
-            ("maximum_gpu_seconds", 600),
+            ("gpu_seconds_per_call", timeout_seconds),
+            ("maximum_gpu_seconds", timeout_seconds),
             ("automatic_retries", 0),
             ("maximum_containers", 1),
             ("minimum_containers", 0),
@@ -134,6 +181,30 @@ def _validate_registration(manifest: Mapping[str, Any]) -> None:
         )
     ):
         raise ValueError("the paid diagnostic budget is not fixed")
+    if manifest_id == "modal-stream-boundary-diagnostic-v3" and manifest.get(
+        "result_transport"
+    ) != {
+        "encoding": WORKER_RESULT_ENCODING,
+        "modal_sdk_version": MODAL_SDK_VERSION,
+        "invocation_type": "sync",
+        "modal_sync_serialized_limit_bytes": MODAL_SYNC_SERIALIZED_LIMIT_BYTES,
+        "modal_async_serialized_limit_bytes": MODAL_ASYNC_SERIALIZED_LIMIT_BYTES,
+        "modal_pickle_protocol": 4,
+        "modal_pickle_bytes_overhead": MODAL_PICKLE4_BYTES_OVERHEAD,
+        "inline_margin_bytes": INLINE_RESULT_MARGIN_BYTES,
+        "maximum_inline_compressed_bytes": MAX_INLINE_COMPRESSED_BYTES,
+        "maximum_decompressed_json_bytes": MAX_DECOMPRESSED_RESULT_BYTES,
+        "oversize_behavior": "return-compact-transport-rejected-record",
+        "preflight": {
+            "required_before_gpu": True,
+            "gpu": None,
+            "maximum_function_calls": 1,
+            "timeout_seconds": 30,
+            "payload_raw_bytes": TRANSPORT_PROBE_RAW_BYTES,
+            "crosses_async_threshold": True,
+        },
+    }:
+        raise ValueError("the v3 result transport is not fixed")
     audio = manifest.get("input")
     if not isinstance(audio, Mapping) or any(
         audio.get(name) != value
@@ -164,13 +235,102 @@ def _validate_registration(manifest: Mapping[str, Any]) -> None:
         raise ValueError("the four boundary-policy cells are not fixed")
 
 
-def _attempt_paths(root: Path, attempt: int) -> tuple[Path, Path]:
+def _attempt_paths(
+    root: Path, attempt: int, *, registration: str = REGISTRATION
+) -> tuple[Path, Path]:
     if isinstance(attempt, bool) or not isinstance(attempt, int):
         raise TypeError("attempt must be an integer")
     if attempt != 1:
         raise ValueError("this diagnostic permits exactly attempt 1")
-    stem = root / "artifacts" / "modal" / "stream-boundary-diagnostic-v1-attempt-1"
+    identity = _REGISTRATIONS.get(registration)
+    if identity is None:
+        raise ValueError("registration must be v1, v2, or v3")
+    stem = root / "artifacts" / "modal" / str(identity["artifact_stem"])
     return stem.with_suffix(".json"), stem.with_suffix(".attempt.jsonl")
+
+
+def _raw_result_path(output_path: Path) -> Path:
+    return output_path.with_suffix(".result.zlib")
+
+
+def _write_bytes_exclusive(path: Path, payload: object) -> None:
+    if type(payload) is not bytes:
+        raise TypeError("the Modal worker must return compressed bytes")
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("xb") as handle:
+        handle.write(payload)
+        handle.flush()
+        os.fsync(handle.fileno())
+
+
+def _transport_probe_payload() -> bytes:
+    blocks = (
+        hashlib.sha256(index.to_bytes(4, "big")).digest()
+        for index in range(TRANSPORT_PROBE_RAW_BYTES // hashlib.sha256().digest_size)
+    )
+    payload = zlib.compress(b"".join(blocks), level=9)
+    if not (
+        MODAL_ASYNC_SERIALIZED_LIMIT_BYTES
+        < len(payload) + MODAL_PICKLE4_BYTES_OVERHEAD
+        <= MODAL_SYNC_SERIALIZED_LIMIT_BYTES
+    ):
+        raise RuntimeError("the transport probe does not cross the async threshold")
+    return payload
+
+
+def _execute_transport_probe(*, root: Path, remote_function: object) -> Path:
+    receipt = (
+        root
+        / "artifacts"
+        / "modal"
+        / "stream-boundary-diagnostic-v3-transport-preflight.attempt.jsonl"
+    )
+    if receipt.exists():
+        raise FileExistsError("the registered transport preflight already exists")
+    payload = _transport_probe_payload()
+    common = {
+        "receipt_version": "1",
+        "manifest_id": "modal-stream-boundary-diagnostic-v3",
+        "transport": "sync-inline-bytes",
+    }
+    _append_receipt(
+        receipt,
+        {**common, "sequence": 0, "event": "attempt-started", "at": _utc_now()},
+        create=True,
+    )
+    try:
+        observed = getattr(remote_function, "remote")(payload)
+        if type(observed) is not bytes or observed != payload:
+            raise RuntimeError("the synchronous transport changed the probe payload")
+    except BaseException as error:
+        if isinstance(error, Exception):
+            _append_receipt(
+                receipt,
+                {
+                    **common,
+                    "sequence": 1,
+                    "event": "attempt-failed",
+                    "at": _utc_now(),
+                    "error_type": type(error).__name__,
+                    "error_message_sha256": _sha256_text(str(error)),
+                },
+                create=False,
+            )
+        raise
+    _append_receipt(
+        receipt,
+        {
+            **common,
+            "sequence": 1,
+            "event": "transport-passed",
+            "at": _utc_now(),
+            "payload_bytes": len(payload),
+            "payload_sha256": hashlib.sha256(payload).hexdigest(),
+            "serialized_bytes": len(payload) + MODAL_PICKLE4_BYTES_OVERHEAD,
+        },
+        create=False,
+    )
+    return receipt
 
 
 def _plain(value: object) -> object:
@@ -197,17 +357,109 @@ def _plain(value: object) -> object:
     raise TypeError(f"unsupported diagnostic value type: {type(value).__name__}")
 
 
-def _encode_worker_record(record: object) -> str:
-    payload = _plain(record)
-    if not isinstance(payload, dict):
-        raise TypeError("the Modal worker record must contain one object")
+def _compact_transport_failure(
+    payload: Mapping[str, Any],
+    *,
+    reason: str,
+    raw_bytes: int,
+    compressed_bytes: int | None,
+) -> dict[str, Any]:
+    source = payload.get("source")
+    snapshot = source.get("snapshot") if isinstance(source, Mapping) else None
+    compact_source = {
+        "snapshot": {
+            "digest": snapshot.get("digest") if isinstance(snapshot, Mapping) else None
+        },
+        "registration_sha256": source.get("registration_sha256")
+        if isinstance(source, Mapping)
+        else None,
+    }
+    worker = payload.get("worker")
+    compact_worker = (
+        {
+            "function_call_id": worker.get("function_call_id"),
+            "function_call_id_sha256": worker.get("function_call_id_sha256"),
+        }
+        if isinstance(worker, Mapping)
+        else None
+    )
+    return {
+        "schema_version": payload.get("schema_version"),
+        "status": "transport-rejected",
+        "claim_boundary": payload.get("claim_boundary"),
+        "source": compact_source,
+        "worker": compact_worker,
+        "transport": {
+            "encoding": WORKER_RESULT_ENCODING,
+            "error": reason,
+            "raw_bytes": raw_bytes,
+            "compressed_bytes": compressed_bytes,
+            "maximum_inline_compressed_bytes": MAX_INLINE_COMPRESSED_BYTES,
+        },
+    }
+
+
+def _strict_json_bytes(payload: Mapping[str, Any]) -> bytes:
     return json.dumps(
         payload,
         ensure_ascii=False,
         allow_nan=False,
         sort_keys=True,
         separators=(",", ":"),
+    ).encode("utf-8")
+
+
+def _encode_worker_record(record: object) -> bytes:
+    payload = _plain(record)
+    if not isinstance(payload, dict):
+        raise TypeError("the Modal worker record must contain one object")
+    raw = _strict_json_bytes(payload)
+    if len(raw) > MAX_DECOMPRESSED_RESULT_BYTES:
+        failure = _compact_transport_failure(
+            payload,
+            reason="raw_result_exceeds_decompressed_limit",
+            raw_bytes=len(raw),
+            compressed_bytes=None,
+        )
+        compressed_failure = zlib.compress(_strict_json_bytes(failure), level=9)
+        if len(compressed_failure) > MAX_INLINE_COMPRESSED_BYTES:
+            raise RuntimeError("the compact transport failure exceeds the inline limit")
+        return compressed_failure
+    compressed = zlib.compress(raw, level=9)
+    if len(compressed) <= MAX_INLINE_COMPRESSED_BYTES:
+        return compressed
+    failure = _compact_transport_failure(
+        payload,
+        reason="compressed_result_exceeds_inline_limit",
+        raw_bytes=len(raw),
+        compressed_bytes=len(compressed),
     )
+    compressed_failure = zlib.compress(_strict_json_bytes(failure), level=9)
+    if len(compressed_failure) > MAX_INLINE_COMPRESSED_BYTES:
+        raise RuntimeError("the compact transport failure exceeds the inline limit")
+    return compressed_failure
+
+
+def _bounded_decompress_worker_record(payload: object) -> bytes:
+    if type(payload) is not bytes:
+        raise TypeError("the Modal worker must return compressed bytes")
+    if len(payload) > MAX_INLINE_COMPRESSED_BYTES:
+        raise ValueError("the compressed worker result exceeds the inline limit")
+    decompressor = zlib.decompressobj()
+    try:
+        decoded = decompressor.decompress(payload, MAX_DECOMPRESSED_RESULT_BYTES + 1)
+        if len(decoded) > MAX_DECOMPRESSED_RESULT_BYTES or decompressor.unconsumed_tail:
+            raise ValueError("the decompressed worker result exceeds its size limit")
+        decoded += decompressor.flush(MAX_DECOMPRESSED_RESULT_BYTES + 1 - len(decoded))
+    except zlib.error as error:
+        raise ValueError("the worker result is not valid zlib data") from error
+    if len(decoded) > MAX_DECOMPRESSED_RESULT_BYTES:
+        raise ValueError("the decompressed worker result exceeds its size limit")
+    if not decompressor.eof or decompressor.unused_data:
+        raise ValueError(
+            "the compressed worker result is incomplete or has trailing data"
+        )
+    return decoded
 
 
 def _decode_worker_record(
@@ -217,23 +469,32 @@ def _decode_worker_record(
     registration_sha256: str,
     manifest: Mapping[str, Any],
 ) -> dict[str, Any]:
-    if not isinstance(payload, str):
-        raise TypeError("the Modal worker must return one JSON string")
-
     def reject_constant(value: str) -> object:
         raise ValueError(f"non-finite JSON number: {value}")
 
-    record = json.loads(payload, parse_constant=reject_constant)
+    raw = _bounded_decompress_worker_record(payload)
+    try:
+        text = raw.decode("utf-8")
+    except UnicodeDecodeError as error:
+        raise ValueError("the decompressed worker result is not UTF-8") from error
+    record = json.loads(text, parse_constant=reject_constant)
     if not isinstance(record, dict):
         raise TypeError("the Modal worker JSON must contain one object")
     source = record.get("source")
     snapshot = source.get("snapshot") if isinstance(source, Mapping) else None
+    worker = record.get("worker")
+    function_call_id = (
+        worker.get("function_call_id") if isinstance(worker, Mapping) else None
+    )
     if (
         record.get("schema_version") != "1-diagnostic"
         or record.get("claim_boundary") != manifest.get("claim_boundary")
         or not isinstance(snapshot, Mapping)
         or snapshot.get("digest") != expected_snapshot.get("digest")
         or source.get("registration_sha256") != registration_sha256
+        or not isinstance(function_call_id, str)
+        or re.fullmatch(r"fc-[A-Za-z0-9]+", function_call_id) is None
+        or worker.get("function_call_id_sha256") != _sha256_text(function_call_id)
     ):
         raise ValueError("the Modal worker record does not match this attempt")
     return record
@@ -546,6 +807,10 @@ def _run_worker(
     snapshot_record = _source_snapshot(RUNTIME_ROOT)
     if snapshot_record != expected_snapshot:
         raise RuntimeError("the remote source snapshot differs from the submitted one")
+    function_call_id = str(modal_module.current_function_call_id())
+    if re.fullmatch(r"fc-[A-Za-z0-9]+", function_call_id) is None:
+        raise RuntimeError("Modal did not expose a valid FunctionCall ID")
+    print(f"MODAL_FUNCTION_CALL_ID={function_call_id}", flush=True)
     base_commit = manifest["source_policy"]["image_base_commit"]
     if _command_output(RUNTIME_ROOT, "rev-parse", "HEAD") != base_commit:
         raise RuntimeError("the image checkout differs from the registration")
@@ -821,7 +1086,6 @@ def _run_worker(
             stopped_after = cell_id
             break
 
-    function_call_id = str(modal_module.current_function_call_id())
     attempted_all = len(cells) == len(manifest["cells"])
     return {
         "schema_version": "1-diagnostic",
@@ -835,6 +1099,7 @@ def _run_worker(
             "public_commit_reproducibility": False,
         },
         "worker": {
+            "function_call_id": function_call_id,
             "function_call_id_sha256": _sha256_text(function_call_id),
             "python": sys.version.split()[0],
             "modal": str(modal_module.__version__),
@@ -877,7 +1142,8 @@ def _execute_local_attempt(
     _require_paid_confirmation(confirm_paid_gpu)
     manifest = _read_registration(root)
     output_path, receipt_path = _attempt_paths(root, attempt)
-    if output_path.exists() or receipt_path.exists():
+    raw_result_path = _raw_result_path(output_path)
+    if output_path.exists() or receipt_path.exists() or raw_result_path.exists():
         raise FileExistsError("the one registered diagnostic attempt already exists")
     snapshot = _source_snapshot(root)
     registration_sha256 = _sha256_file(root / MANIFEST_PATH)
@@ -895,26 +1161,33 @@ def _execute_local_attempt(
     )
     sequence = 1
     try:
-        call = getattr(remote_function, "spawn")(snapshot, registration_sha256)
-        function_call_id = getattr(call, "object_id", None)
-        if (
-            not isinstance(function_call_id, str)
-            or re.fullmatch(r"fc-[A-Za-z0-9]+", function_call_id) is None
-        ):
-            raise TypeError("Modal did not return a valid FunctionCall ID")
         _append_receipt(
             receipt_path,
             {
                 **common,
                 "sequence": sequence,
-                "event": "call-dispatched",
+                "event": "synchronous-call-started",
                 "at": _utc_now(),
-                "function_call_id": function_call_id,
             },
             create=False,
         )
         sequence += 1
-        payload = getattr(call, "get")()
+        payload = getattr(remote_function, "remote")(snapshot, registration_sha256)
+        _write_bytes_exclusive(raw_result_path, payload)
+        _append_receipt(
+            receipt_path,
+            {
+                **common,
+                "sequence": sequence,
+                "event": "compressed-result-written",
+                "at": _utc_now(),
+                "path": raw_result_path.relative_to(root).as_posix(),
+                "size_bytes": raw_result_path.stat().st_size,
+                "sha256": _sha256_file(raw_result_path),
+            },
+            create=False,
+        )
+        sequence += 1
         record = _decode_worker_record(
             payload,
             expected_snapshot=snapshot,
@@ -946,17 +1219,28 @@ def _execute_local_attempt(
             "at": _utc_now(),
             "record_sha256": _sha256_file(output_path),
             "status": record.get("status"),
+            "function_call_id": record["worker"]["function_call_id"],
         },
         create=False,
     )
     return output_path
 
 
-def _modal_main(attempt: int = 1, confirm_paid_gpu: bool = False) -> None:
+def _modal_main(
+    attempt: int = 1,
+    confirm_paid_gpu: bool = False,
+    transport_preflight_only: bool = False,
+) -> None:
     """Use the one manually confirmed diagnostic GPU call."""
 
-    if run_stream_boundary_diagnostic is None:
+    if run_stream_boundary_diagnostic is None or run_transport_probe is None:
         raise RuntimeError(f"set {REMOTE_RESOURCES_ENV}=1 before modal run")
+    if transport_preflight_only:
+        receipt = _execute_transport_probe(
+            root=ROOT, remote_function=run_transport_probe
+        )
+        print(f"Transport preflight passed; receipt: {receipt}")
+        return
     output = _execute_local_attempt(
         root=ROOT,
         attempt=attempt,
@@ -966,7 +1250,7 @@ def _modal_main(attempt: int = 1, confirm_paid_gpu: bool = False) -> None:
     print(f"Wrote diagnostic record to {output}")
 
 
-def _define_modal_resources() -> tuple[Any, Any, Any]:
+def _define_modal_resources() -> tuple[Any, Any, Any, Any]:
     modal = importlib.import_module("modal")
     if str(modal.__version__) != MODAL_SDK_VERSION:
         raise RuntimeError(
@@ -1006,11 +1290,33 @@ def _define_modal_resources() -> tuple[Any, Any, Any]:
                 "PYTHONPATH": "/opt/openai-whisper:/opt/whisper-runtime/src:/opt/whisper-runtime",
                 "PYTHONUTF8": "1",
                 REMOTE_RESOURCES_ENV: "0",
+                REGISTRATION_ENV: REGISTRATION,
             }
         )
     )
     model_cache = modal.Volume.from_name(MODEL_CACHE_NAME, create_if_missing=False)
     app = modal.App(APP_NAME)
+
+    @app.function(
+        image=image,
+        serialized=True,
+        cpu=0.125,
+        memory=128,
+        min_containers=0,
+        max_containers=1,
+        scaledown_window=2,
+        retries=0,
+        timeout=30,
+        startup_timeout=300,
+        block_network=True,
+        restrict_modal_access=True,
+        single_use_containers=True,
+        include_source=False,
+    )
+    def run_transport_probe(payload: bytes) -> bytes:
+        if type(payload) is not bytes:
+            raise TypeError("the transport probe requires bytes")
+        return payload
 
     @app.function(
         image=image,
@@ -1034,7 +1340,7 @@ def _define_modal_resources() -> tuple[Any, Any, Any]:
     )
     def run_stream_boundary_diagnostic(
         expected_snapshot: Mapping[str, Any], registration_sha256: str
-    ) -> str:
+    ) -> bytes:
         producer = importlib.import_module("infra.modal_stream_boundary_diagnostic")
         return producer._encode_worker_record(
             producer._run_worker(
@@ -1045,12 +1351,15 @@ def _define_modal_resources() -> tuple[Any, Any, Any]:
         )
 
     main = app.local_entrypoint(name="main")(_modal_main)
-    return app, run_stream_boundary_diagnostic, main
+    return app, run_stream_boundary_diagnostic, run_transport_probe, main
 
 
 if os.environ.get(REMOTE_RESOURCES_ENV) == "1":
-    app, run_stream_boundary_diagnostic, main = _define_modal_resources()
+    app, run_stream_boundary_diagnostic, run_transport_probe, main = (
+        _define_modal_resources()
+    )
 else:
     app = None
     run_stream_boundary_diagnostic = None
+    run_transport_probe = None
     main = None
