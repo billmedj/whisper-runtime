@@ -133,6 +133,20 @@
     "left_context_ms": 2000,
     "word_alignment": true
   },
+  "input_evidence_profile": {
+    "profile_id": "word_agreement_stream/v1+input_evidence/v1",
+    "stream_config": {
+      "preview_interval_ms": 2000,
+      "max_window_ms": 30000,
+      "max_buffer_ms": 40000,
+      "timestamp_tolerance_ms": 200,
+      "coalesce_previews": false,
+      "holdback_ms": 2000,
+      "left_context_ms": 2000,
+      "word_alignment": true,
+      "input_evidence": true
+    }
+  },
   "fixtures": [
     {
       "id": "6930-75918-0000",

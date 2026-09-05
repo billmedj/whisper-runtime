@@ -13,6 +13,12 @@ from typing import Callable
 
 from ..errors import TransactionRetainedError
 from ..state import AudioSpan, RequestState, Session, SessionState
+from .audio_evidence import (
+    AudioEvidenceDecision,
+    AudioObservation,
+    SilencePublication,
+    assess_audio,
+)
 from .native_result import (
     NativeTimestampSegment,
     NativeWindowResult,
@@ -57,13 +63,14 @@ class ContinuousStreamConfig:
     left_context_ms: int = 0
     coalesce_previews: bool = False
     word_alignment: bool = False
+    input_evidence: bool = False
 
     def __post_init__(self) -> None:
-        for name in ("coalesce_previews", "word_alignment"):
+        for name in ("coalesce_previews", "word_alignment", "input_evidence"):
             if not isinstance(getattr(self, name), bool):
                 raise TypeError(f"{name} must be a boolean")
         for name in self.__dataclass_fields__:
-            if name in ("coalesce_previews", "word_alignment"):
+            if name in ("coalesce_previews", "word_alignment", "input_evidence"):
                 continue
             value = getattr(self, name)
             if isinstance(value, bool) or not isinstance(value, int):
@@ -116,6 +123,8 @@ class ContinuousDecodeTrace:
     action: str
     word_alignment: NativeWordAlignment | None = None
     word_publication: AlignedPublication | None = None
+    audio_evidence: AudioEvidenceDecision | None = None
+    silence_publication: SilencePublication | None = None
 
 
 class ContinuousTranscriptStream:
@@ -174,6 +183,10 @@ class ContinuousTranscriptStream:
         self._next_endpoint = self.config.preview_interval_ms * _SAMPLES_PER_MS
         self._last_endpoint = 0
         self._previous: NativeWindowResult | None = None
+        self._previous_eligible = True
+        self._run_observation: AudioObservation | None = None
+        self._audio_decision: AudioEvidenceDecision | None = None
+        self._silence_pending: SilencePublication | None = None
         self._word_previous: NativeWordAlignment | None = None
         self._word_anchor: tuple[NativeTimestampSegment, ...] = ()
         self._word_pending: WordAgreementDecision | None = None
@@ -197,6 +210,10 @@ class ContinuousTranscriptStream:
 
     @property
     def profile_id(self) -> str:
+        base = self._base_profile_id()
+        return f"{base}+input_evidence/v1" if self.config.input_evidence else base
+
+    def _base_profile_id(self) -> str:
         if self.config.word_alignment:
             return (
                 COALESCED_WORD_CONTINUOUS_PROFILE
@@ -386,12 +403,17 @@ class ContinuousTranscriptStream:
                     "no stable contiguous prefix within the audio window; input retained"
                 )
             if (
-                self.config.coalesce_previews or self.config.word_alignment
+                self.config.coalesce_previews
+                or self.config.word_alignment
+                or self.config.input_evidence
             ) and self._retry_analysis is None:
                 # Admission is immutable even if preprocessing/startup fails,
                 # or more PCM/EOF arrives while a failed run is recovered.
                 self._retry_analysis = (start, endpoint, final)
             pcm = bytes(memoryview(self._audio)[: (endpoint - start) * 2])
+        observation = (
+            AudioObservation.from_pcm(pcm) if self.config.input_evidence else None
+        )
         window_id = f"{self._id}:window:{start}:{endpoint}"
         self._run = self._adapter.start_window(
             session=self._session,
@@ -409,6 +431,8 @@ class ContinuousTranscriptStream:
         )
         self._run_start, self._run_end, self._run_final = start, endpoint, final
         self._run_window_id = window_id
+        self._run_observation = observation
+        self._audio_decision = None
         return ()
 
     def _resolve(self, run: NativeWindowRun) -> tuple[TranscriptEvent, ...]:
@@ -420,10 +444,22 @@ class ContinuousTranscriptStream:
         ):
             run.close()
             raise NativeStreamError("native result does not match the admitted audio")
+        if self.config.input_evidence:
+            observation = self._run_observation
+            if observation is None or observation.sample_count != (
+                self._run_end - self._run_start
+            ):
+                run.close()
+                raise NativeStreamError("input evidence does not match admitted audio")
+            self._audio_decision = assess_audio(observation, result)
+            if self._audio_decision.state == "non_speech":
+                return self._resolve_silence(run, result, observation)
+            if self._audio_decision.state != "speech_candidate":
+                return self._defer_audio(run, result)
         if self.config.word_alignment:
             return self._resolve_words(run, result)
         decision = compare_hypotheses(
-            self._previous,
+            self._previous if self._previous_eligible else None,
             result,
             committed_through_ms=self._head // _SAMPLES_PER_MS,
             holdback_ms=self.config.holdback_ms,
@@ -448,6 +484,12 @@ class ContinuousTranscriptStream:
                     )
             else:
                 span = None  # Preserve the default native full-result EOF contract.
+        if (self._run_final or span is not None) and not self._publication_supported(
+            result.text
+            if span is None
+            else select_native_publication(result, span).text
+        ):
+            return self._defer_audio(run, result)
         self._trace(
             result, span, reason, "commit" if self._run_final or span else "preview"
         )
@@ -465,6 +507,7 @@ class ContinuousTranscriptStream:
             return self._publish_commit()
         run.close()  # Fence before exposing a provisional result or retaining it.
         self._previous = result
+        self._previous_eligible = True
         text = result.text
         if self._run_start < self._head:
             preview_span = self._context_span(result, final=False)
@@ -474,6 +517,75 @@ class ContinuousTranscriptStream:
                 else ""
             )
         return self._publish_preview(text)
+
+    def _publication_supported(self, text: str) -> bool:
+        if not self.config.input_evidence or any(char.isalnum() for char in text):
+            return True
+        assert self._audio_decision is not None
+        self._audio_decision = AudioEvidenceDecision(
+            self._audio_decision.observation,
+            "uncertain",
+            "no_lexical_text",
+            self._audio_decision.no_speech_prob,
+        )
+        return False
+
+    def _resolve_silence(
+        self,
+        run: NativeWindowRun,
+        result: NativeWindowResult,
+        observation: AudioObservation,
+    ) -> tuple[TranscriptEvent, ...]:
+        publication = SilencePublication(
+            window_id=result.window_id,
+            text="",
+            start_ms=self._head // 16,
+            end_ms=self._run_end // 16,
+            analysis_span=result.analyzed_span,
+            native=result,
+            observation=observation,
+            analysis_start_sample=self._run_start,
+        )
+        self._trace(
+            result, None, "digital_silence", "commit", silence_publication=publication
+        )
+        self._silence_pending = publication
+        self._pending_end, self._pending_final = self._run_end, self._run_final
+        self._pending_state = run.finish(
+            committed_through_ms=self._run_end // 16,
+            silence_publication=publication,
+        )
+        self._run = None
+        return self._publish_commit()
+
+    def _defer_audio(
+        self, run: NativeWindowRun, result: NativeWindowResult
+    ) -> tuple[TranscriptEvent, ...]:
+        """Suppress unsupported text without granting audio-discard authority."""
+        assert self._audio_decision is not None
+        self._trace(
+            result,
+            None,
+            self._audio_decision.reason,
+            "unresolved" if self._run_final else "wait_for_input",
+        )
+        # Preserve the scheduling observation, but never use a rejected result
+        # as an agreement witness. Close/fence before exposing any event.
+        if self._run_final:
+            self._unresolved_eof = True
+        run.close()
+        self._previous = result
+        self._previous_eligible = False
+        self._word_previous = None
+        if self._run_final:
+            self._run = None
+            self._record_decode()
+            self._retry_analysis = None
+            raise StreamNeedsResolutionError(
+                f"EOF input evidence is unresolved ({self._audio_decision.reason}); "
+                "input retained"
+            )
+        return self._publish_preview("")
 
     def _resolve_words(
         self, run: NativeWindowRun, result: NativeWindowResult
@@ -492,6 +604,10 @@ class ContinuousTranscriptStream:
             final=self._run_final,
         )
         publication = decision.publication
+        if publication is not None and not self._publication_supported(
+            publication.text
+        ):
+            return self._defer_audio(run, result)
         self._trace(
             result,
             None,
@@ -530,6 +646,7 @@ class ContinuousTranscriptStream:
         run.close()
         self._word_previous = alignment
         self._previous = result
+        self._previous_eligible = True
         # Provisional text uses estimated positions only. It has no commit authority.
         text = "".join(
             word.text
@@ -580,6 +697,7 @@ class ContinuousTranscriptStream:
         *,
         word_alignment: NativeWordAlignment | None = None,
         word_publication: AlignedPublication | None = None,
+        silence_publication: SilencePublication | None = None,
     ) -> None:
         self._trace_count += 1
         self._last_trace = ContinuousDecodeTrace(
@@ -595,6 +713,8 @@ class ContinuousTranscriptStream:
             action,
             word_alignment,
             word_publication,
+            self._audio_decision,
+            silence_publication,
         )
 
     def _publish_commit(self) -> tuple[TranscriptEvent, ...]:
@@ -603,8 +723,14 @@ class ContinuousTranscriptStream:
         if state != self._session.snapshot() or not state.windows:
             raise NativeStreamError("committed result does not belong to this session")
         result = state.windows[-1].result
-        if self.config.word_alignment and (
-            self._word_pending is None or self._word_pending.publication != result
+        if self._silence_pending is not None and result != self._silence_pending:
+            raise NativeStreamError(
+                "committed result does not match the silence decision"
+            )
+        if (
+            self.config.word_alignment
+            and self._silence_pending is None
+            and (self._word_pending is None or self._word_pending.publication != result)
         ):
             raise NativeStreamError("committed result does not match the word decision")
         record = state.windows[-1]
@@ -637,7 +763,7 @@ class ContinuousTranscriptStream:
         with self._lock:
             retained = (
                 end
-                if self._pending_final
+                if self._pending_final or self._silence_pending is not None
                 else max(self._retained, end - self.config.left_context_ms * 16)
             )
             del self._audio[: (retained - self._retained) * 2]
@@ -653,7 +779,11 @@ class ContinuousTranscriptStream:
             self._retained + self.config.max_window_ms * 16 - interval,
         )
         self._previous = None
+        self._previous_eligible = True
         self._word_previous = None
+        if self._silence_pending is not None:
+            self._word_anchor = ()
+            self._silence_pending = None
         if self._word_pending is not None:
             self._word_anchor = self._word_pending.next_anchor
             self._word_pending = None

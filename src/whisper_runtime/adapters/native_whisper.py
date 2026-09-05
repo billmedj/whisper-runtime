@@ -45,6 +45,7 @@ from ._model_binding import (
     get_model_binding,
     require_model_available,
 )
+from .audio_evidence import SilencePublication
 from .native_result import (
     NativeTimestampSegment,
     NativeTokenizer,
@@ -1164,11 +1165,14 @@ class NativeWindowRun:
         committed_through_ms: int | None = None,
         publication_span: AudioSpan | None = None,
         aligned_publication: AlignedPublication | None = None,
+        silence_publication: SilencePublication | None = None,
     ) -> SessionState:
         """Commit a complete run, optionally selecting whole timed segments.
 
         Analysis may include previously committed audio. A selected publication
         must match explicit segment bounds; it cannot rewrite committed output.
+        Exact digital silence may instead publish empty, source-backed coverage
+        while retaining this run's full native result as provenance.
         """
 
         self._require_open()
@@ -1178,9 +1182,24 @@ class NativeWindowRun:
             aligned_publication, AlignedPublication
         ):
             raise TypeError("aligned_publication must be an AlignedPublication or None")
-        if publication_span is not None and aligned_publication is not None:
+        if silence_publication is not None and not isinstance(
+            silence_publication, SilencePublication
+        ):
+            raise TypeError("silence_publication must be a SilencePublication or None")
+        if (
+            sum(
+                value is not None
+                for value in (
+                    publication_span,
+                    aligned_publication,
+                    silence_publication,
+                )
+            )
+            > 1
+        ):
             raise ValueError(
-                "publication_span and aligned_publication cannot be used together"
+                "publication_span, aligned_publication, and silence_publication "
+                "cannot be used together"
             )
         if aligned_publication is not None:
             if aligned_publication.alignment is not self._prepared_alignment:
@@ -1189,10 +1208,19 @@ class NativeWindowRun:
                 )
             if aligned_publication.window_id != self._window_id:
                 raise ValueError("aligned_publication must match this run's window")
+        if silence_publication is not None:
+            if silence_publication.native is not self._prepared_result:
+                raise ValueError(
+                    "silence_publication must use this run's cached native result"
+                )
+            if silence_publication.window_id != self._window_id:
+                raise ValueError("silence_publication must match this run's window")
         _validate_committed_boundary(
             committed_through_ms,
             end_ms=(
-                aligned_publication.end_ms
+                silence_publication.end_ms
+                if silence_publication is not None
+                else aligned_publication.end_ms
                 if aligned_publication is not None
                 else self._end_ms
                 if publication_span is None
@@ -1216,7 +1244,9 @@ class NativeWindowRun:
         try:
             native_result = self._prepare_result()
             result: WindowResult = native_result
-            if aligned_publication is not None:
+            if silence_publication is not None:
+                result = silence_publication
+            elif aligned_publication is not None:
                 result = aligned_publication
             elif publication_span is not None:
                 try:

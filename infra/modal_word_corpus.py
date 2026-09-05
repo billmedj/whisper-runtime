@@ -46,6 +46,10 @@ STREAM_CONFIG = {
     "coalesce_previews": False,
     "word_alignment": True,
 }
+INPUT_EVIDENCE_PROFILE = {
+    "profile_id": "word_agreement_stream/v1+input_evidence/v1",
+    "stream_config": {**STREAM_CONFIG, "input_evidence": True},
+}
 
 
 def _helper(name: str) -> Any:
@@ -102,6 +106,7 @@ def read_registration(root: Path = ROOT) -> dict[str, Any]:
         ("state", "diagnostic"),
         ("claim_boundary", CLAIMS),
         ("stream_config", STREAM_CONFIG),
+        ("input_evidence_profile", INPUT_EVIDENCE_PROFILE),
         ("rng_seed", 7),
     ):
         _equal(manifest.get(key), expected, key)
@@ -309,7 +314,11 @@ def _source_progress(
     eof_spans = {
         (trace["committed_before_sample"], trace["analysis_end_sample"])
         for trace in traces
-        if trace.get("eof") and trace.get("word_publication") is not None
+        if trace.get("eof")
+        and (
+            trace.get("word_publication") is not None
+            or trace.get("silence_publication") is not None
+        )
     }
     commits = [event for event in events if event.get("kind") == "commit"]
     pre_eof = [
@@ -337,10 +346,107 @@ def _source_progress(
     }
 
 
+def _stream_profile(
+    manifest: Mapping[str, Any], input_evidence: bool
+) -> dict[str, Any]:
+    if type(input_evidence) is not bool:
+        raise ValueError("input_evidence must be a boolean")
+    return (
+        manifest["input_evidence_profile"]
+        if input_evidence
+        else {
+            "profile_id": "word_agreement_stream/v1",
+            "stream_config": manifest["stream_config"],
+        }
+    )
+
+
+def _trace_checks(
+    traces: list[dict[str, Any]], *, input_evidence: bool
+) -> dict[str, bool]:
+    normal = [
+        trace
+        for trace in traces
+        if trace.get("audio_evidence") is None
+        or (
+            isinstance(trace["audio_evidence"], Mapping)
+            and trace["audio_evidence"].get("state") == "speech_candidate"
+        )
+    ]
+    checks = b._trace_profile_checks(normal, word_alignment=True)
+    valid = True
+    for trace in traces:
+        evidence = trace.get("audio_evidence")
+        if evidence is None:
+            valid &= not input_evidence and trace.get("silence_publication") is None
+            continue
+        if not isinstance(evidence, Mapping) or not isinstance(
+            evidence.get("observation"), Mapping
+        ):
+            valid = False
+            continue
+        valid &= input_evidence
+        result = trace.get("result")
+        if not isinstance(result, Mapping) or not isinstance(
+            result.get("metadata"), Mapping
+        ):
+            checks["trace_preserves_native_metadata"] = False
+        state = evidence.get("state")
+        observation = evidence.get("observation", {})
+        valid &= (
+            state in {"speech_candidate", "uncertain", "non_speech"}
+            and observation.get("sample_count")
+            == trace["analysis_end_sample"] - trace["analysis_start_sample"]
+            and isinstance(observation.get("pcm_sha256"), str)
+            and re.fullmatch(r"[0-9a-f]{64}", observation["pcm_sha256"]) is not None
+            and observation.get("digital_silence") is (state == "non_speech")
+        )
+        silence = trace.get("silence_publication")
+        if state == "speech_candidate":
+            valid &= silence is None
+            continue
+        valid &= (
+            trace.get("word_alignment") is None
+            and trace.get("word_publication") is None
+            and trace.get("publication_span") is None
+        )
+        if silence is None:
+            valid &= trace.get("action") in {"wait_for_input", "unresolved"}
+        else:
+            valid &= (
+                state == "non_speech"
+                and isinstance(silence, Mapping)
+                and silence.get("text") == ""
+                and silence.get("native") == result
+                and silence.get("observation") == observation
+                and isinstance(result, Mapping)
+                and silence.get("window_id") == result.get("window_id")
+                and silence.get("analysis_span") == result.get("analysis_span")
+                and trace["analysis_start_sample"]
+                <= trace["committed_before_sample"]
+                < trace["analysis_end_sample"]
+                and silence.get("start_ms") == trace["committed_before_sample"] // 16
+                and silence.get("end_ms") == trace["analysis_end_sample"] // 16
+                and result.get("analysis_span")
+                == {
+                    "start_ms": trace["analysis_start_sample"] // 16,
+                    "end_ms": trace["analysis_end_sample"] // 16,
+                }
+                and trace.get("action") == "commit"
+            )
+    checks["input_evidence_trace_contract"] = valid
+    return checks
+
+
 def _run_worker(
-    expected_snapshot: Mapping[str, Any], *, registration_sha256: str, modal_module: Any
+    expected_snapshot: Mapping[str, Any],
+    *,
+    registration_sha256: str,
+    modal_module: Any,
+    input_evidence: bool = False,
 ) -> dict[str, Any]:
     manifest = read_registration(RUNTIME_ROOT)
+    profile = _stream_profile(manifest, input_evidence)
     _equal(source_snapshot(RUNTIME_ROOT), expected_snapshot, "remote source snapshot")
     _equal(
         c._sha256_file(RUNTIME_ROOT / MANIFEST_PATH),
@@ -478,7 +584,7 @@ def _run_worker(
                 mel_builder=mel_builder,
                 options=options,
                 rng_seed=seed,
-                config=adapters.ContinuousStreamConfig(**manifest["stream_config"]),
+                config=adapters.ContinuousStreamConfig(**profile["stream_config"]),
             )
             torch.cuda.reset_peak_memory_stats(0)
             allocated, reserved = (
@@ -507,9 +613,9 @@ def _run_worker(
                 max_buffer_samples=STREAM_CONFIG["max_buffer_ms"] * 16,
                 error_record=error,
             )
-            checks.update(b._trace_profile_checks(traces, word_alignment=True))
+            checks.update(_trace_checks(traces, input_evidence=input_evidence))
             checks["profile_id_matches_config"] = (
-                stream.profile_id == "word_agreement_stream/v1"
+                stream.profile_id == profile["profile_id"]
             )
             policy_resolution = (
                 error is not None and error["category"] == "policy_resolution"
@@ -604,6 +710,8 @@ def _run_worker(
         "status": status,
         "claim_boundary": manifest["claim_boundary"],
         "replay_pacing": "unpaced-source-time",
+        "input_evidence": input_evidence,
+        **profile,
         "source": {
             "image_base_commit": BASE_COMMIT,
             "snapshot": expected_snapshot,
@@ -655,7 +763,13 @@ def _paths(root: Path, replay_id: str = "") -> tuple[Path, Path, Path, Path]:
 
 
 def _receipt(
-    path: Path, event: str, sequence: int, *, replay_id: str = "", **fields: object
+    path: Path,
+    event: str,
+    sequence: int,
+    *,
+    replay_id: str = "",
+    input_evidence: bool | None = None,
+    **fields: object,
 ) -> None:
     c._append_receipt(
         path,
@@ -666,6 +780,9 @@ def _receipt(
             "sequence": sequence,
             "at": c._utc_now(),
             **({"replay_id": replay_id} if replay_id else {}),
+            **(
+                {"input_evidence": input_evidence} if input_evidence is not None else {}
+            ),
             **fields,
         },
         create=sequence == 0,
@@ -710,12 +827,16 @@ def _execute_local_attempt(
     root: Path = ROOT,
     attempt: int = 1,
     replay_id: str = "",
+    input_evidence: bool = False,
     confirm_paid_gpu: bool = False,
     remote_function: object,
 ) -> Path:
     c._require_paid_confirmation(confirm_paid_gpu)
     _integer(attempt, 1, 1)
     manifest = read_registration(root)
+    profile = _stream_profile(manifest, input_evidence)
+    if input_evidence and not replay_id:
+        raise ValueError("input-evidence runs require a named replay namespace")
     output, receipt, raw, probe = _paths(root, replay_id)
     if any(path.exists() for path in (output, receipt, raw)):
         raise FileExistsError("the one GPU attempt already exists")
@@ -741,20 +862,34 @@ def _execute_local_attempt(
         "attempt-started",
         0,
         replay_id=replay_id,
+        input_evidence=input_evidence if replay_id else None,
+        **profile,
         source_snapshot_sha256=snapshot["digest"],
         registration_sha256=registration_hash,
     )
     sequence = 1
     try:
-        _receipt(receipt, "synchronous-call-started", sequence, replay_id=replay_id)
+        _receipt(
+            receipt,
+            "synchronous-call-started",
+            sequence,
+            replay_id=replay_id,
+            input_evidence=input_evidence if replay_id else None,
+        )
         sequence += 1
-        payload = getattr(remote_function, "remote")(snapshot, registration_hash)
+        args = (
+            (snapshot, registration_hash, True)
+            if input_evidence
+            else (snapshot, registration_hash)
+        )
+        payload = getattr(remote_function, "remote")(*args)
         b._write_bytes_exclusive(raw, payload)
         _receipt(
             receipt,
             "compressed-result-written",
             sequence,
             replay_id=replay_id,
+            input_evidence=input_evidence if replay_id else None,
             sha256=c._sha256_file(raw),
             size_bytes=raw.stat().st_size,
         )
@@ -765,6 +900,9 @@ def _execute_local_attempt(
             registration_sha256=registration_hash,
             manifest=manifest,
         )
+        _equal(record.get("input_evidence"), input_evidence, "worker input evidence")
+        for key, expected in profile.items():
+            _equal(record.get(key), expected, f"worker {key}")
         c._write_json_exclusive(output, record)
     except BaseException as error:
         _receipt(
@@ -772,6 +910,7 @@ def _execute_local_attempt(
             "attempt-failed",
             sequence,
             replay_id=replay_id,
+            input_evidence=input_evidence if replay_id else None,
             error_type=type(error).__name__,
             error_message_sha256=c._sha256_text(str(error)),
         )
@@ -781,6 +920,7 @@ def _execute_local_attempt(
         "record-written",
         sequence,
         replay_id=replay_id,
+        input_evidence=input_evidence if replay_id else None,
         record_sha256=c._sha256_file(output),
         status=record["status"],
         function_call_id=record["worker"]["function_call_id"],
@@ -793,6 +933,7 @@ def _modal_main(
     confirm_paid_gpu: bool = False,
     transport_preflight_only: bool = False,
     replay_id: str = "",
+    input_evidence: bool = False,
 ) -> None:
     if run_word_corpus is None or run_transport_probe is None:
         raise RuntimeError(f"set {REMOTE_RESOURCES_ENV}=1 before modal run")
@@ -807,6 +948,7 @@ def _modal_main(
             _execute_local_attempt(
                 attempt=attempt,
                 replay_id=replay_id,
+                input_evidence=input_evidence,
                 confirm_paid_gpu=confirm_paid_gpu,
                 remote_function=run_word_corpus,
             )
@@ -883,11 +1025,18 @@ def _define_modal_resources() -> tuple[Any, Any, Any, Any]:
         memory=4096,
         timeout=180,
     )
-    def execute(snapshot: Mapping[str, Any], registration_sha256: str) -> bytes:
+    def execute(
+        snapshot: Mapping[str, Any],
+        registration_sha256: str,
+        input_evidence: bool = False,
+    ) -> bytes:
         producer = importlib.import_module("infra.modal_word_corpus")
         return producer.b._encode_worker_record(
             producer._run_worker(
-                snapshot, registration_sha256=registration_sha256, modal_module=modal
+                snapshot,
+                registration_sha256=registration_sha256,
+                modal_module=modal,
+                input_evidence=input_evidence,
             )
         )
 

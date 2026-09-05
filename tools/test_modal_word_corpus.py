@@ -57,10 +57,18 @@ class CorpusGuards(unittest.TestCase):
                 side_effect=lambda name: fake if name == "modal" else original(name),
             ),
         ):
-            corpus._define_modal_resources()
+            _, execute, _, _ = corpus._define_modal_resources()
         self.assertEqual(
             sum(path.startswith("/opt/speech-corpus/") for path in destinations), 3
         )
+        with (
+            patch.object(corpus, "_run_worker", return_value={}) as worker,
+            patch.object(corpus.b, "_encode_worker_record", return_value=b"record"),
+        ):
+            self.assertEqual(execute({}, "registration"), b"record")
+            self.assertIs(worker.call_args.kwargs["input_evidence"], False)
+            self.assertEqual(execute({}, "registration", True), b"record")
+            self.assertIs(worker.call_args.kwargs["input_evidence"], True)
 
     def root(self, path: Path) -> dict:
         for relative in (
@@ -101,6 +109,32 @@ class CorpusGuards(unittest.TestCase):
         self.assertEqual(sum(c["sample_count"] for c in manifest["cases"]), 1479840)
         self.assertEqual(manifest["paid_budget"]["maximum_gpu_seconds"], 180)
         self.assertEqual(set(manifest["claim_boundary"].values()), {False})
+        self.assertEqual(
+            manifest["input_evidence_profile"], corpus.INPUT_EVIDENCE_PROFILE
+        )
+
+    def test_input_evidence_registration_is_required_and_frozen(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            original = self.root(root)
+            for change in ("absent", "flag", "profile", "holdback"):
+                manifest = copy.deepcopy(original)
+                if change == "absent":
+                    manifest.pop("input_evidence_profile")
+                elif change == "profile":
+                    manifest["input_evidence_profile"]["profile_id"] = "invented"
+                else:
+                    key, value = (
+                        ("input_evidence", False)
+                        if change == "flag"
+                        else ("holdback_ms", 1)
+                    )
+                    manifest["input_evidence_profile"]["stream_config"][key] = value
+                (root / corpus.MANIFEST_PATH).write_text(
+                    json.dumps(manifest), encoding="utf-8"
+                )
+                with self.subTest(change=change), self.assertRaises(ValueError):
+                    corpus.read_registration(root)
 
     def test_modified_budget_paths_and_total_are_rejected(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
@@ -298,7 +332,12 @@ class CorpusGuards(unittest.TestCase):
                 calls.append((snapshot, registration_sha256))
                 return b"compressed test payload"
 
-            record = {"status": "diagnostic", "worker": {"function_call_id": "fc-test"}}
+            record = {
+                "status": "diagnostic",
+                "worker": {"function_call_id": "fc-test"},
+                "input_evidence": False,
+                **corpus._stream_profile(corpus.read_registration(root), False),
+            }
             with (
                 patch.object(corpus, "_inputs", return_value=[]),
                 patch.object(corpus.b, "_decode_worker_record", return_value=record),
@@ -326,6 +365,87 @@ class CorpusGuards(unittest.TestCase):
             for path in legacy_paths:
                 self.assertEqual(path.read_bytes(), b"untouched legacy evidence")
 
+    def test_input_evidence_variant_binds_remote_arguments_receipts_and_output(
+        self,
+    ) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            self.root(root)
+            corpus._execute_transport_probe(
+                root=root, replay_id="evidence", remote_function=Echo()
+            )
+            record = {
+                "status": "diagnostic",
+                "worker": {"function_call_id": "fc-test"},
+                "input_evidence": True,
+                **corpus.INPUT_EVIDENCE_PROFILE,
+            }
+            with (
+                patch.object(corpus, "_inputs", return_value=[]),
+                patch.object(corpus.b, "_decode_worker_record", return_value=record),
+                patch.object(Echo, "remote", return_value=b"test payload") as remote,
+            ):
+                output = corpus._execute_local_attempt(
+                    root=root,
+                    replay_id="evidence",
+                    input_evidence=True,
+                    confirm_paid_gpu=True,
+                    remote_function=Echo(),
+                )
+            self.assertEqual(len(remote.call_args.args), 3)
+            self.assertIs(remote.call_args.args[2], True)
+            self.assertEqual(json.loads(output.read_text()), record)
+            rows = [
+                json.loads(line)
+                for line in corpus._paths(root, "evidence")[1].read_text().splitlines()
+            ]
+            self.assertTrue(all(row["input_evidence"] is True for row in rows))
+            self.assertEqual(
+                rows[0]["stream_config"], corpus.INPUT_EVIDENCE_PROFILE["stream_config"]
+            )
+            self.assertEqual(
+                rows[0]["profile_id"], corpus.INPUT_EVIDENCE_PROFILE["profile_id"]
+            )
+
+    def test_input_evidence_requires_boolean_named_variant_and_matching_result(
+        self,
+    ) -> None:
+        for flag, replay_id in ((1, "evidence"), ("true", "evidence"), (True, "")):
+            with (
+                self.subTest(flag=flag, replay_id=replay_id),
+                self.assertRaises(ValueError),
+            ):
+                corpus._execute_local_attempt(
+                    input_evidence=flag,
+                    replay_id=replay_id,
+                    confirm_paid_gpu=True,
+                    remote_function=Echo(),
+                )
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            self.root(root)
+            corpus._execute_transport_probe(
+                root=root, replay_id="evidence", remote_function=Echo()
+            )
+            with (
+                patch.object(corpus, "_inputs", return_value=[]),
+                patch.object(
+                    corpus.b,
+                    "_decode_worker_record",
+                    return_value={"input_evidence": False},
+                ),
+                patch.object(Echo, "remote", return_value=b"test payload"),
+                self.assertRaises(ValueError),
+            ):
+                corpus._execute_local_attempt(
+                    root=root,
+                    replay_id="evidence",
+                    input_evidence=True,
+                    confirm_paid_gpu=True,
+                    remote_function=Echo(),
+                )
+            self.assertFalse(corpus._paths(root, "evidence")[0].exists())
+
     def test_modal_main_forwards_replay_id_for_both_modes(self) -> None:
         with (
             patch.object(corpus, "run_word_corpus", Echo()),
@@ -337,9 +457,95 @@ class CorpusGuards(unittest.TestCase):
             corpus._modal_main(replay_id="repair", transport_preflight_only=True)
             self.assertEqual(probe.call_args.kwargs["replay_id"], "repair")
             attempt.assert_not_called()
-            corpus._modal_main(replay_id="repair", confirm_paid_gpu=True)
+            corpus._modal_main(
+                replay_id="repair", confirm_paid_gpu=True, input_evidence=True
+            )
             self.assertEqual(attempt.call_args.kwargs["replay_id"], "repair")
             self.assertTrue(attempt.call_args.kwargs["confirm_paid_gpu"])
+            self.assertTrue(attempt.call_args.kwargs["input_evidence"])
+
+    def test_rejected_evidence_trace_contract_and_silence_eof_coverage(self) -> None:
+        native = {
+            "window_id": "w",
+            "text": "invented",
+            "metadata": {"language": "en"},
+            "analysis_span": {"start_ms": 0, "end_ms": 1000},
+        }
+        observation = {
+            "sample_count": 16000,
+            "pcm_sha256": "0" * 64,
+            "digital_silence": True,
+        }
+        silence = {
+            "window_id": "w",
+            "text": "",
+            "native": native,
+            "observation": observation,
+            "analysis_span": native["analysis_span"],
+            "start_ms": 0,
+            "end_ms": 1000,
+        }
+        trace = {
+            "result": native,
+            "audio_evidence": {"state": "non_speech", "observation": observation},
+            "analysis_start_sample": 0,
+            "analysis_end_sample": 16000,
+            "committed_before_sample": 0,
+            "action": "commit",
+            "eof": True,
+            "silence_publication": silence,
+        }
+        with patch.object(
+            corpus.b, "_trace_profile_checks", wraps=corpus.b._trace_profile_checks
+        ) as normal:
+            self.assertTrue(
+                all(corpus._trace_checks([trace], input_evidence=True).values())
+            )
+            normal.assert_called_once_with([], word_alignment=True)
+        self.assertFalse(
+            corpus._trace_checks([trace], input_evidence=False)[
+                "input_evidence_trace_contract"
+            ]
+        )
+        events = [{"kind": "commit", "start_sample": 0, "end_sample": 16000}]
+        progress = corpus._source_progress(events, [trace], 16000)
+        self.assertEqual(progress["pre_eof_commit_count"], 0)
+        self.assertEqual(progress["eof_commit_coverage_ms"], 1000)
+        for key, value in (
+            ("text", "invented"),
+            ("end_ms", 2000),
+            ("native", {}),
+            ("observation", {}),
+        ):
+            changed = copy.deepcopy(trace)
+            changed["silence_publication"][key] = value
+            with self.subTest(key=key):
+                self.assertFalse(
+                    corpus._trace_checks([changed], input_evidence=True)[
+                        "input_evidence_trace_contract"
+                    ]
+                )
+        uncertain = copy.deepcopy(trace)
+        uncertain["audio_evidence"]["state"] = "uncertain"
+        uncertain["audio_evidence"]["observation"]["digital_silence"] = False
+        uncertain["silence_publication"] = None
+        uncertain["action"] = "wait_for_input"
+        self.assertTrue(
+            all(corpus._trace_checks([uncertain], input_evidence=True).values())
+        )
+        for key, value in (
+            ("action", "commit"),
+            ("word_publication", {}),
+            ("word_alignment", {}),
+            ("publication_span", {}),
+        ):
+            changed = {**uncertain, key: value}
+            with self.subTest(key=key):
+                self.assertFalse(
+                    corpus._trace_checks([changed], input_evidence=True)[
+                        "input_evidence_trace_contract"
+                    ]
+                )
 
     def test_preflight_is_exclusive(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
