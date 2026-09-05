@@ -114,6 +114,7 @@ callback failure and recovery. These tests do not establish ASR quality.
 
 The Modal corpus harness has a separate `--paced-replay` variant. It runs the
 same input-evidence and automatic-endpoint policy inside one T4 worker. It does
-not send microphone data from the PC. A future network driver must test transport
-latency, disconnection and authentication separately, without changing the
-recognition controller.
+not send microphone data from the PC. The separate
+[WebSocket replay](NETWORK_REPLAY.md) tests transport, disconnection and
+authentication without changing the recognition controller. Its measurements
+must remain distinct from this same-worker replay.

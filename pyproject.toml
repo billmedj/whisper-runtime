@@ -37,6 +37,7 @@ Issues = "https://github.com/billmedj/whisper-runtime/issues"
 validation = ["jsonschema>=4.23,<5"]
 quality = ["mypy>=1.16,<2", "ruff>=0.12,<1"]
 modal-validation = ["modal==1.5.5"]
+network-validation = ["modal==1.5.5", "aiohttp==3.14.3"]
 
 [tool.setuptools]
 package-dir = { "" = "src" }

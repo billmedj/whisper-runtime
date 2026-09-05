@@ -1,0 +1,50 @@
+{
+  "schema_version": "1-diagnostic",
+  "id": "modal-network-replay-v1",
+  "protocol": "pcm-websocket/v1",
+  "sample_rate_hz": 16000,
+  "chunk_samples": 320,
+  "sample_count": 698560,
+  "pcm_sha256": "b6f8c541b55d2da4c9494dda2e5daebf8674c29286a3ea983206b9a99e9badad",
+  "corpus_manifest": "experiments/modal-word-corpus-v1.json",
+  "case_id": "three-speakers-repeat-pauses",
+  "modal_sdk": "1.5.5",
+  "proxy_auth_required": true,
+  "preflight": {
+    "gpu": false,
+    "sample_count": 16000,
+    "protocol": "pcm-echo/v1",
+    "unauthorized_statuses": [401, 403]
+  },
+  "execution": {
+    "gpu": "T4",
+    "cpu": 2,
+    "memory_mib": 4096,
+    "cloud": "aws",
+    "region": "us-west",
+    "timeout_seconds": 180,
+    "startup_timeout_seconds": 180,
+    "max_containers": 1,
+    "min_containers": 0,
+    "buffer_containers": 0,
+    "scaledown_seconds": 2,
+    "configured_retries": 0,
+    "client_connections": 1,
+    "single_use_containers": true
+  },
+  "claims": {
+    "performance_benchmark": false,
+    "production_readiness": false,
+    "recognition_improvement": false,
+    "one_way_network_latency": false,
+    "physical_execution_or_spending_cap": false
+  },
+  "notes": [
+    "The GPU receives PCM from the client. No audio fixture is placed in its image.",
+    "A bounded diagnostic capture of received frames is used for controls after runtime cleanup.",
+    "Native FINAL receipt and done receipt have different meanings: done includes controls and model hashing.",
+    "Server and client monotonic clocks cannot establish one-way network latency.",
+    "Modal can reschedule crashed containers. One client connection is not an absolute physical execution cap.",
+    "Temporary proxy credentials remain in memory and are deleted after the ephemeral app context exits."
+  ]
+}
