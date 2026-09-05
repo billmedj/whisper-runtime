@@ -364,7 +364,16 @@ class NativeTranscriptStream:
         exc_value: BaseException | None,
         traceback: object | None,
     ) -> None:
-        del exc_type, exc_value, traceback
+        del exc_type, traceback
+        run = self._active_run
+        if (
+            isinstance(exc_value, TransactionRetainedError)
+            and run is not None
+            and run.closed
+            and not run.capacity_released
+        ):
+            # Keep the recovery authority and any committed result on the error.
+            return
         self.close()
 
     @property

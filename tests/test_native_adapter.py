@@ -959,6 +959,76 @@ class NativeWhisperAdapterTests(unittest.TestCase):
         self.assertEqual(self.budget.available, self.capacity)
         self.assertTrue(stream.close())
 
+    def test_stream_context_preserves_retained_error_recovery_authority(self) -> None:
+        for failure_boundary in ("cancelled-step", "finalization"):
+            with self.subTest(failure_boundary=failure_boundary):
+                backend_run = FakeRun(complete_after=1, fail_cleanup=True)
+                harness = BackendHarness([backend_run])
+                stream = NativeTranscriptStream(
+                    self.adapter,
+                    stream_id=f"context-retained-{failure_boundary}",
+                    mel_builder=lambda pcm: FakeMel(),
+                )
+                observed_errors: list[TransactionRetainedError] = []
+                try:
+                    with (
+                        patch.object(
+                            native_whisper,
+                            "_load_native_components",
+                            return_value=harness.components(),
+                        ),
+                        self.assertRaises(TransactionRetainedError) as raised,
+                    ):
+                        with stream:
+                            stream.push(0, b"\x00\x00" * 16_000)
+                            stream.finish_input()
+                            stream.step()
+                            native_run = stream._active_run
+                            assert isinstance(
+                                native_run, native_whisper.NativeWindowRun
+                            )
+                            if failure_boundary == "cancelled-step":
+                                self.assertTrue(stream.cancel_active())
+                            else:
+                                stream.step()
+                                self.assertTrue(native_run.complete)
+                            try:
+                                stream.step()
+                            except TransactionRetainedError as error:
+                                observed_errors.append(error)
+                                raise
+
+                    self.assertEqual(len(observed_errors), 1)
+                    self.assertIs(raised.exception, observed_errors[0])
+                    self.assertIs(raised.exception.transaction, native_run._transaction)
+                    self.assertIsNone(raised.exception.committed_state)
+                    self.assertTrue(native_run.closed)
+                    self.assertFalse(native_run.capacity_released)
+                    self.assertTrue(stream.active)
+                    self.assertFalse(stream.done)
+                    self.assertEqual(stream.state.version, 0)
+                    self.assertEqual(stream.metrics.events_emitted, 0)
+                    self.assertEqual(self.worker.quarantined_count, 1)
+                    self.assertEqual(self.budget.lease_count, 1)
+
+                    backend_run.fail_cleanup = False
+                    self.assertTrue(self.worker.recover(raised.exception.transaction))
+                    self.assertTrue(native_run.capacity_released)
+                    stream.close()
+                    self.assertTrue(stream.done)
+                    self.assertFalse(stream.active)
+                    self.assertEqual(stream.step(), ())
+                    self.assertEqual(stream.metrics.events_emitted, 0)
+                    self.assertEqual(self.worker.queue_depth, 0)
+                    self.assertEqual(self.worker.quarantined_count, 0)
+                    self.assertEqual(self.budget.lease_count, 0)
+                    self.assertEqual(self.budget.available, self.capacity)
+                finally:
+                    backend_run.fail_cleanup = False
+                    if stream.active:
+                        stream.stop_active()
+                        stream.close()
+
     def test_public_run_finish_does_not_hide_missing_steps(self) -> None:
         backend_run = FakeRun(complete_after=1)
         harness = BackendHarness([backend_run])

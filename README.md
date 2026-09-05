@@ -218,7 +218,7 @@ See the [native adapter contract](https://github.com/billmedj/whisper-runtime/bl
 
 | Evidence | Scope |
 | --- | --- |
-| 160 runtime tests | Resource accounting, queue bounds, commit races, committed-prefix enforcement, deadlines, cancellation, quarantine, recovery, bounded PCM previews, and adapter behavior |
+| 161 runtime tests | Resource accounting, queue bounds, commit races, committed-prefix enforcement, deadlines, cancellation, quarantine, recovery, bounded PCM previews, and adapter behavior |
 | 191 repository-tool tests | Provenance, source state, fixtures, portability, setup contracts, evidence schemas, semantic validation, qualification relations, and native smoke contracts |
 | 2,000-step deterministic state trace | State-machine transitions under generated operations |
 | 55 Lean theorem declarations | Abstract lease provenance, capacity conservation, lifecycle, stale-commit and committed-prefix properties, completion-fence publication, quarantine, and recovery |
