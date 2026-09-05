@@ -508,6 +508,34 @@ class ModalStreamBoundaryDiagnosticTests(unittest.TestCase):
             self.assertNotEqual(output, v4_output)
             self.assertNotEqual(receipt, v4_receipt)
 
+    def test_v6_preserves_v5_settings_and_uses_a_fresh_attempt(self) -> None:
+        manifests = [
+            json.loads(
+                (
+                    diagnostic.ROOT
+                    / f"experiments/modal-stream-boundary-diagnostic-{version}.json"
+                ).read_text(encoding="utf-8")
+            )
+            for version in ("v5", "v6")
+        ]
+        previous, current = manifests
+        diagnostic._validate_registration(current)
+        self.assertEqual(current["predecessor"]["manifest_id"], previous["manifest_id"])
+        for manifest in manifests:
+            for key in ("manifest_id", "purpose", "predecessor"):
+                manifest.pop(key)
+            manifest["source_policy"]["snapshot_paths"].pop()
+        self.assertEqual(current, previous)
+        self.assertEqual(diagnostic._REGISTRATIONS["v6"]["timeout_seconds"], 120)
+        previous_paths = diagnostic._attempt_paths(
+            diagnostic.ROOT, 1, registration="v5"
+        )
+        current_paths = diagnostic._attempt_paths(diagnostic.ROOT, 1, registration="v6")
+        self.assertTrue(set(previous_paths).isdisjoint(current_paths))
+        self.assertEqual(
+            current_paths[0].name, "stream-boundary-diagnostic-v6-attempt-1.json"
+        )
+
     def test_word_trace_serialization_preserves_native_result_and_coverage_distinction(
         self,
     ) -> None:

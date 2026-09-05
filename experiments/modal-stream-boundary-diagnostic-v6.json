@@ -1,0 +1,195 @@
+{
+  "manifest_version": "1",
+  "manifest_id": "modal-stream-boundary-diagnostic-v6",
+  "state": "diagnostic",
+  "purpose": "Repeat the matched segment and word agreement diagnostic after the window-edge anchor repair.",
+  "claim_boundary": {
+    "recognition_improvement": false,
+    "performance_benchmark": false,
+    "production_readiness": false,
+    "public_commit_reproducibility": false,
+    "generalization_beyond_this_input": false
+  },
+  "predecessor": {
+    "manifest_id": "modal-stream-boundary-diagnostic-v5",
+    "record": "evidence/modal-t4-tiny-en-word-alignment-v5-2026-09-05.json",
+    "outcome": "The word profile passed the complete-anchor boundary and committed 12.78 seconds. A first-word onset estimate at the shifted window edge then prevented the next anchor match.",
+    "change": "Apply the window-edge anchor repair from runtime commit 159b593. Keep input, model, numerical precision, decode options, seed, cells, cadence, context, holdback, warmup, transport, and resource limits unchanged."
+  },
+  "source_policy": {
+    "image_base_commit": "9c2494234f08b24325d427ea422818b24f460c0c",
+    "overlay": "deterministic-local-source-snapshot",
+    "snapshot_paths": [
+      "src/whisper_runtime/**/*.py",
+      "infra/modal_stream_boundary_diagnostic.py",
+      "infra/modal_continuous_smoke.py",
+      "experiments/modal-stream-boundary-diagnostic-v6.json"
+    ],
+    "note": "The record binds the exact clean local source snapshot sent to Modal. The cached base image already contains the request-local alignment backend patch."
+  },
+  "replay_pacing": "unpaced-source-time",
+  "paid_budget": {
+    "maximum_gpu_function_calls": 1,
+    "gpu_seconds_per_call": 120,
+    "maximum_gpu_seconds": 120,
+    "automatic_retries": 0,
+    "maximum_containers": 1,
+    "minimum_containers": 0,
+    "startup_timeout_seconds": 300,
+    "scaledown_window_seconds": 2,
+    "t4_usd_per_hour": 0.59,
+    "cpu_cores": 2,
+    "cpu_usd_per_core_hour": 0.0473,
+    "memory_gib": 4,
+    "memory_usd_per_gib_hour": 0.008,
+    "maximum_execution_cost_estimate_usd": 0.0238867,
+    "regional_price_multiplier_range": [
+      1.15,
+      1.75
+    ],
+    "maximum_execution_cost_at_registered_multiplier_ceiling_usd": 0.0418017,
+    "estimate_scope": "Planning estimate for one full 120-second execution. The ceiling applies the listed 1.75 regional multiplier. Neither value is a spending cap. Startup, image construction, storage, network, taxes, and price changes are not included."
+  },
+  "result_transport": {
+    "encoding": "zlib-json-utf8-v1",
+    "modal_sdk_version": "1.5.5",
+    "invocation_type": "sync",
+    "modal_sync_serialized_limit_bytes": 2097152,
+    "modal_async_serialized_limit_bytes": 8192,
+    "modal_pickle_protocol": 4,
+    "modal_pickle_bytes_overhead": 9,
+    "inline_margin_bytes": 65536,
+    "maximum_inline_compressed_bytes": 2031607,
+    "maximum_decompressed_json_bytes": 33554432,
+    "oversize_behavior": "return-compact-transport-rejected-record",
+    "preflight": {
+      "required_before_gpu": true,
+      "gpu": null,
+      "maximum_function_calls": 1,
+      "timeout_seconds": 30,
+      "payload_raw_bytes": 65536,
+      "crosses_async_threshold": true
+    }
+  },
+  "input": {
+    "fixture": "openai-whisper-jfk-flac",
+    "input_path": "/opt/openai-whisper/tests/jfk.flac",
+    "input_sha256": "63a4b1e4c1dc655ac70961ffbf518acd249df237e5a0152faae9a4a836949715",
+    "decoded_float32_fingerprint": "59be237a0814faee9f1279bc54c8a482fa7edc09a640ff0fdd18d14d41519065",
+    "converted_fixture_pcm_s16le_sha256": "252fca5b7c2acd89dfd4c01b27c67e7e6a6f5ab7d9973e9963732f8307a744d3",
+    "stream_pcm_s16le_sha256": "a3fd62a5bb6caecc25585b9f81bc6f379726c723f5fec6f1557e01508a192372",
+    "construction": "Repeat the converted 11-second PCM exactly three times.",
+    "fixture_duration_ms": 11000,
+    "fixture_repetitions": 3,
+    "duration_ms": 33000,
+    "sample_rate_hz": 16000,
+    "chunk_ms": 1000
+  },
+  "model": {
+    "gpu": "T4",
+    "cloud": "aws",
+    "region": "us-west",
+    "device": "cuda:0",
+    "name": "tiny.en",
+    "numeric_precision": "float32",
+    "checkpoint_sha256": "d3dd57d32accea0b295c96e26691aa14d8822fac7d9d27d5dc00b4ca2826dd03",
+    "model_state_sha256": "sha256:8041a80119a588f542472da35e97d0372fce1d9709ed9874475e9c03deac5de6"
+  },
+  "decode_options": {
+    "language": "en",
+    "task": "transcribe",
+    "temperature": 0,
+    "without_timestamps": false
+  },
+  "rng_seed": 7,
+  "offline_control_options": {
+    "language": "en",
+    "task": "transcribe",
+    "temperature": 0,
+    "fp16": false,
+    "compression_ratio_threshold": 2.4,
+    "logprob_threshold": -1,
+    "no_speech_threshold": 0.6,
+    "condition_on_previous_text": true,
+    "initial_prompt": null,
+    "carry_initial_prompt": false,
+    "word_timestamps": false,
+    "clip_timestamps": "0",
+    "hallucination_silence_threshold": null,
+    "without_timestamps": false,
+    "verbose": null
+  },
+  "native_segmented_control": {
+    "method": "Decode the 11-second fixture once through NativeWhisperAdapter with the registered decode options and seed, then repeat the normalized text three times.",
+    "full_33_second_decode": false,
+    "word_alignment_warmup": "Run one opt-in alignment on the same 11-second native result before cell timing."
+  },
+  "common_stream_config": {
+    "preview_interval_ms": 2000,
+    "max_window_ms": 30000,
+    "max_buffer_ms": 40000,
+    "timestamp_tolerance_ms": 200,
+    "coalesce_previews": false
+  },
+  "cells": [
+    {
+      "cell_id": "segment-left-context-2000",
+      "left_context_ms": 2000,
+      "holdback_ms": 2000,
+      "word_alignment": false
+    },
+    {
+      "cell_id": "word-left-context-2000",
+      "left_context_ms": 2000,
+      "holdback_ms": 2000,
+      "word_alignment": true
+    }
+  ],
+  "decision_trace": {
+    "source": "ContinuousTranscriptStream.last_trace",
+    "capture": "After each step and once on an exception path; deduplicate by decode_index.",
+    "record_raw_result_metadata": true,
+    "word_fields": [
+      "word_alignment",
+      "word_publication"
+    ],
+    "publication_evidence": "Only emitted commit events and committed session state prove publication. Trace action records intent."
+  },
+  "outcomes": {
+    "lifecycle_required": [
+      "ordered_events",
+      "immutable_committed_revisions",
+      "monotonic_commit_watermarks",
+      "publication_within_accepted_input",
+      "contiguous_commit_coverage",
+      "commit_watermark_matches_runtime",
+      "bounded_audio_buffer",
+      "runtime_capacity_restored",
+      "accepted_input_accounted",
+      "decision_trace_ordered",
+      "trace_profile_matches_config",
+      "trace_preserves_native_metadata",
+      "profile_id_matches_config"
+    ],
+    "complete_stream_required_only_when_no_policy_resolution_error": [
+      "final_event_once",
+      "full_input_committed_at_eof"
+    ],
+    "recognition_descriptive": [
+      "exact_match_offline_full_stream",
+      "word_edit_distance_offline_full_stream",
+      "exact_match_segmented_control",
+      "word_edit_distance_segmented_control",
+      "exact_match_native_segmented_control",
+      "word_edit_distance_native_segmented_control"
+    ],
+    "resource_descriptive": [
+      "cuda_allocated_before_cell",
+      "cuda_reserved_before_cell",
+      "cuda_peak_allocated",
+      "cuda_peak_reserved"
+    ],
+    "stop_rule": "Continue after a recorded policy-resolution outcome. Stop before the next cell after an infrastructure or lifecycle failure. Recognition differences never stop the run.",
+    "status_rule": "A policy-resolution outcome is unresolved, not completed."
+  }
+}

@@ -61,6 +61,13 @@ _REGISTRATIONS = {
         "artifact_stem": "stream-boundary-diagnostic-v5-attempt-1",
         "timeout_seconds": 120,
     },
+    "v6": {
+        "manifest_path": "experiments/modal-stream-boundary-diagnostic-v6.json",
+        "manifest_id": "modal-stream-boundary-diagnostic-v6",
+        "app_name": "whisper-runtime-stream-boundary-diagnostic-v6",
+        "artifact_stem": "stream-boundary-diagnostic-v6-attempt-1",
+        "timeout_seconds": 120,
+    },
 }
 REGISTRATION = os.environ.get(REGISTRATION_ENV, "v1")
 if REGISTRATION not in _REGISTRATIONS:
@@ -199,6 +206,7 @@ def _validate_registration(manifest: Mapping[str, Any]) -> None:
         "modal-stream-boundary-diagnostic-v3",
         "modal-stream-boundary-diagnostic-v4",
         "modal-stream-boundary-diagnostic-v5",
+        "modal-stream-boundary-diagnostic-v6",
     } and manifest.get("result_transport") != {
         "encoding": WORKER_RESULT_ENCODING,
         "modal_sdk_version": MODAL_SDK_VERSION,
@@ -237,6 +245,7 @@ def _validate_registration(manifest: Mapping[str, Any]) -> None:
     word_comparison = manifest_id in {
         "modal-stream-boundary-diagnostic-v4",
         "modal-stream-boundary-diagnostic-v5",
+        "modal-stream-boundary-diagnostic-v6",
     }
     if word_comparison and (
         not isinstance(cells, list)
@@ -1065,6 +1074,7 @@ def _run_worker(
         if MANIFEST_ID in {
             "modal-stream-boundary-diagnostic-v4",
             "modal-stream-boundary-diagnostic-v5",
+            "modal-stream-boundary-diagnostic-v6",
         }:
             alignment_started_ns = time.perf_counter_ns()
             native_run.prepare_word_alignment()
@@ -1234,6 +1244,7 @@ def _run_worker(
             in {
                 "modal-stream-boundary-diagnostic-v4",
                 "modal-stream-boundary-diagnostic-v5",
+                "modal-stream-boundary-diagnostic-v6",
             }
             and unresolved_cells
             else "completed"
