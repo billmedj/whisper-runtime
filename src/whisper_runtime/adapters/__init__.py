@@ -15,6 +15,17 @@ from .legacy_whisper import (
     LegacyWhisperModel,
     ModelIdentityProbe,
 )
+from .native_stream import (
+    BOUNDED_PREFIX_PROFILE,
+    AudioBufferFullError,
+    AudioSequenceError,
+    NativeStreamConfig,
+    NativeStreamError,
+    NativeTranscriptStream,
+    StreamEventKind,
+    StreamMetrics,
+    TranscriptEvent,
+)
 from .native_whisper import (
     NativeAdapterError,
     NativeDecodeContractError,
@@ -28,6 +39,7 @@ from .native_whisper import (
 )
 
 __all__ = [
+    "BOUNDED_PREFIX_PROFILE",
     "LEGACY_WHISPER_ENVELOPE_VERSION",
     "LegacyAdapterError",
     "LegacyExecutionMeasurements",
@@ -42,12 +54,20 @@ __all__ = [
     "LegacyWhisperModel",
     "ModelIdentityProbe",
     "NativeAdapterError",
+    "AudioBufferFullError",
+    "AudioSequenceError",
     "NativeDecodeContractError",
     "NativeDecodeOptions",
     "NativeDecodeRun",
     "NativeDependencyError",
     "NativeExecutionProfile",
     "NativeModelIdentityProbe",
+    "NativeStreamConfig",
+    "NativeStreamError",
+    "NativeTranscriptStream",
     "NativeWindowRun",
     "NativeWhisperAdapter",
+    "StreamEventKind",
+    "StreamMetrics",
+    "TranscriptEvent",
 ]

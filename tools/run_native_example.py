@@ -64,6 +64,15 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help="Allow Whisper to download tiny.en into the model cache if needed",
     )
+    parser.add_argument(
+        "--stream-preview-ms",
+        type=int,
+        help="Replay PCM through the bounded stream profile at this interval",
+    )
+    parser.add_argument("--stream-chunk-ms", type=int, default=200)
+    parser.add_argument(
+        "--output", type=Path, help="Write the run report to this JSON file"
+    )
     return parser.parse_args()
 
 
@@ -96,6 +105,11 @@ def main() -> int:
     ]
     if args.allow_model_download:
         command.append("--allow-model-download")
+    if args.stream_preview_ms is not None:
+        command.extend(("--stream-preview-ms", str(args.stream_preview_ms)))
+        command.extend(("--stream-chunk-ms", str(args.stream_chunk_ms)))
+    if args.output is not None:
+        command.extend(("--output", str(args.output.resolve())))
     if audio == default_audio.resolve():
         command.extend(("--expected-text", JFK_TRANSCRIPT))
 

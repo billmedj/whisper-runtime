@@ -27,6 +27,7 @@ explicit.
 | Runtime core | Bounded admission, exact in-process leases, deadlines, versioned commits, an immutable committed-prefix boundary, cancellation, quarantine, and cleanup recovery |
 | Legacy adapter | Runs the existing synchronous `model.transcribe()` call as one serialized transaction |
 | Native adapter | Provides a managed, token-step run handle over the patched decoder; CPU and one strict single-lane T4 profile have recorded integration cases |
+| Bounded audio previews | Accepts ordered PCM for a slice of up to 30 seconds, drives native token steps, and emits provisional, replacement, commit, and final events |
 | Conformance data | Records four pinned JFK CPU comparisons: greedy, beam search, word timestamps, and translation |
 | Isolation checks | Exercises two staged decodes under a fixed schedule and in two operating-system threads, cleans one early, and checks the survivor against an isolated baseline |
 | Formal model | Proves abstract lease, capacity, lifecycle, stale-commit, committed-prefix, completion-fence, quarantine, and release properties in Lean |
@@ -125,6 +126,19 @@ Later runs use the verified local checkpoint and omit the flag. See the
 [real backend quick start](https://github.com/billmedj/whisper-runtime/blob/main/docs/REAL_BACKEND_QUICKSTART.md)
 for prerequisites, offline verification, custom paths, and limits.
 
+To replay that input in 200 ms PCM chunks with a preview every four seconds:
+
+```sh
+python tools/run_native_example.py --stream-preview-ms 4000
+```
+
+The example checks the final text against a separate native decode of the same
+PCM, options, and seed. It uses the existing checkpoint cache and accepts
+`--model-cache` when the checkpoint is stored elsewhere. Each prefix is decoded
+again; text is committed at the end of the slice. This bounded profile does not
+yet support continuous audio or progressive commits. See the
+[bounded stream contract](docs/BOUNDED_STREAMING.md) for the API and limits.
+
 ## Development validation
 
 Run the repository checks:
@@ -204,7 +218,7 @@ See the [native adapter contract](https://github.com/billmedj/whisper-runtime/bl
 
 | Evidence | Scope |
 | --- | --- |
-| 130 runtime tests | Resource accounting, queue bounds, commit races, committed-prefix enforcement, deadlines, cancellation, quarantine, recovery, and adapter behavior |
+| 160 runtime tests | Resource accounting, queue bounds, commit races, committed-prefix enforcement, deadlines, cancellation, quarantine, recovery, bounded PCM previews, and adapter behavior |
 | 191 repository-tool tests | Provenance, source state, fixtures, portability, setup contracts, evidence schemas, semantic validation, qualification relations, and native smoke contracts |
 | 2,000-step deterministic state trace | State-machine transitions under generated operations |
 | 55 Lean theorem declarations | Abstract lease provenance, capacity conservation, lifecycle, stale-commit and committed-prefix properties, completion-fence publication, quarantine, and recovery |

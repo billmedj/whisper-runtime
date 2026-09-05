@@ -46,18 +46,49 @@ tested load.
 Exit condition: batching and cache reuse preserve the selected output contract,
 isolate requests, and remain within the measured resource bound.
 
-## Later: bounded streaming and backend coverage
+## Streaming: implemented bounded slice
 
-- Add bounded audio ingestion and client flow control.
-- Publish versioned provisional segments against the existing immutable
-  committed-prefix boundary.
-- Keep offline-compatible and stable-streaming profiles separate.
+[`NativeTranscriptStream`](BOUNDED_STREAMING.md) implements
+`bounded_prefix_preview/v1`: sequence-checked 16 kHz mono s16le ingestion,
+a configurable limit of at most 30 seconds, and full-prefix previews. `push()`
+only admits audio; `step()` exposes native startup, individual token steps,
+and publication separately. Immutable text-and-span revisions remain
+provisional until a successful EOF decode emits commit and final events.
+
+The stream supports owner-thread close and active-run cancel and stop controls.
+Preprocessing and startup before handle return are not interruptible through
+those stream controls. Pausing does not renew the transaction TTL or release
+capacity; failed cleanup may retain capacity pending native recovery.
+
+This slice is not continuous streaming or Local Agreement. It retains audio
+and window history, reprocesses prefixes, and exposes no timed-token hypotheses.
+It makes no new performance or offline-equivalence claim.
+
+## Next streaming boundary: timestamped Local Agreement
+
+- Expose timed-token hypotheses with explicit source coordinates from the
+  native adapter.
+- Align overlapping hypotheses and define a versioned Local Agreement policy
+  for progressive commits. Do not infer token times from window endpoints.
+- Preserve immutable committed text and text-and-span revision identities
+  across window shifts, cancellation, retries, and EOF.
+- Add rolling audio retention, window-history compaction, and client flow
+  control so session memory remains bounded as input duration grows.
+- Keep offline-compatible, bounded-preview, and continuous stable-streaming
+  profiles separate, with evidence for each declared output contract.
+- Measure prefix reprocessing, cancellation delay, retained capacity, and
+  long-session memory before making continuous-streaming performance claims.
+
+Exit condition: committed text does not change, source commit boundaries are
+supported by timed hypotheses, and measured session memory stays bounded as
+input duration grows under the declared profile.
+
+## Later: backend coverage
+
 - Add compiled or exported backends behind declared capabilities.
 - Apply the same ownership and close rules to every added backend.
 
-Exit condition: committed text does not change, session memory stays bounded as
-input duration grows, and each adapter passes the cases for every capability it
-declares.
+Exit condition: each adapter passes the cases for every capability it declares.
 
 ## Release gate
 

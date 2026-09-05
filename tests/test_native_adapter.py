@@ -1,6 +1,7 @@
 import random
 import unittest
 from collections.abc import Callable, Mapping
+from contextlib import nullcontext
 from threading import Event, Lock, Thread
 from typing import cast
 from unittest.mock import patch
@@ -16,6 +17,7 @@ from whisper_runtime import (
     ResourceVector,
     Session,
     SessionState,
+    TransactionExpiredError,
     TransactionRetainedError,
     TransactionStateError,
     TransactionStatus,
@@ -29,7 +31,10 @@ from whisper_runtime.adapters import (
     NativeDecodeOptions,
     NativeDependencyError,
     NativeExecutionProfile,
+    NativeStreamError,
+    NativeTranscriptStream,
     NativeWhisperAdapter,
+    StreamEventKind,
     native_whisper,
 )
 
@@ -633,6 +638,326 @@ class NativeWhisperAdapterTests(unittest.TestCase):
         self.assertEqual(backend_run.cleanup_calls, 1)
         self.assertEqual(self.worker.queue_depth, 0)
         self.assertEqual(self.budget.available, self.capacity)
+
+    def test_stream_drives_native_start_tokens_and_final_publication(self) -> None:
+        preview = FakeRun(complete_after=2, result_text="preview")
+        final = FakeRun(complete_after=1, result_text="final text")
+        harness = BackendHarness([preview, final])
+        prepared_pcm: list[bytes] = []
+
+        def build_mel(pcm: bytes) -> FakeMel:
+            prepared_pcm.append(pcm)
+            return FakeMel()
+
+        stream = NativeTranscriptStream(
+            self.adapter,
+            stream_id="native-stream",
+            mel_builder=build_mel,
+            options=NativeDecodeOptions(temperature=0.2),
+            rng_seed=7,
+        )
+        first_pcm = b"\x01\x00" * 16_000
+        last_pcm = b"\x02\x00" * 8_000
+        with (
+            patch.object(
+                native_whisper,
+                "_load_native_components",
+                return_value=harness.components(),
+            ),
+            stream,
+        ):
+            self.assertEqual(stream.push(0, first_pcm), 16_000)
+            self.assertEqual(prepared_pcm, [])
+            self.assertEqual(self.worker.queue_depth, 0)
+            self.assertEqual(stream.step(), ())
+            native_run = stream._active_run
+            self.assertIsInstance(native_run, native_whisper.NativeWindowRun)
+            assert native_run is not None
+            self.assertFalse(native_run.complete)
+            self.assertFalse(native_run.closed)
+            self.assertFalse(native_run.capacity_released)
+            self.assertEqual(preview.prefill_calls, 1)
+            self.assertEqual(preview.step_calls, 0)
+            self.assertEqual(self.worker.queue_depth, 1)
+            self.assertEqual(self.budget.available, ResourceVector())
+
+            for step_count in (1, 2):
+                self.assertEqual(stream.step(), ())
+                self.assertEqual(preview.step_calls, step_count)
+                self.assertEqual(preview.finalize_calls, 0)
+                self.assertEqual(stream.state.version, 0)
+                self.assertEqual(stream.metrics.events_emitted, 0)
+            self.assertTrue(native_run.complete)
+            self.assertFalse(native_run.capacity_released)
+
+            provisional = stream.step()
+            self.assertEqual(len(provisional), 1)
+            self.assertEqual(provisional[0].kind, StreamEventKind.PROVISIONAL)
+            self.assertEqual(provisional[0].text, "preview")
+            self.assertEqual(provisional[0].session_version, 1)
+            self.assertIsNone(stream.state.committed_through_ms)
+            self.assertEqual(preview.finalize_calls, 1)
+            self.assertEqual(preview.cleanup_calls, 1)
+            self.assertTrue(native_run.closed)
+            self.assertTrue(native_run.capacity_released)
+            self.assertFalse(stream.active)
+            self.assertFalse(stream.ready)
+            self.assertEqual(self.worker.queue_depth, 0)
+            self.assertEqual(self.budget.available, self.capacity)
+
+            stream.push(1, last_pcm)
+            self.assertTrue(stream.finish_input())
+            self.assertEqual(stream.step(), ())
+            self.assertEqual(final.prefill_calls, 1)
+            self.assertEqual(final.step_calls, 0)
+            self.assertEqual(stream.step(), ())
+            self.assertEqual(final.step_calls, 1)
+            self.assertEqual(final.finalize_calls, 0)
+            published = stream.step()
+
+        self.assertEqual(
+            [event.kind for event in published],
+            [StreamEventKind.REPLACE, StreamEventKind.COMMIT, StreamEventKind.FINAL],
+        )
+        self.assertEqual([event.sequence_number for event in published], [2, 3, 4])
+        self.assertEqual(published[0].text, "final text")
+        self.assertEqual(published[0].supersedes_revision, 1)
+        self.assertEqual(published[1].revision, 2)
+        self.assertEqual(published[1].committed_through_sample, 24_000)
+        self.assertEqual(published[1].committed_through_ms, 1_500)
+        self.assertEqual(published[2].session_version, 2)
+        self.assertEqual(stream.state.version, 2)
+        self.assertEqual(stream.state.committed_through_ms, 1_500)
+        self.assertEqual(prepared_pcm, [first_pcm, first_pcm + last_pcm])
+        self.assertEqual(
+            [generator.seed for generator in harness.generators],
+            [
+                random.Random(16_007).randrange(1 << 63),
+                random.Random(7).randrange(1 << 63),
+            ],
+        )
+        self.assertEqual(
+            [options["temperature"] for options in harness.option_kwargs], [0.2, 0.2]
+        )
+        self.assertEqual(stream.metrics.decode_count, 2)
+        self.assertEqual(stream.metrics.decoded_source_samples, 40_000)
+        self.assertEqual(stream.metrics.events_emitted, 4)
+        self.assertTrue(stream.done)
+        self.assertFalse(stream.ready)
+        self.assertEqual(stream.step(), ())
+        self.assertEqual(final.finalize_calls, 1)
+        self.assertEqual(final.cleanup_calls, 1)
+        self.assertEqual(self.worker.queue_depth, 0)
+        self.assertEqual(self.budget.available, self.capacity)
+
+    def test_stream_cancel_while_paused_prevents_tokens_and_publication(self) -> None:
+        for pause_after_steps in (1, 2):
+            with self.subTest(pause_after_steps=pause_after_steps):
+                backend_run = FakeRun(complete_after=2)
+                harness = BackendHarness([backend_run])
+                stream = NativeTranscriptStream(
+                    self.adapter,
+                    stream_id=f"cancel-stream-{pause_after_steps}",
+                    mel_builder=lambda pcm: FakeMel(),
+                )
+                with (
+                    patch.object(
+                        native_whisper,
+                        "_load_native_components",
+                        return_value=harness.components(),
+                    ),
+                    stream,
+                ):
+                    self.assertFalse(stream.cancel_active())
+                    stream.push(0, b"\x00\x00" * 16_000)
+                    stream.finish_input()
+                    self.assertEqual(stream.step(), ())
+                    native_run = stream._active_run
+                    assert native_run is not None
+                    for _ in range(pause_after_steps):
+                        self.assertEqual(stream.step(), ())
+
+                    cancelled: list[bool] = []
+                    canceller = Thread(
+                        target=lambda: cancelled.append(stream.cancel_active())
+                    )
+                    canceller.start()
+                    canceller.join(timeout=2)
+                    self.assertFalse(canceller.is_alive())
+                    self.assertEqual(cancelled, [True])
+                    self.assertFalse(native_run.closed)
+                    self.assertFalse(native_run.capacity_released)
+                    self.assertEqual(self.worker.queue_depth, 1)
+                    self.assertEqual(self.budget.available, ResourceVector())
+
+                    with self.assertRaises(RequestCancelledError):
+                        stream.step()
+                    self.assertFalse(stream.active)
+                    self.assertTrue(native_run.closed)
+                    self.assertTrue(native_run.capacity_released)
+                    self.assertFalse(stream.cancel_active())
+                    self.assertEqual(backend_run.step_calls, pause_after_steps)
+                    self.assertEqual(backend_run.finalize_calls, 0)
+                    self.assertEqual(backend_run.cleanup_calls, 1)
+                    self.assertEqual(stream.state.version, 0)
+                    self.assertEqual(stream.state.windows, ())
+                    self.assertEqual(stream.metrics.events_emitted, 0)
+                    self.assertEqual(stream.metrics.decode_count, 0)
+                    self.assertEqual(self.worker.queue_depth, 0)
+                    self.assertEqual(self.budget.available, self.capacity)
+
+    def test_stream_context_closes_an_unfinished_native_run(self) -> None:
+        for caller_fails in (False, True):
+            with self.subTest(caller_fails=caller_fails):
+                backend_run = FakeRun(complete_after=2)
+                harness = BackendHarness([backend_run])
+                stream = NativeTranscriptStream(
+                    self.adapter,
+                    stream_id=f"close-stream-{caller_fails}",
+                    mel_builder=lambda pcm: FakeMel(),
+                )
+                expected_error = (
+                    self.assertRaisesRegex(RuntimeError, "stream caller failed")
+                    if caller_fails
+                    else nullcontext()
+                )
+                with (
+                    patch.object(
+                        native_whisper,
+                        "_load_native_components",
+                        return_value=harness.components(),
+                    ),
+                    expected_error,
+                    stream,
+                ):
+                    stream.push(0, b"\x00\x00" * 16_000)
+                    stream.step()
+                    native_run = stream._active_run
+                    assert native_run is not None
+                    stream.step()
+                    if caller_fails:
+                        raise RuntimeError("stream caller failed")
+
+                self.assertTrue(native_run.closed)
+                self.assertTrue(native_run.capacity_released)
+                self.assertFalse(stream.active)
+                self.assertTrue(stream.input_finished)
+                self.assertTrue(stream.done)
+                self.assertFalse(stream.ready)
+                self.assertFalse(stream.close())
+                self.assertEqual(stream.step(), ())
+                self.assertEqual(backend_run.step_calls, 1)
+                self.assertEqual(backend_run.finalize_calls, 0)
+                self.assertEqual(backend_run.cleanup_calls, 1)
+                self.assertEqual(stream.state.version, 0)
+                self.assertEqual(stream.metrics.events_emitted, 0)
+                self.assertEqual(self.worker.queue_depth, 0)
+                self.assertEqual(self.budget.available, self.capacity)
+
+    def test_stream_pause_cannot_extend_the_native_transaction_deadline(self) -> None:
+        for pause_after_steps in (0, 1):
+            with self.subTest(pause_after_steps=pause_after_steps):
+                now = [100.0]
+                budget = Budget(self.capacity)
+                worker = Worker(
+                    "deadline-worker",
+                    self.identity,
+                    budget,
+                    queue_capacity=1,
+                    transaction_ttl_seconds=5,
+                    clock=lambda: now[0],
+                )
+                adapter = NativeWhisperAdapter(
+                    worker, FakeNativeModel(self.identity), probe, self.profile
+                )
+                backend_run = FakeRun(complete_after=1)
+                harness = BackendHarness([backend_run])
+                stream = NativeTranscriptStream(
+                    adapter,
+                    stream_id=f"deadline-stream-{pause_after_steps}",
+                    mel_builder=lambda pcm: FakeMel(),
+                )
+                with (
+                    patch.object(
+                        native_whisper,
+                        "_load_native_components",
+                        return_value=harness.components(),
+                    ),
+                    stream,
+                ):
+                    stream.push(0, b"\x00\x00" * 16_000)
+                    stream.finish_input()
+                    stream.step()
+                    native_run = stream._active_run
+                    assert native_run is not None
+                    for _ in range(pause_after_steps):
+                        stream.step()
+                    now[0] = 105.0
+                    self.assertTrue(stream.ready)
+                    self.assertEqual(budget.available, ResourceVector())
+                    with self.assertRaises(TransactionExpiredError):
+                        stream.step()
+
+                    self.assertTrue(native_run.closed)
+                    self.assertTrue(native_run.capacity_released)
+                    self.assertFalse(stream.active)
+                    self.assertEqual(backend_run.step_calls, pause_after_steps)
+                    self.assertEqual(backend_run.finalize_calls, 0)
+                    self.assertEqual(backend_run.cleanup_calls, 1)
+                    self.assertEqual(stream.state.version, 0)
+                    self.assertEqual(stream.metrics.events_emitted, 0)
+                    self.assertEqual(worker.queue_depth, 0)
+                    self.assertEqual(budget.available, self.capacity)
+
+    def test_stream_stop_recovers_a_closed_run_with_retained_capacity(self) -> None:
+        backend_run = FakeRun(complete_after=1, fail_cleanup=True)
+        harness = BackendHarness([backend_run])
+        stream = NativeTranscriptStream(
+            self.adapter,
+            stream_id="retained-stream",
+            mel_builder=lambda pcm: FakeMel(),
+        )
+        with patch.object(
+            native_whisper,
+            "_load_native_components",
+            return_value=harness.components(),
+        ):
+            self.assertFalse(stream.stop_active())
+            stream.push(0, b"\x00\x00" * 16_000)
+            stream.step()
+            native_run = stream._active_run
+            assert native_run is not None
+            self.assertTrue(stream.cancel_active())
+            with self.assertRaises(TransactionRetainedError):
+                stream.step()
+
+        self.assertTrue(native_run.closed)
+        self.assertFalse(native_run.capacity_released)
+        self.assertTrue(stream.active)
+        self.assertEqual(self.worker.quarantined_count, 1)
+        self.assertEqual(self.budget.lease_count, 1)
+        with self.assertRaisesRegex(NativeStreamError, "still owns capacity"):
+            stream.step()
+        with self.assertRaisesRegex(NativeStreamError, "still owns capacity"):
+            stream.close()
+        self.assertFalse(stream.done)
+        self.assertTrue(stream.active)
+        backend_run.fail_cleanup = False
+        self.assertTrue(stream.stop_active())
+        self.assertTrue(native_run.capacity_released)
+        self.assertFalse(stream.stop_active())
+        self.assertEqual(stream.step(), ())
+        self.assertFalse(stream.active)
+        self.assertEqual(stream.state.version, 0)
+        self.assertEqual(stream.metrics.events_emitted, 0)
+        self.assertEqual(backend_run.step_calls, 0)
+        self.assertEqual(backend_run.finalize_calls, 0)
+        self.assertEqual(backend_run.cleanup_calls, 3)
+        self.assertEqual(self.worker.queue_depth, 0)
+        self.assertEqual(self.worker.quarantined_count, 0)
+        self.assertEqual(self.budget.lease_count, 0)
+        self.assertEqual(self.budget.available, self.capacity)
+        self.assertTrue(stream.close())
 
     def test_public_run_finish_does_not_hide_missing_steps(self) -> None:
         backend_run = FakeRun(complete_after=1)
