@@ -26,6 +26,8 @@ from .stream_policy import compare_hypotheses
 
 CONTINUOUS_PROFILE = "timestamp_agreement_stream/v1"
 CONTEXT_CONTINUOUS_PROFILE = "context_agreement_stream/v1"
+COALESCED_CONTINUOUS_PROFILE = "coalesced_timestamp_agreement_stream/v1"
+COALESCED_CONTEXT_CONTINUOUS_PROFILE = "coalesced_context_agreement_stream/v1"
 _SAMPLES_PER_MS = 16
 
 
@@ -41,9 +43,14 @@ class ContinuousStreamConfig:
     holdback_ms: int = 1_000
     timestamp_tolerance_ms: int = 200
     left_context_ms: int = 0
+    coalesce_previews: bool = False
 
     def __post_init__(self) -> None:
+        if not isinstance(self.coalesce_previews, bool):
+            raise TypeError("coalesce_previews must be a boolean")
         for name in self.__dataclass_fields__:
+            if name == "coalesce_previews":
+                continue
             value = getattr(self, name)
             if isinstance(value, bool) or not isinstance(value, int):
                 raise TypeError(f"{name} must be an integer")
@@ -103,6 +110,8 @@ class ContinuousTranscriptStream:
     the runtime retains only four session records, not a complete transcript.
     Pause keeps native resources until the transaction deadline. Cancellation of
     a decode does not discard its input; ``close`` abandons the whole stream.
+    Opt-in preview coalescing skips obsolete endpoints under backlog. Its
+    hypotheses depend on input arrival timing and can differ from the default.
     """
 
     def __init__(
@@ -164,6 +173,12 @@ class ContinuousTranscriptStream:
 
     @property
     def profile_id(self) -> str:
+        if self.config.coalesce_previews:
+            return (
+                COALESCED_CONTEXT_CONTINUOUS_PROFILE
+                if self.config.left_context_ms
+                else COALESCED_CONTINUOUS_PROFILE
+            )
         return (
             CONTEXT_CONTINUOUS_PROFILE
             if self.config.left_context_ms
@@ -321,6 +336,17 @@ class ContinuousTranscriptStream:
             bound = self._retained + self.config.max_window_ms * _SAMPLES_PER_MS
             final = self._eof and self._accepted <= bound
             endpoint = self._accepted if final else min(self._next_endpoint, bound)
+            if self.config.coalesce_previews and not final:
+                ceiling = bound
+                if self._previous is None:
+                    # Reserve a later observation at this origin. Preserve the
+                    # scheduled minimum even when the interval exceeds half a
+                    # window; it is already strictly below the hard bound.
+                    ceiling = max(
+                        endpoint,
+                        bound - self.config.preview_interval_ms * _SAMPLES_PER_MS,
+                    )
+                endpoint = min(self._accepted, ceiling)
             if not final and endpoint <= self._last_endpoint:
                 raise StreamNeedsResolutionError(
                     "no stable contiguous prefix within the audio window; input retained"

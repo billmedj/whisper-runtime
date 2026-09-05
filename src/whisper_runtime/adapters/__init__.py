@@ -1,6 +1,8 @@
 """Optional adapters for existing speech-inference APIs."""
 
 from .continuous_stream import (
+    COALESCED_CONTEXT_CONTINUOUS_PROFILE,
+    COALESCED_CONTINUOUS_PROFILE,
     CONTEXT_CONTINUOUS_PROFILE,
     CONTINUOUS_PROFILE,
     ContinuousDecodeTrace,
@@ -51,8 +53,11 @@ from .native_whisper import (
     NativeWhisperAdapter,
     NativeWindowRun,
 )
+from .stream_policy import TextAgreementReason, TextPrefixDecision, resolve_text_prefix
 
 __all__ = [
+    "COALESCED_CONTEXT_CONTINUOUS_PROFILE",
+    "COALESCED_CONTINUOUS_PROFILE",
     "CONTEXT_CONTINUOUS_PROFILE",
     "CONTINUOUS_PROFILE",
     "ContinuousDecodeTrace",
@@ -94,4 +99,7 @@ __all__ = [
     "StreamEventKind",
     "StreamMetrics",
     "TranscriptEvent",
+    "TextAgreementReason",
+    "TextPrefixDecision",
+    "resolve_text_prefix",
 ]

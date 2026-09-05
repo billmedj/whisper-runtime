@@ -67,6 +67,22 @@ decodes from being retried. Close the stream before starting a different policy.
 Previously committed text is never rewritten. With zero retained context, the
 ordinary native EOF behavior described below remains unchanged.
 
+## Coalescing pending previews
+
+`ContinuousStreamConfig(coalesce_previews=True)` selects the optional
+`coalesced_timestamp_agreement_stream/v1` profile, or
+`coalesced_context_agreement_stream/v1` when left context is also enabled.
+When audio arrives faster than the caller drives decoding, the controller
+analyzes a more recent accepted endpoint instead of replaying every pending
+preview. It retains the admitted PCM and reserves room for two growing
+hypotheses before the analysis-window limit.
+
+The default remains `False`. Coalescing changes which hypotheses are compared;
+its transcripts and revisions need not match fixed-cadence output. Scripted
+tests measure avoided decode calls, not GPU savings or recognition quality.
+This option needs a matched paced-audio comparison before a performance claim.
+It does not alter EOF, cancellation, or resource-recovery contracts.
+
 ## Decision trace
 
 `last_trace` exposes one immutable `ContinuousDecodeTrace` on the owner thread.
@@ -80,6 +96,24 @@ The trace describes a prepared decision, not successful publication. A commit
 can still fail or await resource recovery. Check transcript events and runtime
 state for the outcome. Do not infer an analysis endpoint from a commit event:
 the latter describes the selected output range.
+
+## Text-only agreement analysis
+
+`resolve_text_prefix` in `adapters.stream_policy` compares the text-token prefix
+of two growing analyses independently of how Whisper divided them into timed
+segments. A bounded committed-token anchor identifies the new suffix. A missing
+or repeated anchor leaves the comparison unresolved. The caller must bind both
+analyses to unchanged audio, tokenizer, model, and options.
+
+The result identifies exact token indices in the current hypothesis. It does
+not publish text, classify silence, or advance the audio watermark. A candidate
+can end inside a byte-encoded character; a future publication path must check
+text decoding and map source coverage before committing it. Original timestamps
+remain unchanged. Current stream profiles retain their timed-segment rules.
+
+This comparison is intended for trace analysis and for testing a future text
+publication contract. Agreement alone is not an acoustic alignment or accuracy
+test. An empty anchor is valid only when no text has been committed in the block.
 
 ## End of input
 
