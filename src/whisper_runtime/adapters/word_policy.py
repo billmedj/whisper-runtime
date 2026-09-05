@@ -182,8 +182,12 @@ def compare_word_hypotheses(
 
     An anchor contains at most four actually published words. Only whole source
     word spans still available after the retained origin are used. A missing or
-    ambiguous remaining anchor is never relocated to later repeated text. Published anchor
-    times stay frozen rather than drifting with each new alignment. A validated
+    ambiguous remaining anchor is never relocated to later repeated text. Published
+    anchor times stay frozen rather than drifting with each new alignment. Only
+    the first observed word at the exact analysis origin may extend left beyond
+    start tolerance: a multi-word anchor must still match its text, tokens, first
+    end and every remaining boundary. This handles a window-edge onset estimate,
+    not an internal timing shift or a new-word comparison. A validated
     nonempty anchor permits start-boundary drift up to timestamp_tolerance_ms.
     The next anchor uses only newly published words from this single observation,
     avoiding a mixture of overlapping old and new timing estimates.
@@ -239,7 +243,11 @@ def compare_word_hypotheses(
         if not retained_anchor:
             return wait("anchor_missing")
         reason, after_start = _anchor_end(
-            current.words, retained_anchor, committed_through_ms, timestamp_tolerance_ms
+            current.words,
+            retained_anchor,
+            committed_through_ms,
+            timestamp_tolerance_ms,
+            span.start_ms,
         )
         if reason:
             return wait(reason)
@@ -250,6 +258,7 @@ def compare_word_hypotheses(
                 retained_anchor,
                 committed_through_ms,
                 timestamp_tolerance_ms,
+                span.start_ms,
             )
             if reason:
                 return wait(reason)
@@ -317,6 +326,7 @@ def _anchor_end(
     anchor: tuple[NativeTimestampSegment, ...],
     watermark: int,
     tolerance: int,
+    analysis_start_ms: int,
 ) -> tuple[str | None, int]:
     found = None
     for start in range(len(words) - len(anchor) + 1):
@@ -328,9 +338,19 @@ def _anchor_end(
             and anchor[-1].span.start_ms < watermark
         ):
             continue
-        if all(
+        first, frozen = words[start], anchor[0]
+        first_matches = _same_word(frozen, first, tolerance) or (
+            start == 0
+            and len(anchor) >= 2
+            and first.span.start_ms == analysis_start_ms
+            and first.span.start_ms < frozen.span.start_ms
+            and first.text == frozen.text
+            and first.tokens == frozen.tokens
+            and abs(first.span.end_ms - frozen.span.end_ms) <= tolerance
+        )
+        if first_matches and all(
             _same_word(old, new, tolerance)
-            for old, new in zip(anchor, words[start:end])
+            for old, new in zip(anchor[1:], words[start + 1 : end])
         ):
             if found is not None:
                 return "anchor_ambiguous", 0

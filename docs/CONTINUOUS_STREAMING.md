@@ -100,8 +100,16 @@ After a commit, at most four published words anchor the next analysis. A match
 must remain near their original source positions. Matching text in a later
 repetition cannot authorize publication. Missing or ambiguous anchors stop
 progress. Only anchor words whose whole estimated span remains in retained audio
-are required; a word cut by the left edge is excluded. After a validated anchor,
-a new word may start before the processed
+are required; a word cut by the left edge is excluded.
+
+One window-edge exception applies to the start estimate of the first observed
+word. It can extend left to the exact analysis origin if the matched anchor has
+at least two words. All anchor text and tokens must still match. The first word's
+end, and both bounds of every other anchor word, must remain within the original
+timing tolerance. The exception does not apply to a later occurrence, an internal
+word, or a rightward start shift. Original estimates remain unchanged.
+
+After a validated anchor, a new word may start before the processed
 boundary by at most `timestamp_tolerance_ms`. The publication records this
 tolerance; the word's original estimate is unchanged. Larger overlaps remain
 unresolved. The next anchor uses only newly published words from one analysis.
@@ -243,5 +251,8 @@ The repository-tool suite passes 249 tests. Type, lint, format, and distribution
 checks also pass.
 
 The later [T4 comparison](research/2026-09-05-word-alignment-comparison.md) stops
-at a partially retained anchor. Its local repair has regression coverage but
-has not been rerun on GPU. The CPU success above is not GPU qualification.
+at a partially retained anchor. The [repair replay](research/2026-09-05-word-alignment-replay.md)
+passes that boundary and commits through 12.78 seconds. It then stops on a
+window-leading word start mismatch. The window-edge exception above was added
+after that run; the recorded T4 result does not validate it. The CPU success
+above is not GPU qualification.

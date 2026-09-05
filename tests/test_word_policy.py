@@ -416,6 +416,194 @@ class WordAgreementTests(unittest.TestCase):
         self.assertIsNone(decision.publication)
         self.assertEqual(decision.next_anchor, anchor)
 
+    def test_t4_v5_traces_8_9_10_match_edge_onset_without_rewriting_times(self) -> None:
+        # Trace 8's frozen last four words; trace 9/10's first onset moves
+        # 880ms left to the retained origin, but its end moves only 20ms.
+        anchor = (
+            word(843, 11660, 11720, " And"),
+            word(523, 11720, 12060, " so"),
+            word(616, 12060, 12460, " my"),
+            word(5891, 12460, 12780, " fellow"),
+        )
+        observed_anchor = (
+            word(843, 10780, 11700, " And"),
+            word(523, 11700, 12060, " so"),
+            word(616, 12060, 12440, " my"),
+            word(5891, 12440, 12760, " fellow"),
+        )
+        trace9 = (
+            (3399, 12760, 13340, " Americans"),
+            (1265, 13340, 14860, " ask"),
+            (407, 14860, 15620, " not"),
+            (644, 15620, 16700, " what"),
+            (534, 16700, 17020, " your"),
+            (1499, 17020, 17340, " country"),
+            (460, 17340, 17760, " can"),
+            (466, 17760, 17980, " do"),
+        )
+        trace10 = (
+            (3399, 12760, 13320, " Americans"),
+            (1265, 13320, 14860, " ask"),
+            (407, 14860, 15520, " not"),
+            (644, 15520, 16700, " what"),
+            (534, 16700, 17020, " your"),
+            (1499, 17020, 17340, " country"),
+            (460, 17340, 17760, " can"),
+            (466, 17760, 18000, " do"),
+            (329, 18000, 18240, " for"),
+            (345, 18240, 19280, " you"),
+            (1265, 19280, 19660, " ask"),
+            (644, 19660, 19920, " what"),
+            (345, 19920, 19980, " you"),
+        )
+        before = aligned(
+            observed_anchor + tuple(word(*item) for item in trace9),
+            start=10780,
+            end=18000,
+        )
+        current = aligned(
+            observed_anchor + tuple(word(*item) for item in trace10),
+            start=10780,
+            end=20000,
+        )
+        for final in (False, True):
+            with self.subTest(final=final):
+                decision = self.decide(
+                    None if final else before,
+                    current,
+                    committed_through_ms=12780,
+                    anchor=anchor,
+                    holdback_ms=2000,
+                    timestamp_tolerance_ms=200,
+                    final=final,
+                )
+                self.assertEqual(decision.reason, "eof" if final else "candidate")
+                publication = decision.publication
+                self.assertEqual(publication.start_ms, 12780)
+                self.assertEqual(publication.end_ms, 20000 if final else 18000)
+                self.assertEqual(publication.word_start, 4)
+                self.assertEqual(publication.word_end, 17 if final else 12)
+                self.assertEqual(
+                    publication.text,
+                    "Americans ask not what your country can do"
+                    + (" for you ask what you" if final else ""),
+                )
+                self.assertIs(publication.alignment, current)
+                self.assertEqual(
+                    decision.next_anchor,
+                    current.words[publication.word_end - 4 : publication.word_end],
+                )
+                self.assertEqual(current.words[0].span, AudioSpan(10780, 11700))
+                self.assertEqual(anchor[0].span, AudioSpan(11660, 11720))
+
+    def test_edge_onset_exception_keeps_anchor_identity_and_position_guards(
+        self,
+    ) -> None:
+        anchor = (word(1, 400, 700), word(2, 700, 900))
+        observed = (word(1, 0, 690), word(2, 690, 900), word(3, 950, 1000))
+        cases = (
+            ("single anchor", anchor[:1], observed),
+            ("not at origin", anchor, (word(1, 10, 690),) + observed[1:]),
+            # A zero-duration leading word isolates match_start == 0.
+            ("not first observed", anchor, (word(99, 0, 0),) + observed),
+            (
+                "changed text",
+                anchor,
+                (replace(observed[0], text=" Word-1"),) + observed[1:],
+            ),
+            (
+                "changed tokens",
+                anchor,
+                (replace(observed[0], tokens=(99,)),) + observed[1:],
+            ),
+            ("changed end", anchor, (word(1, 0, 660),) + observed[1:]),
+            ("rightward shift", anchor, (word(1, 440, 690),) + observed[1:]),
+            ("other start", anchor, (observed[0], word(2, 730, 900), observed[2])),
+            ("other end", anchor, (observed[0], word(2, 690, 930), observed[2])),
+            (
+                "other text",
+                anchor,
+                (observed[0], replace(observed[1], text=" Word-2"), observed[2]),
+            ),
+            (
+                "other tokens",
+                anchor,
+                (observed[0], replace(observed[1], tokens=(99,)), observed[2]),
+            ),
+            (
+                "interior word",
+                (word(0, 0, 100),) + anchor,
+                (word(0, 0, 100), word(1, 100, 690)) + observed[1:],
+            ),
+            (
+                "later repetition",
+                anchor,
+                (word(1, 1000, 1100), word(2, 1100, 1200), word(3, 1250, 1300)),
+            ),
+        )
+        for name, supplied_anchor, words in cases:
+            for final in (False, True):
+                with self.subTest(case=name, final=final):
+                    decision = self.decide(
+                        None if final else aligned(words, end=1400),
+                        aligned(words, end=1600),
+                        committed_through_ms=900,
+                        anchor=supplied_anchor,
+                        final=final,
+                    )
+                    self.assertEqual(decision.reason, "anchor_missing")
+                    self.assertIsNone(decision.publication)
+                    self.assertEqual(decision.next_anchor, supplied_anchor)
+        # Both growing observations must validate the committed anchor.
+        previous_only_failure = self.decide(
+            aligned((word(1, 10, 690),) + observed[1:], end=1400),
+            aligned(observed, end=1600),
+            committed_through_ms=900,
+            anchor=anchor,
+        )
+        self.assertEqual(previous_only_failure.reason, "anchor_missing")
+
+    def test_edge_onset_match_does_not_resolve_ambiguous_or_future_anchors(
+        self,
+    ) -> None:
+        anchor = (word(1, 400, 410), word(2, 410, 420))
+        ambiguous = (
+            word(1, 0, 330),
+            word(2, 330, 340),
+            word(1, 410, 420),
+            word(2, 420, 430),
+            word(3, 950, 1000),
+        )
+        future = (word(1, 0, 1000), word(2, 1000, 1200), word(3, 1250, 1300))
+        for words, tolerance, reason in (
+            (ambiguous, 100, "anchor_ambiguous"),
+            (future, 1000, "anchor_missing"),
+        ):
+            for final in (False, True):
+                with self.subTest(reason=reason, final=final):
+                    decision = self.decide(
+                        None if final else aligned(words, end=1400),
+                        aligned(words, end=1600),
+                        committed_through_ms=900,
+                        anchor=anchor,
+                        timestamp_tolerance_ms=tolerance,
+                        final=final,
+                    )
+                    self.assertEqual(decision.reason, reason)
+                    self.assertIsNone(decision.publication)
+
+    def test_edge_onset_match_never_relaxes_new_word_comparison(self) -> None:
+        anchor = (word(1, 400, 700), word(2, 700, 900))
+        observed_anchor = (word(1, 0, 690), word(2, 690, 900))
+        decision = self.decide(
+            aligned(observed_anchor + (word(3, 900, 1000),), end=1400),
+            aligned(observed_anchor + (word(3, 930, 1000),), end=1600),
+            committed_through_ms=900,
+            anchor=anchor,
+        )
+        self.assertEqual(decision.reason, "unstable")
+        self.assertIsNone(decision.publication)
+
     def test_start_drift_larger_than_tolerance_remains_unresolved(self) -> None:
         anchor = (word(1, 0, 80),)
         words = (word(1, 0, 70), word(2, 75, 200))

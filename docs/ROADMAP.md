@@ -88,8 +88,14 @@ does not complete: the segment profile publishes 8.00 seconds and the word
 profile 5.70 seconds of 33 seconds. A partially retained anchor word blocks the
 word profile. Keep this result distinct from the successful CPU smoke and
 validate the anchor repair before a long-session run.
-The repair is now covered by two additional local tests (384 total). The first
-recorded blockage is removed; corrected end-to-end GPU behavior is not yet tested.
+The repair is covered by two additional local tests (384 total). The
+[T4 replay](research/2026-09-05-word-alignment-replay.md) confirms progress through
+12.78 seconds, including the repaired boundary. A window-leading word start
+estimate then prevents the next anchor match. EOF completion remains unproven
+for this word-aligned configuration.
+The window-edge matching repair is now covered by four additional local tests
+(388 total). It preserves the full anchor text, word ends, and neighboring
+bounds. Its corrected rolling trajectory still needs a GPU replay.
 
 Deliver a separately named continuous profile. Keep the existing
 offline-compatible and bounded-preview paths.

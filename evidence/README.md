@@ -1,5 +1,13 @@
 # Integration evidence
 
+The [T4 anchor-repair replay](modal-t4-tiny-en-word-alignment-v5-2026-09-05.json)
+removes the first word-profile blockage. Committed coverage advances from
+5.70 to 12.78 seconds; the segment profile remains at 8.00 seconds. Both still
+stop before completing the 33-second input. Input accounting and lifecycle
+checks pass. The next mismatch is a window-leading word start estimate, not a
+missing word. See the [replay report](../docs/research/2026-09-05-word-alignment-replay.md).
+This record binds source commit `212b293`; it does not validate later repairs.
+
 The [matched segment/word T4 diagnostic](modal-t4-tiny-en-word-alignment-v4-2026-09-05.json)
 is **unresolved**. The segment profile publishes 8.00 seconds and the word profile
 5.70 seconds of the same 33-second input. Both pass lifecycle and input-accounting
