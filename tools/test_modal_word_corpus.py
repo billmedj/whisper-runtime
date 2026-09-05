@@ -11,6 +11,7 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from types import SimpleNamespace
 from unittest.mock import patch
 
 with patch.dict(os.environ, {"WHISPER_MODAL_ENABLE_WORD_CORPUS": "0"}):
@@ -23,6 +24,44 @@ class Echo:
 
 
 class CorpusGuards(unittest.TestCase):
+    def test_modal_mount_destinations_use_posix_paths(self) -> None:
+        destinations = []
+
+        class Image:
+            def add_local_file(self, source, destination, **kwargs):
+                self_test.assertTrue(destination.startswith("/"), destination)
+                self_test.assertNotIn("\\", destination)
+                destinations.append(destination)
+                return self
+
+            def __getattr__(self, name):
+                return lambda *args, **kwargs: self
+
+        self_test = self
+        fake_app = SimpleNamespace(
+            function=lambda **kwargs: lambda function: function,
+            local_entrypoint=lambda **kwargs: lambda function: function,
+        )
+        fake = SimpleNamespace(
+            __version__="1.5.5",
+            Image=SimpleNamespace(debian_slim=lambda **kwargs: Image()),
+            Volume=SimpleNamespace(from_name=lambda *args, **kwargs: Image()),
+            App=lambda name: fake_app,
+        )
+        original = corpus.importlib.import_module
+        with (
+            patch.object(corpus, "_inputs", return_value=[]),
+            patch.object(
+                corpus.importlib,
+                "import_module",
+                side_effect=lambda name: fake if name == "modal" else original(name),
+            ),
+        ):
+            corpus._define_modal_resources()
+        self.assertEqual(
+            sum(path.startswith("/opt/speech-corpus/") for path in destinations), 3
+        )
+
     def root(self, path: Path) -> dict:
         for relative in (
             corpus.MANIFEST_PATH,

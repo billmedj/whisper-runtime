@@ -806,7 +806,7 @@ def _define_modal_resources() -> tuple[Any, Any, Any, Any]:
     for fixture in manifest["fixtures"]:
         image = image.add_local_file(
             ROOT / ASSET_PATH / fixture["filename"],
-            str(REMOTE_ASSETS / fixture["filename"]),
+            (REMOTE_ASSETS / fixture["filename"]).as_posix(),
             copy=True,
         )
     image = image.env(
