@@ -1,5 +1,15 @@
 # Integration evidence
 
+The [timed-publication CPU smoke](native-cpu-tiny-en-jfk-timed-publication-2026-09-05.json)
+records one full-window timestamp-enabled control and two selected publications
+from that same audio. The decoded spans are 0–8 seconds and 8–11 seconds. Both
+publications retain the full 0–11 second analysis provenance. The second leaves
+the first record unchanged. Repeated pre-publication inspection reuses the
+prepared result. Tokens and segment text match the same-options control.
+The record also includes passing default and bounded-preview regression runs.
+All runs release runtime capacity. This is one local fixture, not evidence of
+rolling-window continuity, recognition accuracy, or a performance improvement.
+
 The [bounded-preview CPU smoke](native-cpu-tiny-en-jfk-bounded-previews-2026-09-05.json)
 records three local JFK replays, same-PCM control results, revision events, and
 resource release. It is a diagnostic smoke record, not a registered CUDA

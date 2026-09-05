@@ -1,0 +1,641 @@
+{
+  "kind": "local-smoke",
+  "date": "2026-09-05",
+  "scope": "One cached JFK input and tiny.en on CPU. Timed segment publication and existing-path regression checks; not a continuous-streaming, accuracy, or latency benchmark.",
+  "input": {
+    "fixture": "Whisper tests/jfk.flac",
+    "sha256": "63a4b1e4c1dc655ac70961ffbf518acd249df237e5a0152faae9a4a836949715",
+    "duration_ms": 11000
+  },
+  "environment": {
+    "os": "Microsoft Windows NT 10.0.26200.0",
+    "python": "Python 3.13.1",
+    "dependencies": {
+      "jsonschema": "4.25.1",
+      "more-itertools": "11.1.0",
+      "numba": "0.67.0",
+      "numpy": "2.5.2",
+      "setuptools": "82.0.1",
+      "tiktoken": "0.14.0",
+      "torch": "2.6.0+cpu",
+      "tqdm": "4.70.0"
+    },
+    "tools": {
+      "ffmpeg": "ffmpeg version 2025-09-28-git-0fdb5829e3-essentials_build-www.gyan.dev Copyright (c) 2000-2025 the FFmpeg developers",
+      "git": "git version 2.48.1.windows.1"
+    }
+  },
+  "runs": [
+    {
+      "runtime_commit": "a49b298d004046c06b0655080dbeb7cf6acb723a",
+      "backend_commit": "70141b8b26acc09f5fe7fadee63d1604178309df",
+      "backend_tree": "c011d2563c26763b5f147026e6b18ef85bccd4fb",
+      "model": "tiny.en",
+      "model_fingerprint": "sha256:8041a80119a588f542472da35e97d0372fce1d9709ed9874475e9c03deac5de6",
+      "request_status": "committed",
+      "session_version": 2,
+      "text": "ask what you can do for your country.",
+      "result": {
+        "window_id": "segment-suffix",
+        "text": "ask what you can do for your country.",
+        "start_ms": 8000,
+        "end_ms": 11000,
+        "analysis_span": {
+          "start_ms": 0,
+          "end_ms": 11000
+        },
+        "metadata": {
+          "language": "en",
+          "tokens": [
+            50363,
+            843,
+            523,
+            616,
+            5891,
+            3399,
+            1265,
+            407,
+            644,
+            534,
+            1499,
+            460,
+            466,
+            329,
+            345,
+            50763,
+            50763,
+            1265,
+            644,
+            345,
+            460,
+            466,
+            329,
+            534,
+            1499,
+            13,
+            50913
+          ],
+          "avg_logprob": -0.2879266398293631,
+          "no_speech_prob": 0.029303016141057014,
+          "temperature": 0,
+          "compression_ratio": 1.3636363636363635,
+          "segments": [
+            {
+              "span": {
+                "start_ms": 0,
+                "end_ms": 8000
+              },
+              "text": " And so my fellow Americans ask not what your country can do for you",
+              "tokens": [
+                843,
+                523,
+                616,
+                5891,
+                3399,
+                1265,
+                407,
+                644,
+                534,
+                1499,
+                460,
+                466,
+                329,
+                345
+              ]
+            },
+            {
+              "span": {
+                "start_ms": 8000,
+                "end_ms": 11000
+              },
+              "text": " ask what you can do for your country.",
+              "tokens": [
+                1265,
+                644,
+                345,
+                460,
+                466,
+                329,
+                534,
+                1499,
+                13
+              ]
+            }
+          ],
+          "timestamps_complete": true
+        },
+        "publication_segment_indices": [
+          1
+        ]
+      },
+      "stream_events": null,
+      "stream_metrics": null,
+      "segment_publication": {
+        "control": {
+          "window_id": "control",
+          "text": "And so my fellow Americans ask not what your country can do for you ask what you can do for your country.",
+          "start_ms": 0,
+          "end_ms": 11000,
+          "analysis_span": {
+            "start_ms": 0,
+            "end_ms": 11000
+          },
+          "metadata": {
+            "language": "en",
+            "tokens": [
+              50363,
+              843,
+              523,
+              616,
+              5891,
+              3399,
+              1265,
+              407,
+              644,
+              534,
+              1499,
+              460,
+              466,
+              329,
+              345,
+              50763,
+              50763,
+              1265,
+              644,
+              345,
+              460,
+              466,
+              329,
+              534,
+              1499,
+              13,
+              50913
+            ],
+            "avg_logprob": -0.2879266398293631,
+            "no_speech_prob": 0.029303016141057014,
+            "temperature": 0,
+            "compression_ratio": 1.3636363636363635,
+            "segments": [
+              {
+                "span": {
+                  "start_ms": 0,
+                  "end_ms": 8000
+                },
+                "text": " And so my fellow Americans ask not what your country can do for you",
+                "tokens": [
+                  843,
+                  523,
+                  616,
+                  5891,
+                  3399,
+                  1265,
+                  407,
+                  644,
+                  534,
+                  1499,
+                  460,
+                  466,
+                  329,
+                  345
+                ]
+              },
+              {
+                "span": {
+                  "start_ms": 8000,
+                  "end_ms": 11000
+                },
+                "text": " ask what you can do for your country.",
+                "tokens": [
+                  1265,
+                  644,
+                  345,
+                  460,
+                  466,
+                  329,
+                  534,
+                  1499,
+                  13
+                ]
+              }
+            ],
+            "timestamps_complete": true
+          },
+          "publication_segment_indices": null
+        },
+        "publication_spans": [
+          {
+            "start_ms": 0,
+            "end_ms": 8000
+          },
+          {
+            "start_ms": 8000,
+            "end_ms": 11000
+          }
+        ],
+        "published_windows": [
+          {
+            "window_id": "segment-first",
+            "text": "And so my fellow Americans ask not what your country can do for you",
+            "start_ms": 0,
+            "end_ms": 8000,
+            "analysis_span": {
+              "start_ms": 0,
+              "end_ms": 11000
+            },
+            "metadata": {
+              "language": "en",
+              "tokens": [
+                50363,
+                843,
+                523,
+                616,
+                5891,
+                3399,
+                1265,
+                407,
+                644,
+                534,
+                1499,
+                460,
+                466,
+                329,
+                345,
+                50763,
+                50763,
+                1265,
+                644,
+                345,
+                460,
+                466,
+                329,
+                534,
+                1499,
+                13,
+                50913
+              ],
+              "avg_logprob": -0.2879266398293631,
+              "no_speech_prob": 0.029303016141057014,
+              "temperature": 0,
+              "compression_ratio": 1.3636363636363635,
+              "segments": [
+                {
+                  "span": {
+                    "start_ms": 0,
+                    "end_ms": 8000
+                  },
+                  "text": " And so my fellow Americans ask not what your country can do for you",
+                  "tokens": [
+                    843,
+                    523,
+                    616,
+                    5891,
+                    3399,
+                    1265,
+                    407,
+                    644,
+                    534,
+                    1499,
+                    460,
+                    466,
+                    329,
+                    345
+                  ]
+                },
+                {
+                  "span": {
+                    "start_ms": 8000,
+                    "end_ms": 11000
+                  },
+                  "text": " ask what you can do for your country.",
+                  "tokens": [
+                    1265,
+                    644,
+                    345,
+                    460,
+                    466,
+                    329,
+                    534,
+                    1499,
+                    13
+                  ]
+                }
+              ],
+              "timestamps_complete": true
+            },
+            "publication_segment_indices": [
+              0
+            ]
+          },
+          {
+            "window_id": "segment-suffix",
+            "text": "ask what you can do for your country.",
+            "start_ms": 8000,
+            "end_ms": 11000,
+            "analysis_span": {
+              "start_ms": 0,
+              "end_ms": 11000
+            },
+            "metadata": {
+              "language": "en",
+              "tokens": [
+                50363,
+                843,
+                523,
+                616,
+                5891,
+                3399,
+                1265,
+                407,
+                644,
+                534,
+                1499,
+                460,
+                466,
+                329,
+                345,
+                50763,
+                50763,
+                1265,
+                644,
+                345,
+                460,
+                466,
+                329,
+                534,
+                1499,
+                13,
+                50913
+              ],
+              "avg_logprob": -0.2879266398293631,
+              "no_speech_prob": 0.029303016141057014,
+              "temperature": 0,
+              "compression_ratio": 1.3636363636363635,
+              "segments": [
+                {
+                  "span": {
+                    "start_ms": 0,
+                    "end_ms": 8000
+                  },
+                  "text": " And so my fellow Americans ask not what your country can do for you",
+                  "tokens": [
+                    843,
+                    523,
+                    616,
+                    5891,
+                    3399,
+                    1265,
+                    407,
+                    644,
+                    534,
+                    1499,
+                    460,
+                    466,
+                    329,
+                    345
+                  ]
+                },
+                {
+                  "span": {
+                    "start_ms": 8000,
+                    "end_ms": 11000
+                  },
+                  "text": " ask what you can do for your country.",
+                  "tokens": [
+                    1265,
+                    644,
+                    345,
+                    460,
+                    466,
+                    329,
+                    534,
+                    1499,
+                    13
+                  ]
+                }
+              ],
+              "timestamps_complete": true
+            },
+            "publication_segment_indices": [
+              1
+            ]
+          }
+        ],
+        "reassembled_text": "And so my fellow Americans ask not what your country can do for you ask what you can do for your country.",
+        "same_options_control_matches": true,
+        "prepared_result_reused": true,
+        "previous_record_unchanged": true,
+        "committed_through_ms": 11000
+      },
+      "elapsed_seconds": 8.301125899990438,
+      "queue_depth_after": 0,
+      "resources_released": true
+    },
+    {
+      "runtime_commit": "a49b298d004046c06b0655080dbeb7cf6acb723a",
+      "backend_commit": "70141b8b26acc09f5fe7fadee63d1604178309df",
+      "backend_tree": "c011d2563c26763b5f147026e6b18ef85bccd4fb",
+      "model": "tiny.en",
+      "model_fingerprint": "sha256:8041a80119a588f542472da35e97d0372fce1d9709ed9874475e9c03deac5de6",
+      "request_status": "committed",
+      "session_version": 1,
+      "text": "And so my fellow Americans ask not what your country can do for you, ask what you can do for your country.",
+      "result": {
+        "window_id": "window-0",
+        "text": "And so my fellow Americans ask not what your country can do for you, ask what you can do for your country.",
+        "start_ms": 0,
+        "end_ms": 11000,
+        "analysis_span": {
+          "start_ms": 0,
+          "end_ms": 11000
+        },
+        "metadata": {
+          "language": "en",
+          "tokens": [
+            843,
+            523,
+            616,
+            5891,
+            3399,
+            1265,
+            407,
+            644,
+            534,
+            1499,
+            460,
+            466,
+            329,
+            345,
+            11,
+            1265,
+            644,
+            345,
+            460,
+            466,
+            329,
+            534,
+            1499,
+            13
+          ],
+          "avg_logprob": -0.1330690574645996,
+          "no_speech_prob": 0.029303060844540596,
+          "temperature": 0,
+          "compression_ratio": 1.3417721518987342,
+          "segments": [],
+          "timestamps_complete": false
+        },
+        "publication_segment_indices": null
+      },
+      "stream_events": null,
+      "stream_metrics": null,
+      "segment_publication": null,
+      "elapsed_seconds": 2.3645518999983324,
+      "queue_depth_after": 0,
+      "resources_released": true
+    },
+    {
+      "runtime_commit": "a49b298d004046c06b0655080dbeb7cf6acb723a",
+      "backend_commit": "70141b8b26acc09f5fe7fadee63d1604178309df",
+      "backend_tree": "c011d2563c26763b5f147026e6b18ef85bccd4fb",
+      "model": "tiny.en",
+      "model_fingerprint": "sha256:8041a80119a588f542472da35e97d0372fce1d9709ed9874475e9c03deac5de6",
+      "request_status": "committed",
+      "session_version": 3,
+      "text": "And so my fellow Americans ask not what your country can do for you, ask what you can do for your country.",
+      "result": {
+        "window_id": "native-stream-example:final:176000",
+        "text": "And so my fellow Americans ask not what your country can do for you, ask what you can do for your country.",
+        "start_ms": 0,
+        "end_ms": 11000,
+        "analysis_span": {
+          "start_ms": 0,
+          "end_ms": 11000
+        },
+        "metadata": {
+          "language": "en",
+          "tokens": [
+            843,
+            523,
+            616,
+            5891,
+            3399,
+            1265,
+            407,
+            644,
+            534,
+            1499,
+            460,
+            466,
+            329,
+            345,
+            11,
+            1265,
+            644,
+            345,
+            460,
+            466,
+            329,
+            534,
+            1499,
+            13
+          ],
+          "avg_logprob": -0.1330690574645996,
+          "no_speech_prob": 0.029303060844540596,
+          "temperature": 0,
+          "compression_ratio": 1.3417721518987342,
+          "segments": [],
+          "timestamps_complete": false
+        },
+        "publication_segment_indices": null
+      },
+      "stream_events": [
+        {
+          "sequence_number": 1,
+          "kind": "provisional",
+          "segment_id": "native-stream-example:segment-0",
+          "revision": 1,
+          "start_sample": 0,
+          "end_sample": 64000,
+          "sample_rate_hz": 16000,
+          "text": "And so my fellow Americans asked",
+          "supersedes_revision": null,
+          "committed_through_sample": null,
+          "committed_through_ms": null,
+          "session_version": 1
+        },
+        {
+          "sequence_number": 2,
+          "kind": "replace",
+          "segment_id": "native-stream-example:segment-0",
+          "revision": 2,
+          "start_sample": 0,
+          "end_sample": 128000,
+          "sample_rate_hz": 16000,
+          "text": "And so my fellow Americans ask not what your country can do for you.",
+          "supersedes_revision": 1,
+          "committed_through_sample": null,
+          "committed_through_ms": null,
+          "session_version": 2
+        },
+        {
+          "sequence_number": 3,
+          "kind": "replace",
+          "segment_id": "native-stream-example:segment-0",
+          "revision": 3,
+          "start_sample": 0,
+          "end_sample": 176000,
+          "sample_rate_hz": 16000,
+          "text": "And so my fellow Americans ask not what your country can do for you, ask what you can do for your country.",
+          "supersedes_revision": 2,
+          "committed_through_sample": null,
+          "committed_through_ms": null,
+          "session_version": 3
+        },
+        {
+          "sequence_number": 4,
+          "kind": "commit",
+          "segment_id": "native-stream-example:segment-0",
+          "revision": 3,
+          "start_sample": 0,
+          "end_sample": 176000,
+          "sample_rate_hz": 16000,
+          "text": null,
+          "supersedes_revision": null,
+          "committed_through_sample": 176000,
+          "committed_through_ms": 11000,
+          "session_version": 3
+        },
+        {
+          "sequence_number": 5,
+          "kind": "final",
+          "segment_id": null,
+          "revision": null,
+          "start_sample": null,
+          "end_sample": null,
+          "sample_rate_hz": null,
+          "text": null,
+          "supersedes_revision": null,
+          "committed_through_sample": null,
+          "committed_through_ms": null,
+          "session_version": 3
+        }
+      ],
+      "stream_metrics": {
+        "profile_id": "bounded_prefix_preview/v1",
+        "pcm_sha256": "252fca5b7c2acd89dfd4c01b27c67e7e6a6f5ab7d9973e9963732f8307a744d3",
+        "sample_count": 176000,
+        "chunk_ms": 200,
+        "preview_interval_ms": 4000,
+        "accepted_audio_ms": 11000,
+        "decoded_source_audio_ms": 23000,
+        "source_reprocessing_factor": 2.090909090909091,
+        "decode_count": 3,
+        "same_pcm_control_text": "And so my fellow Americans ask not what your country can do for you, ask what you can do for your country.",
+        "same_pcm_control_matches": true
+      },
+      "segment_publication": null,
+      "elapsed_seconds": 5.779756800009636,
+      "queue_depth_after": 0,
+      "resources_released": true
+    }
+  ]
+}

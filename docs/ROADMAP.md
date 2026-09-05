@@ -74,6 +74,9 @@ timestamped segments. An optional publication span selects whole segments from
 a larger analysis span. The session's committed-prefix guard still applies to
 the selected output. See the [native result contract](NATIVE_ADAPTER.md#analysis-context-and-published-text).
 These model-predicted segment times are not word alignments or stability scores.
+The [local CPU smoke](../evidence/native-cpu-tiny-en-jfk-timed-publication-2026-09-05.json)
+checks result inspection, two selected publications, fixed-analysis control
+parity, and unchanged default and bounded-preview paths on one JFK fixture.
 
 - Carry timed hypotheses into the stream policy without changing the existing
   bounded-preview event contract.

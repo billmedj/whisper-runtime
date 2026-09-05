@@ -276,6 +276,16 @@ control, with identical audio, options, and seed. It also checks cached result
 inspection, preservation of the first record, and resource release. It is not a
 rolling-window or live-latency benchmark.
 
+The [2026-09-05 CPU smoke](../evidence/native-cpu-tiny-en-jfk-timed-publication-2026-09-05.json)
+passed on `tiny.en` and the 11-second JFK fixture, at runtime commit
+`a49b298d004046c06b0655080dbeb7cf6acb723a`. Whisper emitted two predicted segments:
+0–8 seconds and 8–11 seconds. Both selected publications matched their control
+tokens and text. The previous record remained unchanged, the final watermark
+was 11 seconds, and runtime capacity was released. The same record contains
+passing default and bounded-preview regression checks. The timed control omits
+a comma present in the untimed control; equality is checked within each
+decoding profile, not between timestamp-enabled and timestamp-free decoding.
+
 ## Strict CUDA profile
 
 The CUDA profile is deliberately narrow:
