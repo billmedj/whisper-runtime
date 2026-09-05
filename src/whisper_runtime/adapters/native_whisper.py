@@ -916,7 +916,14 @@ class NativeWindowRun:
             )
         try:
             self._transaction.checkpoint()
-            return self._prepare_result()
+            result = self._prepare_result()
+            if self._cuda_profile:
+                self._submit(self._require_model_identity)
+                self._transaction.checkpoint()
+            else:
+                with self._model_binding.lock:
+                    self._require_model_identity()
+            return result
         except BaseException as operation_error:
             self._close_owner(operation_error=operation_error, committed_state=None)
             raise

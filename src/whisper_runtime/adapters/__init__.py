@@ -1,5 +1,12 @@
 """Optional adapters for existing speech-inference APIs."""
 
+from .continuous_stream import (
+    CONTINUOUS_PROFILE,
+    ContinuousStreamConfig,
+    ContinuousStreamMetrics,
+    ContinuousTranscriptStream,
+    StreamNeedsResolutionError,
+)
 from .legacy_whisper import (
     LEGACY_WHISPER_ENVELOPE_VERSION,
     LegacyAdapterError,
@@ -44,6 +51,11 @@ from .native_whisper import (
 )
 
 __all__ = [
+    "CONTINUOUS_PROFILE",
+    "ContinuousStreamConfig",
+    "ContinuousStreamMetrics",
+    "ContinuousTranscriptStream",
+    "StreamNeedsResolutionError",
     "BOUNDED_PREFIX_PROFILE",
     "LEGACY_WHISPER_ENVELOPE_VERSION",
     "LegacyAdapterError",

@@ -1,6 +1,7 @@
 """Exercise timed publication through the native transaction, not a text wrapper."""
 
 import unittest
+from dataclasses import replace
 from types import SimpleNamespace
 from unittest.mock import patch
 
@@ -8,6 +9,7 @@ import test_native_adapter as fixtures
 
 from whisper_runtime import (
     AudioSpan,
+    ModelMismatchError,
     RequestCancelledError,
     RequestState,
     RequestStatus,
@@ -316,6 +318,78 @@ class NativePublicationTests(unittest.TestCase):
                     run.finish(publication_span=prepared.metadata.segments[1].span)
         self.assertEqual(session.snapshot().version, 0)
         self.assertEqual(backend_run.finalize_calls, 1)
+        self.assertEqual(self.budget.available, self.capacity)
+
+    def test_prepare_rejects_model_identity_drift_during_finalize(self) -> None:
+        session = Session("session-1")
+        request = self.request(0)
+        backend_run = ResultRun(self.timed_result())
+        changed = replace(self.identity, revision="changed-during-finalize")
+        backend_run.on_finalize = lambda: setattr(self.model, "identity", changed)
+        with patch.object(
+            native_whisper,
+            "_load_native_components",
+            return_value=Harness([backend_run]).components(),
+        ):
+            with self.adapter.start_window(
+                session=session,
+                request=request,
+                window_id="drift-during-prepare",
+                mel=fixtures.FakeMel(),
+                start_ms=17_000,
+                end_ms=26_000,
+            ) as run:
+                while not run.complete:
+                    run.step()
+                with self.assertRaises(ModelMismatchError):
+                    run.prepare_result()
+                self.assertTrue(run.closed)
+                self.assertTrue(run.capacity_released)
+        self.assertEqual(session.snapshot().version, 0)
+        self.assertEqual(session.snapshot().windows, ())
+        self.assertEqual(request.status, RequestStatus.ABORTED)
+        self.assertEqual(backend_run.finalize_calls, 1)
+        self.assertEqual(backend_run.cleanup_calls, 1)
+        self.assertEqual(self.worker.queue_depth, 0)
+        self.assertEqual(self.budget.available, self.capacity)
+
+    def test_cached_prepare_rechecks_model_identity_without_finalizing_twice(
+        self,
+    ) -> None:
+        session = Session("session-1")
+        request = self.request(0)
+        backend_run = ResultRun(self.timed_result())
+        with patch.object(
+            native_whisper,
+            "_load_native_components",
+            return_value=Harness([backend_run]).components(),
+        ):
+            with self.adapter.start_window(
+                session=session,
+                request=request,
+                window_id="drift-after-prepare",
+                mel=fixtures.FakeMel(),
+                start_ms=17_000,
+                end_ms=26_000,
+            ) as run:
+                while not run.complete:
+                    run.step()
+                prepared = run.prepare_result()
+                self.assertEqual(prepared.text, "old new tail")
+                self.assertFalse(run.capacity_released)
+                self.model.identity = replace(
+                    self.identity, revision="changed-after-prepare"
+                )
+                with self.assertRaises(ModelMismatchError):
+                    run.prepare_result()
+                self.assertTrue(run.closed)
+                self.assertTrue(run.capacity_released)
+        self.assertEqual(session.snapshot().version, 0)
+        self.assertEqual(session.snapshot().windows, ())
+        self.assertEqual(request.status, RequestStatus.ABORTED)
+        self.assertEqual(backend_run.finalize_calls, 1)
+        self.assertEqual(backend_run.cleanup_calls, 1)
+        self.assertEqual(self.worker.queue_depth, 0)
         self.assertEqual(self.budget.available, self.capacity)
 
     def test_nonstandard_audio_context_cannot_claim_standard_timestamps(self) -> None:
