@@ -1,4 +1,4 @@
-"""One opt-in, unpaced T4 word-corpus diagnostic; importing allocates nothing."""
+"""One opt-in T4 word-corpus diagnostic; importing allocates nothing."""
 
 from __future__ import annotations
 
@@ -73,6 +73,17 @@ AUTOMATIC_ENDPOINTS_PROFILE = {
     "stream_config": {
         **SOURCE_UNITS_PROFILE["stream_config"],
         "endpointing": QUIET_ENDPOINT_CONFIG,
+    },
+}
+PACED_REPLAY = {
+    "pacing_id": "wall-clock-pcm/v1",
+    "config": {
+        "chunk_ms": 20,
+        "max_input_ms": 120000,
+        "max_source_lag_ms": 250,
+        "max_drain_ms": 15000,
+        "idle_wait_ms": 2,
+        "max_steps": 100000,
     },
 }
 SOURCE_UNIT_BOUNDARIES = {
@@ -152,6 +163,7 @@ def read_registration(root: Path = ROOT) -> dict[str, Any]:
         ("input_evidence_profile", INPUT_EVIDENCE_PROFILE),
         ("source_units_profile", SOURCE_UNITS_PROFILE),
         ("automatic_endpoints_profile", AUTOMATIC_ENDPOINTS_PROFILE),
+        ("paced_replay", PACED_REPLAY),
         ("source_unit_boundaries", SOURCE_UNIT_BOUNDARIES),
         ("rng_seed", 7),
     ):
@@ -399,17 +411,18 @@ def _stream_profile(
     input_evidence: bool,
     source_units: bool = False,
     automatic_endpoints: bool = False,
+    paced_replay: bool = False,
 ) -> dict[str, Any]:
     if any(
         type(flag) is not bool
-        for flag in (input_evidence, source_units, automatic_endpoints)
+        for flag in (input_evidence, source_units, automatic_endpoints, paced_replay)
     ):
         raise ValueError("profile flags must be booleans")
-    if source_units and automatic_endpoints:
+    if source_units and (automatic_endpoints or paced_replay):
         raise ValueError(
             "caller source units and automatic endpoints are mutually exclusive"
         )
-    if automatic_endpoints:
+    if automatic_endpoints or paced_replay:
         return manifest["automatic_endpoints_profile"]
     if source_units:
         return manifest["source_units_profile"]
@@ -831,6 +844,246 @@ def _source_unit_results(
     return results
 
 
+def _drive_paced(stream: Any, pcm: bytes) -> tuple[list, list, dict, dict | None]:
+    """Keep native records unchanged and attach separate clock observations."""
+    module = importlib.import_module("whisper_runtime.adapters.paced_replay")
+    events, traces, event_times, trace_times = [], [], [], []
+
+    def observe_event(event: object, elapsed_ns: int) -> None:
+        events.append(b._plain(event))
+        event_times.append(elapsed_ns)
+
+    def observe_trace(trace: object, elapsed_ns: int) -> None:
+        traces.append(b._plain(trace))
+        trace_times.append(elapsed_ns)
+
+    result = module.drive_paced(
+        stream,
+        pcm,
+        config=module.PacedReplayConfig(**PACED_REPLAY["config"]),
+        on_event=observe_event,
+        on_trace=observe_trace,
+    )
+    error = b._safe_stream_error(result.error) if result.error is not None else None
+    pacing = {
+        **PACED_REPLAY,
+        **{
+            name: b._plain(getattr(result, name))
+            for name in (
+                "status",
+                "elapsed_ns",
+                "input_finished_ns",
+                "offered_samples",
+                "accepted_samples",
+                "driver_steps",
+                "max_source_lag_ns",
+                "max_admission_lag_ns",
+                "admissions",
+                "undelivered_events",
+                "undelivered_event_ns",
+            )
+        },
+        "event_elapsed_ns": event_times,
+        "trace_elapsed_ns": trace_times,
+        "latency_scope": "same-worker-source-end-to-output; excludes endpoint quiet wait; not word or subtitle latency",
+    }
+    pacing["output_lags"] = _paced_output_lags(events, traces, pacing)
+    pacing.update(_paced_milestones(events, pacing))
+    return events, traces, pacing, error
+
+
+def _paced_milestones(events: list, pacing: Mapping) -> dict:
+    observed = list(zip(events, pacing["event_elapsed_ns"], strict=True))
+    finished = pacing["input_finished_ns"]
+    return {
+        "first_nonempty_text_ns": next(
+            (
+                elapsed
+                for event, elapsed in observed
+                if event.get("kind") in {"provisional", "replace"}
+                and isinstance(event.get("text"), str)
+                and event["text"].strip()
+            ),
+            None,
+        ),
+        "first_commit_ns": next(
+            (elapsed for event, elapsed in observed if event.get("kind") == "commit"),
+            None,
+        ),
+        "drain_after_input_finished_ns": pacing["elapsed_ns"] - finished
+        if finished is not None
+        else None,
+    }
+
+
+def _paced_output_lags(events: list, traces: list, pacing: Mapping) -> dict:
+    """Keep the full distributions; do not relabel source age as word latency."""
+    groups: dict[str, list[int]] = {"provisional": [], "commit": [], "trace": []}
+    for event, elapsed in zip(events, pacing["event_elapsed_ns"], strict=True):
+        kind = event.get("kind")
+        if kind in {"provisional", "replace", "commit"}:
+            groups["commit" if kind == "commit" else "provisional"].append(
+                elapsed - event["end_sample"] * 62500
+            )
+    groups["trace"] = [
+        elapsed - trace["analysis_end_sample"] * 62500
+        for trace, elapsed in zip(traces, pacing["trace_elapsed_ns"], strict=True)
+    ]
+    return {
+        key: {
+            "values_ns": values,
+            "count": len(values),
+            "min_ns": min(values) if values else None,
+            "p50_ns": sorted(values)[(len(values) - 1) // 2] if values else None,
+            "p95_ns": sorted(values)[(95 * len(values) + 99) // 100 - 1]
+            if values
+            else None,
+            "max_ns": max(values) if values else None,
+        }
+        for key, values in groups.items()
+    }
+
+
+def _paced_checks(
+    events: list, traces: list, pacing: Mapping, total_samples: int
+) -> dict[str, bool]:
+    checks = dict.fromkeys(
+        (
+            "paced_completed",
+            "paced_admission_contract",
+            "paced_source_not_early",
+            "paced_source_lag_within_bound",
+            "paced_admission_lag_within_bound",
+            "paced_full_input_admitted",
+            "paced_output_clock_contract",
+            "paced_pre_eof_commit",
+            "paced_output_delivered",
+            "paced_terminal_coverage",
+        ),
+        False,
+    )
+    try:
+        checks["paced_completed"] = pacing["status"] == "completed"
+        _equal(pacing["pacing_id"], PACED_REPLAY["pacing_id"], "pacing identity")
+        _equal(pacing["config"], PACED_REPLAY["config"], "pacing config")
+        elapsed = _integer(pacing["elapsed_ns"], 0, 180_000_000_000)
+        admissions = pacing["admissions"]
+        if not isinstance(admissions, list):
+            raise ValueError("admissions must be a list")
+        head = last_accepted = 0
+        no_early = valid = True
+        max_lag = max_admission_lag = 0
+        for index, item in enumerate(admissions):
+            if not isinstance(item, Mapping):
+                raise ValueError("admission must be an object")
+            start = _integer(item["start_sample"], 0, total_samples)
+            end = _integer(item["end_sample"], start + 1, total_samples)
+            scheduled = _integer(item["scheduled_ns"], 0, elapsed)
+            offered = _integer(item["offered_ns"], 0, elapsed)
+            accepted = _integer(item["accepted_ns"], offered, elapsed)
+            _integer(item["buffered_samples"], 0, STREAM_CONFIG["max_buffer_ms"] * 16)
+            valid &= (
+                type(item["sequence_number"]) is int
+                and item["sequence_number"] == index
+                and start == head
+                and end
+                == min(head + PACED_REPLAY["config"]["chunk_ms"] * 16, total_samples)
+                and scheduled == end * 62500
+                and offered >= last_accepted
+            )
+            no_early &= scheduled <= offered
+            max_lag = max(max_lag, offered - scheduled)
+            max_admission_lag = max(max_admission_lag, accepted - scheduled)
+            head, last_accepted = end, accepted
+        checks["paced_admission_contract"] = valid
+        checks["paced_source_not_early"] = no_early
+        observed_lag = _integer(pacing["max_source_lag_ns"], 0, elapsed)
+        checks["paced_source_lag_within_bound"] = (
+            observed_lag >= max_lag
+            and (pacing["status"] != "completed" or observed_lag == max_lag)
+            and observed_lag <= PACED_REPLAY["config"]["max_source_lag_ms"] * 1_000_000
+        )
+        offered_samples = _integer(pacing["offered_samples"], head, total_samples)
+        observed_admission_lag = _integer(pacing["max_admission_lag_ns"], 0, elapsed)
+        checks["paced_admission_lag_within_bound"] = (
+            observed_admission_lag == max_admission_lag
+            and observed_admission_lag
+            <= PACED_REPLAY["config"]["max_source_lag_ms"] * 1_000_000
+        )
+        _integer(pacing["driver_steps"], 0, PACED_REPLAY["config"]["max_steps"])
+        checks["paced_full_input_admitted"] = (
+            type(pacing["accepted_samples"]) is int
+            and pacing["accepted_samples"] == head == offered_samples == total_samples
+        )
+        clock_valid = True
+        for records, key, end_key in (
+            (events, "event_elapsed_ns", "end_sample"),
+            (traces, "trace_elapsed_ns", "analysis_end_sample"),
+        ):
+            times = pacing[key]
+            if not isinstance(times, list) or len(times) != len(records):
+                raise ValueError("clock observations must match records")
+            previous = 0
+            for record, observed in zip(records, times, strict=True):
+                if not isinstance(record, Mapping):
+                    raise ValueError("output must be an object")
+                observed = _integer(observed, previous, elapsed)
+                previous = observed
+                end = record.get(end_key)
+                if end is not None:
+                    end = _integer(end, 0, total_samples)
+                    clock_valid &= observed >= end * 62500
+        _equal(
+            pacing["output_lags"],
+            _paced_output_lags(events, traces, pacing),
+            "output lags",
+        )
+        for key, value in _paced_milestones(events, pacing).items():
+            _equal(pacing[key], value, key)
+        checks["paced_output_clock_contract"] = clock_valid
+        checks["paced_output_delivered"] = (
+            pacing["undelivered_events"] == []
+            and pacing["undelivered_event_ns"] is None
+        )
+        commit_head = 0
+        coverage = True
+        finals = []
+        for index, event in enumerate(events):
+            coverage &= _integer(event["sequence_number"], 1, len(events)) == index + 1
+            if event.get("kind") == "final":
+                finals.append(index)
+            elif event.get("kind") == "commit":
+                start = _integer(event["start_sample"], 0, total_samples)
+                end = _integer(event["end_sample"], start + 1, total_samples)
+                watermark = _integer(
+                    event["committed_through_sample"], 0, total_samples
+                )
+                watermark_ms = _integer(
+                    event["committed_through_ms"], 0, total_samples // 16
+                )
+                coverage &= (
+                    start == commit_head
+                    and end == watermark
+                    and watermark_ms == end // 16
+                )
+                commit_head = end
+        checks["paced_terminal_coverage"] = (
+            coverage and commit_head == total_samples and finals == [len(events) - 1]
+        )
+        finished = pacing["input_finished_ns"]
+        if finished is not None:
+            finished = _integer(finished, last_accepted, elapsed)
+            checks["paced_pre_eof_commit"] = any(
+                event.get("kind") == "commit" and observed < finished
+                for event, observed in zip(
+                    events, pacing["event_elapsed_ns"], strict=True
+                )
+            )
+    except (KeyError, TypeError, ValueError):
+        return dict.fromkeys(checks, False)
+    return checks
+
+
 def _run_worker(
     expected_snapshot: Mapping[str, Any],
     *,
@@ -839,11 +1092,13 @@ def _run_worker(
     input_evidence: bool = False,
     source_units: bool = False,
     automatic_endpoints: bool = False,
+    paced_replay: bool = False,
 ) -> dict[str, Any]:
     manifest = read_registration(RUNTIME_ROOT)
     profile = _stream_profile(
-        manifest, input_evidence, source_units, automatic_endpoints
+        manifest, input_evidence, source_units, automatic_endpoints, paced_replay
     )
+    automatic_endpoints = automatic_endpoints or paced_replay
     input_evidence = input_evidence or source_units or automatic_endpoints
     unit_profile = source_units or automatic_endpoints
     _equal(source_snapshot(RUNTIME_ROOT), expected_snapshot, "remote source snapshot")
@@ -1019,7 +1274,13 @@ def _run_worker(
                 int(torch.cuda.memory_reserved(0)),
             )
             started = time.perf_counter_ns()
-            if source_units:
+            pacing = None
+            if paced_replay:
+                events, traces, pacing, error = _drive_paced(stream, pcm)
+                steps = pacing["driver_steps"]
+                accepted_chunks = len(pacing["admissions"])
+                accepted_samples = pacing["accepted_samples"]
+            elif source_units:
                 events, traces, steps, accepted_chunks, error, accepted_samples = (
                     _drive_source_units(
                         stream, pcm, units, chunk_bytes=case["chunk_ms"] * 32
@@ -1065,8 +1326,12 @@ def _run_worker(
                 checks.update(_unit_publication_checks(events, traces))
             if automatic_endpoints:
                 checks.update(_automatic_endpoint_checks(traces, pcm))
+            if pacing is not None:
+                checks.update(_paced_checks(events, traces, pacing, len(pcm) // 2))
             policy_resolution = (
-                error is not None and error["category"] == "policy_resolution"
+                not paced_replay
+                and error is not None
+                and error["category"] == "policy_resolution"
             )
             lifecycle = all(
                 value
@@ -1136,6 +1401,7 @@ def _run_worker(
                     "driver_steps": steps,
                     "accepted_chunks": accepted_chunks,
                     "accepted_samples": accepted_samples,
+                    **({"pacing": pacing} if pacing is not None else {}),
                     "offline_control": offline,
                     **(
                         {
@@ -1232,7 +1498,10 @@ def _run_worker(
         "recorded_at": c._utc_now(),
         "status": status,
         "claim_boundary": manifest["claim_boundary"],
-        "replay_pacing": "unpaced-source-time",
+        "replay_pacing": PACED_REPLAY["pacing_id"]
+        if paced_replay
+        else "unpaced-source-time",
+        "paced_replay": paced_replay,
         "input_evidence": input_evidence,
         "source_units": source_units,
         "automatic_endpoints": automatic_endpoints,
@@ -1296,6 +1565,7 @@ def _receipt(
     input_evidence: bool | None = None,
     source_units: bool | None = None,
     automatic_endpoints: bool | None = None,
+    paced_replay: bool | None = None,
     **fields: object,
 ) -> None:
     c._append_receipt(
@@ -1316,6 +1586,7 @@ def _receipt(
                 if automatic_endpoints is not None
                 else {}
             ),
+            **({"paced_replay": paced_replay} if paced_replay is not None else {}),
             **fields,
         },
         create=sequence == 0,
@@ -1363,6 +1634,7 @@ def _execute_local_attempt(
     input_evidence: bool = False,
     source_units: bool = False,
     automatic_endpoints: bool = False,
+    paced_replay: bool = False,
     confirm_paid_gpu: bool = False,
     remote_function: object,
 ) -> Path:
@@ -1370,8 +1642,9 @@ def _execute_local_attempt(
     _integer(attempt, 1, 1)
     manifest = read_registration(root)
     profile = _stream_profile(
-        manifest, input_evidence, source_units, automatic_endpoints
+        manifest, input_evidence, source_units, automatic_endpoints, paced_replay
     )
+    automatic_endpoints = automatic_endpoints or paced_replay
     input_evidence = input_evidence or source_units or automatic_endpoints
     if input_evidence and not replay_id:
         raise ValueError("diagnostic variants require a named replay namespace")
@@ -1403,6 +1676,7 @@ def _execute_local_attempt(
         input_evidence=input_evidence if replay_id else None,
         source_units=source_units if replay_id else None,
         automatic_endpoints=automatic_endpoints if replay_id else None,
+        paced_replay=paced_replay if replay_id else None,
         **profile,
         source_snapshot_sha256=snapshot["digest"],
         registration_sha256=registration_hash,
@@ -1417,10 +1691,13 @@ def _execute_local_attempt(
             input_evidence=input_evidence if replay_id else None,
             source_units=source_units if replay_id else None,
             automatic_endpoints=automatic_endpoints if replay_id else None,
+            paced_replay=paced_replay if replay_id else None,
         )
         sequence += 1
         args = (
-            (snapshot, registration_hash, True, False, True)
+            (snapshot, registration_hash, True, False, True, True)
+            if paced_replay
+            else (snapshot, registration_hash, True, False, True)
             if automatic_endpoints
             else (snapshot, registration_hash, True, True)
             if source_units
@@ -1438,6 +1715,7 @@ def _execute_local_attempt(
             input_evidence=input_evidence if replay_id else None,
             source_units=source_units if replay_id else None,
             automatic_endpoints=automatic_endpoints if replay_id else None,
+            paced_replay=paced_replay if replay_id else None,
             sha256=c._sha256_file(raw),
             size_bytes=raw.stat().st_size,
         )
@@ -1455,6 +1733,47 @@ def _execute_local_attempt(
             automatic_endpoints,
             "worker automatic endpoints",
         )
+        _equal(record.get("paced_replay", False), paced_replay, "worker paced replay")
+        if paced_replay:
+            _equal(
+                record.get("replay_pacing"), PACED_REPLAY["pacing_id"], "worker pacing"
+            )
+            cases = record.get("cases")
+            if not isinstance(cases, list) or len(cases) != 1:
+                raise ValueError("paced replay requires one case result")
+            case = cases[0]
+            _equal(case.get("case_id"), SOURCE_UNIT_BOUNDARIES["case_id"], "paced case")
+            if record.get("status") == "unresolved" or (
+                record.get("status") == "completed"
+                and case.get("status") != "completed"
+            ):
+                raise ValueError("paced result status does not match its case")
+            if case.get("status") != "infrastructure_failure":
+                paced_checks = _paced_checks(
+                    case["events"],
+                    case["decision_traces"],
+                    case["pacing"],
+                    SOURCE_UNIT_BOUNDARIES["end_samples"][-1],
+                )
+                for key, expected in paced_checks.items():
+                    _equal(case["checks"].get(key), expected, key)
+                _equal(
+                    case["accepted_samples"],
+                    case["pacing"]["accepted_samples"],
+                    "paced samples",
+                )
+                _equal(
+                    case["accepted_chunks"],
+                    len(case["pacing"]["admissions"]),
+                    "paced chunks",
+                )
+                _equal(
+                    case["driver_steps"], case["pacing"]["driver_steps"], "paced steps"
+                )
+                if case.get("status") == "policy_resolution" or (
+                    case.get("status") == "completed" and not all(paced_checks.values())
+                ):
+                    raise ValueError("failed paced replay cannot pass")
         for key, expected in profile.items():
             _equal(record.get(key), expected, f"worker {key}")
         c._write_json_exclusive(output, record)
@@ -1467,6 +1786,7 @@ def _execute_local_attempt(
             input_evidence=input_evidence if replay_id else None,
             source_units=source_units if replay_id else None,
             automatic_endpoints=automatic_endpoints if replay_id else None,
+            paced_replay=paced_replay if replay_id else None,
             error_type=type(error).__name__,
             error_message_sha256=c._sha256_text(str(error)),
         )
@@ -1479,6 +1799,7 @@ def _execute_local_attempt(
         input_evidence=input_evidence if replay_id else None,
         source_units=source_units if replay_id else None,
         automatic_endpoints=automatic_endpoints if replay_id else None,
+        paced_replay=paced_replay if replay_id else None,
         record_sha256=c._sha256_file(output),
         status=record["status"],
         function_call_id=record["worker"]["function_call_id"],
@@ -1494,6 +1815,7 @@ def _modal_main(
     input_evidence: bool = False,
     source_units: bool = False,
     automatic_endpoints: bool = False,
+    paced_replay: bool = False,
 ) -> None:
     if run_word_corpus is None or run_transport_probe is None:
         raise RuntimeError(f"set {REMOTE_RESOURCES_ENV}=1 before modal run")
@@ -1511,6 +1833,7 @@ def _modal_main(
                 input_evidence=input_evidence,
                 source_units=source_units,
                 automatic_endpoints=automatic_endpoints,
+                paced_replay=paced_replay,
                 confirm_paid_gpu=confirm_paid_gpu,
                 remote_function=run_word_corpus,
             )
@@ -1593,6 +1916,7 @@ def _define_modal_resources() -> tuple[Any, Any, Any, Any]:
         input_evidence: bool = False,
         source_units: bool = False,
         automatic_endpoints: bool = False,
+        paced_replay: bool = False,
     ) -> bytes:
         producer = importlib.import_module("infra.modal_word_corpus")
         return producer.b._encode_worker_record(
@@ -1603,6 +1927,7 @@ def _define_modal_resources() -> tuple[Any, Any, Any, Any]:
                 input_evidence=input_evidence,
                 source_units=source_units,
                 automatic_endpoints=automatic_endpoints,
+                paced_replay=paced_replay,
             )
         )
 

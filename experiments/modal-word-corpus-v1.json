@@ -23,6 +23,17 @@
     "note": "The record binds the exact clean local source snapshot sent to Modal. The cached base image already contains the request-local alignment backend patch."
   },
   "replay_pacing": "unpaced-source-time",
+  "paced_replay": {
+    "pacing_id": "wall-clock-pcm/v1",
+    "config": {
+      "chunk_ms": 20,
+      "max_input_ms": 120000,
+      "max_source_lag_ms": 250,
+      "max_drain_ms": 15000,
+      "idle_wait_ms": 2,
+      "max_steps": 100000
+    }
+  },
   "paid_budget": {
     "maximum_gpu_function_calls": 1,
     "gpu_seconds_per_call": 180,
@@ -340,6 +351,6 @@
     "partial_output": "Label text from an unresolved stream as partial. Comparing it with the full reference includes unpublished speech and is not an isolated recognition error estimate.",
     "timing": "Unpaced replay timing is not live subtitle latency. Record source-time publication progress separately.",
     "constructed_audio": "Concatenated utterances, repeated clips, and digital silence are stress fixtures, not natural conversation.",
-    "stop_rule": "Continue after policy resolution. Stop after infrastructure or lifecycle failure. Never retry the paid call automatically."
+    "stop_rule": "Unpaced diagnostics may continue after policy resolution. Paced replay stops and fails qualification on any driver error, unresolved boundary, overload, deadline failure, or lifecycle failure. Never retry the paid call automatically."
   }
 }

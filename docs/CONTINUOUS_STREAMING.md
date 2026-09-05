@@ -6,6 +6,10 @@ It does not change the existing bounded-preview or offline adapters.
 
 ## Use
 
+For an independent source clock, use the [paced PCM replay driver](PACED_REPLAY.md).
+It supplies recorded chunks while the model owner drives decoding and reports
+overload instead of slowing the source to match the decoder.
+
 An optional `input_evidence=True` policy checks admitted PCM before permitting
 text publication. Exact digital silence produces empty, source-backed coverage;
 uncertain output retains audio. It does not provide general voice activity

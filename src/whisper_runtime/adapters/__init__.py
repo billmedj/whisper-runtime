@@ -65,6 +65,12 @@ from .native_whisper import (
     NativeWhisperAdapter,
     NativeWindowRun,
 )
+from .paced_replay import (
+    PacedAdmission,
+    PacedReplayConfig,
+    PacedReplayResult,
+    drive_paced,
+)
 from .stream_policy import TextAgreementReason, TextPrefixDecision, resolve_text_prefix
 from .word_policy import (
     AlignedPublication,
@@ -86,6 +92,10 @@ __all__ = [
     "QuietEndpointConfig",
     "QuietEndpointDetector",
     "QuietEndpointProposal",
+    "PacedAdmission",
+    "PacedReplayConfig",
+    "PacedReplayResult",
+    "drive_paced",
     "SOURCE_UNIT_PROFILE",
     "WORD_CONTINUOUS_PROFILE",
     "AlignedPublication",

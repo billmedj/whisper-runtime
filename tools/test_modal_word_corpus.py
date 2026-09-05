@@ -24,6 +24,330 @@ class Echo:
 
 
 class CorpusGuards(unittest.TestCase):
+    def paced_observations(self, total_samples=640):
+        admissions = []
+        for index, start in enumerate(range(0, total_samples, 320)):
+            end = min(start + 320, total_samples)
+            scheduled = end * 62500
+            admissions.append(
+                {
+                    "sequence_number": index,
+                    "start_sample": start,
+                    "end_sample": end,
+                    "scheduled_ns": scheduled,
+                    "offered_ns": scheduled + 1_000_000,
+                    "accepted_ns": scheduled + 1_000_001,
+                    "buffered_samples": end - start,
+                }
+            )
+        end_ns = total_samples * 62500
+        events = [
+            {
+                "sequence_number": 1,
+                "kind": "commit",
+                "start_sample": 0,
+                "end_sample": 320,
+                "committed_through_sample": 320,
+                "committed_through_ms": 20,
+            },
+            {
+                "sequence_number": 2,
+                "kind": "commit",
+                "start_sample": 320,
+                "end_sample": total_samples,
+                "committed_through_sample": total_samples,
+                "committed_through_ms": total_samples // 16,
+            },
+            {"sequence_number": 3, "kind": "final"},
+        ]
+        traces = [
+            {"analysis_end_sample": 320},
+            {"analysis_end_sample": total_samples},
+        ]
+        pacing = {
+            **copy.deepcopy(corpus.PACED_REPLAY),
+            "status": "completed",
+            "elapsed_ns": end_ns + 15_000_000,
+            "input_finished_ns": end_ns + 5_000_000,
+            "offered_samples": total_samples,
+            "accepted_samples": total_samples,
+            "driver_steps": 4,
+            "max_source_lag_ns": 1_000_000,
+            "max_admission_lag_ns": 1_000_001,
+            "admissions": admissions,
+            "undelivered_events": [],
+            "undelivered_event_ns": None,
+            "event_elapsed_ns": [30_000_000, end_ns + 10_000_000, end_ns + 10_000_000],
+            "trace_elapsed_ns": [30_000_000, end_ns + 10_000_000],
+        }
+        pacing["output_lags"] = corpus._paced_output_lags(events, traces, pacing)
+        pacing.update(corpus._paced_milestones(events, pacing))
+        return events, traces, pacing
+
+    def test_paced_registration_and_profile_are_explicit(self) -> None:
+        manifest = corpus.read_registration()
+        self.assertEqual(manifest["paced_replay"], corpus.PACED_REPLAY)
+        self.assertEqual(
+            corpus._stream_profile(manifest, False, paced_replay=True),
+            corpus.AUTOMATIC_ENDPOINTS_PROFILE,
+        )
+        for flags in (
+            {"paced_replay": 1},
+            {"paced_replay": True, "source_units": True},
+        ):
+            with self.subTest(flags=flags), self.assertRaises(ValueError):
+                corpus._stream_profile(manifest, False, **flags)
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            self.root(root)
+            for change in ("missing", "pace", "lag"):
+                altered = copy.deepcopy(manifest)
+                if change == "missing":
+                    altered.pop("paced_replay")
+                elif change == "pace":
+                    altered["paced_replay"]["pacing_id"] = "unpaced"
+                else:
+                    altered["paced_replay"]["config"]["max_source_lag_ms"] = 1000
+                (root / corpus.MANIFEST_PATH).write_text(
+                    json.dumps(altered), encoding="utf-8"
+                )
+                with self.subTest(change=change), self.assertRaises(ValueError):
+                    corpus.read_registration(root)
+
+    def test_paced_metrics_reject_early_missing_and_malformed_observations(
+        self,
+    ) -> None:
+        events, traces, pacing = self.paced_observations(657)
+        self.assertTrue(all(corpus._paced_checks(events, traces, pacing, 657).values()))
+        self.assertEqual(pacing["admissions"][-1]["end_sample"], 657)
+        for change in (
+            "early",
+            "gap",
+            "partial",
+            "boolean",
+            "late",
+            "missing_time",
+            "false_lag",
+            "exaggerated_lag",
+            "false_acceptance",
+            "no_live_commit",
+            "source_overload",
+            "corrupt_distribution",
+            "future_trace",
+            "negative_time",
+            "admission_lag",
+            "false_admission_lag",
+            "undelivered",
+            "first_text",
+            "first_commit",
+            "drain",
+        ):
+            altered = copy.deepcopy(pacing)
+            if change == "early":
+                altered["admissions"][0]["offered_ns"] = 1
+            elif change == "gap":
+                altered["admissions"][1]["start_sample"] += 1
+            elif change == "partial":
+                altered["admissions"].pop()
+            elif change == "boolean":
+                altered["admissions"][0]["scheduled_ns"] = True
+            elif change == "late":
+                altered["max_source_lag_ns"] = 251_000_000
+            elif change == "missing_time":
+                altered["event_elapsed_ns"].pop()
+            elif change == "false_lag":
+                altered["max_source_lag_ns"] = 0
+            elif change == "exaggerated_lag":
+                altered["max_source_lag_ns"] = 1_000_001
+            elif change == "false_acceptance":
+                altered["accepted_samples"] = 656
+            elif change == "no_live_commit":
+                altered["input_finished_ns"] = 1
+            elif change == "source_overload":
+                altered["status"] = "source_overload"
+            elif change == "corrupt_distribution":
+                altered["output_lags"]["commit"]["min_ns"] = 0
+            elif change == "future_trace":
+                altered["trace_elapsed_ns"][0] = 1
+            elif change == "admission_lag":
+                altered["max_admission_lag_ns"] = 251_000_000
+            elif change == "false_admission_lag":
+                altered["max_admission_lag_ns"] = 0
+            elif change == "undelivered":
+                altered["undelivered_events"] = [{"kind": "commit"}]
+            elif change == "first_text":
+                altered["first_nonempty_text_ns"] = 1
+            elif change == "first_commit":
+                altered["first_commit_ns"] = 1
+            elif change == "drain":
+                altered["drain_after_input_finished_ns"] += 1
+            else:
+                altered["event_elapsed_ns"][0] = -1
+            with self.subTest(change=change):
+                self.assertFalse(
+                    all(corpus._paced_checks(events, traces, altered, 657).values())
+                )
+
+    def test_paced_flag_receipts_and_worker_result_are_bound(self) -> None:
+        with self.assertRaises(ValueError):
+            corpus._execute_local_attempt(
+                paced_replay=True, confirm_paid_gpu=True, remote_function=Echo()
+            )
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            self.root(root)
+            total = corpus.SOURCE_UNIT_BOUNDARIES["end_samples"][-1]
+            events, traces, pacing = self.paced_observations(total)
+            case = {
+                "case_id": corpus.SOURCE_UNIT_BOUNDARIES["case_id"],
+                "status": "completed",
+                "events": events,
+                "decision_traces": traces,
+                "pacing": pacing,
+                "checks": corpus._paced_checks(events, traces, pacing, total),
+                "accepted_samples": total,
+                "accepted_chunks": len(pacing["admissions"]),
+                "driver_steps": pacing["driver_steps"],
+            }
+            record = {
+                "status": "completed",
+                "worker": {"function_call_id": "fc-test"},
+                "input_evidence": True,
+                "source_units": False,
+                "automatic_endpoints": True,
+                "paced_replay": True,
+                "replay_pacing": corpus.PACED_REPLAY["pacing_id"],
+                **corpus.AUTOMATIC_ENDPOINTS_PROFILE,
+                "cases": [case],
+            }
+            for variant in ("valid", "wrong_variant", "false_success", "false_metric"):
+                corpus._execute_transport_probe(
+                    root=root, replay_id=variant, remote_function=Echo()
+                )
+                altered = copy.deepcopy(record)
+                if variant == "wrong_variant":
+                    altered["paced_replay"] = False
+                elif variant == "false_success":
+                    altered["cases"][0]["pacing"]["status"] = "source_lag"
+                    altered["cases"][0]["checks"]["paced_completed"] = False
+                elif variant == "false_metric":
+                    altered["cases"][0]["accepted_chunks"] += 1
+                with (
+                    patch.object(corpus, "_inputs", return_value=[]),
+                    patch.object(
+                        corpus.b, "_decode_worker_record", return_value=altered
+                    ),
+                    patch.object(Echo, "remote", return_value=b"payload") as remote,
+                ):
+                    kwargs = dict(
+                        root=root,
+                        replay_id=variant,
+                        paced_replay=True,
+                        confirm_paid_gpu=True,
+                        remote_function=Echo(),
+                    )
+                    if variant == "valid":
+                        output = corpus._execute_local_attempt(**kwargs)
+                        self.assertEqual(json.loads(output.read_text()), record)
+                        with self.assertRaises(FileExistsError):
+                            corpus._execute_local_attempt(**kwargs)
+                    else:
+                        with self.assertRaises(ValueError):
+                            corpus._execute_local_attempt(**kwargs)
+                        self.assertFalse(corpus._paths(root, variant)[0].exists())
+                    self.assertEqual(remote.call_count, 1)
+                    self.assertEqual(
+                        remote.call_args.args[2:], (True, False, True, True)
+                    )
+                rows = [
+                    json.loads(line)
+                    for line in corpus._paths(root, variant)[1].read_text().splitlines()
+                ]
+                self.assertTrue(all(row["paced_replay"] is True for row in rows))
+
+    def test_paced_terminal_guard_rejects_self_consistent_incomplete_publication(
+        self,
+    ) -> None:
+        for change in (
+            "missing_final",
+            "short_commit",
+            "wrong_watermark",
+            "commit_gap",
+        ):
+            events, traces, pacing = self.paced_observations(657)
+            if change == "missing_final":
+                events.pop()
+                pacing["event_elapsed_ns"].pop()
+            elif change == "short_commit":
+                events[1]["end_sample"] -= 1
+                events[1]["committed_through_sample"] -= 1
+                events[1]["committed_through_ms"] = events[1]["end_sample"] // 16
+            elif change == "wrong_watermark":
+                events[1]["committed_through_sample"] -= 1
+            else:
+                events[1]["start_sample"] += 1
+            pacing["output_lags"] = corpus._paced_output_lags(events, traces, pacing)
+            pacing.update(corpus._paced_milestones(events, pacing))
+            checks = corpus._paced_checks(events, traces, pacing, 657)
+            with self.subTest(change=change):
+                self.assertFalse(checks["paced_terminal_coverage"])
+                self.assertTrue(
+                    all(
+                        value
+                        for key, value in checks.items()
+                        if key != "paced_terminal_coverage"
+                    )
+                )
+
+    def test_paced_driver_runs_existing_runtime_with_partial_last_chunk(self) -> None:
+        with patch.object(
+            sys,
+            "path",
+            [str(corpus.ROOT / "src"), str(corpus.ROOT / "tests"), *sys.path],
+        ):
+            fixture = corpus.importlib.import_module("test_continuous_evidence")
+            endpoints = corpus.importlib.import_module(
+                "whisper_runtime.adapters.audio_endpoints"
+            )
+        adapter = fixture.EvidenceNativeAdapter(fixture.you_result)
+        stream = fixture.ContinuousTranscriptStream(
+            adapter,
+            stream_id="paced-harness",
+            mel_builder=lambda content: content,
+            config=fixture.ContinuousStreamConfig(
+                preview_interval_ms=100,
+                max_window_ms=1000,
+                max_buffer_ms=1200,
+                holdback_ms=100,
+                input_evidence=True,
+                source_units=True,
+                endpointing=endpoints.QuietEndpointConfig(
+                    quiet_ms=60, min_unit_ms=100, max_quiet_unit_ms=500
+                ),
+            ),
+        )
+        pcm = b"\xe8\x03" * 1600 + bytes(3200) + b"\xe8\x03" * 1617
+        with patch.object(
+            stream, "seal_unit", side_effect=AssertionError("oracle boundary called")
+        ):
+            events, traces, pacing, error = corpus._drive_paced(stream, pcm)
+        self.assertIsNone(error)
+        self.assertEqual(pacing["status"], "completed")
+        self.assertTrue(
+            all(corpus._paced_checks(events, traces, pacing, len(pcm) // 2).values())
+        )
+        self.assertEqual(pacing["accepted_samples"], 4817)
+        self.assertEqual(len(pacing["admissions"]), 16)
+        self.assertEqual(
+            pacing["admissions"][-1]["end_sample"]
+            - pacing["admissions"][-1]["start_sample"],
+            17,
+        )
+        self.assertEqual(stream.metrics.buffered_samples, 0)
+        self.assertTrue(all(corpus._unit_publication_checks(events, traces).values()))
+        self.assertEqual(adapter.budget.available, adapter.capacity)
+        stream.close()
+
     def test_modal_mount_destinations_use_posix_paths(self) -> None:
         destinations = []
 
@@ -73,6 +397,10 @@ class CorpusGuards(unittest.TestCase):
             self.assertIs(worker.call_args.kwargs["source_units"], True)
             self.assertEqual(execute({}, "registration", True, False, True), b"record")
             self.assertIs(worker.call_args.kwargs["automatic_endpoints"], True)
+            self.assertEqual(
+                execute({}, "registration", True, False, True, True), b"record"
+            )
+            self.assertIs(worker.call_args.kwargs["paced_replay"], True)
 
     def root(self, path: Path) -> dict:
         for relative in (
@@ -948,6 +1276,10 @@ class CorpusGuards(unittest.TestCase):
                 replay_id="automatic", confirm_paid_gpu=True, automatic_endpoints=True
             )
             self.assertTrue(attempt.call_args.kwargs["automatic_endpoints"])
+            corpus._modal_main(
+                replay_id="paced", confirm_paid_gpu=True, paced_replay=True
+            )
+            self.assertTrue(attempt.call_args.kwargs["paced_replay"])
 
     def test_rejected_evidence_trace_contract_and_silence_eof_coverage(self) -> None:
         native = {
