@@ -1,0 +1,3355 @@
+{
+  "automatic_endpoints": true,
+  "cases": [
+    {
+      "accepted_chunks": 44,
+      "accepted_samples": 698560,
+      "against_concatenated_fixture_controls": {
+        "exact_text_match": true,
+        "reference_word_count": 86,
+        "word_edit_distance": 0,
+        "word_edit_rate": 0.0
+      },
+      "case_id": "three-speakers-repeat-pauses",
+      "checks": {
+        "accepted_input_accounted": true,
+        "automatic_endpoint_trace_contract": true,
+        "bounded_audio_buffer": true,
+        "commit_watermark_matches_runtime": true,
+        "completion_required": true,
+        "contiguous_commit_coverage": true,
+        "decision_trace_ordered": true,
+        "final_event_once": true,
+        "full_input_committed_at_eof": true,
+        "immutable_committed_revisions": true,
+        "input_evidence_trace_contract": true,
+        "monotonic_commit_watermarks": true,
+        "observed_pcm_matches_input": true,
+        "ordered_events": true,
+        "profile_id_matches_config": true,
+        "publication_within_accepted_input": true,
+        "quiet_proposal_has_no_silence_authority": true,
+        "runtime_capacity_restored": true,
+        "source_unit_trace_contract": true,
+        "trace_preserves_native_metadata": true,
+        "trace_profile_matches_config": true,
+        "unit_publication_matches_trace": true
+      },
+      "cuda_memory": {
+        "allocated_before_bytes": 171545600,
+        "peak_allocated_bytes": 404625920,
+        "peak_reserved_bytes": 2036334592,
+        "reserved_before_bytes": 432013312
+      },
+      "decision_traces": [
+        {
+          "accepted_through_sample": 32000,
+          "action": "preview",
+          "analysis_end_sample": 32000,
+          "analysis_start_sample": 0,
+          "audio_evidence": {
+            "no_speech_prob": 0.1193649023771286,
+            "observation": {
+              "digital_silence": false,
+              "pcm_sha256": "0196df1cf5ea42a41febd5ce478253b692e90c8049c2b5094ede35ec0b7b0c3e",
+              "sample_count": 32000
+            },
+            "reason": "model_speech_candidate",
+            "state": "speech_candidate"
+          },
+          "committed_before_sample": 0,
+          "decode_index": 1,
+          "eof": false,
+          "publication_span": null,
+          "reason": "source_unit_open",
+          "result": {
+            "analysis_span": {
+              "end_ms": 2000,
+              "start_ms": 0
+            },
+            "end_ms": 2000,
+            "metadata": {
+              "avg_logprob": -0.9429256439208984,
+              "compression_ratio": 0.7837837837837838,
+              "language": "en",
+              "no_speech_prob": 0.1193649023771286,
+              "segments": [
+                {
+                  "span": {
+                    "end_ms": 2000,
+                    "start_ms": 0
+                  },
+                  "text": " Concourt return to its place.",
+                  "tokens": [
+                    1482,
+                    22230,
+                    1441,
+                    284,
+                    663,
+                    1295,
+                    13
+                  ]
+                }
+              ],
+              "temperature": 0.0,
+              "timestamps_complete": true,
+              "tokens": [
+                50363,
+                1482,
+                22230,
+                1441,
+                284,
+                663,
+                1295,
+                13,
+                50463
+              ]
+            },
+            "publication_segment_indices": null,
+            "start_ms": 0,
+            "text": "Concourt return to its place.",
+            "window_id": "modal-word-corpus-v1:three-speakers-repeat-pauses:window:0:32000:preview"
+          },
+          "retained_from_sample": 0,
+          "silence_publication": null,
+          "source_unit": null,
+          "word_alignment": null,
+          "word_publication": null
+        },
+        {
+          "accepted_through_sample": 64000,
+          "action": "preview",
+          "analysis_end_sample": 64000,
+          "analysis_start_sample": 0,
+          "audio_evidence": {
+            "no_speech_prob": 0.02597704902291298,
+            "observation": {
+              "digital_silence": false,
+              "pcm_sha256": "7e6de8ba88ae4af644cc41f07711068ed99d00904d612811c33ea40e4d0f6971",
+              "sample_count": 64000
+            },
+            "reason": "model_speech_candidate",
+            "state": "speech_candidate"
+          },
+          "committed_before_sample": 0,
+          "decode_index": 2,
+          "eof": false,
+          "publication_span": null,
+          "reason": "source_unit_open",
+          "result": {
+            "analysis_span": {
+              "end_ms": 4000,
+              "start_ms": 0
+            },
+            "end_ms": 4000,
+            "metadata": {
+              "avg_logprob": -0.3715718587239583,
+              "compression_ratio": 0.8703703703703703,
+              "language": "en",
+              "no_speech_prob": 0.02597704902291298,
+              "segments": [
+                {
+                  "span": {
+                    "end_ms": 3360,
+                    "start_ms": 0
+                  },
+                  "text": " Concord returned to its place amidst the tents.",
+                  "tokens": [
+                    34732,
+                    4504,
+                    284,
+                    663,
+                    1295,
+                    31095,
+                    262,
+                    29804,
+                    13
+                  ]
+                }
+              ],
+              "temperature": 0.0,
+              "timestamps_complete": true,
+              "tokens": [
+                50363,
+                34732,
+                4504,
+                284,
+                663,
+                1295,
+                31095,
+                262,
+                29804,
+                13,
+                50531
+              ]
+            },
+            "publication_segment_indices": null,
+            "start_ms": 0,
+            "text": "Concord returned to its place amidst the tents.",
+            "window_id": "modal-word-corpus-v1:three-speakers-repeat-pauses:window:0:64000:preview"
+          },
+          "retained_from_sample": 0,
+          "silence_publication": null,
+          "source_unit": null,
+          "word_alignment": null,
+          "word_publication": null
+        },
+        {
+          "accepted_through_sample": 80000,
+          "action": "commit",
+          "analysis_end_sample": 65920,
+          "analysis_start_sample": 0,
+          "audio_evidence": {
+            "no_speech_prob": 0.02597704902291298,
+            "observation": {
+              "digital_silence": false,
+              "pcm_sha256": "59d719e34d9f5b5616237f2bda5c210e1f6615aba748e0ada24464194520a75f",
+              "sample_count": 65920
+            },
+            "reason": "model_speech_candidate",
+            "state": "speech_candidate"
+          },
+          "committed_before_sample": 0,
+          "decode_index": 3,
+          "eof": false,
+          "publication_span": null,
+          "reason": "source_unit",
+          "result": {
+            "analysis_span": {
+              "end_ms": 4120,
+              "start_ms": 0
+            },
+            "end_ms": 4120,
+            "metadata": {
+              "avg_logprob": -0.3715718587239583,
+              "compression_ratio": 0.8703703703703703,
+              "language": "en",
+              "no_speech_prob": 0.02597704902291298,
+              "segments": [
+                {
+                  "span": {
+                    "end_ms": 3360,
+                    "start_ms": 0
+                  },
+                  "text": " Concord returned to its place amidst the tents.",
+                  "tokens": [
+                    34732,
+                    4504,
+                    284,
+                    663,
+                    1295,
+                    31095,
+                    262,
+                    29804,
+                    13
+                  ]
+                }
+              ],
+              "temperature": 0.0,
+              "timestamps_complete": true,
+              "tokens": [
+                50363,
+                34732,
+                4504,
+                284,
+                663,
+                1295,
+                31095,
+                262,
+                29804,
+                13,
+                50531
+              ]
+            },
+            "publication_segment_indices": null,
+            "start_ms": 0,
+            "text": "Concord returned to its place amidst the tents.",
+            "window_id": "modal-word-corpus-v1:three-speakers-repeat-pauses:window:0:65920:unit"
+          },
+          "retained_from_sample": 0,
+          "silence_publication": null,
+          "source_unit": {
+            "end_sample": 65920,
+            "endpoint": {
+              "end_sample": 65920,
+              "peak": 0,
+              "quiet_start_sample": 56320
+            },
+            "origin": "quiet_run",
+            "start_sample": 0
+          },
+          "word_alignment": null,
+          "word_publication": null
+        },
+        {
+          "accepted_through_sample": 112000,
+          "action": "preview",
+          "analysis_end_sample": 97920,
+          "analysis_start_sample": 65920,
+          "audio_evidence": {
+            "no_speech_prob": 0.36191263794898987,
+            "observation": {
+              "digital_silence": false,
+              "pcm_sha256": "c696d72eb9e68ee06f7bcaedbb0c634534e7ad6b7a1a92e40d349e9624a7b2b2",
+              "sample_count": 32000
+            },
+            "reason": "model_speech_candidate",
+            "state": "speech_candidate"
+          },
+          "committed_before_sample": 65920,
+          "decode_index": 4,
+          "eof": false,
+          "publication_span": null,
+          "reason": "source_unit_open",
+          "result": {
+            "analysis_span": {
+              "end_ms": 6120,
+              "start_ms": 4120
+            },
+            "end_ms": 6120,
+            "metadata": {
+              "avg_logprob": -0.9255080223083496,
+              "compression_ratio": 0.5294117647058824,
+              "language": "en",
+              "no_speech_prob": 0.36191263794898987,
+              "segments": [
+                {
+                  "span": {
+                    "end_ms": 6120,
+                    "start_ms": 4120
+                  },
+                  "text": " for what?",
+                  "tokens": [
+                    329,
+                    644,
+                    30
+                  ]
+                }
+              ],
+              "temperature": 0.0,
+              "timestamps_complete": true,
+              "tokens": [
+                50363,
+                329,
+                644,
+                30,
+                50463
+              ]
+            },
+            "publication_segment_indices": null,
+            "start_ms": 4120,
+            "text": "for what?",
+            "window_id": "modal-word-corpus-v1:three-speakers-repeat-pauses:window:65920:97920:preview"
+          },
+          "retained_from_sample": 65920,
+          "silence_publication": null,
+          "source_unit": null,
+          "word_alignment": null,
+          "word_publication": null
+        },
+        {
+          "accepted_through_sample": 144000,
+          "action": "preview",
+          "analysis_end_sample": 129920,
+          "analysis_start_sample": 65920,
+          "audio_evidence": {
+            "no_speech_prob": 0.11596055328845978,
+            "observation": {
+              "digital_silence": false,
+              "pcm_sha256": "b89def7bcb3b2710ee5e880e60e29f7d33f37dc99263d45b421e4282137d7cb3",
+              "sample_count": 64000
+            },
+            "reason": "model_speech_candidate",
+            "state": "speech_candidate"
+          },
+          "committed_before_sample": 65920,
+          "decode_index": 5,
+          "eof": false,
+          "publication_span": null,
+          "reason": "source_unit_open",
+          "result": {
+            "analysis_span": {
+              "end_ms": 8120,
+              "start_ms": 4120
+            },
+            "end_ms": 8120,
+            "metadata": {
+              "avg_logprob": -0.2768341700236003,
+              "compression_ratio": 0.8627450980392157,
+              "language": "en",
+              "no_speech_prob": 0.11596055328845978,
+              "segments": [
+                {
+                  "span": {
+                    "end_ms": 8120,
+                    "start_ms": 4120
+                  },
+                  "text": " For a while, she lay in her chair and happy.",
+                  "tokens": [
+                    1114,
+                    257,
+                    981,
+                    11,
+                    673,
+                    3830,
+                    287,
+                    607,
+                    5118,
+                    290,
+                    3772,
+                    13
+                  ]
+                }
+              ],
+              "temperature": 0.0,
+              "timestamps_complete": true,
+              "tokens": [
+                50363,
+                1114,
+                257,
+                981,
+                11,
+                673,
+                3830,
+                287,
+                607,
+                5118,
+                290,
+                3772,
+                13,
+                50563
+              ]
+            },
+            "publication_segment_indices": null,
+            "start_ms": 4120,
+            "text": "For a while, she lay in her chair and happy.",
+            "window_id": "modal-word-corpus-v1:three-speakers-repeat-pauses:window:65920:129920:preview"
+          },
+          "retained_from_sample": 65920,
+          "silence_publication": null,
+          "source_unit": null,
+          "word_alignment": null,
+          "word_publication": null
+        },
+        {
+          "accepted_through_sample": 176000,
+          "action": "preview",
+          "analysis_end_sample": 161920,
+          "analysis_start_sample": 65920,
+          "audio_evidence": {
+            "no_speech_prob": 0.07425280660390854,
+            "observation": {
+              "digital_silence": false,
+              "pcm_sha256": "1dc3e51771e0f8357f5635beb6f490712b39c9f7cb4039376e6d4532bf5bbe11",
+              "sample_count": 96000
+            },
+            "reason": "model_speech_candidate",
+            "state": "speech_candidate"
+          },
+          "committed_before_sample": 65920,
+          "decode_index": 6,
+          "eof": false,
+          "publication_span": null,
+          "reason": "source_unit_open",
+          "result": {
+            "analysis_span": {
+              "end_ms": 10120,
+              "start_ms": 4120
+            },
+            "end_ms": 10120,
+            "metadata": {
+              "avg_logprob": -0.2928628694443476,
+              "compression_ratio": 1.1159420289855073,
+              "language": "en",
+              "no_speech_prob": 0.07425280660390854,
+              "segments": [
+                {
+                  "span": {
+                    "end_ms": 10120,
+                    "start_ms": 4120
+                  },
+                  "text": " For a while she lay in her chair in happy dreamy pleasure at son and bird and",
+                  "tokens": [
+                    1114,
+                    257,
+                    981,
+                    673,
+                    3830,
+                    287,
+                    607,
+                    5118,
+                    287,
+                    3772,
+                    4320,
+                    88,
+                    9476,
+                    379,
+                    3367,
+                    290,
+                    6512,
+                    290
+                  ]
+                }
+              ],
+              "temperature": 0.0,
+              "timestamps_complete": true,
+              "tokens": [
+                50363,
+                1114,
+                257,
+                981,
+                673,
+                3830,
+                287,
+                607,
+                5118,
+                287,
+                3772,
+                4320,
+                88,
+                9476,
+                379,
+                3367,
+                290,
+                6512,
+                290,
+                50663
+              ]
+            },
+            "publication_segment_indices": null,
+            "start_ms": 4120,
+            "text": "For a while she lay in her chair in happy dreamy pleasure at son and bird and",
+            "window_id": "modal-word-corpus-v1:three-speakers-repeat-pauses:window:65920:161920:preview"
+          },
+          "retained_from_sample": 65920,
+          "silence_publication": null,
+          "source_unit": null,
+          "word_alignment": null,
+          "word_publication": null
+        },
+        {
+          "accepted_through_sample": 192000,
+          "action": "commit",
+          "analysis_end_sample": 181440,
+          "analysis_start_sample": 65920,
+          "audio_evidence": {
+            "no_speech_prob": 0.040999073535203934,
+            "observation": {
+              "digital_silence": false,
+              "pcm_sha256": "580a8ff0a8f2fa989cdc6637aac7b6e06ebfcd5c53efb876cc13a8614d1b273b",
+              "sample_count": 115520
+            },
+            "reason": "model_speech_candidate",
+            "state": "speech_candidate"
+          },
+          "committed_before_sample": 65920,
+          "decode_index": 7,
+          "eof": false,
+          "publication_span": null,
+          "reason": "source_unit",
+          "result": {
+            "analysis_span": {
+              "end_ms": 11340,
+              "start_ms": 4120
+            },
+            "end_ms": 11340,
+            "metadata": {
+              "avg_logprob": -0.2650574601214865,
+              "compression_ratio": 1.1216216216216217,
+              "language": "en",
+              "no_speech_prob": 0.040999073535203934,
+              "segments": [
+                {
+                  "span": {
+                    "end_ms": 10660,
+                    "start_ms": 4120
+                  },
+                  "text": " For a while she lay in her chair in happy dreamy pleasure at son and bird and tree.",
+                  "tokens": [
+                    1114,
+                    257,
+                    981,
+                    673,
+                    3830,
+                    287,
+                    607,
+                    5118,
+                    287,
+                    3772,
+                    4320,
+                    88,
+                    9476,
+                    379,
+                    3367,
+                    290,
+                    6512,
+                    290,
+                    5509,
+                    13
+                  ]
+                }
+              ],
+              "temperature": 0.0,
+              "timestamps_complete": true,
+              "tokens": [
+                50363,
+                1114,
+                257,
+                981,
+                673,
+                3830,
+                287,
+                607,
+                5118,
+                287,
+                3772,
+                4320,
+                88,
+                9476,
+                379,
+                3367,
+                290,
+                6512,
+                290,
+                5509,
+                13,
+                50690
+              ]
+            },
+            "publication_segment_indices": null,
+            "start_ms": 4120,
+            "text": "For a while she lay in her chair in happy dreamy pleasure at son and bird and tree.",
+            "window_id": "modal-word-corpus-v1:three-speakers-repeat-pauses:window:65920:181440:unit"
+          },
+          "retained_from_sample": 65920,
+          "silence_publication": null,
+          "source_unit": {
+            "end_sample": 181440,
+            "endpoint": {
+              "end_sample": 181440,
+              "peak": 5,
+              "quiet_start_sample": 171840
+            },
+            "origin": "quiet_run",
+            "start_sample": 65920
+          },
+          "word_alignment": null,
+          "word_publication": null
+        },
+        {
+          "accepted_through_sample": 224000,
+          "action": "wait_for_input",
+          "analysis_end_sample": 213440,
+          "analysis_start_sample": 181440,
+          "audio_evidence": {
+            "no_speech_prob": 0.9428682923316956,
+            "observation": {
+              "digital_silence": false,
+              "pcm_sha256": "73723053c3c9d0bc310f51fdd3a67b8f24626bf8f22a838574b60207bcf86457",
+              "sample_count": 32000
+            },
+            "reason": "conflicting_speech_score",
+            "state": "uncertain"
+          },
+          "committed_before_sample": 181440,
+          "decode_index": 8,
+          "eof": false,
+          "publication_span": null,
+          "reason": "conflicting_speech_score",
+          "result": {
+            "analysis_span": {
+              "end_ms": 13340,
+              "start_ms": 11340
+            },
+            "end_ms": 13340,
+            "metadata": {
+              "avg_logprob": -0.838164210319519,
+              "compression_ratio": 0.2727272727272727,
+              "language": "en",
+              "no_speech_prob": 0.9428682923316956,
+              "segments": [
+                {
+                  "span": {
+                    "end_ms": 13340,
+                    "start_ms": 11340
+                  },
+                  "text": " you",
+                  "tokens": [
+                    345
+                  ]
+                }
+              ],
+              "temperature": 0.0,
+              "timestamps_complete": true,
+              "tokens": [
+                50363,
+                345,
+                50463
+              ]
+            },
+            "publication_segment_indices": null,
+            "start_ms": 11340,
+            "text": "you",
+            "window_id": "modal-word-corpus-v1:three-speakers-repeat-pauses:window:181440:213440:preview"
+          },
+          "retained_from_sample": 181440,
+          "silence_publication": null,
+          "source_unit": null,
+          "word_alignment": null,
+          "word_publication": null
+        },
+        {
+          "accepted_through_sample": 256000,
+          "action": "preview",
+          "analysis_end_sample": 245440,
+          "analysis_start_sample": 181440,
+          "audio_evidence": {
+            "no_speech_prob": 0.05649261921644211,
+            "observation": {
+              "digital_silence": false,
+              "pcm_sha256": "f53447626f49c806348cf1b4c73ff096b0314fc8616582aa6778bcae65a3052f",
+              "sample_count": 64000
+            },
+            "reason": "model_speech_candidate",
+            "state": "speech_candidate"
+          },
+          "committed_before_sample": 181440,
+          "decode_index": 9,
+          "eof": false,
+          "publication_span": null,
+          "reason": "source_unit_open",
+          "result": {
+            "analysis_span": {
+              "end_ms": 15340,
+              "start_ms": 11340
+            },
+            "end_ms": 15340,
+            "metadata": {
+              "avg_logprob": -0.4910892009735107,
+              "compression_ratio": 0.7894736842105263,
+              "language": "en",
+              "no_speech_prob": 0.05649261921644211,
+              "segments": [
+                {
+                  "span": {
+                    "end_ms": 15340,
+                    "start_ms": 11340
+                  },
+                  "text": " And the gardeners boy chopped.",
+                  "tokens": [
+                    843,
+                    262,
+                    11376,
+                    364,
+                    2933,
+                    20720,
+                    13
+                  ]
+                }
+              ],
+              "temperature": 0.0,
+              "timestamps_complete": true,
+              "tokens": [
+                50363,
+                843,
+                262,
+                11376,
+                364,
+                2933,
+                20720,
+                13,
+                50563
+              ]
+            },
+            "publication_segment_indices": null,
+            "start_ms": 11340,
+            "text": "And the gardeners boy chopped.",
+            "window_id": "modal-word-corpus-v1:three-speakers-repeat-pauses:window:181440:245440:preview"
+          },
+          "retained_from_sample": 181440,
+          "silence_publication": null,
+          "source_unit": null,
+          "word_alignment": null,
+          "word_publication": null
+        },
+        {
+          "accepted_through_sample": 288000,
+          "action": "preview",
+          "analysis_end_sample": 277440,
+          "analysis_start_sample": 181440,
+          "audio_evidence": {
+            "no_speech_prob": 0.044528987258672714,
+            "observation": {
+              "digital_silence": false,
+              "pcm_sha256": "3b3bd26f66e633efa0b0529976b820a1ae808e7ae61cd7d8f6d49593f7fbde9b",
+              "sample_count": 96000
+            },
+            "reason": "model_speech_candidate",
+            "state": "speech_candidate"
+          },
+          "committed_before_sample": 181440,
+          "decode_index": 10,
+          "eof": false,
+          "publication_span": null,
+          "reason": "source_unit_open",
+          "result": {
+            "analysis_span": {
+              "end_ms": 17340,
+              "start_ms": 11340
+            },
+            "end_ms": 17340,
+            "metadata": {
+              "avg_logprob": -0.27077166239420575,
+              "compression_ratio": 0.9344262295081968,
+              "language": "en",
+              "no_speech_prob": 0.044528987258672714,
+              "segments": [
+                {
+                  "span": {
+                    "end_ms": 17340,
+                    "start_ms": 11340
+                  },
+                  "text": " And the gardeners boy chopped the tree into small pieces.",
+                  "tokens": [
+                    843,
+                    262,
+                    11376,
+                    364,
+                    2933,
+                    20720,
+                    262,
+                    5509,
+                    656,
+                    1402,
+                    5207,
+                    13
+                  ]
+                }
+              ],
+              "temperature": 0.0,
+              "timestamps_complete": true,
+              "tokens": [
+                50363,
+                843,
+                262,
+                11376,
+                364,
+                2933,
+                20720,
+                262,
+                5509,
+                656,
+                1402,
+                5207,
+                13,
+                50663
+              ]
+            },
+            "publication_segment_indices": null,
+            "start_ms": 11340,
+            "text": "And the gardeners boy chopped the tree into small pieces.",
+            "window_id": "modal-word-corpus-v1:three-speakers-repeat-pauses:window:181440:277440:preview"
+          },
+          "retained_from_sample": 181440,
+          "silence_publication": null,
+          "source_unit": null,
+          "word_alignment": null,
+          "word_publication": null
+        },
+        {
+          "accepted_through_sample": 320000,
+          "action": "preview",
+          "analysis_end_sample": 309440,
+          "analysis_start_sample": 181440,
+          "audio_evidence": {
+            "no_speech_prob": 0.04345150291919708,
+            "observation": {
+              "digital_silence": false,
+              "pcm_sha256": "4dea534a81922466d137554a9191828bdf8f9feed7c5399fa1f0002d88258dad",
+              "sample_count": 128000
+            },
+            "reason": "model_speech_candidate",
+            "state": "speech_candidate"
+          },
+          "committed_before_sample": 181440,
+          "decode_index": 11,
+          "eof": false,
+          "publication_span": null,
+          "reason": "source_unit_open",
+          "result": {
+            "analysis_span": {
+              "end_ms": 19340,
+              "start_ms": 11340
+            },
+            "end_ms": 19340,
+            "metadata": {
+              "avg_logprob": -0.39510619122049084,
+              "compression_ratio": 1.077922077922078,
+              "language": "en",
+              "no_speech_prob": 0.04345150291919708,
+              "segments": [
+                {
+                  "span": {
+                    "end_ms": 18500,
+                    "start_ms": 11340
+                  },
+                  "text": " And the gardeners boy chopped the tree into small pieces.",
+                  "tokens": [
+                    843,
+                    262,
+                    11376,
+                    364,
+                    2933,
+                    20720,
+                    262,
+                    5509,
+                    656,
+                    1402,
+                    5207,
+                    13
+                  ]
+                }
+              ],
+              "temperature": 0.0,
+              "timestamps_complete": false,
+              "tokens": [
+                50363,
+                843,
+                262,
+                11376,
+                364,
+                2933,
+                20720,
+                262,
+                5509,
+                656,
+                1402,
+                5207,
+                13,
+                50721,
+                50721,
+                1318,
+                373,
+                257,
+                2187,
+                24575,
+                286,
+                50773
+              ]
+            },
+            "publication_segment_indices": null,
+            "start_ms": 11340,
+            "text": "And the gardeners boy chopped the tree into small pieces. There was a whole heap of",
+            "window_id": "modal-word-corpus-v1:three-speakers-repeat-pauses:window:181440:309440:preview"
+          },
+          "retained_from_sample": 181440,
+          "silence_publication": null,
+          "source_unit": null,
+          "word_alignment": null,
+          "word_publication": null
+        },
+        {
+          "accepted_through_sample": 352000,
+          "action": "commit",
+          "analysis_end_sample": 343040,
+          "analysis_start_sample": 181440,
+          "audio_evidence": {
+            "no_speech_prob": 0.043177083134651184,
+            "observation": {
+              "digital_silence": false,
+              "pcm_sha256": "c6f5ee1238c666dc90a49119497c3da0910b5cd324e69cca1ac7ec3c1ad69dcf",
+              "sample_count": 161600
+            },
+            "reason": "model_speech_candidate",
+            "state": "speech_candidate"
+          },
+          "committed_before_sample": 181440,
+          "decode_index": 12,
+          "eof": false,
+          "publication_span": null,
+          "reason": "source_unit",
+          "result": {
+            "analysis_span": {
+              "end_ms": 21440,
+              "start_ms": 11340
+            },
+            "end_ms": 21440,
+            "metadata": {
+              "avg_logprob": -0.240065975189209,
+              "compression_ratio": 1.1204819277108433,
+              "language": "en",
+              "no_speech_prob": 0.043177083134651184,
+              "segments": [
+                {
+                  "span": {
+                    "end_ms": 18500,
+                    "start_ms": 11340
+                  },
+                  "text": " And the gardeners boy chopped the tree into small pieces.",
+                  "tokens": [
+                    843,
+                    262,
+                    11376,
+                    364,
+                    2933,
+                    20720,
+                    262,
+                    5509,
+                    656,
+                    1402,
+                    5207,
+                    13
+                  ]
+                },
+                {
+                  "span": {
+                    "end_ms": 20340,
+                    "start_ms": 18500
+                  },
+                  "text": " There was a whole heap lying there.",
+                  "tokens": [
+                    1318,
+                    373,
+                    257,
+                    2187,
+                    24575,
+                    9105,
+                    612,
+                    13
+                  ]
+                }
+              ],
+              "temperature": 0.0,
+              "timestamps_complete": true,
+              "tokens": [
+                50363,
+                843,
+                262,
+                11376,
+                364,
+                2933,
+                20720,
+                262,
+                5509,
+                656,
+                1402,
+                5207,
+                13,
+                50721,
+                50721,
+                1318,
+                373,
+                257,
+                2187,
+                24575,
+                9105,
+                612,
+                13,
+                50813
+              ]
+            },
+            "publication_segment_indices": null,
+            "start_ms": 11340,
+            "text": "And the gardeners boy chopped the tree into small pieces. There was a whole heap lying there.",
+            "window_id": "modal-word-corpus-v1:three-speakers-repeat-pauses:window:181440:343040:unit"
+          },
+          "retained_from_sample": 181440,
+          "silence_publication": null,
+          "source_unit": {
+            "end_sample": 343040,
+            "endpoint": {
+              "end_sample": 343040,
+              "peak": 0,
+              "quiet_start_sample": 333440
+            },
+            "origin": "quiet_run",
+            "start_sample": 181440
+          },
+          "word_alignment": null,
+          "word_publication": null
+        },
+        {
+          "accepted_through_sample": 384000,
+          "action": "wait_for_input",
+          "analysis_end_sample": 375040,
+          "analysis_start_sample": 343040,
+          "audio_evidence": {
+            "no_speech_prob": 0.787601888179779,
+            "observation": {
+              "digital_silence": false,
+              "pcm_sha256": "e9ddd7573fac0ecacd88f50e85708db5c9947536a7ef808c796a7378b67e55bd",
+              "sample_count": 32000
+            },
+            "reason": "conflicting_speech_score",
+            "state": "uncertain"
+          },
+          "committed_before_sample": 343040,
+          "decode_index": 13,
+          "eof": false,
+          "publication_span": null,
+          "reason": "conflicting_speech_score",
+          "result": {
+            "analysis_span": {
+              "end_ms": 23440,
+              "start_ms": 21440
+            },
+            "end_ms": 23440,
+            "metadata": {
+              "avg_logprob": -1.0614577531814575,
+              "compression_ratio": 0.2727272727272727,
+              "language": "en",
+              "no_speech_prob": 0.787601888179779,
+              "segments": [
+                {
+                  "span": {
+                    "end_ms": 23440,
+                    "start_ms": 21440
+                  },
+                  "text": " you",
+                  "tokens": [
+                    345
+                  ]
+                }
+              ],
+              "temperature": 0.0,
+              "timestamps_complete": true,
+              "tokens": [
+                50363,
+                345,
+                50463
+              ]
+            },
+            "publication_segment_indices": null,
+            "start_ms": 21440,
+            "text": "you",
+            "window_id": "modal-word-corpus-v1:three-speakers-repeat-pauses:window:343040:375040:preview"
+          },
+          "retained_from_sample": 343040,
+          "silence_publication": null,
+          "source_unit": null,
+          "word_alignment": null,
+          "word_publication": null
+        },
+        {
+          "accepted_through_sample": 416000,
+          "action": "preview",
+          "analysis_end_sample": 407040,
+          "analysis_start_sample": 343040,
+          "audio_evidence": {
+            "no_speech_prob": 0.08758097141981125,
+            "observation": {
+              "digital_silence": false,
+              "pcm_sha256": "d6b485294d8d217610f191f878aa6ccdfa403b85fa5da9bb2dc65ce6842a8377",
+              "sample_count": 64000
+            },
+            "reason": "model_speech_candidate",
+            "state": "speech_candidate"
+          },
+          "committed_before_sample": 343040,
+          "decode_index": 14,
+          "eof": false,
+          "publication_span": null,
+          "reason": "source_unit_open",
+          "result": {
+            "analysis_span": {
+              "end_ms": 25440,
+              "start_ms": 21440
+            },
+            "end_ms": 25440,
+            "metadata": {
+              "avg_logprob": -0.5417584313286675,
+              "compression_ratio": 0.8181818181818182,
+              "language": "en",
+              "no_speech_prob": 0.08758097141981125,
+              "segments": [
+                {
+                  "span": {
+                    "end_ms": 25440,
+                    "start_ms": 21440
+                  },
+                  "text": " Concord returned to its place amidst",
+                  "tokens": [
+                    34732,
+                    4504,
+                    284,
+                    663,
+                    1295,
+                    31095
+                  ]
+                }
+              ],
+              "temperature": 0.0,
+              "timestamps_complete": true,
+              "tokens": [
+                50363,
+                34732,
+                4504,
+                284,
+                663,
+                1295,
+                31095,
+                50563
+              ]
+            },
+            "publication_segment_indices": null,
+            "start_ms": 21440,
+            "text": "Concord returned to its place amidst",
+            "window_id": "modal-word-corpus-v1:three-speakers-repeat-pauses:window:343040:407040:preview"
+          },
+          "retained_from_sample": 343040,
+          "silence_publication": null,
+          "source_unit": null,
+          "word_alignment": null,
+          "word_publication": null
+        },
+        {
+          "accepted_through_sample": 432000,
+          "action": "commit",
+          "analysis_end_sample": 431040,
+          "analysis_start_sample": 343040,
+          "audio_evidence": {
+            "no_speech_prob": 0.04437161237001419,
+            "observation": {
+              "digital_silence": false,
+              "pcm_sha256": "10372943a4fd89f345f1f9f9de3dead45a5819367defad860be125ce777c2b5a",
+              "sample_count": 88000
+            },
+            "reason": "model_speech_candidate",
+            "state": "speech_candidate"
+          },
+          "committed_before_sample": 343040,
+          "decode_index": 15,
+          "eof": false,
+          "publication_span": null,
+          "reason": "source_unit",
+          "result": {
+            "analysis_span": {
+              "end_ms": 26940,
+              "start_ms": 21440
+            },
+            "end_ms": 26940,
+            "metadata": {
+              "avg_logprob": -0.39996107419331867,
+              "compression_ratio": 0.8703703703703703,
+              "language": "en",
+              "no_speech_prob": 0.04437161237001419,
+              "segments": [
+                {
+                  "span": {
+                    "end_ms": 26440,
+                    "start_ms": 21440
+                  },
+                  "text": " Concord returned to its place amidst the tents.",
+                  "tokens": [
+                    34732,
+                    4504,
+                    284,
+                    663,
+                    1295,
+                    31095,
+                    262,
+                    29804,
+                    13
+                  ]
+                }
+              ],
+              "temperature": 0.0,
+              "timestamps_complete": true,
+              "tokens": [
+                50363,
+                34732,
+                4504,
+                284,
+                663,
+                1295,
+                31095,
+                262,
+                29804,
+                13,
+                50613
+              ]
+            },
+            "publication_segment_indices": null,
+            "start_ms": 21440,
+            "text": "Concord returned to its place amidst the tents.",
+            "window_id": "modal-word-corpus-v1:three-speakers-repeat-pauses:window:343040:431040:unit"
+          },
+          "retained_from_sample": 343040,
+          "silence_publication": null,
+          "source_unit": {
+            "end_sample": 431040,
+            "endpoint": {
+              "end_sample": 431040,
+              "peak": 0,
+              "quiet_start_sample": 421440
+            },
+            "origin": "quiet_run",
+            "start_sample": 343040
+          },
+          "word_alignment": null,
+          "word_publication": null
+        },
+        {
+          "accepted_through_sample": 464000,
+          "action": "preview",
+          "analysis_end_sample": 463040,
+          "analysis_start_sample": 431040,
+          "audio_evidence": {
+            "no_speech_prob": 0.42178353667259216,
+            "observation": {
+              "digital_silence": false,
+              "pcm_sha256": "43f6520311a25692b368ab8f5d477bf88b2382b018b19701398ce3edd4ac9c1f",
+              "sample_count": 32000
+            },
+            "reason": "model_speech_candidate",
+            "state": "speech_candidate"
+          },
+          "committed_before_sample": 431040,
+          "decode_index": 16,
+          "eof": false,
+          "publication_span": null,
+          "reason": "source_unit_open",
+          "result": {
+            "analysis_span": {
+              "end_ms": 28940,
+              "start_ms": 26940
+            },
+            "end_ms": 28940,
+            "metadata": {
+              "avg_logprob": -0.9562075932820638,
+              "compression_ratio": 0.5294117647058824,
+              "language": "en",
+              "no_speech_prob": 0.42178353667259216,
+              "segments": [
+                {
+                  "span": {
+                    "end_ms": 28940,
+                    "start_ms": 26940
+                  },
+                  "text": " for what?",
+                  "tokens": [
+                    329,
+                    644,
+                    30
+                  ]
+                }
+              ],
+              "temperature": 0.0,
+              "timestamps_complete": true,
+              "tokens": [
+                50363,
+                329,
+                644,
+                30,
+                50463
+              ]
+            },
+            "publication_segment_indices": null,
+            "start_ms": 26940,
+            "text": "for what?",
+            "window_id": "modal-word-corpus-v1:three-speakers-repeat-pauses:window:431040:463040:preview"
+          },
+          "retained_from_sample": 431040,
+          "silence_publication": null,
+          "source_unit": null,
+          "word_alignment": null,
+          "word_publication": null
+        },
+        {
+          "accepted_through_sample": 496000,
+          "action": "preview",
+          "analysis_end_sample": 495040,
+          "analysis_start_sample": 431040,
+          "audio_evidence": {
+            "no_speech_prob": 0.13169322907924652,
+            "observation": {
+              "digital_silence": false,
+              "pcm_sha256": "27bce4732455b50cabe63ab18882448e0b8b9e0479db29a052322c1a6fd8094c",
+              "sample_count": 64000
+            },
+            "reason": "model_speech_candidate",
+            "state": "speech_candidate"
+          },
+          "committed_before_sample": 431040,
+          "decode_index": 17,
+          "eof": false,
+          "publication_span": null,
+          "reason": "source_unit_open",
+          "result": {
+            "analysis_span": {
+              "end_ms": 30940,
+              "start_ms": 26940
+            },
+            "end_ms": 30940,
+            "metadata": {
+              "avg_logprob": -0.2776885668436686,
+              "compression_ratio": 0.8627450980392157,
+              "language": "en",
+              "no_speech_prob": 0.13169322907924652,
+              "segments": [
+                {
+                  "span": {
+                    "end_ms": 30940,
+                    "start_ms": 26940
+                  },
+                  "text": " For a while, she lay in her chair and happy.",
+                  "tokens": [
+                    1114,
+                    257,
+                    981,
+                    11,
+                    673,
+                    3830,
+                    287,
+                    607,
+                    5118,
+                    290,
+                    3772,
+                    13
+                  ]
+                }
+              ],
+              "temperature": 0.0,
+              "timestamps_complete": true,
+              "tokens": [
+                50363,
+                1114,
+                257,
+                981,
+                11,
+                673,
+                3830,
+                287,
+                607,
+                5118,
+                290,
+                3772,
+                13,
+                50563
+              ]
+            },
+            "publication_segment_indices": null,
+            "start_ms": 26940,
+            "text": "For a while, she lay in her chair and happy.",
+            "window_id": "modal-word-corpus-v1:three-speakers-repeat-pauses:window:431040:495040:preview"
+          },
+          "retained_from_sample": 431040,
+          "silence_publication": null,
+          "source_unit": null,
+          "word_alignment": null,
+          "word_publication": null
+        },
+        {
+          "accepted_through_sample": 528000,
+          "action": "preview",
+          "analysis_end_sample": 527040,
+          "analysis_start_sample": 431040,
+          "audio_evidence": {
+            "no_speech_prob": 0.07347367703914642,
+            "observation": {
+              "digital_silence": false,
+              "pcm_sha256": "a3372ec40eaee81965f4a1d6900da06724243fc888668fabbe90f07eac8fce1c",
+              "sample_count": 96000
+            },
+            "reason": "model_speech_candidate",
+            "state": "speech_candidate"
+          },
+          "committed_before_sample": 431040,
+          "decode_index": 18,
+          "eof": false,
+          "publication_span": null,
+          "reason": "source_unit_open",
+          "result": {
+            "analysis_span": {
+              "end_ms": 32940,
+              "start_ms": 26940
+            },
+            "end_ms": 32940,
+            "metadata": {
+              "avg_logprob": -0.3118531363351004,
+              "compression_ratio": 1.1159420289855073,
+              "language": "en",
+              "no_speech_prob": 0.07347367703914642,
+              "segments": [],
+              "temperature": 0.0,
+              "timestamps_complete": false,
+              "tokens": [
+                50363,
+                1114,
+                257,
+                981,
+                673,
+                3830,
+                287,
+                607,
+                5118,
+                287,
+                3772,
+                4320,
+                88,
+                9476,
+                379,
+                3367,
+                290,
+                6512,
+                290,
+                50665
+              ]
+            },
+            "publication_segment_indices": null,
+            "start_ms": 26940,
+            "text": "For a while she lay in her chair in happy dreamy pleasure at son and bird and",
+            "window_id": "modal-word-corpus-v1:three-speakers-repeat-pauses:window:431040:527040:preview"
+          },
+          "retained_from_sample": 431040,
+          "silence_publication": null,
+          "source_unit": null,
+          "word_alignment": null,
+          "word_publication": null
+        },
+        {
+          "accepted_through_sample": 560000,
+          "action": "commit",
+          "analysis_end_sample": 546880,
+          "analysis_start_sample": 431040,
+          "audio_evidence": {
+            "no_speech_prob": 0.046749506145715714,
+            "observation": {
+              "digital_silence": false,
+              "pcm_sha256": "21b8c8e7b354c388af2161e84d87ae354e770917abe49122b210fdd8343d1e79",
+              "sample_count": 115840
+            },
+            "reason": "model_speech_candidate",
+            "state": "speech_candidate"
+          },
+          "committed_before_sample": 431040,
+          "decode_index": 19,
+          "eof": false,
+          "publication_span": null,
+          "reason": "source_unit",
+          "result": {
+            "analysis_span": {
+              "end_ms": 34180,
+              "start_ms": 26940
+            },
+            "end_ms": 34180,
+            "metadata": {
+              "avg_logprob": -0.27103701881740405,
+              "compression_ratio": 1.1216216216216217,
+              "language": "en",
+              "no_speech_prob": 0.046749506145715714,
+              "segments": [
+                {
+                  "span": {
+                    "end_ms": 33500,
+                    "start_ms": 26940
+                  },
+                  "text": " For a while she lay in her chair in happy dreamy pleasure at son and bird and tree.",
+                  "tokens": [
+                    1114,
+                    257,
+                    981,
+                    673,
+                    3830,
+                    287,
+                    607,
+                    5118,
+                    287,
+                    3772,
+                    4320,
+                    88,
+                    9476,
+                    379,
+                    3367,
+                    290,
+                    6512,
+                    290,
+                    5509,
+                    13
+                  ]
+                }
+              ],
+              "temperature": 0.0,
+              "timestamps_complete": true,
+              "tokens": [
+                50363,
+                1114,
+                257,
+                981,
+                673,
+                3830,
+                287,
+                607,
+                5118,
+                287,
+                3772,
+                4320,
+                88,
+                9476,
+                379,
+                3367,
+                290,
+                6512,
+                290,
+                5509,
+                13,
+                50691
+              ]
+            },
+            "publication_segment_indices": null,
+            "start_ms": 26940,
+            "text": "For a while she lay in her chair in happy dreamy pleasure at son and bird and tree.",
+            "window_id": "modal-word-corpus-v1:three-speakers-repeat-pauses:window:431040:546880:unit"
+          },
+          "retained_from_sample": 431040,
+          "silence_publication": null,
+          "source_unit": {
+            "end_sample": 546880,
+            "endpoint": {
+              "end_sample": 546880,
+              "peak": 5,
+              "quiet_start_sample": 537280
+            },
+            "origin": "quiet_run",
+            "start_sample": 431040
+          },
+          "word_alignment": null,
+          "word_publication": null
+        },
+        {
+          "accepted_through_sample": 592000,
+          "action": "wait_for_input",
+          "analysis_end_sample": 578880,
+          "analysis_start_sample": 546880,
+          "audio_evidence": {
+            "no_speech_prob": 0.9323682188987732,
+            "observation": {
+              "digital_silence": false,
+              "pcm_sha256": "6ddce24403d876be2b9b1abcf500e0fdbd8cd1cc4f54c4c479118740501ce526",
+              "sample_count": 32000
+            },
+            "reason": "conflicting_speech_score",
+            "state": "uncertain"
+          },
+          "committed_before_sample": 546880,
+          "decode_index": 20,
+          "eof": false,
+          "publication_span": null,
+          "reason": "conflicting_speech_score",
+          "result": {
+            "analysis_span": {
+              "end_ms": 36180,
+              "start_ms": 34180
+            },
+            "end_ms": 36180,
+            "metadata": {
+              "avg_logprob": -0.8625158667564392,
+              "compression_ratio": 0.2727272727272727,
+              "language": "en",
+              "no_speech_prob": 0.9323682188987732,
+              "segments": [
+                {
+                  "span": {
+                    "end_ms": 36180,
+                    "start_ms": 34180
+                  },
+                  "text": " you",
+                  "tokens": [
+                    345
+                  ]
+                }
+              ],
+              "temperature": 0.0,
+              "timestamps_complete": true,
+              "tokens": [
+                50363,
+                345,
+                50463
+              ]
+            },
+            "publication_segment_indices": null,
+            "start_ms": 34180,
+            "text": "you",
+            "window_id": "modal-word-corpus-v1:three-speakers-repeat-pauses:window:546880:578880:preview"
+          },
+          "retained_from_sample": 546880,
+          "silence_publication": null,
+          "source_unit": null,
+          "word_alignment": null,
+          "word_publication": null
+        },
+        {
+          "accepted_through_sample": 624000,
+          "action": "preview",
+          "analysis_end_sample": 610880,
+          "analysis_start_sample": 546880,
+          "audio_evidence": {
+            "no_speech_prob": 0.04928633198142052,
+            "observation": {
+              "digital_silence": false,
+              "pcm_sha256": "26f48d9559d67867de7297794d49ed333a2bb435c0d35c970a44f18a04e6a7cf",
+              "sample_count": 64000
+            },
+            "reason": "model_speech_candidate",
+            "state": "speech_candidate"
+          },
+          "committed_before_sample": 546880,
+          "decode_index": 21,
+          "eof": false,
+          "publication_span": null,
+          "reason": "source_unit_open",
+          "result": {
+            "analysis_span": {
+              "end_ms": 38180,
+              "start_ms": 34180
+            },
+            "end_ms": 38180,
+            "metadata": {
+              "avg_logprob": -0.4840446949005127,
+              "compression_ratio": 0.7894736842105263,
+              "language": "en",
+              "no_speech_prob": 0.04928633198142052,
+              "segments": [
+                {
+                  "span": {
+                    "end_ms": 38180,
+                    "start_ms": 34180
+                  },
+                  "text": " And the gardeners boy chopped.",
+                  "tokens": [
+                    843,
+                    262,
+                    11376,
+                    364,
+                    2933,
+                    20720,
+                    13
+                  ]
+                }
+              ],
+              "temperature": 0.0,
+              "timestamps_complete": true,
+              "tokens": [
+                50363,
+                843,
+                262,
+                11376,
+                364,
+                2933,
+                20720,
+                13,
+                50563
+              ]
+            },
+            "publication_segment_indices": null,
+            "start_ms": 34180,
+            "text": "And the gardeners boy chopped.",
+            "window_id": "modal-word-corpus-v1:three-speakers-repeat-pauses:window:546880:610880:preview"
+          },
+          "retained_from_sample": 546880,
+          "silence_publication": null,
+          "source_unit": null,
+          "word_alignment": null,
+          "word_publication": null
+        },
+        {
+          "accepted_through_sample": 656000,
+          "action": "preview",
+          "analysis_end_sample": 642880,
+          "analysis_start_sample": 546880,
+          "audio_evidence": {
+            "no_speech_prob": 0.0368313193321228,
+            "observation": {
+              "digital_silence": false,
+              "pcm_sha256": "9844df31c456dbcaead3eabdbc0e19018d2657011db64c404e558ab6aeb2f62d",
+              "sample_count": 96000
+            },
+            "reason": "model_speech_candidate",
+            "state": "speech_candidate"
+          },
+          "committed_before_sample": 546880,
+          "decode_index": 22,
+          "eof": false,
+          "publication_span": null,
+          "reason": "source_unit_open",
+          "result": {
+            "analysis_span": {
+              "end_ms": 40180,
+              "start_ms": 34180
+            },
+            "end_ms": 40180,
+            "metadata": {
+              "avg_logprob": -0.25759425163269045,
+              "compression_ratio": 0.9344262295081968,
+              "language": "en",
+              "no_speech_prob": 0.0368313193321228,
+              "segments": [
+                {
+                  "span": {
+                    "end_ms": 40180,
+                    "start_ms": 34180
+                  },
+                  "text": " And the gardeners boy chopped the tree into small pieces.",
+                  "tokens": [
+                    843,
+                    262,
+                    11376,
+                    364,
+                    2933,
+                    20720,
+                    262,
+                    5509,
+                    656,
+                    1402,
+                    5207,
+                    13
+                  ]
+                }
+              ],
+              "temperature": 0.0,
+              "timestamps_complete": true,
+              "tokens": [
+                50363,
+                843,
+                262,
+                11376,
+                364,
+                2933,
+                20720,
+                262,
+                5509,
+                656,
+                1402,
+                5207,
+                13,
+                50663
+              ]
+            },
+            "publication_segment_indices": null,
+            "start_ms": 34180,
+            "text": "And the gardeners boy chopped the tree into small pieces.",
+            "window_id": "modal-word-corpus-v1:three-speakers-repeat-pauses:window:546880:642880:preview"
+          },
+          "retained_from_sample": 546880,
+          "silence_publication": null,
+          "source_unit": null,
+          "word_alignment": null,
+          "word_publication": null
+        },
+        {
+          "accepted_through_sample": 688000,
+          "action": "preview",
+          "analysis_end_sample": 674880,
+          "analysis_start_sample": 546880,
+          "audio_evidence": {
+            "no_speech_prob": 0.04662350192666054,
+            "observation": {
+              "digital_silence": false,
+              "pcm_sha256": "9f426fda64572ff2f89ef63829dcaa9d06c5e95796107cfe0f2f383dbf57525f",
+              "sample_count": 128000
+            },
+            "reason": "model_speech_candidate",
+            "state": "speech_candidate"
+          },
+          "committed_before_sample": 546880,
+          "decode_index": 23,
+          "eof": false,
+          "publication_span": null,
+          "reason": "source_unit_open",
+          "result": {
+            "analysis_span": {
+              "end_ms": 42180,
+              "start_ms": 34180
+            },
+            "end_ms": 42180,
+            "metadata": {
+              "avg_logprob": -0.34922927358876105,
+              "compression_ratio": 1.0657894736842106,
+              "language": "en",
+              "no_speech_prob": 0.04662350192666054,
+              "segments": [
+                {
+                  "span": {
+                    "end_ms": 41340,
+                    "start_ms": 34180
+                  },
+                  "text": " And the gardeners boy chopped the tree into small pieces.",
+                  "tokens": [
+                    843,
+                    262,
+                    11376,
+                    364,
+                    2933,
+                    20720,
+                    262,
+                    5509,
+                    656,
+                    1402,
+                    5207,
+                    13
+                  ]
+                },
+                {
+                  "span": {
+                    "end_ms": 42180,
+                    "start_ms": 41340
+                  },
+                  "text": " There was a whole heap.",
+                  "tokens": [
+                    1318,
+                    373,
+                    257,
+                    2187,
+                    24575,
+                    13
+                  ]
+                }
+              ],
+              "temperature": 0.0,
+              "timestamps_complete": true,
+              "tokens": [
+                50363,
+                843,
+                262,
+                11376,
+                364,
+                2933,
+                20720,
+                262,
+                5509,
+                656,
+                1402,
+                5207,
+                13,
+                50721,
+                50721,
+                1318,
+                373,
+                257,
+                2187,
+                24575,
+                13,
+                50763
+              ]
+            },
+            "publication_segment_indices": null,
+            "start_ms": 34180,
+            "text": "And the gardeners boy chopped the tree into small pieces. There was a whole heap.",
+            "window_id": "modal-word-corpus-v1:three-speakers-repeat-pauses:window:546880:674880:preview"
+          },
+          "retained_from_sample": 546880,
+          "silence_publication": null,
+          "source_unit": null,
+          "word_alignment": null,
+          "word_publication": null
+        },
+        {
+          "accepted_through_sample": 698560,
+          "action": "commit",
+          "analysis_end_sample": 698560,
+          "analysis_start_sample": 546880,
+          "audio_evidence": {
+            "no_speech_prob": 0.04467371478676796,
+            "observation": {
+              "digital_silence": false,
+              "pcm_sha256": "272d698272e433abe7c4dc7db3f8c995d419c7f4e666be3f30b94d4f4d15705e",
+              "sample_count": 151680
+            },
+            "reason": "model_speech_candidate",
+            "state": "speech_candidate"
+          },
+          "committed_before_sample": 546880,
+          "decode_index": 24,
+          "eof": true,
+          "publication_span": null,
+          "reason": "source_unit",
+          "result": {
+            "analysis_span": {
+              "end_ms": 43660,
+              "start_ms": 34180
+            },
+            "end_ms": 43660,
+            "metadata": {
+              "avg_logprob": -0.23441492080688475,
+              "compression_ratio": 1.1204819277108433,
+              "language": "en",
+              "no_speech_prob": 0.04467371478676796,
+              "segments": [
+                {
+                  "span": {
+                    "end_ms": 41340,
+                    "start_ms": 34180
+                  },
+                  "text": " And the gardeners boy chopped the tree into small pieces.",
+                  "tokens": [
+                    843,
+                    262,
+                    11376,
+                    364,
+                    2933,
+                    20720,
+                    262,
+                    5509,
+                    656,
+                    1402,
+                    5207,
+                    13
+                  ]
+                },
+                {
+                  "span": {
+                    "end_ms": 43140,
+                    "start_ms": 41340
+                  },
+                  "text": " There was a whole heap lying there.",
+                  "tokens": [
+                    1318,
+                    373,
+                    257,
+                    2187,
+                    24575,
+                    9105,
+                    612,
+                    13
+                  ]
+                }
+              ],
+              "temperature": 0.0,
+              "timestamps_complete": true,
+              "tokens": [
+                50363,
+                843,
+                262,
+                11376,
+                364,
+                2933,
+                20720,
+                262,
+                5509,
+                656,
+                1402,
+                5207,
+                13,
+                50721,
+                50721,
+                1318,
+                373,
+                257,
+                2187,
+                24575,
+                9105,
+                612,
+                13,
+                50811
+              ]
+            },
+            "publication_segment_indices": null,
+            "start_ms": 34180,
+            "text": "And the gardeners boy chopped the tree into small pieces. There was a whole heap lying there.",
+            "window_id": "modal-word-corpus-v1:three-speakers-repeat-pauses:window:546880:698560:unit"
+          },
+          "retained_from_sample": 546880,
+          "silence_publication": null,
+          "source_unit": {
+            "end_sample": 698560,
+            "endpoint": null,
+            "origin": "end_of_input",
+            "start_sample": 546880
+          },
+          "word_alignment": null,
+          "word_publication": null
+        }
+      ],
+      "driver_steps": 391,
+      "endpoint_policy": {
+        "config": {
+          "frame_ms": 20,
+          "max_quiet_unit_ms": 10000,
+          "min_unit_ms": 1000,
+          "quiet_ms": 600,
+          "quiet_peak": 32
+        },
+        "kind": "online-quiet-run",
+        "oracle_boundaries_used": false,
+        "silence_publication_authority": false
+      },
+      "error": null,
+      "events": [
+        {
+          "committed_through_ms": null,
+          "committed_through_sample": null,
+          "end_sample": 32000,
+          "kind": "provisional",
+          "revision": 1,
+          "sample_rate_hz": 16000,
+          "segment_id": "modal-word-corpus-v1:three-speakers-repeat-pauses:segment:0",
+          "sequence_number": 1,
+          "session_version": 0,
+          "start_sample": 0,
+          "supersedes_revision": null,
+          "text": "Concourt return to its place."
+        },
+        {
+          "committed_through_ms": null,
+          "committed_through_sample": null,
+          "end_sample": 64000,
+          "kind": "replace",
+          "revision": 2,
+          "sample_rate_hz": 16000,
+          "segment_id": "modal-word-corpus-v1:three-speakers-repeat-pauses:segment:0",
+          "sequence_number": 2,
+          "session_version": 0,
+          "start_sample": 0,
+          "supersedes_revision": 1,
+          "text": "Concord returned to its place amidst the tents."
+        },
+        {
+          "committed_through_ms": null,
+          "committed_through_sample": null,
+          "end_sample": 65920,
+          "kind": "replace",
+          "revision": 3,
+          "sample_rate_hz": 16000,
+          "segment_id": "modal-word-corpus-v1:three-speakers-repeat-pauses:segment:0",
+          "sequence_number": 3,
+          "session_version": 1,
+          "start_sample": 0,
+          "supersedes_revision": 2,
+          "text": "Concord returned to its place amidst the tents."
+        },
+        {
+          "committed_through_ms": 4120,
+          "committed_through_sample": 65920,
+          "end_sample": 65920,
+          "kind": "commit",
+          "revision": 3,
+          "sample_rate_hz": 16000,
+          "segment_id": "modal-word-corpus-v1:three-speakers-repeat-pauses:segment:0",
+          "sequence_number": 4,
+          "session_version": 1,
+          "start_sample": 0,
+          "supersedes_revision": null,
+          "text": null
+        },
+        {
+          "committed_through_ms": null,
+          "committed_through_sample": null,
+          "end_sample": 97920,
+          "kind": "provisional",
+          "revision": 1,
+          "sample_rate_hz": 16000,
+          "segment_id": "modal-word-corpus-v1:three-speakers-repeat-pauses:segment:1",
+          "sequence_number": 5,
+          "session_version": 1,
+          "start_sample": 65920,
+          "supersedes_revision": null,
+          "text": "for what?"
+        },
+        {
+          "committed_through_ms": null,
+          "committed_through_sample": null,
+          "end_sample": 129920,
+          "kind": "replace",
+          "revision": 2,
+          "sample_rate_hz": 16000,
+          "segment_id": "modal-word-corpus-v1:three-speakers-repeat-pauses:segment:1",
+          "sequence_number": 6,
+          "session_version": 1,
+          "start_sample": 65920,
+          "supersedes_revision": 1,
+          "text": "For a while, she lay in her chair and happy."
+        },
+        {
+          "committed_through_ms": null,
+          "committed_through_sample": null,
+          "end_sample": 161920,
+          "kind": "replace",
+          "revision": 3,
+          "sample_rate_hz": 16000,
+          "segment_id": "modal-word-corpus-v1:three-speakers-repeat-pauses:segment:1",
+          "sequence_number": 7,
+          "session_version": 1,
+          "start_sample": 65920,
+          "supersedes_revision": 2,
+          "text": "For a while she lay in her chair in happy dreamy pleasure at son and bird and"
+        },
+        {
+          "committed_through_ms": null,
+          "committed_through_sample": null,
+          "end_sample": 181440,
+          "kind": "replace",
+          "revision": 4,
+          "sample_rate_hz": 16000,
+          "segment_id": "modal-word-corpus-v1:three-speakers-repeat-pauses:segment:1",
+          "sequence_number": 8,
+          "session_version": 2,
+          "start_sample": 65920,
+          "supersedes_revision": 3,
+          "text": "For a while she lay in her chair in happy dreamy pleasure at son and bird and tree."
+        },
+        {
+          "committed_through_ms": 11340,
+          "committed_through_sample": 181440,
+          "end_sample": 181440,
+          "kind": "commit",
+          "revision": 4,
+          "sample_rate_hz": 16000,
+          "segment_id": "modal-word-corpus-v1:three-speakers-repeat-pauses:segment:1",
+          "sequence_number": 9,
+          "session_version": 2,
+          "start_sample": 65920,
+          "supersedes_revision": null,
+          "text": null
+        },
+        {
+          "committed_through_ms": null,
+          "committed_through_sample": null,
+          "end_sample": 213440,
+          "kind": "provisional",
+          "revision": 1,
+          "sample_rate_hz": 16000,
+          "segment_id": "modal-word-corpus-v1:three-speakers-repeat-pauses:segment:2",
+          "sequence_number": 10,
+          "session_version": 2,
+          "start_sample": 181440,
+          "supersedes_revision": null,
+          "text": ""
+        },
+        {
+          "committed_through_ms": null,
+          "committed_through_sample": null,
+          "end_sample": 245440,
+          "kind": "replace",
+          "revision": 2,
+          "sample_rate_hz": 16000,
+          "segment_id": "modal-word-corpus-v1:three-speakers-repeat-pauses:segment:2",
+          "sequence_number": 11,
+          "session_version": 2,
+          "start_sample": 181440,
+          "supersedes_revision": 1,
+          "text": "And the gardeners boy chopped."
+        },
+        {
+          "committed_through_ms": null,
+          "committed_through_sample": null,
+          "end_sample": 277440,
+          "kind": "replace",
+          "revision": 3,
+          "sample_rate_hz": 16000,
+          "segment_id": "modal-word-corpus-v1:three-speakers-repeat-pauses:segment:2",
+          "sequence_number": 12,
+          "session_version": 2,
+          "start_sample": 181440,
+          "supersedes_revision": 2,
+          "text": "And the gardeners boy chopped the tree into small pieces."
+        },
+        {
+          "committed_through_ms": null,
+          "committed_through_sample": null,
+          "end_sample": 309440,
+          "kind": "replace",
+          "revision": 4,
+          "sample_rate_hz": 16000,
+          "segment_id": "modal-word-corpus-v1:three-speakers-repeat-pauses:segment:2",
+          "sequence_number": 13,
+          "session_version": 2,
+          "start_sample": 181440,
+          "supersedes_revision": 3,
+          "text": "And the gardeners boy chopped the tree into small pieces. There was a whole heap of"
+        },
+        {
+          "committed_through_ms": null,
+          "committed_through_sample": null,
+          "end_sample": 343040,
+          "kind": "replace",
+          "revision": 5,
+          "sample_rate_hz": 16000,
+          "segment_id": "modal-word-corpus-v1:three-speakers-repeat-pauses:segment:2",
+          "sequence_number": 14,
+          "session_version": 3,
+          "start_sample": 181440,
+          "supersedes_revision": 4,
+          "text": "And the gardeners boy chopped the tree into small pieces. There was a whole heap lying there."
+        },
+        {
+          "committed_through_ms": 21440,
+          "committed_through_sample": 343040,
+          "end_sample": 343040,
+          "kind": "commit",
+          "revision": 5,
+          "sample_rate_hz": 16000,
+          "segment_id": "modal-word-corpus-v1:three-speakers-repeat-pauses:segment:2",
+          "sequence_number": 15,
+          "session_version": 3,
+          "start_sample": 181440,
+          "supersedes_revision": null,
+          "text": null
+        },
+        {
+          "committed_through_ms": null,
+          "committed_through_sample": null,
+          "end_sample": 375040,
+          "kind": "provisional",
+          "revision": 1,
+          "sample_rate_hz": 16000,
+          "segment_id": "modal-word-corpus-v1:three-speakers-repeat-pauses:segment:3",
+          "sequence_number": 16,
+          "session_version": 3,
+          "start_sample": 343040,
+          "supersedes_revision": null,
+          "text": ""
+        },
+        {
+          "committed_through_ms": null,
+          "committed_through_sample": null,
+          "end_sample": 407040,
+          "kind": "replace",
+          "revision": 2,
+          "sample_rate_hz": 16000,
+          "segment_id": "modal-word-corpus-v1:three-speakers-repeat-pauses:segment:3",
+          "sequence_number": 17,
+          "session_version": 3,
+          "start_sample": 343040,
+          "supersedes_revision": 1,
+          "text": "Concord returned to its place amidst"
+        },
+        {
+          "committed_through_ms": null,
+          "committed_through_sample": null,
+          "end_sample": 431040,
+          "kind": "replace",
+          "revision": 3,
+          "sample_rate_hz": 16000,
+          "segment_id": "modal-word-corpus-v1:three-speakers-repeat-pauses:segment:3",
+          "sequence_number": 18,
+          "session_version": 4,
+          "start_sample": 343040,
+          "supersedes_revision": 2,
+          "text": "Concord returned to its place amidst the tents."
+        },
+        {
+          "committed_through_ms": 26940,
+          "committed_through_sample": 431040,
+          "end_sample": 431040,
+          "kind": "commit",
+          "revision": 3,
+          "sample_rate_hz": 16000,
+          "segment_id": "modal-word-corpus-v1:three-speakers-repeat-pauses:segment:3",
+          "sequence_number": 19,
+          "session_version": 4,
+          "start_sample": 343040,
+          "supersedes_revision": null,
+          "text": null
+        },
+        {
+          "committed_through_ms": null,
+          "committed_through_sample": null,
+          "end_sample": 463040,
+          "kind": "provisional",
+          "revision": 1,
+          "sample_rate_hz": 16000,
+          "segment_id": "modal-word-corpus-v1:three-speakers-repeat-pauses:segment:4",
+          "sequence_number": 20,
+          "session_version": 4,
+          "start_sample": 431040,
+          "supersedes_revision": null,
+          "text": "for what?"
+        },
+        {
+          "committed_through_ms": null,
+          "committed_through_sample": null,
+          "end_sample": 495040,
+          "kind": "replace",
+          "revision": 2,
+          "sample_rate_hz": 16000,
+          "segment_id": "modal-word-corpus-v1:three-speakers-repeat-pauses:segment:4",
+          "sequence_number": 21,
+          "session_version": 4,
+          "start_sample": 431040,
+          "supersedes_revision": 1,
+          "text": "For a while, she lay in her chair and happy."
+        },
+        {
+          "committed_through_ms": null,
+          "committed_through_sample": null,
+          "end_sample": 527040,
+          "kind": "replace",
+          "revision": 3,
+          "sample_rate_hz": 16000,
+          "segment_id": "modal-word-corpus-v1:three-speakers-repeat-pauses:segment:4",
+          "sequence_number": 22,
+          "session_version": 4,
+          "start_sample": 431040,
+          "supersedes_revision": 2,
+          "text": "For a while she lay in her chair in happy dreamy pleasure at son and bird and"
+        },
+        {
+          "committed_through_ms": null,
+          "committed_through_sample": null,
+          "end_sample": 546880,
+          "kind": "replace",
+          "revision": 4,
+          "sample_rate_hz": 16000,
+          "segment_id": "modal-word-corpus-v1:three-speakers-repeat-pauses:segment:4",
+          "sequence_number": 23,
+          "session_version": 5,
+          "start_sample": 431040,
+          "supersedes_revision": 3,
+          "text": "For a while she lay in her chair in happy dreamy pleasure at son and bird and tree."
+        },
+        {
+          "committed_through_ms": 34180,
+          "committed_through_sample": 546880,
+          "end_sample": 546880,
+          "kind": "commit",
+          "revision": 4,
+          "sample_rate_hz": 16000,
+          "segment_id": "modal-word-corpus-v1:three-speakers-repeat-pauses:segment:4",
+          "sequence_number": 24,
+          "session_version": 5,
+          "start_sample": 431040,
+          "supersedes_revision": null,
+          "text": null
+        },
+        {
+          "committed_through_ms": null,
+          "committed_through_sample": null,
+          "end_sample": 578880,
+          "kind": "provisional",
+          "revision": 1,
+          "sample_rate_hz": 16000,
+          "segment_id": "modal-word-corpus-v1:three-speakers-repeat-pauses:segment:5",
+          "sequence_number": 25,
+          "session_version": 5,
+          "start_sample": 546880,
+          "supersedes_revision": null,
+          "text": ""
+        },
+        {
+          "committed_through_ms": null,
+          "committed_through_sample": null,
+          "end_sample": 610880,
+          "kind": "replace",
+          "revision": 2,
+          "sample_rate_hz": 16000,
+          "segment_id": "modal-word-corpus-v1:three-speakers-repeat-pauses:segment:5",
+          "sequence_number": 26,
+          "session_version": 5,
+          "start_sample": 546880,
+          "supersedes_revision": 1,
+          "text": "And the gardeners boy chopped."
+        },
+        {
+          "committed_through_ms": null,
+          "committed_through_sample": null,
+          "end_sample": 642880,
+          "kind": "replace",
+          "revision": 3,
+          "sample_rate_hz": 16000,
+          "segment_id": "modal-word-corpus-v1:three-speakers-repeat-pauses:segment:5",
+          "sequence_number": 27,
+          "session_version": 5,
+          "start_sample": 546880,
+          "supersedes_revision": 2,
+          "text": "And the gardeners boy chopped the tree into small pieces."
+        },
+        {
+          "committed_through_ms": null,
+          "committed_through_sample": null,
+          "end_sample": 674880,
+          "kind": "replace",
+          "revision": 4,
+          "sample_rate_hz": 16000,
+          "segment_id": "modal-word-corpus-v1:three-speakers-repeat-pauses:segment:5",
+          "sequence_number": 28,
+          "session_version": 5,
+          "start_sample": 546880,
+          "supersedes_revision": 3,
+          "text": "And the gardeners boy chopped the tree into small pieces. There was a whole heap."
+        },
+        {
+          "committed_through_ms": null,
+          "committed_through_sample": null,
+          "end_sample": 698560,
+          "kind": "replace",
+          "revision": 5,
+          "sample_rate_hz": 16000,
+          "segment_id": "modal-word-corpus-v1:three-speakers-repeat-pauses:segment:5",
+          "sequence_number": 29,
+          "session_version": 6,
+          "start_sample": 546880,
+          "supersedes_revision": 4,
+          "text": "And the gardeners boy chopped the tree into small pieces. There was a whole heap lying there."
+        },
+        {
+          "committed_through_ms": 43660,
+          "committed_through_sample": 698560,
+          "end_sample": 698560,
+          "kind": "commit",
+          "revision": 5,
+          "sample_rate_hz": 16000,
+          "segment_id": "modal-word-corpus-v1:three-speakers-repeat-pauses:segment:5",
+          "sequence_number": 30,
+          "session_version": 6,
+          "start_sample": 546880,
+          "supersedes_revision": null,
+          "text": null
+        },
+        {
+          "committed_through_ms": null,
+          "committed_through_sample": null,
+          "end_sample": null,
+          "kind": "final",
+          "revision": null,
+          "sample_rate_hz": null,
+          "segment_id": null,
+          "sequence_number": 31,
+          "session_version": 6,
+          "start_sample": null,
+          "supersedes_revision": null,
+          "text": null
+        }
+      ],
+      "fixture_boundaries_for_evaluation": [
+        {
+          "end_sample": 56080,
+          "fixture_id": "6930-75918-0000",
+          "index": 0,
+          "kind": "fixture",
+          "occurrence": 1,
+          "origin": "caller",
+          "pcm_sha256": "9afaada0c1b445dae8a3baae5bbaffdcedbd2c09eb66b86720b8045c854feefc",
+          "reference_text": "CONCORD RETURNED TO ITS PLACE AMIDST THE TENTS",
+          "start_sample": 0
+        },
+        {
+          "end_sample": 88080,
+          "index": 1,
+          "kind": "digital_silence",
+          "origin": "caller",
+          "pcm_sha256": "4f7988030a00d082fe445e00a2ac5dab502300ff1b80e8592dd569867b60ef74",
+          "reference_text": "",
+          "start_sample": 56080
+        },
+        {
+          "end_sample": 174240,
+          "fixture_id": "1995-1837-0024",
+          "index": 2,
+          "kind": "fixture",
+          "occurrence": 1,
+          "origin": "caller",
+          "pcm_sha256": "c8161a085b6871c73e775254d8e578451cce924609e08d0778323630db8c7a2b",
+          "reference_text": "FOR A WHILE SHE LAY IN HER CHAIR IN HAPPY DREAMY PLEASURE AT SUN AND BIRD AND TREE",
+          "start_sample": 88080
+        },
+        {
+          "end_sample": 206240,
+          "index": 3,
+          "kind": "digital_silence",
+          "origin": "caller",
+          "pcm_sha256": "4f7988030a00d082fe445e00a2ac5dab502300ff1b80e8592dd569867b60ef74",
+          "reference_text": "",
+          "start_sample": 174240
+        },
+        {
+          "end_sample": 333280,
+          "fixture_id": "672-122797-0072",
+          "index": 4,
+          "kind": "fixture",
+          "occurrence": 1,
+          "origin": "caller",
+          "pcm_sha256": "3bfeb4d05da42bcb00d1875e6dfe66e57ac1068afd957ab1851e74ad202becbc",
+          "reference_text": "AND THE GARDENER'S BOY CHOPPED THE TREE INTO SMALL PIECES THERE WAS A WHOLE HEAP LYING THERE",
+          "start_sample": 206240
+        },
+        {
+          "end_sample": 365280,
+          "index": 5,
+          "kind": "digital_silence",
+          "origin": "caller",
+          "pcm_sha256": "4f7988030a00d082fe445e00a2ac5dab502300ff1b80e8592dd569867b60ef74",
+          "reference_text": "",
+          "start_sample": 333280
+        },
+        {
+          "end_sample": 421360,
+          "fixture_id": "6930-75918-0000",
+          "index": 6,
+          "kind": "fixture",
+          "occurrence": 2,
+          "origin": "caller",
+          "pcm_sha256": "9afaada0c1b445dae8a3baae5bbaffdcedbd2c09eb66b86720b8045c854feefc",
+          "reference_text": "CONCORD RETURNED TO ITS PLACE AMIDST THE TENTS",
+          "start_sample": 365280
+        },
+        {
+          "end_sample": 453360,
+          "index": 7,
+          "kind": "digital_silence",
+          "origin": "caller",
+          "pcm_sha256": "4f7988030a00d082fe445e00a2ac5dab502300ff1b80e8592dd569867b60ef74",
+          "reference_text": "",
+          "start_sample": 421360
+        },
+        {
+          "end_sample": 539520,
+          "fixture_id": "1995-1837-0024",
+          "index": 8,
+          "kind": "fixture",
+          "occurrence": 2,
+          "origin": "caller",
+          "pcm_sha256": "c8161a085b6871c73e775254d8e578451cce924609e08d0778323630db8c7a2b",
+          "reference_text": "FOR A WHILE SHE LAY IN HER CHAIR IN HAPPY DREAMY PLEASURE AT SUN AND BIRD AND TREE",
+          "start_sample": 453360
+        },
+        {
+          "end_sample": 571520,
+          "index": 9,
+          "kind": "digital_silence",
+          "origin": "caller",
+          "pcm_sha256": "4f7988030a00d082fe445e00a2ac5dab502300ff1b80e8592dd569867b60ef74",
+          "reference_text": "",
+          "start_sample": 539520
+        },
+        {
+          "end_sample": 698560,
+          "fixture_id": "672-122797-0072",
+          "index": 10,
+          "kind": "fixture",
+          "occurrence": 2,
+          "origin": "caller",
+          "pcm_sha256": "3bfeb4d05da42bcb00d1875e6dfe66e57ac1068afd957ab1851e74ad202becbc",
+          "reference_text": "AND THE GARDENER'S BOY CHOPPED THE TREE INTO SMALL PIECES THERE WAS A WHOLE HEAP LYING THERE",
+          "start_sample": 571520
+        }
+      ],
+      "fixture_controls": {
+        "1995-1837-0024": {
+          "language": "en",
+          "segments": [
+            {
+              "end": 5.0,
+              "id": 0,
+              "start": 0.0,
+              "text": " For a while she lay in her chair in happy dreamy pleasure at son and bird and tree."
+            }
+          ],
+          "text": "For a while she lay in her chair in happy dreamy pleasure at son and bird and tree.",
+          "text_sha256": "b51e174a22f53d99c032d55bffddaae44d8f03d40320c41441303e37bcf45507"
+        },
+        "672-122797-0072": {
+          "language": "en",
+          "segments": [
+            {
+              "end": 5.64,
+              "id": 0,
+              "start": 0.0,
+              "text": " And the gardeners boy chopped the tree into small pieces."
+            },
+            {
+              "end": 7.44,
+              "id": 1,
+              "start": 5.64,
+              "text": " There was a whole heap lying there."
+            }
+          ],
+          "text": "And the gardeners boy chopped the tree into small pieces. There was a whole heap lying there.",
+          "text_sha256": "75e57740b5c9ca29f2a8a5c661bc24b05c3f127b258365bc7dfd29585aa234c6"
+        },
+        "6930-75918-0000": {
+          "language": "en",
+          "segments": [
+            {
+              "end": 4.0,
+              "id": 0,
+              "start": 0.0,
+              "text": " Concord returned to its place amidst the tents."
+            }
+          ],
+          "text": "Concord returned to its place amidst the tents.",
+          "text_sha256": "c6cc3648f4e84d1e57375b00546595936a1f96de88e032d72c4f1f5fa7c51de5"
+        }
+      },
+      "input": {
+        "chunk_ms": 1000,
+        "id": "three-speakers-repeat-pauses",
+        "parts": [
+          {
+            "fixture_id": "6930-75918-0000"
+          },
+          {
+            "silence_ms": 2000
+          },
+          {
+            "fixture_id": "1995-1837-0024"
+          },
+          {
+            "silence_ms": 2000
+          },
+          {
+            "fixture_id": "672-122797-0072"
+          },
+          {
+            "silence_ms": 2000
+          },
+          {
+            "fixture_id": "6930-75918-0000"
+          },
+          {
+            "silence_ms": 2000
+          },
+          {
+            "fixture_id": "1995-1837-0024"
+          },
+          {
+            "silence_ms": 2000
+          },
+          {
+            "fixture_id": "672-122797-0072"
+          }
+        ],
+        "pcm_sha256": "b6f8c541b55d2da4c9494dda2e5daebf8674c29286a3ea983206b9a99e9badad",
+        "reference_text": "CONCORD RETURNED TO ITS PLACE AMIDST THE TENTS FOR A WHILE SHE LAY IN HER CHAIR IN HAPPY DREAMY PLEASURE AT SUN AND BIRD AND TREE AND THE GARDENER'S BOY CHOPPED THE TREE INTO SMALL PIECES THERE WAS A WHOLE HEAP LYING THERE CONCORD RETURNED TO ITS PLACE AMIDST THE TENTS FOR A WHILE SHE LAY IN HER CHAIR IN HAPPY DREAMY PLEASURE AT SUN AND BIRD AND TREE AND THE GARDENER'S BOY CHOPPED THE TREE INTO SMALL PIECES THERE WAS A WHOLE HEAP LYING THERE",
+        "sample_count": 698560
+      },
+      "metrics": {
+        "accepted_chunks": 44,
+        "accepted_samples": 698560,
+        "buffered_samples": 0,
+        "committed_samples": 698560,
+        "decode_count": 24,
+        "decoded_source_samples": 1914560,
+        "events_emitted": 31,
+        "peak_buffered_samples": 170560
+      },
+      "offline_control": {
+        "against_human_reference": {
+          "exact_text_match": false,
+          "reference_word_count": 88,
+          "word_edit_distance": 6,
+          "word_edit_rate": 0.06818181818181818
+        },
+        "language": "en",
+        "segments": [
+          {
+            "end": 4.0,
+            "id": 0,
+            "start": 0.0,
+            "text": " Concord returned to its place amidst the tents."
+          },
+          {
+            "end": 12.0,
+            "id": 1,
+            "start": 6.0,
+            "text": " For a while she lay in her chair in happy dreamy pleasure at son and bird and tree."
+          },
+          {
+            "end": 18.0,
+            "id": 2,
+            "start": 13.0,
+            "text": " And the gardeners boy chopped the tree into small pieces."
+          },
+          {
+            "end": 22.0,
+            "id": 3,
+            "start": 18.0,
+            "text": " There was a whole heap lying there."
+          },
+          {
+            "end": 27.0,
+            "id": 4,
+            "start": 23.0,
+            "text": " Concord returned to its place amidst the tents."
+          },
+          {
+            "end": 33.0,
+            "id": 5,
+            "start": 28.0,
+            "text": " For a while she lay in her chair in happy dreamy pleasure at son and bird and tree."
+          },
+          {
+            "end": 40.0,
+            "id": 6,
+            "start": 36.0,
+            "text": " And the gardeners boy chopped the tree into small pieces."
+          },
+          {
+            "end": 43.0,
+            "id": 7,
+            "start": 41.0,
+            "text": " There was a whole heap lying there."
+          }
+        ],
+        "text": "Concord returned to its place amidst the tents. For a while she lay in her chair in happy dreamy pleasure at son and bird and tree. And the gardeners boy chopped the tree into small pieces. There was a whole heap lying there. Concord returned to its place amidst the tents. For a while she lay in her chair in happy dreamy pleasure at son and bird and tree. And the gardeners boy chopped the tree into small pieces. There was a whole heap lying there.",
+        "text_sha256": "6107134f0cd32371346b3b6a58ba749b905e4c3519dddcb7fed8579cd3f14993"
+      },
+      "profile_id": "quiet_endpoint_stream/v1+input_evidence/v1",
+      "recognition": {
+        "against_human_reference": {
+          "exact_text_match": false,
+          "reference_word_count": 88,
+          "word_edit_distance": 6,
+          "word_edit_rate": 0.06818181818181818
+        },
+        "against_offline_control": {
+          "exact_text_match": true,
+          "reference_word_count": 86,
+          "word_edit_distance": 0,
+          "word_edit_rate": 0.0
+        },
+        "comparison_scope": "complete_committed_transcript",
+        "text": "Concord returned to its place amidst the tents. For a while she lay in her chair in happy dreamy pleasure at son and bird and tree. And the gardeners boy chopped the tree into small pieces. There was a whole heap lying there. Concord returned to its place amidst the tents. For a while she lay in her chair in happy dreamy pleasure at son and bird and tree. And the gardeners boy chopped the tree into small pieces. There was a whole heap lying there."
+      },
+      "source_progress": {
+        "eof_commit_coverage_ms": 9480.0,
+        "pre_eof_commit_count": 5,
+        "pre_eof_committed_samples": 546880,
+        "source_ms_after_last_pre_eof_commit": 9480.0,
+        "wall_clock_latency": false
+      },
+      "state": {
+        "committed_through_ms": 43660,
+        "session_id": "modal-word-corpus-v1:three-speakers-repeat-pauses:session",
+        "version": 6,
+        "windows": [
+          {
+            "committed_through_ms": 21440,
+            "model": {
+              "backend": "pytorch-cuda-word-corpus",
+              "fingerprint": "sha256:8041a80119a588f542472da35e97d0372fce1d9709ed9874475e9c03deac5de6",
+              "model_id": "tiny.en",
+              "revision": "a0b9695ae1cc52bad4b8626fe9fb6ea4ac0ee650"
+            },
+            "request_id": "modal-word-corpus-v1:three-speakers-repeat-pauses:window:181440:343040:unit:request",
+            "result": {
+              "analysis_span": {
+                "end_ms": 21440,
+                "start_ms": 11340
+              },
+              "end_ms": 21440,
+              "metadata": {
+                "avg_logprob": -0.240065975189209,
+                "compression_ratio": 1.1204819277108433,
+                "language": "en",
+                "no_speech_prob": 0.043177083134651184,
+                "segments": [
+                  {
+                    "span": {
+                      "end_ms": 18500,
+                      "start_ms": 11340
+                    },
+                    "text": " And the gardeners boy chopped the tree into small pieces.",
+                    "tokens": [
+                      843,
+                      262,
+                      11376,
+                      364,
+                      2933,
+                      20720,
+                      262,
+                      5509,
+                      656,
+                      1402,
+                      5207,
+                      13
+                    ]
+                  },
+                  {
+                    "span": {
+                      "end_ms": 20340,
+                      "start_ms": 18500
+                    },
+                    "text": " There was a whole heap lying there.",
+                    "tokens": [
+                      1318,
+                      373,
+                      257,
+                      2187,
+                      24575,
+                      9105,
+                      612,
+                      13
+                    ]
+                  }
+                ],
+                "temperature": 0.0,
+                "timestamps_complete": true,
+                "tokens": [
+                  50363,
+                  843,
+                  262,
+                  11376,
+                  364,
+                  2933,
+                  20720,
+                  262,
+                  5509,
+                  656,
+                  1402,
+                  5207,
+                  13,
+                  50721,
+                  50721,
+                  1318,
+                  373,
+                  257,
+                  2187,
+                  24575,
+                  9105,
+                  612,
+                  13,
+                  50813
+                ]
+              },
+              "publication_segment_indices": null,
+              "start_ms": 11340,
+              "text": "And the gardeners boy chopped the tree into small pieces. There was a whole heap lying there.",
+              "window_id": "modal-word-corpus-v1:three-speakers-repeat-pauses:window:181440:343040:unit"
+            }
+          },
+          {
+            "committed_through_ms": 26940,
+            "model": {
+              "backend": "pytorch-cuda-word-corpus",
+              "fingerprint": "sha256:8041a80119a588f542472da35e97d0372fce1d9709ed9874475e9c03deac5de6",
+              "model_id": "tiny.en",
+              "revision": "a0b9695ae1cc52bad4b8626fe9fb6ea4ac0ee650"
+            },
+            "request_id": "modal-word-corpus-v1:three-speakers-repeat-pauses:window:343040:431040:unit:request",
+            "result": {
+              "analysis_span": {
+                "end_ms": 26940,
+                "start_ms": 21440
+              },
+              "end_ms": 26940,
+              "metadata": {
+                "avg_logprob": -0.39996107419331867,
+                "compression_ratio": 0.8703703703703703,
+                "language": "en",
+                "no_speech_prob": 0.04437161237001419,
+                "segments": [
+                  {
+                    "span": {
+                      "end_ms": 26440,
+                      "start_ms": 21440
+                    },
+                    "text": " Concord returned to its place amidst the tents.",
+                    "tokens": [
+                      34732,
+                      4504,
+                      284,
+                      663,
+                      1295,
+                      31095,
+                      262,
+                      29804,
+                      13
+                    ]
+                  }
+                ],
+                "temperature": 0.0,
+                "timestamps_complete": true,
+                "tokens": [
+                  50363,
+                  34732,
+                  4504,
+                  284,
+                  663,
+                  1295,
+                  31095,
+                  262,
+                  29804,
+                  13,
+                  50613
+                ]
+              },
+              "publication_segment_indices": null,
+              "start_ms": 21440,
+              "text": "Concord returned to its place amidst the tents.",
+              "window_id": "modal-word-corpus-v1:three-speakers-repeat-pauses:window:343040:431040:unit"
+            }
+          },
+          {
+            "committed_through_ms": 34180,
+            "model": {
+              "backend": "pytorch-cuda-word-corpus",
+              "fingerprint": "sha256:8041a80119a588f542472da35e97d0372fce1d9709ed9874475e9c03deac5de6",
+              "model_id": "tiny.en",
+              "revision": "a0b9695ae1cc52bad4b8626fe9fb6ea4ac0ee650"
+            },
+            "request_id": "modal-word-corpus-v1:three-speakers-repeat-pauses:window:431040:546880:unit:request",
+            "result": {
+              "analysis_span": {
+                "end_ms": 34180,
+                "start_ms": 26940
+              },
+              "end_ms": 34180,
+              "metadata": {
+                "avg_logprob": -0.27103701881740405,
+                "compression_ratio": 1.1216216216216217,
+                "language": "en",
+                "no_speech_prob": 0.046749506145715714,
+                "segments": [
+                  {
+                    "span": {
+                      "end_ms": 33500,
+                      "start_ms": 26940
+                    },
+                    "text": " For a while she lay in her chair in happy dreamy pleasure at son and bird and tree.",
+                    "tokens": [
+                      1114,
+                      257,
+                      981,
+                      673,
+                      3830,
+                      287,
+                      607,
+                      5118,
+                      287,
+                      3772,
+                      4320,
+                      88,
+                      9476,
+                      379,
+                      3367,
+                      290,
+                      6512,
+                      290,
+                      5509,
+                      13
+                    ]
+                  }
+                ],
+                "temperature": 0.0,
+                "timestamps_complete": true,
+                "tokens": [
+                  50363,
+                  1114,
+                  257,
+                  981,
+                  673,
+                  3830,
+                  287,
+                  607,
+                  5118,
+                  287,
+                  3772,
+                  4320,
+                  88,
+                  9476,
+                  379,
+                  3367,
+                  290,
+                  6512,
+                  290,
+                  5509,
+                  13,
+                  50691
+                ]
+              },
+              "publication_segment_indices": null,
+              "start_ms": 26940,
+              "text": "For a while she lay in her chair in happy dreamy pleasure at son and bird and tree.",
+              "window_id": "modal-word-corpus-v1:three-speakers-repeat-pauses:window:431040:546880:unit"
+            }
+          },
+          {
+            "committed_through_ms": 43660,
+            "model": {
+              "backend": "pytorch-cuda-word-corpus",
+              "fingerprint": "sha256:8041a80119a588f542472da35e97d0372fce1d9709ed9874475e9c03deac5de6",
+              "model_id": "tiny.en",
+              "revision": "a0b9695ae1cc52bad4b8626fe9fb6ea4ac0ee650"
+            },
+            "request_id": "modal-word-corpus-v1:three-speakers-repeat-pauses:window:546880:698560:unit:request",
+            "result": {
+              "analysis_span": {
+                "end_ms": 43660,
+                "start_ms": 34180
+              },
+              "end_ms": 43660,
+              "metadata": {
+                "avg_logprob": -0.23441492080688475,
+                "compression_ratio": 1.1204819277108433,
+                "language": "en",
+                "no_speech_prob": 0.04467371478676796,
+                "segments": [
+                  {
+                    "span": {
+                      "end_ms": 41340,
+                      "start_ms": 34180
+                    },
+                    "text": " And the gardeners boy chopped the tree into small pieces.",
+                    "tokens": [
+                      843,
+                      262,
+                      11376,
+                      364,
+                      2933,
+                      20720,
+                      262,
+                      5509,
+                      656,
+                      1402,
+                      5207,
+                      13
+                    ]
+                  },
+                  {
+                    "span": {
+                      "end_ms": 43140,
+                      "start_ms": 41340
+                    },
+                    "text": " There was a whole heap lying there.",
+                    "tokens": [
+                      1318,
+                      373,
+                      257,
+                      2187,
+                      24575,
+                      9105,
+                      612,
+                      13
+                    ]
+                  }
+                ],
+                "temperature": 0.0,
+                "timestamps_complete": true,
+                "tokens": [
+                  50363,
+                  843,
+                  262,
+                  11376,
+                  364,
+                  2933,
+                  20720,
+                  262,
+                  5509,
+                  656,
+                  1402,
+                  5207,
+                  13,
+                  50721,
+                  50721,
+                  1318,
+                  373,
+                  257,
+                  2187,
+                  24575,
+                  9105,
+                  612,
+                  13,
+                  50811
+                ]
+              },
+              "publication_segment_indices": null,
+              "start_ms": 34180,
+              "text": "And the gardeners boy chopped the tree into small pieces. There was a whole heap lying there.",
+              "window_id": "modal-word-corpus-v1:three-speakers-repeat-pauses:window:546880:698560:unit"
+            }
+          }
+        ]
+      },
+      "status": "completed",
+      "timing": {
+        "benchmark": false,
+        "wall_ns": 2417695238
+      }
+    }
+  ],
+  "claim_boundary": {
+    "generalization_beyond_this_input": false,
+    "performance_benchmark": false,
+    "production_readiness": false,
+    "public_commit_reproducibility": false,
+    "recognition_improvement": false
+  },
+  "gpu": {
+    "compute_capability": [
+      7,
+      5
+    ],
+    "name": "Tesla T4"
+  },
+  "input_evidence": true,
+  "model": {
+    "backend_revision": "a0b9695ae1cc52bad4b8626fe9fb6ea4ac0ee650",
+    "checkpoint_sha256": "d3dd57d32accea0b295c96e26691aa14d8822fac7d9d27d5dc00b4ca2826dd03",
+    "cloud": "aws",
+    "device": "cuda:0",
+    "final_state_sha256": "sha256:8041a80119a588f542472da35e97d0372fce1d9709ed9874475e9c03deac5de6",
+    "final_verification_error": null,
+    "gpu": "T4",
+    "model_state_sha256": "sha256:8041a80119a588f542472da35e97d0372fce1d9709ed9874475e9c03deac5de6",
+    "name": "tiny.en",
+    "numeric_precision": "float32",
+    "observed_state_sha256": "sha256:8041a80119a588f542472da35e97d0372fce1d9709ed9874475e9c03deac5de6",
+    "region": "us-west",
+    "unchanged": true
+  },
+  "profile_id": "quiet_endpoint_stream/v1+input_evidence/v1",
+  "recorded_at": "2026-09-05T12:26:31.357750Z",
+  "replay_pacing": "unpaced-source-time",
+  "schema_version": "1-diagnostic",
+  "source": {
+    "image_base_commit": "9c2494234f08b24325d427ea422818b24f460c0c",
+    "public_commit_reproducibility": false,
+    "registration_sha256": "feec9fa99ea854950dbde4bcadc25dbb0b2056aa6e02ee2ce855703d86bad61e",
+    "snapshot": {
+      "algorithm": "sha256-file-manifest-v1",
+      "digest": "6b8e6500e722fe91873b13ec32d786500e46b9256079e0250e76dd28ad994ad0",
+      "files": [
+        {
+          "path": "experiments/modal-word-corpus-v1.json",
+          "sha256": "feec9fa99ea854950dbde4bcadc25dbb0b2056aa6e02ee2ce855703d86bad61e",
+          "size_bytes": 12819
+        },
+        {
+          "path": "infra/modal_continuous_smoke.py",
+          "sha256": "5f88560cdacb0780e108cd9b222b95a361f5a8b1107b7db59da5b5db55596f70",
+          "size_bytes": 36793
+        },
+        {
+          "path": "infra/modal_stream_boundary_diagnostic.py",
+          "sha256": "a6c3d4d848acbc9e481ae49ae638abe45dcce74704d129967fbf92b755e2faa2",
+          "size_bytes": 60265
+        },
+        {
+          "path": "infra/modal_word_corpus.py",
+          "sha256": "7ee4647efc5b1bca6509e23d6cca5e2652f314343992ed19faf6f3f95d997d20",
+          "size_bytes": 60812
+        },
+        {
+          "path": "src/whisper_runtime/__init__.py",
+          "sha256": "6b6c549bf89264c59b8808cf5cba240599af10f0cd12610a859ff964d6fed2aa",
+          "size_bytes": 1533
+        },
+        {
+          "path": "src/whisper_runtime/adapters/__init__.py",
+          "sha256": "6b97064c8b2cdb56e39755e8da96606ddb0d361a6d33fe632ce9871da6346281",
+          "size_bytes": 3797
+        },
+        {
+          "path": "src/whisper_runtime/adapters/_model_binding.py",
+          "sha256": "2c749b630c8736234ab844a104a2367be90cfd5004cbb74962016410d216dc74",
+          "size_bytes": 6523
+        },
+        {
+          "path": "src/whisper_runtime/adapters/audio_endpoints.py",
+          "sha256": "bbdb2d3bf19a436189de88e85d2ba2d5cd91861d1d6f2876fc46e30327dd6550",
+          "size_bytes": 5570
+        },
+        {
+          "path": "src/whisper_runtime/adapters/audio_evidence.py",
+          "sha256": "14db21a12f4c8ea3da76bede0814ac2cd1422162165fd65db1bcf951de176184",
+          "size_bytes": 9094
+        },
+        {
+          "path": "src/whisper_runtime/adapters/continuous_stream.py",
+          "sha256": "ab7c01bb873b89b970a9f6b2027bed0d1ef2219113bb9cd21076e00131a66f6c",
+          "size_bytes": 43190
+        },
+        {
+          "path": "src/whisper_runtime/adapters/legacy_whisper.py",
+          "sha256": "14b6f771c114238317d5118ba64c64334857e8e9da1d0f360baeeef48f3415e0",
+          "size_bytes": 33513
+        },
+        {
+          "path": "src/whisper_runtime/adapters/native_result.py",
+          "sha256": "3198b3996e7445449d7c74092ecef79d5a3615c1ebb48951c9bc7bbba3c18d92",
+          "size_bytes": 12573
+        },
+        {
+          "path": "src/whisper_runtime/adapters/native_stream.py",
+          "sha256": "01898983175014ac33e66c00be5bc92b96d0f300c0b20eb57a13cb4f384f0c39",
+          "size_bytes": 27068
+        },
+        {
+          "path": "src/whisper_runtime/adapters/native_whisper.py",
+          "sha256": "4e88815fe54855eb646338bdaaecac46690d2a8f682990f1ba32d9d9555b8785",
+          "size_bytes": 66260
+        },
+        {
+          "path": "src/whisper_runtime/adapters/stream_policy.py",
+          "sha256": "452d71993ffd9395a36a8b6a68fbe34b53d90665cc13ad22058b49ca32b0f5a9",
+          "size_bytes": 13353
+        },
+        {
+          "path": "src/whisper_runtime/adapters/word_policy.py",
+          "sha256": "0025ad2cef8f09f90df73c1ca5d789b0a3d9ff32fd38cbdc7f9043082725e536",
+          "size_bytes": 16433
+        },
+        {
+          "path": "src/whisper_runtime/errors.py",
+          "sha256": "87127fee36ff6706360f8ad82ea49a0dea870d9cd1831ceec3aeb31c2d8e89df",
+          "size_bytes": 2439
+        },
+        {
+          "path": "src/whisper_runtime/execution.py",
+          "sha256": "ea758adb9ea4204f29f5b444ecf54331d751b66e3b4373014179522a225cef44",
+          "size_bytes": 7533
+        },
+        {
+          "path": "src/whisper_runtime/model.py",
+          "sha256": "bfe66fb074d308447e94af78851db46a1819d291cad9fde742b28dcc0be629c0",
+          "size_bytes": 558
+        },
+        {
+          "path": "src/whisper_runtime/resources.py",
+          "sha256": "5beec172371839ab73bb3ca594b22460f37723f1347db74841a43a4a102716d5",
+          "size_bytes": 6384
+        },
+        {
+          "path": "src/whisper_runtime/state.py",
+          "sha256": "2b234b2a9b7618a4834cdc906052c3ca46ecab0a73eba04d9eb3f891dc01c312",
+          "size_bytes": 11988
+        },
+        {
+          "path": "src/whisper_runtime/transaction.py",
+          "sha256": "d9e4622ff289b182d7a2b23ebc6243e661da9f9061484107b3da09feb1ed44e4",
+          "size_bytes": 37581
+        },
+        {
+          "path": "src/whisper_runtime/worker.py",
+          "sha256": "92dc3f3366903c4304aaa7919dc84d8252bbdd02279d876701159bf0e092e077",
+          "size_bytes": 11824
+        }
+      ]
+    }
+  },
+  "source_units": false,
+  "status": "completed",
+  "stopped_after_case": null,
+  "stream_config": {
+    "coalesce_previews": false,
+    "endpointing": {
+      "frame_ms": 20,
+      "max_quiet_unit_ms": 10000,
+      "min_unit_ms": 1000,
+      "quiet_ms": 600,
+      "quiet_peak": 32
+    },
+    "holdback_ms": 2000,
+    "input_evidence": true,
+    "left_context_ms": 0,
+    "max_buffer_ms": 40000,
+    "max_window_ms": 30000,
+    "preview_interval_ms": 2000,
+    "source_units": true,
+    "timestamp_tolerance_ms": 200,
+    "word_alignment": false
+  },
+  "warmup": {
+    "included_in_case_timing": false,
+    "sample_count": 56080,
+    "wall_ns": 4050141411,
+    "word_count": 9
+  },
+  "worker": {
+    "function_call_id": "fc-01M1RRH8CN213Q8VPGHTVFV0W4",
+    "function_call_id_sha256": "ae4b98cafcb9fae5a918d2cca1f0a0f13fb5c62544a2db50ef2fd21ed3cb6fa1",
+    "modal": "1.5.5",
+    "python": "3.13.3",
+    "torch": "2.6.0+cu124"
+  }
+}

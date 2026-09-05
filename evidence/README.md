@@ -1,5 +1,13 @@
 # Integration evidence
 
+The [automatic-endpoint T4 diagnostic](modal-t4-tiny-en-automatic-endpoints-2026-09-05.json)
+completes the 43.660-second mixture without supplied boundaries. Five quiet-run
+endpoints and EOF produce six contiguous commits. Text matches both model
+controls exactly; six human-reference edits remain. The detector preserves PCM
+and does not authorize silence publication. See the
+[report and limits](../docs/research/2026-09-05-automatic-endpoints.md). Clean speech
+with constructed pauses does not qualify noisy microphones or live latency.
+
 The [caller-delimited source-unit T4 diagnostic](modal-t4-tiny-en-source-units-2026-09-05.json)
 completes the 43.660-second mixture through one continuous controller: six speech
 occurrences, five empty pauses, and exact contiguous input accounting. Normalized

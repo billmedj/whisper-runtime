@@ -121,7 +121,15 @@ source-owned units preserve all six speech occurrences and five empty pauses.
 Normalized words match the model controls; six human-reference edits remain.
 The boundaries come from fixture construction, not a detector. This closes the
 known-boundary integration test, not the general acoustic or long-session gate.
-The current suites contain 458 runtime and 287 repository-tool tests.
+That iteration passed 458 runtime and 287 repository-tool tests.
+
+The [automatic-endpoint diagnostic](research/2026-09-05-automatic-endpoints.md)
+then completes the same mixture without supplied boundaries. A small opt-in
+quiet-run detector feeds the existing controller; it adds no model dependency
+and cannot authorize empty publication. Five inferred endpoints and EOF cover
+all input. Text matches both model controls exactly. The current suites pass
+481 runtime and 291 repository-tool tests. Noisy pauses, weak speech, continuous
+speech without gaps, paced latency and the 30-minute gate remain open.
 
 Deliver a separately named continuous profile. Keep the existing
 offline-compatible and bounded-preview paths.
