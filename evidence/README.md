@@ -1,5 +1,12 @@
 # Integration evidence
 
+The [matched segment/word T4 diagnostic](modal-t4-tiny-en-word-alignment-v4-2026-09-05.json)
+is **unresolved**. The segment profile publishes 8.00 seconds and the word profile
+5.70 seconds of the same 33-second input. Both pass lifecycle and input-accounting
+checks; neither emits a final event. The word path requires an anchor word whose
+audio was partly removed at rebase. See the [diagnosis, measurements, and limits](../docs/research/2026-09-05-word-alignment-comparison.md).
+The record remains bound to source commit `05e83e1`, before the anchor repair.
+
 The [four-configuration boundary diagnostic](modal-t4-tiny-en-stream-boundaries-v3-2026-09-05.json)
 and [receipt](modal-t4-tiny-en-stream-boundaries-v3-2026-09-05.attempt.jsonl)
 compare holdback and retained context on the same 33-second synthetic input.

@@ -99,7 +99,9 @@ cross the committed boundary while its new words remain publishable.
 After a commit, at most four published words anchor the next analysis. A match
 must remain near their original source positions. Matching text in a later
 repetition cannot authorize publication. Missing or ambiguous anchors stop
-progress. After a validated anchor, a new word may start before the processed
+progress. Only anchor words whose whole estimated span remains in retained audio
+are required; a word cut by the left edge is excluded. After a validated anchor,
+a new word may start before the processed
 boundary by at most `timestamp_tolerance_ms`. The publication records this
 tolerance; the word's original estimate is unchanged. Larger overlaps remain
 unresolved. The next anchor uses only newly published words from one analysis.
@@ -235,7 +237,11 @@ the run. This is a manual integration smoke, not a registered quality or speed
 comparison; no reference-transcript error metric was computed. It does not
 close the long-session gate. No models were downloaded and no GPU was used.
 
-The complete runtime suite passes 382 tests, including 52 new policy, adapter,
+At source commit `93588fd`, the runtime suite passes 382 tests, including 52 new policy, adapter,
 and stream tests. The same 382 tests pass when imported from the built wheel.
 The repository-tool suite passes 249 tests. Type, lint, format, and distribution
 checks also pass.
+
+The later [T4 comparison](research/2026-09-05-word-alignment-comparison.md) stops
+at a partially retained anchor. Its local repair has regression coverage but
+has not been rerun on GPU. The CPU success above is not GPU qualification.

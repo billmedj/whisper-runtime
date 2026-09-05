@@ -79,9 +79,17 @@ across retries and is off by default. Its GPU benefit remains unmeasured.
 An opt-in word-aligned profile now connects native word estimates, prefix
 selection, transactional publication, and audio progress. Its 52 additional
 tests cover boundary drift, repeated phrases, rolling input, and recovery.
-The full runtime suite has 382 passing tests. Default segment profiles remain
+The pre-repair runtime suite has 382 passing tests. Default segment profiles remain
 unchanged. Alignment adds model work; matched GPU cost and long-session behavior
 are still open gates. See [configuration and limits](CONTINUOUS_STREAMING.md#optional-word-alignment).
+
+The [matched T4 diagnostic](research/2026-09-05-word-alignment-comparison.md)
+does not complete: the segment profile publishes 8.00 seconds and the word
+profile 5.70 seconds of 33 seconds. A partially retained anchor word blocks the
+word profile. Keep this result distinct from the successful CPU smoke and
+validate the anchor repair before a long-session run.
+The repair is now covered by two additional local tests (384 total). The first
+recorded blockage is removed; corrected end-to-end GPU behavior is not yet tested.
 
 Deliver a separately named continuous profile. Keep the existing
 offline-compatible and bounded-preview paths.

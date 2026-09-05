@@ -180,9 +180,9 @@ def compare_word_hypotheses(
     anchor validation. Gaps are processed under this opt-in policy, never inferred
     to be silence. Empty text cannot advance a nonfinal publication.
 
-    An anchor contains at most four actually published words. Only words wholly
-    before the retained origin are removed; a missing or ambiguous remaining
-    anchor is never relocated to later repeated text. Already-published anchor
+    An anchor contains at most four actually published words. Only whole source
+    word spans still available after the retained origin are used. A missing or
+    ambiguous remaining anchor is never relocated to later repeated text. Published anchor
     times stay frozen rather than drifting with each new alignment. A validated
     nonempty anchor permits start-boundary drift up to timestamp_tolerance_ms.
     The next anchor uses only newly published words from this single observation,
@@ -232,7 +232,9 @@ def compare_word_hypotheses(
     retained_anchor: tuple[NativeTimestampSegment, ...] = ()
     if span.start_ms < committed_through_ms:
         retained_anchor = tuple(
-            word for word in anchor if word.span.end_ms > span.start_ms
+            word
+            for word in anchor
+            if word.span.start_ms >= span.start_ms and word.span.end_ms > span.start_ms
         )
         if not retained_anchor:
             return wait("anchor_missing")

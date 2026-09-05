@@ -69,9 +69,7 @@ class AlignableCudaBatch(fixtures.FakeCudaBatchedMel):
 
 
 class AlignableCudaMel(fixtures.FakeCudaMel):
-    def __init__(
-        self, runtime: fixtures.FakeCudaRuntime, events: list[str]
-    ) -> None:
+    def __init__(self, runtime: fixtures.FakeCudaRuntime, events: list[str]) -> None:
         super().__init__(runtime, events)
         self.batch = AlignableCudaBatch(self)
 

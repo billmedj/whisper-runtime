@@ -308,7 +308,7 @@ class WordAgreementTests(unittest.TestCase):
         self.assertEqual(decision.next_anchor, (current.words[1],))
         self.assertIs(decision.next_anchor[0], current.words[1])
 
-    def test_only_anchors_wholly_before_retained_origin_are_filtered(self) -> None:
+    def test_only_complete_anchor_spans_within_retained_input_are_used(self) -> None:
         anchor = tuple(
             word(index, index * 100, (index + 1) * 100) for index in range(4)
         )
@@ -330,6 +330,91 @@ class WordAgreementTests(unittest.TestCase):
                     anchor=supplied_anchor,
                 )
                 self.assertEqual(missing.reason, "anchor_missing")
+
+    def test_t4_v4_traces_4_5_6_drop_cropped_ask_but_keep_timed_not_what(self) -> None:
+        # Exact frozen words from trace 4's last publication. R=3700 cuts
+        # through "ask", which is absent at the start of both later analyses.
+        anchor = (
+            word(3399, 1760, 2340, " Americans"),
+            word(1265, 2340, 3860, " ask"),
+            word(407, 3860, 4620, " not"),
+            word(644, 4620, 5700, " what"),
+        )
+        trace5 = (
+            (407, 3700, 4480, " not"),
+            (644, 4480, 5700, " what"),
+            (534, 5700, 6020, " your"),
+            (1499, 6020, 6360, " country"),
+            (460, 6360, 6780, " can"),
+            (466, 6780, 7020, " do"),
+            (329, 7020, 7240, " for"),
+            (345, 7240, 8240, " you"),
+            (1265, 8240, 8660, " ask"),
+            (644, 8660, 8960, " what"),
+            (345, 8960, 9280, " you"),
+            (460, 9280, 9500, " can"),
+            (466, 9500, 9740, " do"),
+            (329, 9740, 9880, " for"),
+            (534, 9880, 9980, " your"),
+        )
+        trace6 = (
+            (407, 3700, 4460, " not"),
+            (644, 4460, 5700, " what"),
+            (534, 5700, 6120, " your"),
+            (1499, 6120, 6360, " country"),
+            (460, 6360, 6780, " can"),
+            (466, 6780, 7020, " do"),
+            (329, 7020, 7240, " for"),
+            (345, 7240, 8240, " you"),
+            (1265, 8240, 8660, " ask"),
+            (644, 8660, 8980, " what"),
+            (345, 8980, 9280, " you"),
+            (460, 9280, 9500, " can"),
+            (466, 9500, 9740, " do"),
+            (329, 9740, 9920, " for"),
+            (534, 9920, 10240, " your"),
+            (1499, 10240, 10720, " country"),
+            (13, 10720, 11600, "."),
+        )
+        before = aligned(tuple(word(*item) for item in trace5), start=3700, end=10000)
+        current = aligned(tuple(word(*item) for item in trace6), start=3700, end=12000)
+        decision = self.decide(
+            before,
+            current,
+            committed_through_ms=5700,
+            anchor=anchor,
+            holdback_ms=2000,
+            timestamp_tolerance_ms=200,
+        )
+        self.assertEqual(decision.reason, "candidate")
+        self.assertEqual(decision.publication.word_start, 2)
+        self.assertEqual(decision.publication.word_end, 14)
+        self.assertEqual(decision.publication.start_ms, 5700)
+        self.assertEqual(decision.publication.end_ms, 9920)
+        self.assertEqual(
+            decision.publication.text,
+            "your country can do for you ask what you can do for",
+        )
+        self.assertEqual(decision.next_anchor, current.words[10:14])
+        self.assertEqual(anchor[1].span, AudioSpan(2340, 3860))
+        self.assertIs(decision.publication.alignment, current)
+
+    def test_cropped_anchor_with_no_complete_word_cannot_match_later_repetition(
+        self,
+    ) -> None:
+        anchor = (word(1265, 2340, 3860, " ask"),)
+        repeated = (word(1265, 8240, 8660, " ask"), word(644, 8660, 8960, " what"))
+        decision = self.decide(
+            aligned(repeated, start=3700, end=10000),
+            aligned(repeated, start=3700, end=12000),
+            committed_through_ms=3860,
+            anchor=anchor,
+            holdback_ms=2000,
+            timestamp_tolerance_ms=10000,
+        )
+        self.assertEqual(decision.reason, "anchor_missing")
+        self.assertIsNone(decision.publication)
+        self.assertEqual(decision.next_anchor, anchor)
 
     def test_start_drift_larger_than_tolerance_remains_unresolved(self) -> None:
         anchor = (word(1, 0, 80),)
