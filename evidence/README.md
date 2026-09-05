@@ -1,12 +1,24 @@
 # Integration evidence
 
+The [terminal-window experiment](modal-t4-tiny-en-word-resolution-2026-09-06.json)
+completed ten native analyses on one T4 at source commit `1977c68`. Two saved
+failure states reproduce exactly. Diagnostic-based selection reduces word edit
+distance in three of four proposed full texts; the clean held-out state remains
+unresolved. This is a counterfactual experiment, not stream qualification. The
+[report](../docs/research/2026-09-06-word-resolution.md#t4-result) includes every
+arm, cold-start effects, repeated encoder work and observed memory growth.
+The JSON SHA-256 is
+`6415da1704b84663780ddd1eda8e18b6daffaae72c5c2501207474ed81078b4f`.
+Local tests replay all choices and scores from the stored alignments without a
+model or audio download.
+
 The [local word-resolution replay](word-resolution-replay-2026-09-06.json)
 reproduces all four terminal failures in the word-context comparison below.
 It separates absent lexical anchors from timing mismatches and finds one
 structurally eligible terminal-end correspondence. It uses no GPU and cannot
 publish, change qualification or establish acoustic correctness. The
 [report](../docs/research/2026-09-06-word-resolution.md) documents the rules,
-counterexamples and next test.
+counterexamples and the subsequent T4 test.
 
 The [word-context comparison](modal-t4-tiny-en-word-context-2026-09-06.json)
 is **failed**, with matched controls. The candidate advances noisy-input

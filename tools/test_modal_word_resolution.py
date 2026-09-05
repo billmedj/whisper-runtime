@@ -8,9 +8,64 @@ from pathlib import Path
 from unittest.mock import patch
 
 from infra import modal_word_resolution as experiment
+from infra.word_resolution_worker import _bootstrap, _evaluate
+from tools.analyze_word_resolution import _alignment
+from whisper_runtime import AudioSpan
+from whisper_runtime.adapters import NativeTimestampSegment
 
 
 class WordResolutionTests(unittest.TestCase):
+    def test_recorded_t4_choices_and_scores_replay_without_audio_or_model(self):
+        path = (
+            experiment.ROOT
+            / "evidence/modal-t4-tiny-en-word-resolution-2026-09-06.json"
+        )
+        record = json.loads(path.read_bytes())
+        self.assertTrue(experiment.experiment_complete(record, record["inputs"]))
+        self.assertEqual(record["status"], "completed")
+        self.assertFalse(record["qualified"])
+        differences = experiment._corpus().b._word_difference
+        for saved, item in zip(record["cells"], record["inputs"]):
+            case = dict(item)
+            raw = saved["raw_alignments"]
+            if item["split"] == "heldout":
+                case = _bootstrap(
+                    case, _alignment(raw["bootstrap"]), experiment.PARAMETERS
+                )
+                self.assertIsNotNone(case)
+            else:
+                case["frozen_anchor"] = tuple(
+                    NativeTimestampSegment(
+                        AudioSpan(**word["span"]), word["text"], tuple(word["tokens"])
+                    )
+                    for word in item["frozen_anchor"]
+                )
+            replay = _evaluate(
+                case,
+                _alignment(raw["current"]),
+                _alignment(raw["alternative"]),
+                experiment.PARAMETERS,
+                differences,
+            )
+            for key in (
+                "arms",
+                "routed",
+                "outcome",
+                "current_diagnostic",
+                "shadow_proposal",
+            ):
+                self.assertEqual(
+                    json.loads(json.dumps(replay[key])), saved[key], (item["id"], key)
+                )
+        self.assertEqual(
+            [cell["routed"]["arm"] for cell in record["cells"]],
+            ["alternative", "shadow", "baseline", "alternative"],
+        )
+        self.assertEqual(
+            [cell["outcome"]["routed_word_edit_delta"] for cell in record["cells"]],
+            [-30, -16, 0, -11],
+        )
+
     def test_registration_is_fixed(self):
         settings = experiment.registration()
         self.assertEqual(settings["execution"]["maximum_native_windows"], 10)

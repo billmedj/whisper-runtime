@@ -150,3 +150,75 @@ Both native arms are executed to measure their outcomes. A routed-cost estimate
 does not equal the cost of this experiment, and a shorter audio slice does not
 remove Whisper's fixed encoder padding. Stream recovery, acoustic coverage and
 general efficiency remain unqualified regardless of these four results.
+
+## T4 result
+
+The [four-state record](../../evidence/modal-t4-tiny-en-word-resolution-2026-09-06.json)
+completed on source commit `1977c68`. Both development controls reproduce the
+saved text, every aligned word and the strict refusal reason. All ten windows
+closed their leases. Model parameters were unchanged. Both Modal applications
+were stopped after the attempt; no retry was run.
+
+The table reports word edit distance on the complete proposed text, including
+the frozen prefix. The baseline is the existing strict publication policy at a
+blocked state, not stock Whisper transcribing the whole recording offline.
+An unavailable continuation contributes omissions to this score.
+
+| State | Strict baseline | Local proposal | Alternative window | Selected arm |
+| --- | ---: | ---: | ---: | --- |
+| Development, no added pauses | 36 | 36, unavailable | 6 | Alternative |
+| Development, noise | 22 | 6 | 6 | Local proposal |
+| New speaker 2961, clean | 12 | 12, unavailable | 4 | Strict baseline |
+| New speaker 8455, noise | 11 | 11, unavailable | 0 | Alternative |
+
+Three selected candidates improve relative to their incomplete baselines. The
+clean held-out state remains unresolved: the diagnostic finds nonterminal timing
+shifts, so the frozen rule rejects the local proposal and does not request the
+alternative. Its measured alternative is better, but was not selected. Changing
+the selector now would be a new hypothesis, not a held-out success for this run.
+The noisy held-out candidate has zero normalized word edits; it is not a
+character-exact match or an acoustic proof of its timestamps.
+The clean and noisy held-out conditions use different speakers. Speaker and
+noise effects are therefore confounded. These four selected states do not
+estimate population accuracy or a general success rate.
+
+Native-window wall time totals 6.525 seconds, including instrumentation and
+bootstrap. The first call accounts for 4.371 seconds without warmup. These are
+worker phase times, not service latency, billable GPU duration or a repeatable
+speedup estimate. Local routing took 0.103-0.186 ms per state in this run. The
+local proposal consumes an existing alignment; obtaining that alignment is not
+free.
+
+Every native analysis executed two encoder forwards, each with 3,000 mel frames.
+Whisper's alignment path encodes the same padded mel again before attention
+capture. Shortening the observed audio did not reduce encoder frame count.
+Reuse needs an explicit compatibility check: the alignment patch disables SDPA
+for the model forward, while decoding uses the encoder's default path. Reusing
+features is not assumed to preserve alignment numerically.
+
+Peak allocated device memory rises by 8,519,680 bytes per later window; peak
+reserved memory also grows. The adapter currently creates a CUDA stream per
+window. Per-stream library workspaces are a hypothesis, not a diagnosed leak.
+The record has peak measurements, not post-close live-allocation measurements.
+Restored resource-ledger capacity does not prove physical memory returned to its
+initial value.
+
+## Next bounded changes
+
+1. Evaluate one alternative window for unresolved timing failures when the local
+   proposal is ineligible. Do not loosen publication or eviction rules. The new
+   clean-speaker failure becomes development evidence; add unseen speakers for
+   the next held-out check.
+2. Add an opt-in same-window encoder-feature handoff for alignment. Preserve the
+   default path. Test exact text, tokens, timestamps, attention-path settings,
+   cancellation and ownership before claiming avoided work.
+3. Measure live allocation after close and the effect of bounded CUDA-stream
+   reuse under completion fences. Do not infer a leak from allocator peaks or
+   clear private library caches to make a benchmark look smaller.
+4. Integrate a qualified resolution path into a complete paced stream only after
+   these counterfactual checks. Verify event identity, no duplicate publication,
+   retained-audio bounds and transcript quality together.
+
+The runtime still uses its unchanged acceptance policy. This record supplies
+candidate continuations and a reproducible selector failure, not four completed
+live streams or general inference-efficiency evidence.

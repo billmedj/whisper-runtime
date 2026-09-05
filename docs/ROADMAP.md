@@ -171,8 +171,17 @@ the next acoustic run; do not advance to long-session or efficiency claims.
 The [local resolution work](research/2026-09-06-word-resolution.md) adds structured
 anchor diagnostics and a read-only experimental matcher. It leaves publication,
 PCM retention and model execution unchanged. This separates the two observed
-failure types without enabling automatic recovery. Next, compare bounded
-interventions on held-out audio before introducing a routing policy.
+failure types without enabling automatic recovery. Bounded counterfactuals are
+the next stage before a live routing policy.
+
+The [terminal-window experiment](research/2026-09-06-word-resolution.md#t4-result)
+now records that comparison: two saved failures and two new speakers. The frozen
+selector improves three candidate texts relative to incomplete strict baselines;
+the fourth remains unresolved despite a better measured alternative. All ten
+native windows release their leases, and model parameters remain unchanged.
+No result is a complete live-stream recovery. Next, test fallback selection for
+ineligible timing mismatches, then verify publication and retention in a paced
+stream. The held-out failure is now development data, not an unseen test.
 
 Deliver a separately named continuous profile. Keep the existing
 offline-compatible and bounded-preview paths.
@@ -276,6 +285,12 @@ authorize or start new GPU spending.
 **Status: not demonstrated.**
 
 Remove unnecessary work before adding scheduling or caching complexity.
+
+The terminal-window experiment observes two full padded encoder passes per native
+analysis and rising allocator peaks across fresh CUDA streams. These identify
+measurement targets, not proven speedups or a diagnosed memory leak. First test
+same-input feature reuse under matching encoder policies and measure post-close
+allocation with bounded stream reuse. Keep the existing path as the control.
 
 - [x] Add opt-in preview coalescing with bounded state and immutable retries.
 - [ ] Measure avoided work and quality changes on matched paced input.
