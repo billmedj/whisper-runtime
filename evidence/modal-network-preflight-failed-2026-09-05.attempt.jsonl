@@ -1,0 +1,2 @@
+{"at": "2026-09-05T14:01:47.056509+00:00", "event": "attempt-started", "preflight": true, "source_commit": "ba41928222f1fcdd312e4c828480c4366feefbbe", "source_digest": "c9a4b515ddb539dd74f68ccb0b45ab276e7018890cf2ae1d65ece8cf40427bdb"}
+{"at": "2026-09-05T14:01:54.366632+00:00", "event": "record-written", "record_sha256": "03ee7e14276e188a8173a6026547296ffdaf3755bb41412a366a94c521788777", "status": "failed"}

@@ -1,5 +1,14 @@
 # Integration evidence
 
+The [PC-to-Modal T4 replay](modal-t4-tiny-en-network-replay-2026-09-05.json)
+sends 43.660 seconds from Windows over an authenticated WebSocket. First text
+returns to the PC at 2.426 seconds; five commits precede EOF. All 698,560 samples
+are committed and the final text matches both offline controls. Six
+human-reference edits remain. The application stopped and its temporary proxy
+token was deleted. See the [network report](../docs/research/2026-09-05-network-replay.md),
+including the retained failed CPU preflight. This short file replay does not
+qualify microphones, noisy speech, long sessions or GPU efficiency.
+
 The [paced T4 replay](modal-t4-tiny-en-paced-replay-2026-09-05.json) completes
 43.660 seconds supplied in 20 ms chunks by an independent producer. First text
 appears at 2.097 seconds, and five commits precede EOF. All samples are accounted

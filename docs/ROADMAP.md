@@ -17,7 +17,7 @@ A gate closes only when its acceptance cases and results are committed.
 | --- | --- | --- | --- |
 | D0 | Governed decoding and timed publication | Validated within the recorded pre-alpha scope | None |
 | D1 | Continuous transcription with progressive commits | Experimental rolling profile implemented; long-session gate open | D0 |
-| D2 | A usable local live-transcription entry point | Paced replay API implemented; microphone and CLI gate open | D1 |
+| D2 | A usable local live-transcription entry point | Paced API and PC-to-Modal reference tested; microphone and CLI gate open | D1 |
 | D3 | Broader quality and failure coverage | Initial coverage; expand alongside D1-D2 | D0; release gate for D2 |
 | D4 | Measured compute and memory improvements | Not demonstrated | D1 and matched D3 baselines |
 | D5 | A reproducible developer release | Package builds; release gates remain open | D2 and D3; D4 for efficiency claims |
@@ -135,10 +135,18 @@ The [paced T4 replay](research/2026-09-05-paced-replay.md) completes the same
 43.660-second mixture at source speed. An independent producer supplies 20 ms
 chunks while decoding continues. First text appears at 2.097 seconds; five
 commits precede EOF. All samples are committed, the final buffer is empty and
-text matches both model controls exactly. Current suites pass 500 runtime and
+text matches both model controls exactly. That iteration passed 500 runtime and
 296 repository-tool tests. Local tests cover slow decoding and consumers,
 input lag, overload, cancellation and delivery failures. This short same-worker
 test does not close the acoustic, network or 30-minute gates below.
+
+The [PC-to-Modal replay](research/2026-09-05-network-replay.md) then sends the
+same audio over an authenticated WebSocket. First text returns to the Windows
+client at 2.426 seconds; the native final event arrives 613.573 ms after EOF
+send completion. Full input coverage and exact control text are preserved.
+Current suites pass 514 runtime and 332 repository-tool tests. The short
+network integration passes; microphone, acoustic and long-session gates remain
+open. No GPU efficiency advantage is established.
 
 Deliver a separately named continuous profile. Keep the existing
 offline-compatible and bounded-preview paths.
@@ -178,14 +186,17 @@ another streaming system.
 
 ## D2. A usable local live-transcription entry point
 
-**Status: paced replay API implemented; microphone and CLI gate remain open.**
+**Status: paced API and network reference tested; microphone and CLI gate open.**
 
 Deliver a small Python API and one local command, with microphone input and paced
 file replay. Do not require a server deployment or a desktop application.
 
 The [paced PCM API](PACED_REPLAY.md) is implemented and tested locally and on one
 T4. It accepts recorded bytes and emits timed events through callbacks. It does
-not yet provide microphone capture, a user-facing command or network transport.
+not yet provide microphone capture or a user-facing caption command. The
+[network reference](NETWORK_REPLAY.md) connects a Windows file-replay client to
+one Modal T4 and has a recorded successful short run. Its diagnostic command
+is not an installed microphone transcription application.
 
 - [ ] Document input format, model selection, provisional and committed results,
   cancellation, and failure behavior.

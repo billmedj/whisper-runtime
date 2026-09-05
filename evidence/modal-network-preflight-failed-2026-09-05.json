@@ -1,0 +1,211 @@
+{
+  "cleanup": {
+    "ephemeral_context_exit_completed": false,
+    "proxy_token_deleted": true
+  },
+  "error_code": "network_attempt_failed",
+  "error_type": "InvalidError",
+  "preflight": true,
+  "proxy_token_scoped": false,
+  "registration": {
+    "case_id": "three-speakers-repeat-pauses",
+    "chunk_samples": 320,
+    "claims": {
+      "one_way_network_latency": false,
+      "performance_benchmark": false,
+      "physical_execution_or_spending_cap": false,
+      "production_readiness": false,
+      "recognition_improvement": false
+    },
+    "corpus_manifest": "experiments/modal-word-corpus-v1.json",
+    "execution": {
+      "buffer_containers": 0,
+      "client_connections": 1,
+      "cloud": "aws",
+      "configured_retries": 0,
+      "cpu": 2,
+      "gpu": "T4",
+      "max_containers": 1,
+      "memory_mib": 4096,
+      "min_containers": 0,
+      "region": "us-west",
+      "scaledown_seconds": 2,
+      "single_use_containers": true,
+      "startup_timeout_seconds": 180,
+      "timeout_seconds": 180
+    },
+    "id": "modal-network-replay-v1",
+    "modal_sdk": "1.5.5",
+    "notes": [
+      "The GPU receives PCM from the client. No audio fixture is placed in its image.",
+      "A bounded diagnostic capture of received frames is used for controls after runtime cleanup.",
+      "Native FINAL receipt and done receipt have different meanings: done includes controls and model hashing.",
+      "Server and client monotonic clocks cannot establish one-way network latency.",
+      "Modal can reschedule crashed containers. One client connection is not an absolute physical execution cap.",
+      "Temporary proxy credentials remain in memory and are deleted after the ephemeral app context exits."
+    ],
+    "pcm_sha256": "b6f8c541b55d2da4c9494dda2e5daebf8674c29286a3ea983206b9a99e9badad",
+    "preflight": {
+      "gpu": false,
+      "protocol": "pcm-echo/v1",
+      "sample_count": 16000,
+      "unauthorized_statuses": [
+        401,
+        403
+      ]
+    },
+    "protocol": "pcm-websocket/v1",
+    "proxy_auth_required": true,
+    "sample_count": 698560,
+    "sample_rate_hz": 16000,
+    "schema_version": "1-diagnostic"
+  },
+  "schema_version": "1-diagnostic",
+  "source": {
+    "commit": "ba41928222f1fcdd312e4c828480c4366feefbbe",
+    "digest": "c9a4b515ddb539dd74f68ccb0b45ab276e7018890cf2ae1d65ece8cf40427bdb",
+    "files": [
+      {
+        "path": "examples/pcm_websocket.py",
+        "sha256": "5edd027b48b35aeaf3f3e58a20ed5c1b47fe3848d14baa0d5d63b62bd75215a1",
+        "size_bytes": 18475
+      },
+      {
+        "path": "examples/replay_websocket.py",
+        "sha256": "91f72d33584552bff3b9d69e9aac62f6f07cc319837405d86f108afda683219f",
+        "size_bytes": 28639
+      },
+      {
+        "path": "experiments/modal-network-replay-v1.json",
+        "sha256": "0ba526b81db7d906ab7f6f1e9e46744917a864a87aa28163cc15c119363e7c53",
+        "size_bytes": 1785
+      },
+      {
+        "path": "experiments/modal-word-corpus-v1.json",
+        "sha256": "0de0f0af9ec7a9f949d636721f036ed457b4417aa9e12da3faf6de42f1ebf925",
+        "size_bytes": 13179
+      },
+      {
+        "path": "infra/modal_continuous_smoke.py",
+        "sha256": "5f88560cdacb0780e108cd9b222b95a361f5a8b1107b7db59da5b5db55596f70",
+        "size_bytes": 36793
+      },
+      {
+        "path": "infra/modal_network_replay.py",
+        "sha256": "947897e9d0da30aaf6b87c4a55be9e6f62818080d6fd0b04a8d3d8739719a21a",
+        "size_bytes": 34981
+      },
+      {
+        "path": "infra/modal_stream_boundary_diagnostic.py",
+        "sha256": "a6c3d4d848acbc9e481ae49ae638abe45dcce74704d129967fbf92b755e2faa2",
+        "size_bytes": 60265
+      },
+      {
+        "path": "infra/modal_word_corpus.py",
+        "sha256": "3d518a6d633f0a4fc4e1dd265343168dd44cba0051e64ba738bb62123973328c",
+        "size_bytes": 74872
+      },
+      {
+        "path": "src/whisper_runtime/__init__.py",
+        "sha256": "6b6c549bf89264c59b8808cf5cba240599af10f0cd12610a859ff964d6fed2aa",
+        "size_bytes": 1533
+      },
+      {
+        "path": "src/whisper_runtime/adapters/__init__.py",
+        "sha256": "45a6747a9e713db4fce179fb7fe7a55467bc18011de8f7baa56f085fbe78d521",
+        "size_bytes": 4001
+      },
+      {
+        "path": "src/whisper_runtime/adapters/_model_binding.py",
+        "sha256": "2c749b630c8736234ab844a104a2367be90cfd5004cbb74962016410d216dc74",
+        "size_bytes": 6523
+      },
+      {
+        "path": "src/whisper_runtime/adapters/audio_endpoints.py",
+        "sha256": "bbdb2d3bf19a436189de88e85d2ba2d5cd91861d1d6f2876fc46e30327dd6550",
+        "size_bytes": 5570
+      },
+      {
+        "path": "src/whisper_runtime/adapters/audio_evidence.py",
+        "sha256": "14db21a12f4c8ea3da76bede0814ac2cd1422162165fd65db1bcf951de176184",
+        "size_bytes": 9094
+      },
+      {
+        "path": "src/whisper_runtime/adapters/continuous_stream.py",
+        "sha256": "ab7c01bb873b89b970a9f6b2027bed0d1ef2219113bb9cd21076e00131a66f6c",
+        "size_bytes": 43190
+      },
+      {
+        "path": "src/whisper_runtime/adapters/legacy_whisper.py",
+        "sha256": "14b6f771c114238317d5118ba64c64334857e8e9da1d0f360baeeef48f3415e0",
+        "size_bytes": 33513
+      },
+      {
+        "path": "src/whisper_runtime/adapters/native_result.py",
+        "sha256": "3198b3996e7445449d7c74092ecef79d5a3615c1ebb48951c9bc7bbba3c18d92",
+        "size_bytes": 12573
+      },
+      {
+        "path": "src/whisper_runtime/adapters/native_stream.py",
+        "sha256": "01898983175014ac33e66c00be5bc92b96d0f300c0b20eb57a13cb4f384f0c39",
+        "size_bytes": 27068
+      },
+      {
+        "path": "src/whisper_runtime/adapters/native_whisper.py",
+        "sha256": "4e88815fe54855eb646338bdaaecac46690d2a8f682990f1ba32d9d9555b8785",
+        "size_bytes": 66260
+      },
+      {
+        "path": "src/whisper_runtime/adapters/paced_replay.py",
+        "sha256": "04628898703772f7c3f45c7de2f7fae4f772b5192bc48c813a625737bf2b377e",
+        "size_bytes": 11659
+      },
+      {
+        "path": "src/whisper_runtime/adapters/stream_policy.py",
+        "sha256": "452d71993ffd9395a36a8b6a68fbe34b53d90665cc13ad22058b49ca32b0f5a9",
+        "size_bytes": 13353
+      },
+      {
+        "path": "src/whisper_runtime/adapters/word_policy.py",
+        "sha256": "0025ad2cef8f09f90df73c1ca5d789b0a3d9ff32fd38cbdc7f9043082725e536",
+        "size_bytes": 16433
+      },
+      {
+        "path": "src/whisper_runtime/errors.py",
+        "sha256": "87127fee36ff6706360f8ad82ea49a0dea870d9cd1831ceec3aeb31c2d8e89df",
+        "size_bytes": 2439
+      },
+      {
+        "path": "src/whisper_runtime/execution.py",
+        "sha256": "ea758adb9ea4204f29f5b444ecf54331d751b66e3b4373014179522a225cef44",
+        "size_bytes": 7533
+      },
+      {
+        "path": "src/whisper_runtime/model.py",
+        "sha256": "bfe66fb074d308447e94af78851db46a1819d291cad9fde742b28dcc0be629c0",
+        "size_bytes": 558
+      },
+      {
+        "path": "src/whisper_runtime/resources.py",
+        "sha256": "5beec172371839ab73bb3ca594b22460f37723f1347db74841a43a4a102716d5",
+        "size_bytes": 6384
+      },
+      {
+        "path": "src/whisper_runtime/state.py",
+        "sha256": "2b234b2a9b7618a4834cdc906052c3ca46ecab0a73eba04d9eb3f891dc01c312",
+        "size_bytes": 11988
+      },
+      {
+        "path": "src/whisper_runtime/transaction.py",
+        "sha256": "d9e4622ff289b182d7a2b23ebc6243e661da9f9061484107b3da09feb1ed44e4",
+        "size_bytes": 37581
+      },
+      {
+        "path": "src/whisper_runtime/worker.py",
+        "sha256": "92dc3f3366903c4304aaa7919dc84d8252bbdd02279d876701159bf0e092e077",
+        "size_bytes": 11824
+      }
+    ]
+  },
+  "status": "failed"
+}
