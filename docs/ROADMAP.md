@@ -62,7 +62,10 @@ capacity; failed cleanup may retain capacity pending native recovery.
 
 This slice is not continuous streaming or Local Agreement. It retains audio
 and window history, reprocesses prefixes, and exposes no timed-token hypotheses.
-It makes no new performance or offline-equivalence claim.
+The [local CPU smoke](BOUNDED_STREAMING.md#local-cpu-smoke) checks three JFK
+replays against same-PCM controls, chunk-partition independence for two of those
+replays, and capacity release. It makes no general performance or
+offline-equivalence claim.
 
 ## Next streaming boundary: timestamped Local Agreement
 

@@ -148,6 +148,45 @@ session remains available through `state`.
 
 ## Measurements and remaining work
 
+### Local CPU smoke
+
+The [2026-09-05 smoke record](../evidence/native-cpu-tiny-en-jfk-bounded-previews-2026-09-05.json)
+contains three replays of the 11-second JFK fixture with `tiny.en` on CPU.
+The tested runtime commit is `6e6cd9884753e530cf3fea567bac2ed28b79839d`.
+Each run uses English, greedy decoding, no timestamp tokens, and final seed 7.
+Each also runs a separate control decode with identical PCM and settings.
+
+| Chunk size | Preview interval | Stream decodes | Decoded source duration | Observed total time |
+| --- | --- | --- | --- | --- |
+| 200 ms | 4 s | 3 | 23 s | 8.872 s |
+| 137 ms | 4 s | 3 | 23 s | 6.237 s |
+| 200 ms | 8 s | 2 | 19 s | 4.977 s |
+
+All final texts match the known fixture text and their same-PCM controls.
+The two 4-second schedules produce identical event sequences despite different
+chunk boundaries. Each run ends with an empty queue and all declared capacity
+returned. At 4 seconds, the first hypothesis ends with `asked`; the later
+revision changes it to `ask not`. No preview is committed before EOF.
+
+Total time includes stream replays and the separate control, but excludes model
+loading and setup checks. Input is replayed without waiting for wall-clock audio
+arrival. These are single observations, not a live-latency benchmark. Warm-up,
+host load, and decode count can affect the times. They do not establish a speedup
+or general accuracy equivalence.
+
+To repeat these configurations with the verified backend and a cached model:
+
+```sh
+python tools/run_native_example.py --stream-preview-ms 4000 --stream-chunk-ms 200
+python tools/run_native_example.py --stream-preview-ms 4000 --stream-chunk-ms 137
+python tools/run_native_example.py --stream-preview-ms 8000 --stream-chunk-ms 200
+```
+
+Use `--model-cache PATH` if the checkpoint is outside the default cache. Add
+`--output PATH` to save a JSON report. The commands do not permit downloads.
+
+### Counter scope
+
 `metrics` returns a snapshot of admitted chunks and samples, successfully
 published decodes, cumulative decoded source samples, and emitted events.
 `source_reprocessing_factor` divides cumulative decoded prefix length by unique

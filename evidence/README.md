@@ -1,5 +1,11 @@
 # Integration evidence
 
+The [bounded-preview CPU smoke](native-cpu-tiny-en-jfk-bounded-previews-2026-09-05.json)
+records three local JFK replays, same-PCM control results, revision events, and
+resource release. It is a diagnostic smoke record, not a registered CUDA
+qualification or a live-performance benchmark. See the
+[test scope](../docs/BOUNDED_STREAMING.md#local-cpu-smoke).
+
 This directory contains nine committed records from real backend runs:
 
 - `native-cpu-tiny-en-jfk-2026-09-03.json` records one
