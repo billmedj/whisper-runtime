@@ -18,7 +18,7 @@ import zlib
 from dataclasses import fields, is_dataclass
 from enum import Enum
 from pathlib import Path
-from typing import Any, Mapping
+from typing import Any, Mapping, cast
 
 ROOT = Path(__file__).resolve().parents[1]
 RUNTIME_ROOT = Path("/opt/whisper-runtime")
@@ -47,10 +47,17 @@ _REGISTRATIONS = {
         "artifact_stem": "stream-boundary-diagnostic-v3-attempt-1",
         "timeout_seconds": 120,
     },
+    "v4": {
+        "manifest_path": "experiments/modal-stream-boundary-diagnostic-v4.json",
+        "manifest_id": "modal-stream-boundary-diagnostic-v4",
+        "app_name": "whisper-runtime-stream-boundary-diagnostic-v4",
+        "artifact_stem": "stream-boundary-diagnostic-v4-attempt-1",
+        "timeout_seconds": 120,
+    },
 }
 REGISTRATION = os.environ.get(REGISTRATION_ENV, "v1")
 if REGISTRATION not in _REGISTRATIONS:
-    raise RuntimeError(f"{REGISTRATION_ENV} must be v1, v2, or v3")
+    raise RuntimeError(f"{REGISTRATION_ENV} must be v1, v2, v3, or v4")
 _REGISTRATION = _REGISTRATIONS[REGISTRATION]
 MANIFEST_PATH = str(_REGISTRATION["manifest_path"])
 MANIFEST_ID = str(_REGISTRATION["manifest_id"])
@@ -181,9 +188,10 @@ def _validate_registration(manifest: Mapping[str, Any]) -> None:
         )
     ):
         raise ValueError("the paid diagnostic budget is not fixed")
-    if manifest_id == "modal-stream-boundary-diagnostic-v3" and manifest.get(
-        "result_transport"
-    ) != {
+    if manifest_id in {
+        "modal-stream-boundary-diagnostic-v3",
+        "modal-stream-boundary-diagnostic-v4",
+    } and manifest.get("result_transport") != {
         "encoding": WORKER_RESULT_ENCODING,
         "modal_sdk_version": MODAL_SDK_VERSION,
         "invocation_type": "sync",
@@ -204,7 +212,7 @@ def _validate_registration(manifest: Mapping[str, Any]) -> None:
             "crosses_async_threshold": True,
         },
     }:
-        raise ValueError("the v3 result transport is not fixed")
+        raise ValueError("the synchronous result transport is not fixed")
     audio = manifest.get("input")
     if not isinstance(audio, Mapping) or any(
         audio.get(name) != value
@@ -218,21 +226,67 @@ def _validate_registration(manifest: Mapping[str, Any]) -> None:
     ):
         raise ValueError("the registered input is not the fixed 33-second stream")
     cells = manifest.get("cells")
-    expected_cells = [
-        ("baseline", 0, 1_000),
-        ("left-context-2000", 2_000, 1_000),
-        ("holdback-2000", 0, 2_000),
-        ("left-context-2000-holdback-2000", 2_000, 2_000),
-    ]
+    v4 = manifest_id == "modal-stream-boundary-diagnostic-v4"
+    if v4 and (
+        not isinstance(cells, list)
+        or any(
+            not isinstance(cell, Mapping)
+            or type(cell.get("word_alignment")) is not bool
+            for cell in cells
+        )
+    ):
+        raise ValueError("word_alignment must be a boolean in every v4 cell")
+    expected_cells: list[tuple[object, ...]] = (
+        [
+            ("segment-left-context-2000", 2_000, 2_000, False),
+            ("word-left-context-2000", 2_000, 2_000, True),
+        ]
+        if v4
+        else [
+            ("baseline", 0, 1_000),
+            ("left-context-2000", 2_000, 1_000),
+            ("holdback-2000", 0, 2_000),
+            ("left-context-2000-holdback-2000", 2_000, 2_000),
+        ]
+    )
     observed_cells = []
     if isinstance(cells, list):
         observed_cells = [
-            (cell.get("cell_id"), cell.get("left_context_ms"), cell.get("holdback_ms"))
+            (
+                cell.get("cell_id"),
+                cell.get("left_context_ms"),
+                cell.get("holdback_ms"),
+                cell.get("word_alignment"),
+            )
+            if v4
+            else (
+                cell.get("cell_id"),
+                cell.get("left_context_ms"),
+                cell.get("holdback_ms"),
+            )
             for cell in cells
             if isinstance(cell, Mapping)
         ]
     if observed_cells != expected_cells:
-        raise ValueError("the four boundary-policy cells are not fixed")
+        raise ValueError("the boundary-policy cells are not fixed")
+    if v4 and manifest.get("common_stream_config") != {
+        "preview_interval_ms": 2_000,
+        "max_window_ms": 30_000,
+        "max_buffer_ms": 40_000,
+        "timestamp_tolerance_ms": 200,
+        "coalesce_previews": False,
+    }:
+        raise ValueError("the word-alignment comparison config is not fixed")
+    if (
+        v4
+        and type(
+            cast(Mapping[str, Any], manifest["common_stream_config"]).get(
+                "coalesce_previews"
+            )
+        )
+        is not bool
+    ):
+        raise ValueError("coalesce_previews must be a boolean")
 
 
 def _attempt_paths(
@@ -244,7 +298,7 @@ def _attempt_paths(
         raise ValueError("this diagnostic permits exactly attempt 1")
     identity = _REGISTRATIONS.get(registration)
     if identity is None:
-        raise ValueError("registration must be v1, v2, or v3")
+        raise ValueError("registration must be v1, v2, v3, or v4")
     stem = root / "artifacts" / "modal" / str(identity["artifact_stem"])
     return stem.with_suffix(".json"), stem.with_suffix(".attempt.jsonl")
 
@@ -283,14 +337,14 @@ def _execute_transport_probe(*, root: Path, remote_function: object) -> Path:
         root
         / "artifacts"
         / "modal"
-        / "stream-boundary-diagnostic-v3-transport-preflight.attempt.jsonl"
+        / f"stream-boundary-diagnostic-{REGISTRATION}-transport-preflight.attempt.jsonl"
     )
     if receipt.exists():
         raise FileExistsError("the registered transport preflight already exists")
     payload = _transport_probe_payload()
     common = {
         "receipt_version": "1",
-        "manifest_id": "modal-stream-boundary-diagnostic-v3",
+        "manifest_id": MANIFEST_ID,
         "transport": "sync-inline-bytes",
     }
     _append_receipt(
@@ -519,13 +573,48 @@ def _capture_trace(stream: object, traces: list[dict[str, Any]]) -> None:
     traces.append(payload)
 
 
+def _trace_profile_checks(
+    traces: list[Mapping[str, Any]], *, word_alignment: bool
+) -> dict[str, bool]:
+    profile_matches = True
+    metadata_preserved = True
+    for trace in traces:
+        result = trace.get("result")
+        alignment = trace.get("word_alignment")
+        publication = trace.get("word_publication")
+        if not isinstance(result, Mapping) or not isinstance(
+            result.get("metadata"), Mapping
+        ):
+            metadata_preserved = False
+        if word_alignment:
+            if (
+                trace.get("publication_span") is not None
+                or not isinstance(alignment, Mapping)
+                or alignment.get("native") != result
+            ):
+                profile_matches = False
+                metadata_preserved = False
+            if publication is not None and (
+                not isinstance(publication, Mapping)
+                or publication.get("alignment") != alignment
+            ):
+                profile_matches = False
+                metadata_preserved = False
+        elif alignment is not None or publication is not None:
+            profile_matches = False
+    return {
+        "trace_profile_matches_config": profile_matches,
+        "trace_preserves_native_metadata": metadata_preserved,
+    }
+
+
 def _safe_stream_error(error: Exception) -> dict[str, object]:
     name = type(error).__name__
     policy = name == "StreamNeedsResolutionError"
     reasons = {
         "StreamNeedsResolutionError": (
-            "stable_prefix_not_found",
-            "The bounded window reached its limit without a publishable prefix.",
+            "unresolved_publication_boundary",
+            "The stream ended without a publishable boundary.",
         ),
         "AudioBufferFullError": (
             "audio_buffer_full",
@@ -940,6 +1029,7 @@ def _run_worker(
     common_config = manifest["common_stream_config"]
     decode_options = adapters.NativeDecodeOptions(**manifest["decode_options"])
     native_control_steps = 0
+    native_alignment_warmup_ns: int | None = None
     native_session = runtime.Session(f"{MANIFEST_ID}:native-control")
     with adapter.start_window(
         session=native_session,
@@ -961,6 +1051,11 @@ def _run_worker(
             if native_control_steps > MAX_DRIVER_STEPS:
                 raise RuntimeError("the native control exceeded its step bound")
         native_result = native_run.prepare_result()
+        if MANIFEST_ID == "modal-stream-boundary-diagnostic-v4":
+            alignment_started_ns = time.perf_counter_ns()
+            native_run.prepare_word_alignment()
+            torch.cuda.synchronize(0)
+            native_alignment_warmup_ns = time.perf_counter_ns() - alignment_started_ns
     if budget.available != capacity or worker.queue_depth != 0:
         raise RuntimeError("the native control retained runtime capacity")
     native_fixture_text = " ".join(native_result.text.split())
@@ -970,6 +1065,12 @@ def _run_worker(
     native_segmented_control = {
         "scope": "One 11-second native decode repeated three times; not a 33-second full-window decode.",
         "step_count": native_control_steps,
+        "word_alignment_warmup": {
+            "performed": native_alignment_warmup_ns is not None,
+            "wall_ns": native_alignment_warmup_ns,
+            "included_in_cell_timing": False,
+            "benchmark": False,
+        },
         "single_fixture_text": native_fixture_text,
         "single_fixture_text_sha256": _sha256_text(native_fixture_text),
         "text": native_segmented_text,
@@ -988,6 +1089,7 @@ def _run_worker(
             **common_config,
             left_context_ms=int(cell["left_context_ms"]),
             holdback_ms=int(cell["holdback_ms"]),
+            word_alignment=bool(cell.get("word_alignment", False)),
         )
         stream = continuous.ContinuousTranscriptStream(
             adapter,
@@ -998,6 +1100,8 @@ def _run_worker(
             config=config,
         )
         torch.cuda.reset_peak_memory_stats(0)
+        allocated_before = int(torch.cuda.memory_allocated(0))
+        reserved_before = int(torch.cuda.memory_reserved(0))
         started_ns = time.perf_counter_ns()
         events, traces, driver_steps, accepted_chunks, error_record = _drive_stream(
             stream, pcm, chunk_bytes=chunk_bytes
@@ -1021,6 +1125,19 @@ def _run_worker(
             max_buffer_samples=int(config.max_buffer_ms) * 16,
             error_record=error_record,
         )
+        checks.update(
+            _trace_profile_checks(
+                traces, word_alignment=bool(cell.get("word_alignment", False))
+            )
+        )
+        expected_profile_id = (
+            "word_agreement_stream/v1"
+            if cell.get("word_alignment") is True
+            else "context_agreement_stream/v1"
+            if int(cell["left_context_ms"]) > 0
+            else "timestamp_agreement_stream/v1"
+        )
+        checks["profile_id_matches_config"] = stream.profile_id == expected_profile_id
         lifecycle_names = manifest["outcomes"]["lifecycle_required"]
         lifecycle_passed = all(checks.get(name) is True for name in lifecycle_names)
         policy_resolution = (
@@ -1040,6 +1157,7 @@ def _run_worker(
         cells.append(
             {
                 "cell_id": cell_id,
+                "profile_id": stream.profile_id,
                 "config": _plain(config),
                 "status": (
                     "policy_resolution"
@@ -1076,6 +1194,8 @@ def _run_worker(
                     ),
                 },
                 "cuda_memory": {
+                    "allocated_before_bytes": allocated_before,
+                    "reserved_before_bytes": reserved_before,
                     "peak_allocated_bytes": int(torch.cuda.max_memory_allocated(0)),
                     "peak_reserved_bytes": int(torch.cuda.max_memory_reserved(0)),
                 },
@@ -1087,10 +1207,22 @@ def _run_worker(
             break
 
     attempted_all = len(cells) == len(manifest["cells"])
+    unresolved_cells = [
+        str(cell["cell_id"])
+        for cell in cells
+        if cell.get("status") == "policy_resolution"
+    ]
+    record_status = "stopped"
+    if attempted_all and stopped_after is None:
+        record_status = (
+            "unresolved"
+            if MANIFEST_ID == "modal-stream-boundary-diagnostic-v4" and unresolved_cells
+            else "completed"
+        )
     return {
         "schema_version": "1-diagnostic",
         "recorded_at": _utc_now(),
-        "status": "completed" if attempted_all and stopped_after is None else "stopped",
+        "status": record_status,
         "claim_boundary": manifest["claim_boundary"],
         "source": {
             "image_base_commit": base_commit,
@@ -1127,6 +1259,7 @@ def _run_worker(
             "cells_registered": len(manifest["cells"]),
             "cells_attempted": len(cells),
             "stopped_after_cell": stopped_after,
+            "unresolved_cells": unresolved_cells,
             "recognition_differences_are_gates": False,
         },
         "timing": {

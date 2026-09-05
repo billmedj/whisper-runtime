@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import base64
+import copy
 import importlib
 import json
 import os
@@ -19,7 +20,18 @@ from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
+from whisper_runtime.adapters.continuous_stream import ContinuousDecodeTrace
+from whisper_runtime.adapters.native_result import (
+    NativeDecodeMetadata,
+    NativeTimestampSegment,
+    NativeWindowResult,
+)
 from whisper_runtime.adapters.native_stream import StreamEventKind, TranscriptEvent
+from whisper_runtime.adapters.word_policy import (
+    NativeWordAlignment,
+    select_word_publication,
+)
+from whisper_runtime.state import AudioSpan
 
 with patch.dict(
     os.environ,
@@ -281,6 +293,226 @@ class ModalStreamBoundaryDiagnosticTests(unittest.TestCase):
                 diagnostic._execute_transport_probe(
                     root=root, remote_function=_EchoRemote()
                 )
+
+    def test_v4_fixes_a_matched_two_cell_segment_word_comparison(self) -> None:
+        v4 = json.loads(
+            (
+                diagnostic.ROOT / "experiments/modal-stream-boundary-diagnostic-v4.json"
+            ).read_text(encoding="utf-8")
+        )
+        v3 = json.loads(
+            (
+                diagnostic.ROOT / "experiments/modal-stream-boundary-diagnostic-v3.json"
+            ).read_text(encoding="utf-8")
+        )
+        diagnostic._validate_registration(v4)
+        self.assertEqual(v4["manifest_id"], "modal-stream-boundary-diagnostic-v4")
+        self.assertEqual(
+            v4["cells"],
+            [
+                {
+                    "cell_id": "segment-left-context-2000",
+                    "left_context_ms": 2000,
+                    "holdback_ms": 2000,
+                    "word_alignment": False,
+                },
+                {
+                    "cell_id": "word-left-context-2000",
+                    "left_context_ms": 2000,
+                    "holdback_ms": 2000,
+                    "word_alignment": True,
+                },
+            ],
+        )
+        self.assertEqual(
+            v4["common_stream_config"],
+            {
+                "preview_interval_ms": 2000,
+                "max_window_ms": 30000,
+                "max_buffer_ms": 40000,
+                "timestamp_tolerance_ms": 200,
+                "coalesce_previews": False,
+            },
+        )
+        for key in (
+            "input",
+            "model",
+            "decode_options",
+            "rng_seed",
+            "offline_control_options",
+            "replay_pacing",
+            "result_transport",
+            "claim_boundary",
+        ):
+            self.assertEqual(v4[key], v3[key], key)
+        self.assertEqual(
+            v4["native_segmented_control"],
+            {
+                **v3["native_segmented_control"],
+                "word_alignment_warmup": (
+                    "Run one opt-in alignment on the same 11-second native "
+                    "result before cell timing."
+                ),
+            },
+        )
+        self.assertIs(v4["decision_trace"]["record_raw_result_metadata"], True)
+        self.assertEqual(set(v4["claim_boundary"].values()), {False})
+        self.assertIn(
+            "src/whisper_runtime/**/*.py", v4["source_policy"]["snapshot_paths"]
+        )
+        self.assertIn(
+            "experiments/modal-stream-boundary-diagnostic-v4.json",
+            v4["source_policy"]["snapshot_paths"],
+        )
+
+    def test_v4_rejects_changed_or_untyped_comparison_cells(self) -> None:
+        registered = json.loads(
+            (
+                diagnostic.ROOT / "experiments/modal-stream-boundary-diagnostic-v4.json"
+            ).read_text(encoding="utf-8")
+        )
+        for mutation in (
+            "extra_cell",
+            "reversed_cells",
+            "both_aligned",
+            "integer_false",
+            "integer_true",
+            "context",
+            "holdback",
+            "coalescing",
+            "cadence",
+        ):
+            with self.subTest(mutation=mutation):
+                invalid = copy.deepcopy(registered)
+                if mutation == "extra_cell":
+                    invalid["cells"].append(copy.deepcopy(invalid["cells"][0]))
+                elif mutation == "reversed_cells":
+                    invalid["cells"].reverse()
+                elif mutation == "both_aligned":
+                    invalid["cells"][0]["word_alignment"] = True
+                elif mutation == "integer_false":
+                    invalid["cells"][0]["word_alignment"] = 0
+                elif mutation == "integer_true":
+                    invalid["cells"][1]["word_alignment"] = 1
+                elif mutation == "context":
+                    invalid["cells"][1]["left_context_ms"] = 0
+                elif mutation == "holdback":
+                    invalid["cells"][1]["holdback_ms"] = 1000
+                elif mutation == "coalescing":
+                    invalid["common_stream_config"]["coalesce_previews"] = True
+                else:
+                    invalid["common_stream_config"]["preview_interval_ms"] = 1000
+                with self.assertRaises(ValueError):
+                    diagnostic._validate_registration(invalid)
+
+    def test_v4_paid_budget_is_one_120_second_call_without_retry(self) -> None:
+        registered = json.loads(
+            (
+                diagnostic.ROOT / "experiments/modal-stream-boundary-diagnostic-v4.json"
+            ).read_text(encoding="utf-8")
+        )
+        fixed = {
+            "maximum_gpu_function_calls": 1,
+            "gpu_seconds_per_call": 120,
+            "maximum_gpu_seconds": 120,
+            "automatic_retries": 0,
+            "maximum_containers": 1,
+            "minimum_containers": 0,
+        }
+        self.assertEqual(diagnostic._REGISTRATIONS["v4"]["timeout_seconds"], 120)
+        for key, value in fixed.items():
+            with self.subTest(key=key):
+                self.assertEqual(registered["paid_budget"][key], value)
+                invalid = copy.deepcopy(registered)
+                invalid["paid_budget"][key] = value + 1
+                with self.assertRaises(ValueError):
+                    diagnostic._validate_registration(invalid)
+        self.assertLess(
+            registered["paid_budget"][
+                "maximum_execution_cost_at_registered_multiplier_ceiling_usd"
+            ],
+            0.05,
+        )
+        self.assertEqual(registered["result_transport"]["invocation_type"], "sync")
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            output, receipt = diagnostic._attempt_paths(root, 1, registration="v4")
+            self.assertIn("diagnostic-v4-attempt-1", output.name)
+            self.assertIn("diagnostic-v4-attempt-1", receipt.name)
+            self.assertNotEqual(
+                output, diagnostic._attempt_paths(root, 1, registration="v3")[0]
+            )
+            for attempt in (0, 2):
+                with self.assertRaises(ValueError):
+                    diagnostic._attempt_paths(root, attempt, registration="v4")
+
+    def test_word_trace_serialization_preserves_native_result_and_coverage_distinction(
+        self,
+    ) -> None:
+        native = NativeWindowResult(
+            "trace-window",
+            "do for",
+            0,
+            300,
+            metadata=NativeDecodeMetadata(
+                "en",
+                (50363, 1, 2, 50378),
+                segments=(
+                    NativeTimestampSegment(AudioSpan(0, 300), " do for", (1, 2)),
+                ),
+                timestamps_complete=True,
+            ),
+        )
+        alignment = NativeWordAlignment(
+            native,
+            (
+                NativeTimestampSegment(AudioSpan(100, 172), " do", (1,)),
+                NativeTimestampSegment(AudioSpan(172, 202), " for", (2,)),
+            ),
+        )
+        publication = select_word_publication(
+            alignment, 1, 2, AudioSpan(180, 300), final=True, boundary_tolerance_ms=10
+        )
+        trace = ContinuousDecodeTrace(
+            decode_index=2,
+            analysis_start_sample=0,
+            analysis_end_sample=4800,
+            committed_before_sample=2880,
+            retained_from_sample=0,
+            eof=True,
+            reason="eof",
+            publication_span=None,
+            result=native,
+            action="commit",
+            word_alignment=alignment,
+            word_publication=publication,
+        )
+        traces = []
+        diagnostic._capture_trace(SimpleNamespace(last_trace=trace), traces)
+        payload = {"decision_traces": traces, "events": []}
+        encoded = diagnostic._encode_worker_record(payload)
+        decoded = json.loads(diagnostic._bounded_decompress_worker_record(encoded))
+        self.assertEqual(decoded, payload)
+        snapshot = decoded["decision_traces"][0]
+        self.assertEqual(snapshot["result"], diagnostic._plain(native))
+        self.assertEqual(snapshot["result"]["text"], "do for")
+        self.assertEqual(snapshot["result"]["metadata"]["tokens"], [50363, 1, 2, 50378])
+        self.assertEqual(snapshot["word_alignment"]["native"], snapshot["result"])
+        self.assertIsNone(snapshot["publication_span"])
+        selected = snapshot["word_publication"]
+        self.assertEqual(selected["text"], "for")
+        self.assertEqual((selected["word_start"], selected["word_end"]), (1, 2))
+        self.assertEqual((selected["start_ms"], selected["end_ms"]), (180, 300))
+        self.assertEqual(
+            selected["alignment"]["words"][1]["span"], {"start_ms": 172, "end_ms": 202}
+        )
+        self.assertEqual(selected["alignment"]["native"], snapshot["result"])
+        self.assertEqual(selected["boundary_tolerance_ms"], 10)
+        self.assertIs(selected["final"], True)
+        self.assertEqual(
+            decoded["events"], []
+        )  # A prepared trace is not commit success.
+        self.assertEqual(native.metadata.segments[0].span, AudioSpan(0, 300))
 
     def test_snapshot_includes_the_reused_image_helper(self) -> None:
         snapshot = diagnostic._source_snapshot()
