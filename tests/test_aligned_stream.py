@@ -273,6 +273,8 @@ class AlignedStreamTests(unittest.TestCase):
         count = len(adapter.alignments)
         self.assertEqual(stream.last_trace.action, "unresolved")
         self.assertEqual(stream.last_trace.reason, "anchor_missing")
+        self.assertEqual(stream.last_trace.anchor_diagnostic.status, "relocated")
+        self.assertEqual(stream.last_trace.anchor_diagnostic.observation, "current")
         for _ in range(3):
             with self.assertRaises(StreamNeedsResolutionError):
                 stream.step()
@@ -306,6 +308,7 @@ class AlignedStreamTests(unittest.TestCase):
         with self.assertRaises(StreamNeedsResolutionError):
             self.decode(stream)
         self.assertEqual(stream.last_trace.reason, "anchor_missing")
+        self.assertEqual(stream.last_trace.anchor_diagnostic.status, "timing_mismatch")
         self.assertEqual(len(adapter.finish_attempts), 1)
         stream.close()
 

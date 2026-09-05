@@ -1,0 +1,674 @@
+{
+  "schema_version": "word-resolution-replay/v1",
+  "input_schema_version": "1-diagnostic",
+  "input_sha256": "f96e524e01574b6f2f8df3f9e09932b990313bba9354799a58703da043526b85",
+  "input_source": {
+    "registration_sha256": "479f768e4c20b3cbf05d3518bd7b9c974dc40b7a539b449d593b260bf46dbfde",
+    "snapshot": {
+      "commit": "b0e15ebcf510135278a7f9e6b59e31417b0a7edb",
+      "digest": "182fb9819a0bc7aabd95eaeee049e6bcf8753f27795c4a0559236e1a488df408",
+      "files": [
+        {
+          "path": "experiments/modal-acoustic-diagnostic-v2.json",
+          "sha256": "479f768e4c20b3cbf05d3518bd7b9c974dc40b7a539b449d593b260bf46dbfde",
+          "size_bytes": 3432
+        },
+        {
+          "path": "experiments/modal-word-corpus-v1.json",
+          "sha256": "0de0f0af9ec7a9f949d636721f036ed457b4417aa9e12da3faf6de42f1ebf925",
+          "size_bytes": 13179
+        },
+        {
+          "path": "infra/modal_acoustic_diagnostic.py",
+          "sha256": "38821245881b7d2bbe1fc9be46ea960d74930133ee01f7c2fab1332d3684818a",
+          "size_bytes": 31589
+        },
+        {
+          "path": "infra/modal_continuous_smoke.py",
+          "sha256": "5f88560cdacb0780e108cd9b222b95a361f5a8b1107b7db59da5b5db55596f70",
+          "size_bytes": 36793
+        },
+        {
+          "path": "infra/modal_stream_boundary_diagnostic.py",
+          "sha256": "a6c3d4d848acbc9e481ae49ae638abe45dcce74704d129967fbf92b755e2faa2",
+          "size_bytes": 60265
+        },
+        {
+          "path": "infra/modal_word_corpus.py",
+          "sha256": "3d518a6d633f0a4fc4e1dd265343168dd44cba0051e64ba738bb62123973328c",
+          "size_bytes": 74872
+        },
+        {
+          "path": "src/whisper_runtime/__init__.py",
+          "sha256": "6b6c549bf89264c59b8808cf5cba240599af10f0cd12610a859ff964d6fed2aa",
+          "size_bytes": 1533
+        },
+        {
+          "path": "src/whisper_runtime/adapters/__init__.py",
+          "sha256": "45a6747a9e713db4fce179fb7fe7a55467bc18011de8f7baa56f085fbe78d521",
+          "size_bytes": 4001
+        },
+        {
+          "path": "src/whisper_runtime/adapters/_model_binding.py",
+          "sha256": "2c749b630c8736234ab844a104a2367be90cfd5004cbb74962016410d216dc74",
+          "size_bytes": 6523
+        },
+        {
+          "path": "src/whisper_runtime/adapters/audio_endpoints.py",
+          "sha256": "bbdb2d3bf19a436189de88e85d2ba2d5cd91861d1d6f2876fc46e30327dd6550",
+          "size_bytes": 5570
+        },
+        {
+          "path": "src/whisper_runtime/adapters/audio_evidence.py",
+          "sha256": "14db21a12f4c8ea3da76bede0814ac2cd1422162165fd65db1bcf951de176184",
+          "size_bytes": 9094
+        },
+        {
+          "path": "src/whisper_runtime/adapters/continuous_stream.py",
+          "sha256": "50d0d9c18fc20bd9a8d5a3dc8ba09a04bcca188687a239e623a051891d5195b0",
+          "size_bytes": 49671
+        },
+        {
+          "path": "src/whisper_runtime/adapters/legacy_whisper.py",
+          "sha256": "14b6f771c114238317d5118ba64c64334857e8e9da1d0f360baeeef48f3415e0",
+          "size_bytes": 33513
+        },
+        {
+          "path": "src/whisper_runtime/adapters/native_result.py",
+          "sha256": "3198b3996e7445449d7c74092ecef79d5a3615c1ebb48951c9bc7bbba3c18d92",
+          "size_bytes": 12573
+        },
+        {
+          "path": "src/whisper_runtime/adapters/native_stream.py",
+          "sha256": "01898983175014ac33e66c00be5bc92b96d0f300c0b20eb57a13cb4f384f0c39",
+          "size_bytes": 27068
+        },
+        {
+          "path": "src/whisper_runtime/adapters/native_whisper.py",
+          "sha256": "4e88815fe54855eb646338bdaaecac46690d2a8f682990f1ba32d9d9555b8785",
+          "size_bytes": 66260
+        },
+        {
+          "path": "src/whisper_runtime/adapters/paced_replay.py",
+          "sha256": "04628898703772f7c3f45c7de2f7fae4f772b5192bc48c813a625737bf2b377e",
+          "size_bytes": 11659
+        },
+        {
+          "path": "src/whisper_runtime/adapters/stream_policy.py",
+          "sha256": "452d71993ffd9395a36a8b6a68fbe34b53d90665cc13ad22058b49ca32b0f5a9",
+          "size_bytes": 13353
+        },
+        {
+          "path": "src/whisper_runtime/adapters/word_policy.py",
+          "sha256": "0025ad2cef8f09f90df73c1ca5d789b0a3d9ff32fd38cbdc7f9043082725e536",
+          "size_bytes": 16433
+        },
+        {
+          "path": "src/whisper_runtime/errors.py",
+          "sha256": "87127fee36ff6706360f8ad82ea49a0dea870d9cd1831ceec3aeb31c2d8e89df",
+          "size_bytes": 2439
+        },
+        {
+          "path": "src/whisper_runtime/execution.py",
+          "sha256": "ea758adb9ea4204f29f5b444ecf54331d751b66e3b4373014179522a225cef44",
+          "size_bytes": 7533
+        },
+        {
+          "path": "src/whisper_runtime/model.py",
+          "sha256": "bfe66fb074d308447e94af78851db46a1819d291cad9fde742b28dcc0be629c0",
+          "size_bytes": 558
+        },
+        {
+          "path": "src/whisper_runtime/resources.py",
+          "sha256": "5beec172371839ab73bb3ca594b22460f37723f1347db74841a43a4a102716d5",
+          "size_bytes": 6384
+        },
+        {
+          "path": "src/whisper_runtime/state.py",
+          "sha256": "2b234b2a9b7618a4834cdc906052c3ca46ecab0a73eba04d9eb3f891dc01c312",
+          "size_bytes": 11988
+        },
+        {
+          "path": "src/whisper_runtime/transaction.py",
+          "sha256": "d9e4622ff289b182d7a2b23ebc6243e661da9f9061484107b3da09feb1ed44e4",
+          "size_bytes": 37581
+        },
+        {
+          "path": "src/whisper_runtime/worker.py",
+          "sha256": "92dc3f3366903c4304aaa7919dc84d8252bbdd02279d876701159bf0e092e077",
+          "size_bytes": 11824
+        },
+        {
+          "path": "tools/prepare_acoustic_cases.py",
+          "sha256": "8d2eaa65dc5a6ce57589d91efac2c773901ba59fe14a54cf9a5d1028ac62c79d",
+          "size_bytes": 11344
+        },
+        {
+          "path": "tools/prepare_speech_corpus.py",
+          "sha256": "7ee1771a5642cddc6679a368c354a856ee99bd22d2b9e90caee8fb273b6c12a8",
+          "size_bytes": 17184
+        }
+      ]
+    }
+  },
+  "replay_source_sha256": {
+    "src/whisper_runtime/adapters/word_policy.py": "f7746ff54c6ca7fa250af8f6b85c88976e10d44a1fafae48626e1527bcc7a60e",
+    "tools/word_anchor_reconciliation.py": "3b79f755cca1dd9553d41ff0ba7fadf2f4158f06678167c9ec7be8228861911b",
+    "tools/analyze_word_resolution.py": "6e04c5e4eff4513666fdcd30daa86a6004e2acc0551a8204759f8b990dc9f13b"
+  },
+  "input_qualified": false,
+  "parameters": {
+    "holdback_ms": 2000,
+    "timestamp_tolerance_ms": 200,
+    "max_window_ms": 30000,
+    "max_end_extension_ms": 1000
+  },
+  "scope": "all terminal policy failures; recorded observations only",
+  "source_identity": "PCM/model/tokenizer/options provenance is recorded, not re-established by rematching",
+  "claim_boundary": {
+    "publication_authority": false,
+    "qualification_changes": false,
+    "recognition_improvement": false,
+    "acoustic_ground_truth": false,
+    "complete_coverage": false,
+    "latency_or_performance": false
+  },
+  "input_cell_count": 7,
+  "terminal_failure_count": 4,
+  "excluded_cells": [
+    {
+      "id": "quiet:mixed-control",
+      "stream_status": "completed"
+    },
+    {
+      "id": "context:mixed-control",
+      "stream_status": "completed"
+    },
+    {
+      "id": "context:mixed-attenuated32",
+      "stream_status": "completed"
+    }
+  ],
+  "cells": [
+    {
+      "id": "hybrid:concatenated-no-added-pauses",
+      "recorded_qualified": false,
+      "terminal_kind": "eof",
+      "terminal_decode_index": 17,
+      "previous_decode_index": 16,
+      "same_continuation_pair": true,
+      "analysis_start_ms": 19260,
+      "analysis_end_ms": 33660,
+      "committed_through_ms": 21260,
+      "accepted_through_sample": 538560,
+      "frozen_anchor_origin": {
+        "decode_index": 13,
+        "commit_sequence_number": 17,
+        "word_start": 6,
+        "word_end": 11
+      },
+      "frozen_anchor": [
+        {
+          "span": {
+            "start_ms": 20280,
+            "end_ms": 20700
+          },
+          "text": ".",
+          "tokens": [
+            13
+          ]
+        },
+        {
+          "span": {
+            "start_ms": 20700,
+            "end_ms": 20920
+          },
+          "text": " For",
+          "tokens": [
+            1114
+          ]
+        },
+        {
+          "span": {
+            "start_ms": 20920,
+            "end_ms": 21000
+          },
+          "text": " a",
+          "tokens": [
+            257
+          ]
+        },
+        {
+          "span": {
+            "start_ms": 21000,
+            "end_ms": 21260
+          },
+          "text": " while",
+          "tokens": [
+            981
+          ]
+        }
+      ],
+      "retained_anchor": [
+        {
+          "span": {
+            "start_ms": 20280,
+            "end_ms": 20700
+          },
+          "text": ".",
+          "tokens": [
+            13
+          ]
+        },
+        {
+          "span": {
+            "start_ms": 20700,
+            "end_ms": 20920
+          },
+          "text": " For",
+          "tokens": [
+            1114
+          ]
+        },
+        {
+          "span": {
+            "start_ms": 20920,
+            "end_ms": 21000
+          },
+          "text": " a",
+          "tokens": [
+            257
+          ]
+        },
+        {
+          "span": {
+            "start_ms": 21000,
+            "end_ms": 21260
+          },
+          "text": " while",
+          "tokens": [
+            981
+          ]
+        }
+      ],
+      "recorded_reason": "anchor_missing",
+      "replayed_reason": "anchor_missing",
+      "legacy_reason_matches": true,
+      "current_diagnostic": {
+        "status": "lexical_missing",
+        "observation": "current",
+        "text_match_count": 0,
+        "lexical_match_count": 0,
+        "timed_match_count": 0,
+        "word_start": null,
+        "word_end": null,
+        "start_deltas_ms": [],
+        "end_deltas_ms": []
+      },
+      "previous_diagnostic": {
+        "status": "lexical_missing",
+        "observation": "previous",
+        "text_match_count": 0,
+        "lexical_match_count": 0,
+        "timed_match_count": 0,
+        "word_start": null,
+        "word_end": null,
+        "start_deltas_ms": [],
+        "end_deltas_ms": []
+      },
+      "shadow_proposal": {
+        "status": "rejected",
+        "reason": "anchor_text_absent",
+        "word_start": null,
+        "word_end": null,
+        "end_extension_ms": null
+      }
+    },
+    {
+      "id": "hybrid:mixed-continuous-noise64",
+      "recorded_qualified": false,
+      "terminal_kind": "window_full",
+      "terminal_decode_index": 18,
+      "previous_decode_index": 17,
+      "same_continuation_pair": true,
+      "analysis_start_ms": 4100,
+      "analysis_end_ms": 34100,
+      "committed_through_ms": 6100,
+      "accepted_through_sample": 560000,
+      "frozen_anchor_origin": {
+        "decode_index": 14,
+        "commit_sequence_number": 17,
+        "word_start": 6,
+        "word_end": 8
+      },
+      "frozen_anchor": [
+        {
+          "span": {
+            "start_ms": 3560,
+            "end_ms": 5880
+          },
+          "text": ".",
+          "tokens": [
+            13
+          ]
+        },
+        {
+          "span": {
+            "start_ms": 5880,
+            "end_ms": 6100
+          },
+          "text": " For",
+          "tokens": [
+            1114
+          ]
+        }
+      ],
+      "retained_anchor": [
+        {
+          "span": {
+            "start_ms": 5880,
+            "end_ms": 6100
+          },
+          "text": " For",
+          "tokens": [
+            1114
+          ]
+        }
+      ],
+      "recorded_reason": "anchor_missing",
+      "replayed_reason": "anchor_missing",
+      "legacy_reason_matches": true,
+      "current_diagnostic": {
+        "status": "timing_mismatch",
+        "observation": "current",
+        "text_match_count": 1,
+        "lexical_match_count": 1,
+        "timed_match_count": 0,
+        "word_start": 0,
+        "word_end": 1,
+        "start_deltas_ms": [
+          -1780
+        ],
+        "end_deltas_ms": [
+          -20
+        ]
+      },
+      "previous_diagnostic": {
+        "status": "ambiguous",
+        "observation": "previous",
+        "text_match_count": 2,
+        "lexical_match_count": 2,
+        "timed_match_count": 0,
+        "word_start": null,
+        "word_end": null,
+        "start_deltas_ms": [],
+        "end_deltas_ms": []
+      },
+      "shadow_proposal": {
+        "status": "rejected",
+        "reason": "not_final",
+        "word_start": null,
+        "word_end": null,
+        "end_extension_ms": null
+      }
+    },
+    {
+      "id": "context:concatenated-no-added-pauses",
+      "recorded_qualified": false,
+      "terminal_kind": "eof",
+      "terminal_decode_index": 17,
+      "previous_decode_index": null,
+      "same_continuation_pair": false,
+      "analysis_start_ms": 19180,
+      "analysis_end_ms": 33660,
+      "committed_through_ms": 21260,
+      "accepted_through_sample": 538560,
+      "frozen_anchor_origin": {
+        "decode_index": 16,
+        "commit_sequence_number": 19,
+        "word_start": 7,
+        "word_end": 12
+      },
+      "frozen_anchor": [
+        {
+          "span": {
+            "start_ms": 20720,
+            "end_ms": 20920
+          },
+          "text": " For",
+          "tokens": [
+            1114
+          ]
+        },
+        {
+          "span": {
+            "start_ms": 20920,
+            "end_ms": 21020
+          },
+          "text": " a",
+          "tokens": [
+            257
+          ]
+        },
+        {
+          "span": {
+            "start_ms": 21020,
+            "end_ms": 21260
+          },
+          "text": " while",
+          "tokens": [
+            981
+          ]
+        }
+      ],
+      "retained_anchor": [
+        {
+          "span": {
+            "start_ms": 20720,
+            "end_ms": 20920
+          },
+          "text": " For",
+          "tokens": [
+            1114
+          ]
+        },
+        {
+          "span": {
+            "start_ms": 20920,
+            "end_ms": 21020
+          },
+          "text": " a",
+          "tokens": [
+            257
+          ]
+        },
+        {
+          "span": {
+            "start_ms": 21020,
+            "end_ms": 21260
+          },
+          "text": " while",
+          "tokens": [
+            981
+          ]
+        }
+      ],
+      "recorded_reason": "anchor_missing",
+      "replayed_reason": "anchor_missing",
+      "legacy_reason_matches": true,
+      "current_diagnostic": {
+        "status": "lexical_missing",
+        "observation": "current",
+        "text_match_count": 0,
+        "lexical_match_count": 0,
+        "timed_match_count": 0,
+        "word_start": null,
+        "word_end": null,
+        "start_deltas_ms": [],
+        "end_deltas_ms": []
+      },
+      "previous_diagnostic": null,
+      "shadow_proposal": {
+        "status": "rejected",
+        "reason": "anchor_text_absent",
+        "word_start": null,
+        "word_end": null,
+        "end_extension_ms": null
+      }
+    },
+    {
+      "id": "context:mixed-continuous-noise64",
+      "recorded_qualified": false,
+      "terminal_kind": "eof",
+      "terminal_decode_index": 22,
+      "previous_decode_index": 21,
+      "same_continuation_pair": true,
+      "analysis_start_ms": 31160,
+      "analysis_end_ms": 43660,
+      "committed_through_ms": 33540,
+      "accepted_through_sample": 698560,
+      "frozen_anchor_origin": {
+        "decode_index": 18,
+        "commit_sequence_number": 22,
+        "word_start": 7,
+        "word_end": 29
+      },
+      "frozen_anchor": [
+        {
+          "span": {
+            "start_ms": 32400,
+            "end_ms": 32640
+          },
+          "text": " and",
+          "tokens": [
+            290
+          ]
+        },
+        {
+          "span": {
+            "start_ms": 32640,
+            "end_ms": 32880
+          },
+          "text": " bird",
+          "tokens": [
+            6512
+          ]
+        },
+        {
+          "span": {
+            "start_ms": 32880,
+            "end_ms": 33180
+          },
+          "text": " and",
+          "tokens": [
+            290
+          ]
+        },
+        {
+          "span": {
+            "start_ms": 33180,
+            "end_ms": 33540
+          },
+          "text": " tree",
+          "tokens": [
+            5509
+          ]
+        }
+      ],
+      "retained_anchor": [
+        {
+          "span": {
+            "start_ms": 32400,
+            "end_ms": 32640
+          },
+          "text": " and",
+          "tokens": [
+            290
+          ]
+        },
+        {
+          "span": {
+            "start_ms": 32640,
+            "end_ms": 32880
+          },
+          "text": " bird",
+          "tokens": [
+            6512
+          ]
+        },
+        {
+          "span": {
+            "start_ms": 32880,
+            "end_ms": 33180
+          },
+          "text": " and",
+          "tokens": [
+            290
+          ]
+        },
+        {
+          "span": {
+            "start_ms": 33180,
+            "end_ms": 33540
+          },
+          "text": " tree",
+          "tokens": [
+            5509
+          ]
+        }
+      ],
+      "recorded_reason": "anchor_missing",
+      "replayed_reason": "anchor_missing",
+      "legacy_reason_matches": true,
+      "current_diagnostic": {
+        "status": "timing_mismatch",
+        "observation": "current",
+        "text_match_count": 1,
+        "lexical_match_count": 1,
+        "timed_match_count": 0,
+        "word_start": 4,
+        "word_end": 8,
+        "start_deltas_ms": [
+          0,
+          0,
+          0,
+          -20
+        ],
+        "end_deltas_ms": [
+          0,
+          0,
+          -20,
+          540
+        ]
+      },
+      "previous_diagnostic": {
+        "status": "timing_mismatch",
+        "observation": "previous",
+        "text_match_count": 1,
+        "lexical_match_count": 1,
+        "timed_match_count": 0,
+        "word_start": 6,
+        "word_end": 10,
+        "start_deltas_ms": [
+          20,
+          0,
+          0,
+          -20
+        ],
+        "end_deltas_ms": [
+          0,
+          0,
+          -20,
+          420
+        ]
+      },
+      "shadow_proposal": {
+        "status": "eligible",
+        "reason": "terminal_end_only_extension",
+        "word_start": 4,
+        "word_end": 8,
+        "end_extension_ms": 540
+      }
+    }
+  ]
+}

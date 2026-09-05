@@ -1,5 +1,13 @@
 # Integration evidence
 
+The [local word-resolution replay](word-resolution-replay-2026-09-06.json)
+reproduces all four terminal failures in the word-context comparison below.
+It separates absent lexical anchors from timing mismatches and finds one
+structurally eligible terminal-end correspondence. It uses no GPU and cannot
+publish, change qualification or establish acoustic correctness. The
+[report](../docs/research/2026-09-06-word-resolution.md) documents the rules,
+counterexamples and next test.
+
 The [word-context comparison](modal-t4-tiny-en-word-context-2026-09-06.json)
 is **failed**, with matched controls. The candidate advances noisy-input
 publication from 6.10 to 33.54 seconds, but does not finish its 43.66 seconds.

@@ -1,0 +1,20 @@
+{
+  "schema_version": "1-diagnostic",
+  "id": "modal-word-resolution-v1",
+  "modal_sdk": "1.5.5",
+  "scope": "fixed terminal-state counterfactuals; no stream publication",
+  "development_cells": ["context:concatenated-no-added-pauses", "context:mixed-continuous-noise64"],
+  "heldout_recipe": ["clean", "noise64"],
+  "parameters": {"timestamp_tolerance_ms": 200, "max_end_extension_ms": 1000, "bootstrap_holdback_ms": 1000, "left_context_ms": 2000},
+  "execution": {"gpu": "T4", "cpu": 2, "memory_mib": 4096, "timeout_seconds": 180, "max_containers": 1, "configured_retries": 0, "gpu_client_calls": 1, "maximum_native_windows": 10},
+  "routing": "From the current observation only: absent lexical text or token mismatch uses the alternative window; timing mismatch with an eligible local proposal uses shadow reconciliation; otherwise retain strict baseline. Never select by reference score.",
+  "acceptance": {"all_four_states_recorded": true, "development_native_controls_reproduce": true, "model_unchanged": true, "capacity_restored_after_each_window": true},
+  "claim_boundary": {"full_stream_recovery": false, "publication_authority": false, "general_efficiency": false, "acoustic_certification": false, "production_readiness": false, "physical_spending_cap": false},
+  "notes": [
+    "Two native windows per state; one past-only bootstrap window per new speaker. No separate warmup; alternate original/alternative order by case index and record first-call effects.",
+    "An alternative starts at the frozen committed boundary and cannot read evicted PCM. Its transcript is a counterfactual candidate, not permission to change an existing stream.",
+    "Held-out means unused by this project's development, not exclusion from Whisper training. Two speakers are a smoke check, not a generalization study.",
+    "Scores use human references only after action selection. Count local decision cost, alignment encoder work and padding, bootstrap and actual decoder calls.",
+    "No automatic retry. Stop further work after a lifecycle error. The resource configuration bounds one attempt, not provider rescheduling or the account invoice."
+  ]
+}

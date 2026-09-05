@@ -74,9 +74,11 @@ from .paced_replay import (
 from .stream_policy import TextAgreementReason, TextPrefixDecision, resolve_text_prefix
 from .word_policy import (
     AlignedPublication,
+    AnchorDiagnostic,
     NativeWordAlignment,
     WordAgreementDecision,
     compare_word_hypotheses,
+    diagnose_word_anchor,
     select_word_publication,
 )
 
@@ -99,9 +101,11 @@ __all__ = [
     "SOURCE_UNIT_PROFILE",
     "WORD_CONTINUOUS_PROFILE",
     "AlignedPublication",
+    "AnchorDiagnostic",
     "NativeWordAlignment",
     "WordAgreementDecision",
     "compare_word_hypotheses",
+    "diagnose_word_anchor",
     "select_word_publication",
     "ContinuousDecodeTrace",
     "ContinuousStreamConfig",

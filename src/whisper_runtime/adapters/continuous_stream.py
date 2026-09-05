@@ -41,6 +41,7 @@ from .native_whisper import NativeDecodeOptions, NativeWhisperAdapter, NativeWin
 from .stream_policy import compare_hypotheses
 from .word_policy import (
     AlignedPublication,
+    AnchorDiagnostic,
     NativeWordAlignment,
     WordAgreementDecision,
     compare_word_hypotheses,
@@ -230,6 +231,7 @@ class ContinuousDecodeTrace:
     silence_publication: SilencePublication | None = None
     source_unit: SourceUnit | None = None
     accepted_through_sample: int | None = None
+    anchor_diagnostic: AnchorDiagnostic | None = None
 
 
 class ContinuousTranscriptStream:
@@ -877,7 +879,9 @@ class ContinuousTranscriptStream:
             anchor = decision.next_anchor
             while anchor and not any(c.isalnum() for c in anchor[0].text):
                 anchor = anchor[1:]
-            decision = WordAgreementDecision(decision.reason, publication, anchor)
+            decision = WordAgreementDecision(
+                decision.reason, publication, anchor, decision.anchor_diagnostic
+            )
             retained = self._word_context_start(decision)
             if retained is None:
                 publication = None
@@ -893,6 +897,7 @@ class ContinuousTranscriptStream:
             else "preview",
             word_alignment=alignment,
             word_publication=publication,
+            anchor_diagnostic=decision.anchor_diagnostic,
         )
         if publication is not None:
             self._word_pending = decision
@@ -1009,6 +1014,7 @@ class ContinuousTranscriptStream:
         word_alignment: NativeWordAlignment | None = None,
         word_publication: AlignedPublication | None = None,
         silence_publication: SilencePublication | None = None,
+        anchor_diagnostic: AnchorDiagnostic | None = None,
     ) -> None:
         self._trace_count += 1
         self._last_trace = ContinuousDecodeTrace(
@@ -1028,6 +1034,7 @@ class ContinuousTranscriptStream:
             silence_publication,
             self._run_unit,
             self.accepted_samples,
+            anchor_diagnostic,
         )
 
     def _publish_commit(self) -> tuple[TranscriptEvent, ...]:

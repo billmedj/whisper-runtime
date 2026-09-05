@@ -351,6 +351,20 @@ Word profiles also expose `word_alignment` and `word_publication`. Their raw
 selects words, not native segments. The segment-only trace analyzer does not
 validate this profile.
 
+`last_trace.anchor_diagnostic` adds detail when the word policy checks a
+committed anchor. The existing top-level reasons and publication rules are
+unchanged. The optional record distinguishes unavailable retained context,
+missing lexical text, changed tokens, timestamp mismatch, relocated text and
+multiple possible occurrences. It identifies the previous or current observation,
+counts exact matches and records signed boundary differences. A matched anchor
+does not establish that its continuation is correct.
+
+`diagnose_word_anchor` exposes the same pure check for local analysis. It uses no
+model, reference transcript or corrected timestamp. The separate
+`tools/analyze_word_resolution.py` command replays saved failures and tests an
+experimental terminal-end correspondence without publishing any text. See the
+[local resolution report](research/2026-09-06-word-resolution.md).
+
 ## Text-only agreement analysis
 
 `resolve_text_prefix` in `adapters.stream_policy` compares the text-token prefix

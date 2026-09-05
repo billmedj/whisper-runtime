@@ -598,7 +598,9 @@ def run_worker(expected_snapshot):
     }
 
 
-def resources(expected_snapshot, root=ROOT):
+def resources(
+    expected_snapshot, root=ROOT, *, worker_module="infra.modal_acoustic_diagnostic"
+):
     corpus = _corpus()
     modal = importlib.import_module("modal")
     if str(modal.__version__) != "1.5.5":
@@ -668,7 +670,7 @@ def resources(expected_snapshot, root=ROOT):
         volumes={corpus.b.MODEL_CACHE_MOUNT: volume.with_mount_options(read_only=True)},
     )
     def execute() -> bytes:
-        producer = importlib.import_module("infra.modal_acoustic_diagnostic")
+        producer = importlib.import_module(worker_module)
         return producer._corpus().b._encode_worker_record(
             producer.run_worker(expected_snapshot)
         )

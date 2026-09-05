@@ -9,6 +9,7 @@ estimates, not acoustic ground truth. Raw native segments remain untouched.
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import Literal
 
 from ..state import AudioSpan, WindowResult
 from .native_result import NativeTimestampSegment, NativeWindowResult
@@ -140,12 +141,43 @@ def select_word_publication(
 
 
 @dataclass(frozen=True, slots=True)
+class AnchorDiagnostic:
+    """Observed correspondence, not acoustic truth or publication authority.
+
+    Deltas are observed minus frozen milliseconds. Counts include exact repeated
+    phrases anywhere in the analysis, including after the committed boundary.
+    A matched occurrence retains the existing timing rules; other exact lexical
+    occurrences remain visible in the counts. No probability of correctness is
+    inferred from those counts.
+    """
+
+    status: Literal[
+        "matched",
+        "unavailable",
+        "lexical_missing",
+        "token_mismatch",
+        "timing_mismatch",
+        "relocated",
+        "ambiguous",
+    ]
+    observation: Literal["previous", "current"] = "current"
+    text_match_count: int = 0
+    lexical_match_count: int = 0
+    timed_match_count: int = 0
+    word_start: int | None = None
+    word_end: int | None = None
+    start_deltas_ms: tuple[int, ...] = ()
+    end_deltas_ms: tuple[int, ...] = ()
+
+
+@dataclass(frozen=True, slots=True)
 class WordAgreementDecision:
     """A proposed publication and bounded anchor; retain only after commit/release."""
 
     reason: str
     publication: AlignedPublication | None = None
     next_anchor: tuple[NativeTimestampSegment, ...] = ()
+    anchor_diagnostic: AnchorDiagnostic | None = None
 
     def __post_init__(self) -> None:
         if self.reason not in {
@@ -165,6 +197,10 @@ class WordAgreementDecision:
                 raise ValueError("decision reason must match EOF authority")
         elif self.publication is not None:
             raise ValueError("an unresolved decision cannot publish")
+        if self.anchor_diagnostic is not None and not isinstance(
+            self.anchor_diagnostic, AnchorDiagnostic
+        ):
+            raise TypeError("anchor_diagnostic must be AnchorDiagnostic or None")
         object.__setattr__(self, "next_anchor", anchor)
 
 
@@ -218,8 +254,14 @@ def compare_word_hypotheses(
     if any(word.span.end_ms > committed_through_ms for word in anchor):
         raise ValueError("anchor words must have been published before the watermark")
 
-    def wait(reason: str) -> WordAgreementDecision:
-        return WordAgreementDecision(reason, next_anchor=anchor)
+    diagnostic = None
+
+    def wait(
+        reason: str, detail: AnchorDiagnostic | None = None
+    ) -> WordAgreementDecision:
+        return WordAgreementDecision(
+            reason, next_anchor=anchor, anchor_diagnostic=detail
+        )
 
     span = current.native.analyzed_span
     if not span.start_ms <= committed_through_ms <= span.end_ms:
@@ -251,27 +293,40 @@ def compare_word_hypotheses(
         if not retained_anchor or (
             not final and not any(_has_lexical_text(word) for word in retained_anchor)
         ):
-            return wait("anchor_missing")
-        reason, after_start = _anchor_end(
-            current.words,
-            retained_anchor,
-            committed_through_ms,
-            timestamp_tolerance_ms,
-            span.start_ms,
+            return wait("anchor_missing", AnchorDiagnostic("unavailable"))
+        diagnostic = diagnose_word_anchor(
+            current,
+            anchor=retained_anchor,
+            committed_through_ms=committed_through_ms,
+            timestamp_tolerance_ms=timestamp_tolerance_ms,
         )
-        if reason:
-            return wait(reason)
+        if diagnostic.timed_match_count != 1:
+            return wait(
+                "anchor_ambiguous"
+                if diagnostic.timed_match_count > 1
+                else "anchor_missing",
+                diagnostic,
+            )
+        assert diagnostic.word_end is not None
+        after_start = diagnostic.word_end
         if not final:
             assert previous is not None
-            reason, before_start = _anchor_end(
-                previous.words,
-                retained_anchor,
-                committed_through_ms,
-                timestamp_tolerance_ms,
-                span.start_ms,
+            before_diagnostic = diagnose_word_anchor(
+                previous,
+                anchor=retained_anchor,
+                committed_through_ms=committed_through_ms,
+                timestamp_tolerance_ms=timestamp_tolerance_ms,
+                observation="previous",
             )
-            if reason:
-                return wait(reason)
+            if before_diagnostic.timed_match_count != 1:
+                return wait(
+                    "anchor_ambiguous"
+                    if before_diagnostic.timed_match_count > 1
+                    else "anchor_missing",
+                    before_diagnostic,
+                )
+            assert before_diagnostic.word_end is not None
+            before_start = before_diagnostic.word_end
 
     boundary_tolerance = timestamp_tolerance_ms if retained_anchor else 0
     minimum_start = committed_through_ms - boundary_tolerance
@@ -282,7 +337,7 @@ def compare_word_hypotheses(
             after_start < selected_end
             and current.words[after_start].span.start_ms < minimum_start
         ):
-            return wait("unstable")
+            return wait("unstable", diagnostic)
         coverage_end = span.end_ms
     else:
         assert previous is not None
@@ -305,10 +360,10 @@ def compare_word_hypotheses(
         ):
             selected_end -= 1
         if selected_end == after_start:
-            return wait(stop_reason)
+            return wait(stop_reason, diagnostic)
         coverage_end = current.words[selected_end - 1].span.end_ms
         if coverage_end <= committed_through_ms:
-            return wait("incomplete")
+            return wait("incomplete", diagnostic)
     publication = select_word_publication(
         current,
         after_start,
@@ -320,7 +375,7 @@ def compare_word_hypotheses(
     selected = current.words[after_start:selected_end]
     next_anchor = selected[-4:] if selected else retained_anchor
     return WordAgreementDecision(
-        "eof" if final else "candidate", publication, next_anchor
+        "eof" if final else "candidate", publication, next_anchor, diagnostic
     )
 
 
@@ -339,16 +394,61 @@ def _same_word(
     )
 
 
-def _anchor_end(
-    words: tuple[NativeTimestampSegment, ...],
+def diagnose_word_anchor(
+    alignment: NativeWordAlignment,
+    *,
+    committed_through_ms: int,
     anchor: tuple[NativeTimestampSegment, ...],
-    watermark: int,
-    tolerance: int,
-    analysis_start_ms: int,
-) -> tuple[str | None, int]:
-    found = None
+    timestamp_tolerance_ms: int = 200,
+    observation: Literal["previous", "current"] = "current",
+) -> AnchorDiagnostic:
+    """Classify the existing exact matcher without changing its acceptance rule.
+
+    No text normalization, timestamp repair, model invocation, or reference
+    transcript is used. A timing mismatch only describes estimated boundaries.
+    The caller supplies the retained, already published anchor. The committed
+    boundary may follow a previous observation's end; matching that observation
+    does not certify the intervening input. Missing retained context is separate.
+    """
+    if not isinstance(alignment, NativeWordAlignment):
+        raise TypeError("alignment must be NativeWordAlignment")
+    for name, value in (
+        ("committed_through_ms", committed_through_ms),
+        ("timestamp_tolerance_ms", timestamp_tolerance_ms),
+    ):
+        _index(value, name)
+        if value < 0:
+            raise ValueError(f"{name} must not be negative")
+    if observation not in ("previous", "current"):
+        raise ValueError("unknown anchor observation")
+    anchor = _anchor(anchor)
+    watermark, tolerance = committed_through_ms, timestamp_tolerance_ms
+    if any(word.span.end_ms > watermark for word in anchor):
+        raise ValueError("anchor words must have been published before the watermark")
+    span = alignment.native.analyzed_span
+    if watermark < span.start_ms or (
+        observation == "current" and watermark > span.end_ms
+    ):
+        raise ValueError("committed boundary must be inside the current analysis")
+    if not anchor or any(
+        word.span.start_ms < span.start_ms or word.span.end_ms <= span.start_ms
+        for word in anchor
+    ):
+        return AnchorDiagnostic("unavailable", observation)
+    words = alignment.words
+    text_count = lexical_count = timed_count = 0
+    lexical_start = timed_start = None
+    eligible = False
     for start in range(len(words) - len(anchor) + 1):
         end = start + len(anchor)
+        candidate = words[start:end]
+        if not all(old.text == new.text for old, new in zip(anchor, candidate)):
+            continue
+        text_count += 1
+        if not all(old.tokens == new.tokens for old, new in zip(anchor, candidate)):
+            continue
+        lexical_count += 1
+        lexical_start = start
         # Even a unique matching phrase wholly after the watermark is new
         # source material, never a substitute for the committed occurrence.
         if words[end - 1].span.start_ms > watermark or (
@@ -356,11 +456,12 @@ def _anchor_end(
             and anchor[-1].span.start_ms < watermark
         ):
             continue
+        eligible = True
         first, frozen = words[start], anchor[0]
         first_matches = _same_word(frozen, first, tolerance) or (
             start == 0
             and len(anchor) >= 2
-            and first.span.start_ms == analysis_start_ms
+            and first.span.start_ms == span.start_ms
             and first.span.start_ms < frozen.span.start_ms
             and first.text == frozen.text
             and first.tokens == frozen.tokens
@@ -370,10 +471,44 @@ def _anchor_end(
             _same_word(old, new, tolerance)
             for old, new in zip(anchor[1:], words[start + 1 : end])
         ):
-            if found is not None:
-                return "anchor_ambiguous", 0
-            found = end
-    return ("anchor_missing", 0) if found is None else (None, found)
+            timed_count += 1
+            timed_start = start
+    status: Literal[
+        "matched",
+        "unavailable",
+        "lexical_missing",
+        "token_mismatch",
+        "timing_mismatch",
+        "relocated",
+        "ambiguous",
+    ]
+    if timed_count == 1:
+        status = "matched"
+    elif timed_count > 1 or lexical_count > 1:
+        status = "ambiguous"
+    elif lexical_count:
+        status = "timing_mismatch" if eligible else "relocated"
+    else:
+        status = "token_mismatch" if text_count else "lexical_missing"
+    selected = (
+        timed_start
+        if timed_count == 1
+        else (lexical_start if lexical_count == 1 else None)
+    )
+    candidate = () if selected is None else words[selected : selected + len(anchor)]
+    return AnchorDiagnostic(
+        status,
+        observation,
+        text_count,
+        lexical_count,
+        timed_count,
+        selected,
+        None if selected is None else selected + len(anchor),
+        tuple(
+            new.span.start_ms - old.span.start_ms for old, new in zip(anchor, candidate)
+        ),
+        tuple(new.span.end_ms - old.span.end_ms for old, new in zip(anchor, candidate)),
+    )
 
 
 def _index(value: int, name: str) -> None:

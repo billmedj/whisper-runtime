@@ -1,0 +1,91 @@
+{
+  "schema_version": "1",
+  "id": "modal-word-resolution-inputs-v1",
+  "dataset": {
+    "id": "openslr/librispeech_asr",
+    "configuration": "clean",
+    "split": "test",
+    "source_split_name": "test-clean",
+    "revision": "71cacbfb7e2354c4226d01e70d77d5fca3d04ba1",
+    "revision_url": "https://huggingface.co/datasets/openslr/librispeech_asr/tree/71cacbfb7e2354c4226d01e70d77d5fca3d04ba1/all/test.clean",
+    "canonical_source_url": "https://www.openslr.org/12",
+    "language": "en",
+    "license": "CC BY 4.0",
+    "license_url": "https://creativecommons.org/licenses/by/4.0/",
+    "citation": "Vassil Panayotov, Guoguo Chen, Daniel Povey, and Sanjeev Khudanpur. LibriSpeech: An ASR Corpus Based on Public Domain Audio Books. ICASSP 2015."
+  },
+  "audio_format": {"sample_rate_hz": 16000, "channels": 1, "encoding": "pcm_s16le"},
+  "selection": {
+    "date": "2026-09-06",
+    "starting_row_offsets": [500, 1000],
+    "duration_seconds_inclusive": [5, 12],
+    "excluded_speaker_ids": [61, 121, 672, 1272, 1320, 1995, 6930],
+    "distinct_selected_speakers": true,
+    "rule": "First eligible row from each fixed start, advancing only for excluded speakers or duration outside bounds; never selected by model output.",
+    "rejected_rows": [{"row_offset": 500, "id": "2961-960-0003", "reason": "duration_outside_5_12_seconds"}],
+    "http_requests_per_start": {"500": 5, "1000": 4},
+    "request_accounting": "Includes initial metadata probes, selected/rejected audio downloads, and one failed HTTP 502 metadata request at row 1000 followed by one same-row retry.",
+    "request_limit_per_start": 10,
+    "max_metadata_bytes_per_request": 262144,
+    "max_source_bytes_per_request": 1048576,
+    "model_calls": 0,
+    "heldout_scope": "Held out relative to this project's previous fixtures and model observations, not held out from Whisper training.",
+    "reference_origin": "Independent human LibriSpeech reference text from the selected dataset rows, not model output."
+  },
+  "recipe": {
+    "operation": "full-source-flac-to-pcm-s16le/v1",
+    "source_sample_rate_hz": 16000,
+    "output_sample_rate_hz": 16000,
+    "channels": 1,
+    "trimmed_samples": 0,
+    "added_padding_samples": 0,
+    "normalization": false,
+    "noise": false,
+    "ffmpeg_version": "ffmpeg version 2025-09-28-git-0fdb5829e3-essentials_build-www.gyan.dev Copyright (c) 2000-2025 the FFmpeg developers",
+    "note": "Each asset is one complete original utterance. Source FLAC SHA-256 and complete sample count are verified before conversion; output length and digest are checked. Any campaign noise transformation is separate from these immutable source assets."
+  },
+  "fixtures": [
+    {
+      "id": "2961-960-0004",
+      "pcm_path": "artifacts/resolution-inputs-v1/2961-960-0004.pcm",
+      "pcm_sha256": "cd368c6d12c2a1c51e688815ccaffba48e4bdca7cec1045746076936f034c23e",
+      "sample_count": 131520,
+      "duration_seconds": 8.22,
+      "reference_text": "THERE IS NO DANGER OF THE MODERN COMMENTATORS ON THE TIMAEUS FALLING INTO THE ABSURDITIES OF THE NEO PLATONISTS",
+      "source": {
+        "speaker_id": 2961,
+        "chapter_id": 960,
+        "row_offset": 501,
+        "metadata_url": "https://datasets-server.huggingface.co/rows?dataset=openslr%2Flibrispeech_asr&config=clean&split=test&offset=501&length=1",
+        "asset_url_without_temporary_signature": "https://datasets-server.huggingface.co/cached-assets/openslr/librispeech_asr/--/71cacbfb7e2354c4226d01e70d77d5fca3d04ba1/--/clean/test/501/audio/audio.flac",
+        "sha256": "c815b1d8d37cd643047430c39f790067c75ee3adb93fdfbbe3da493f71d44615",
+        "size_bytes": 157949,
+        "format": "flac",
+        "sample_rate_hz": 16000,
+        "channels": 1,
+        "bits_per_sample": 16
+      }
+    },
+    {
+      "id": "8455-210777-0028",
+      "pcm_path": "artifacts/resolution-inputs-v1/8455-210777-0028.pcm",
+      "pcm_sha256": "02984e9efd81309838ad20b949be23156c97ea0035178065016e930d23128bc3",
+      "sample_count": 123760,
+      "duration_seconds": 7.735,
+      "reference_text": "JACK WOULD BECOME EVA'S HAPPY HUSBAND AND WOULD REMAIN AMIDST THE HURRIED DUTIES OF THE EAGER WORLD",
+      "source": {
+        "speaker_id": 8455,
+        "chapter_id": 210777,
+        "row_offset": 1000,
+        "metadata_url": "https://datasets-server.huggingface.co/rows?dataset=openslr%2Flibrispeech_asr&config=clean&split=test&offset=1000&length=1",
+        "asset_url_without_temporary_signature": "https://datasets-server.huggingface.co/cached-assets/openslr/librispeech_asr/--/71cacbfb7e2354c4226d01e70d77d5fca3d04ba1/--/clean/test/1000/audio/audio.flac",
+        "sha256": "61e1697bdc0de5142e0cd76c4a14ed38086b66b9a0ab7722bd1c02aa3cebd261",
+        "size_bytes": 142649,
+        "format": "flac",
+        "sample_rate_hz": 16000,
+        "channels": 1,
+        "bits_per_sample": 16
+      }
+    }
+  ]
+}

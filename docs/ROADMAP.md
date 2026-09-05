@@ -168,6 +168,12 @@ Matched controls reproduce their failures. The candidate remains unqualified
 and opt-in. Distinguish timestamp uncertainty from missing recognition before
 the next acoustic run; do not advance to long-session or efficiency claims.
 
+The [local resolution work](research/2026-09-06-word-resolution.md) adds structured
+anchor diagnostics and a read-only experimental matcher. It leaves publication,
+PCM retention and model execution unchanged. This separates the two observed
+failure types without enabling automatic recovery. Next, compare bounded
+interventions on held-out audio before introducing a routing policy.
+
 Deliver a separately named continuous profile. Keep the existing
 offline-compatible and bounded-preview paths.
 
