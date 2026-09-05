@@ -54,10 +54,17 @@ _REGISTRATIONS = {
         "artifact_stem": "stream-boundary-diagnostic-v4-attempt-1",
         "timeout_seconds": 120,
     },
+    "v5": {
+        "manifest_path": "experiments/modal-stream-boundary-diagnostic-v5.json",
+        "manifest_id": "modal-stream-boundary-diagnostic-v5",
+        "app_name": "whisper-runtime-stream-boundary-diagnostic-v5",
+        "artifact_stem": "stream-boundary-diagnostic-v5-attempt-1",
+        "timeout_seconds": 120,
+    },
 }
 REGISTRATION = os.environ.get(REGISTRATION_ENV, "v1")
 if REGISTRATION not in _REGISTRATIONS:
-    raise RuntimeError(f"{REGISTRATION_ENV} must be v1, v2, v3, or v4")
+    raise RuntimeError(f"{REGISTRATION_ENV} must select a registered diagnostic")
 _REGISTRATION = _REGISTRATIONS[REGISTRATION]
 MANIFEST_PATH = str(_REGISTRATION["manifest_path"])
 MANIFEST_ID = str(_REGISTRATION["manifest_id"])
@@ -191,6 +198,7 @@ def _validate_registration(manifest: Mapping[str, Any]) -> None:
     if manifest_id in {
         "modal-stream-boundary-diagnostic-v3",
         "modal-stream-boundary-diagnostic-v4",
+        "modal-stream-boundary-diagnostic-v5",
     } and manifest.get("result_transport") != {
         "encoding": WORKER_RESULT_ENCODING,
         "modal_sdk_version": MODAL_SDK_VERSION,
@@ -226,8 +234,11 @@ def _validate_registration(manifest: Mapping[str, Any]) -> None:
     ):
         raise ValueError("the registered input is not the fixed 33-second stream")
     cells = manifest.get("cells")
-    v4 = manifest_id == "modal-stream-boundary-diagnostic-v4"
-    if v4 and (
+    word_comparison = manifest_id in {
+        "modal-stream-boundary-diagnostic-v4",
+        "modal-stream-boundary-diagnostic-v5",
+    }
+    if word_comparison and (
         not isinstance(cells, list)
         or any(
             not isinstance(cell, Mapping)
@@ -235,13 +246,13 @@ def _validate_registration(manifest: Mapping[str, Any]) -> None:
             for cell in cells
         )
     ):
-        raise ValueError("word_alignment must be a boolean in every v4 cell")
+        raise ValueError("word_alignment must be a boolean in every comparison cell")
     expected_cells: list[tuple[object, ...]] = (
         [
             ("segment-left-context-2000", 2_000, 2_000, False),
             ("word-left-context-2000", 2_000, 2_000, True),
         ]
-        if v4
+        if word_comparison
         else [
             ("baseline", 0, 1_000),
             ("left-context-2000", 2_000, 1_000),
@@ -258,7 +269,7 @@ def _validate_registration(manifest: Mapping[str, Any]) -> None:
                 cell.get("holdback_ms"),
                 cell.get("word_alignment"),
             )
-            if v4
+            if word_comparison
             else (
                 cell.get("cell_id"),
                 cell.get("left_context_ms"),
@@ -269,7 +280,7 @@ def _validate_registration(manifest: Mapping[str, Any]) -> None:
         ]
     if observed_cells != expected_cells:
         raise ValueError("the boundary-policy cells are not fixed")
-    if v4 and manifest.get("common_stream_config") != {
+    if word_comparison and manifest.get("common_stream_config") != {
         "preview_interval_ms": 2_000,
         "max_window_ms": 30_000,
         "max_buffer_ms": 40_000,
@@ -278,7 +289,7 @@ def _validate_registration(manifest: Mapping[str, Any]) -> None:
     }:
         raise ValueError("the word-alignment comparison config is not fixed")
     if (
-        v4
+        word_comparison
         and type(
             cast(Mapping[str, Any], manifest["common_stream_config"]).get(
                 "coalesce_previews"
@@ -298,7 +309,7 @@ def _attempt_paths(
         raise ValueError("this diagnostic permits exactly attempt 1")
     identity = _REGISTRATIONS.get(registration)
     if identity is None:
-        raise ValueError("registration must be v1, v2, v3, or v4")
+        raise ValueError("registration must select a registered diagnostic")
     stem = root / "artifacts" / "modal" / str(identity["artifact_stem"])
     return stem.with_suffix(".json"), stem.with_suffix(".attempt.jsonl")
 
@@ -1051,7 +1062,10 @@ def _run_worker(
             if native_control_steps > MAX_DRIVER_STEPS:
                 raise RuntimeError("the native control exceeded its step bound")
         native_result = native_run.prepare_result()
-        if MANIFEST_ID == "modal-stream-boundary-diagnostic-v4":
+        if MANIFEST_ID in {
+            "modal-stream-boundary-diagnostic-v4",
+            "modal-stream-boundary-diagnostic-v5",
+        }:
             alignment_started_ns = time.perf_counter_ns()
             native_run.prepare_word_alignment()
             torch.cuda.synchronize(0)
@@ -1216,7 +1230,12 @@ def _run_worker(
     if attempted_all and stopped_after is None:
         record_status = (
             "unresolved"
-            if MANIFEST_ID == "modal-stream-boundary-diagnostic-v4" and unresolved_cells
+            if MANIFEST_ID
+            in {
+                "modal-stream-boundary-diagnostic-v4",
+                "modal-stream-boundary-diagnostic-v5",
+            }
+            and unresolved_cells
             else "completed"
         )
     return {

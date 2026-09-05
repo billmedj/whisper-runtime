@@ -446,6 +446,68 @@ class ModalStreamBoundaryDiagnosticTests(unittest.TestCase):
                 with self.assertRaises(ValueError):
                     diagnostic._attempt_paths(root, attempt, registration="v4")
 
+    def test_v5_replays_v4_operational_contract_under_new_attempt_paths(self) -> None:
+        v4 = json.loads(
+            (
+                diagnostic.ROOT / "experiments/modal-stream-boundary-diagnostic-v4.json"
+            ).read_text(encoding="utf-8")
+        )
+        v5 = json.loads(
+            (
+                diagnostic.ROOT / "experiments/modal-stream-boundary-diagnostic-v5.json"
+            ).read_text(encoding="utf-8")
+        )
+        diagnostic._validate_registration(v5)
+        self.assertEqual(v5["manifest_id"], "modal-stream-boundary-diagnostic-v5")
+        self.assertEqual(v5["predecessor"]["manifest_id"], v4["manifest_id"])
+        for key in (
+            "manifest_version",
+            "state",
+            "claim_boundary",
+            "replay_pacing",
+            "paid_budget",
+            "result_transport",
+            "input",
+            "model",
+            "decode_options",
+            "rng_seed",
+            "offline_control_options",
+            "native_segmented_control",
+            "common_stream_config",
+            "cells",
+            "decision_trace",
+            "outcomes",
+        ):
+            self.assertEqual(v5[key], v4[key], key)
+        for key in ("image_base_commit", "overlay"):
+            self.assertEqual(v5["source_policy"][key], v4["source_policy"][key])
+        self.assertEqual(
+            v5["source_policy"]["snapshot_paths"],
+            [
+                *v4["source_policy"]["snapshot_paths"][:-1],
+                "experiments/modal-stream-boundary-diagnostic-v5.json",
+            ],
+        )
+        self.assertEqual(diagnostic._REGISTRATIONS["v5"]["timeout_seconds"], 120)
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            output, receipt = diagnostic._attempt_paths(root, 1, registration="v5")
+            self.assertEqual(
+                output.name, "stream-boundary-diagnostic-v5-attempt-1.json"
+            )
+            self.assertEqual(
+                receipt.name, "stream-boundary-diagnostic-v5-attempt-1.attempt.jsonl"
+            )
+            self.assertEqual(
+                diagnostic._raw_result_path(output).name,
+                "stream-boundary-diagnostic-v5-attempt-1.result.zlib",
+            )
+            v4_output, v4_receipt = diagnostic._attempt_paths(
+                root, 1, registration="v4"
+            )
+            self.assertNotEqual(output, v4_output)
+            self.assertNotEqual(receipt, v4_receipt)
+
     def test_word_trace_serialization_preserves_native_result_and_coverage_distinction(
         self,
     ) -> None:
