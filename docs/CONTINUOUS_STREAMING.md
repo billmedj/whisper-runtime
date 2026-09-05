@@ -6,6 +6,12 @@ It does not change the existing bounded-preview or offline adapters.
 
 ## Use
 
+An optional `input_evidence=True` policy checks admitted PCM before permitting
+text publication. Exact digital silence produces empty, source-backed coverage;
+uncertain output retains audio. It does not provide general voice activity
+detection or resolve all pause boundaries. See the
+[input-evidence policy and validation](research/2026-09-05-input-evidence.md).
+
 Create `ContinuousTranscriptStream` with a native adapter and a PCM-to-mel
 function. Enable timestamp tokens in `NativeDecodeOptions`. Input is mono,
 16 kHz, signed 16-bit little-endian PCM.

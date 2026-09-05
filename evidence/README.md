@@ -1,5 +1,19 @@
 # Integration evidence
 
+The [input-evidence T4 comparison](modal-t4-tiny-en-input-evidence-2026-09-05.json)
+completes 32 seconds of digital silence with no emitted words. The three
+individual speech transcripts match the punctuation-repair baseline exactly.
+The repeated-voice mixture remains unresolved with its uncommitted audio
+retained. This opt-in policy is not general voice activity detection. See the
+[results and limits](../docs/research/2026-09-05-input-evidence.md).
+
+The [punctuation-repair T4 replay](modal-t4-tiny-en-punctuation-repair-2026-09-05.json)
+confirms that standalone punctuation no longer discards the second utterance.
+The mixture remains unresolved with audio retained; the three separate clips
+still complete. Silence still hallucinates in that baseline. The
+[follow-up report](../docs/research/2026-09-05-input-evidence.md) describes the
+separate opt-in input-evidence policy and its limits.
+
 The [three-speaker T4 diagnostic](modal-t4-tiny-en-word-corpus-v1-2026-09-05.json)
 completes three individual LibriSpeech clips but fails the constructed mixed
 input and digital silence. A punctuation-only commit advances audio coverage

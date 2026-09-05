@@ -105,9 +105,14 @@ The [independent-reference diagnostic](research/2026-09-05-word-corpus-diagnosti
 completes three individual LibriSpeech clips. The mixed input and digital
 silence expose two publication failures: punctuation can advance coverage past
 untranscribed speech, and repeated hypotheses can agree on a hallucination.
-The punctuation guard has local regression coverage; the mixed input has not
-been rerun with that correction. Silence and acoustic coverage remain the next
-gate before long-session qualification. Sample accounting alone does not prove
+The [punctuation replay](research/2026-09-05-input-evidence.md) confirms that
+the invalid eviction is closed. The mixture still lacks a stable lexical suffix
+and stops with audio retained. An opt-in input-evidence policy now distinguishes
+digital silence from uncertain output and commits empty silence coverage through
+the existing transaction. Its T4 comparison completes 32 seconds of digital
+silence with empty text and preserves the three short speech transcripts.
+The mixed input remains unresolved. General acoustic coverage is the next gate before
+long-session qualification. Sample accounting alone does not prove
 that speech content was preserved.
 
 Deliver a separately named continuous profile. Keep the existing
