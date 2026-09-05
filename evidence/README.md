@@ -16,7 +16,8 @@ resource release. It is a diagnostic smoke record, not a registered CUDA
 qualification or a live-performance benchmark. See the
 [test scope](../docs/BOUNDED_STREAMING.md#local-cpu-smoke).
 
-This directory contains nine committed records from real backend runs:
+In addition to the two local smoke records above, this directory contains nine
+committed records from real backend runs:
 
 - `native-cpu-tiny-en-jfk-2026-09-03.json` records one
   `NativeWhisperAdapter` transaction.
@@ -58,12 +59,17 @@ metrics, and matched control/runtime probes. See
 [`docs/CUDA_QUALIFICATION_CONTRACT.md`](../docs/CUDA_QUALIFICATION_CONTRACT.md) and
 [`docs/EXPERIMENT_PROTOCOL.md`](../docs/EXPERIMENT_PROTOCOL.md).
 
+The descriptions of failed attempts below include operator observations from
+Modal logs that are not committed here. Their detailed execution paths and
+causes are not independently verifiable from the public receipts alone. The
+receipts record only their stated fields; none is a passing qualification.
+
 During the version-one dispatch, the operator observed repeated Modal
 deserialization errors and stopped the run before any inference. Its
 append-only
 [`attempt-started` receipt](modal-native-cuda-qualification-v1-attempt-2026-09-04.jsonl)
-is retained without a synthetic terminal event. The receipt alone proves the
-local dispatch boundary, not the remote worker state or the reported cause.
+is retained without a synthetic terminal event. It records the local
+pre-dispatch step, not successful dispatch, remote worker state, or the cause.
 The version-two producer required the canonical module invocation and rejected
 a file-path invocation before dispatch.
 
@@ -78,19 +84,19 @@ timestamp-free decoding. Version two registered timestamp-token decoding with
 the timestamp-free transcript digest. Version three aligned
 `without_timestamps` with that digest and was executed once.
 
-For version three, Modal logs show that the worker completed the registered
+For version three, the operator reported that the worker completed the registered
 warm-up, measured, and cancellation runs. The first `cleanup` fault scenario
 then completed retention and recovery before an incorrect event-order
 expectation stopped the harness. The
 [`attempt-failed` receipt](modal-native-cuda-qualification-v3-attempt-2026-09-04.jsonl)
 records the `gpu-campaign` stage, exception type, and message digest. It does not
 contain the transient event trace, and no qualification record was published.
-This was a harness assertion failure, not a Whisper, CUDA, driver, or hardware
-failure. Version four records `fault-armed` only after the injection plan exists
+The reported diagnosis was a harness assertion failure; the receipt alone
+cannot exclude a backend or hardware failure. Version four records `fault-armed` only after the injection plan exists
 and before the protected operation acquires its lease. It also records that
 harness faults occur before the named delegate call.
 
-For version four, Modal logs show that the single attempt completed the
+For version four, the operator reported that the single attempt completed the
 registered GPU campaign on a T4 and reached the post-campaign dependency
 inventory. Inventory then failed because the environment exposed more than one
 visible metadata version for `idna`. The
@@ -101,7 +107,7 @@ record was published. The attempt supports no passing qualification claim.
 
 Version five changed the inventory to one metadata record returned by
 `importlib.metadata.distribution(name)` for each normalized name discovered by
-`importlib.metadata.distributions()`. Modal logs show that its single T4
+`importlib.metadata.distributions()`. The operator reported that its single T4
 attempt completed the registered GPU campaign and constructed a schema-valid
 record. Internal semantic validation then rejected the record because the
 harness required distribution metadata for Modal to equal the
@@ -113,8 +119,8 @@ Torch 2.6.0+cu124 from matching module and distribution metadata, and selected
 idna 3.19 while idna 3.10 remained visible under `/__modal/deps`. This
 diagnostic was not a qualification attempt. The
 [`attempt-failed` receipt](modal-native-cuda-qualification-v5-attempt-2026-09-04.jsonl)
-records only the failure stage, exception type, and message digest. Modal logs
-support the detailed execution path and cause. No qualification record was
+records only the failure stage, exception type, and message digest. The detailed
+execution path and cause remain operator observations. No qualification record was
 published, so the attempt supports no passing qualification claim.
 
 Version six treats the platform-injected Modal module version and the

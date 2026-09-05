@@ -300,6 +300,18 @@ See the [transaction record](https://github.com/billmedj/whisper-runtime/blob/ma
 [conformance contract](https://github.com/billmedj/whisper-runtime/blob/main/docs/CONFORMANCE.md), and
 [development roadmap](https://github.com/billmedj/whisper-runtime/blob/main/docs/ROADMAP.md).
 
+## Delivery milestones
+
+The governed decoder and timed-publication foundation is validated within the
+recorded pre-alpha scope (D0). The next gate is continuous transcription with
+progressive commits (D1): a 30-minute paced replay, bounded buffers, unchanged
+committed text, and explicit behavior under overload.
+
+The [delivery checklist](docs/ROADMAP.md) defines D0-D7, their dependencies, and
+acceptance criteria. Later gates cover local live use, broader validation,
+measured efficiency, a developer release, durable recovery, and multi-channel
+translation. No live-performance or general GPU-efficiency claim is established.
+
 ## Repository map
 
 ```text

@@ -31,6 +31,14 @@ integration records are not general correctness or performance claims.
 | Two outer decoder calls can have overlapping lifetimes in two operating-system threads in the recorded case. | Not modeled. | The verifier requires two owner threads, controlled rendezvous, interval overlap, and cleanup ownership. | `native-cpu-tiny-en-jfk-threaded-2026-09-04.json` | Overlapping Python call lifetimes do not prove simultaneous kernels or improved throughput. |
 | The experimental adapter profile admits two request-local decoder runs while serializing run construction and encoder preparation. | Not modeled. | Controlled adapter tests in `tests/test_native_adapter.py` require exact queue and budget capacity, overlap two fake decoder runs, isolate cancellation, and retain independent cleanup failures. | One pinned Windows `tiny.en` greedy CPU record checks two admitted adapter transactions, cancellation, one isolated survivor commit, and restored ledger capacity. | The caller threads belong to the verifier. The record does not establish runtime scheduling, PyTorch kernel overlap, throughput, or behavior beyond its stated configuration. |
 
+The [bounded-preview record](../evidence/native-cpu-tiny-en-jfk-bounded-previews-2026-09-05.json)
+checks short PCM replays and EOF publication. The
+[timed-publication record](../evidence/native-cpu-tiny-en-jfk-timed-publication-2026-09-05.json)
+checks inspection and selected segment publication against a fixed-window
+control. These records do not establish continuous transcription, automatic
+stability decisions, or live latency. Their contracts are defined in
+[bounded previews](BOUNDED_STREAMING.md) and the [native adapter](NATIVE_ADAPTER.md).
+
 ## Properties not yet established
 
 The repository does not yet establish:
@@ -41,7 +49,7 @@ The repository does not yet establish:
 - safe concurrent encoder calls;
 - CUDA correctness outside the recorded `tiny.en` FP32 single-lane T4 case;
 - device-memory enforcement or a calibrated admission profile;
-- batching, fairness, or bounded streaming;
+- batching, fairness, or continuous streaming with rolling audio retention;
 - a throughput or latency improvement;
 - equivalence across model sizes, languages, decode modes, or third-party
   extensions;

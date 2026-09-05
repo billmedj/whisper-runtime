@@ -197,7 +197,8 @@ represent actual encoder work. The counters do not include that padding.
 
 The stream retains the bounded PCM slice and session window history. It does
 not reuse encoder state, discard committed audio, or support arbitrarily long
-input with constant memory. The native result exposed here contains text and a
-window span, not timed tokens. Implementing Local Agreement requires timestamped
-hypotheses, overlap alignment, and a safe progressive commit boundary before
+input with constant memory. Stream events expose text and input spans, not
+individual token times. The native adapter now retains predicted segment times,
+but this stream does not yet use them for progressive commits. An agreement
+policy still needs overlap alignment and an explicit finality decision before
 old audio can be removed. Those are next steps, not properties of this profile.
