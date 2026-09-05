@@ -635,8 +635,16 @@ def _run_worker(
     }
 
 
-def _paths(root: Path) -> tuple[Path, Path, Path, Path]:
+def _paths(root: Path, replay_id: str = "") -> tuple[Path, Path, Path, Path]:
     directory = root / "artifacts/modal"
+    if replay_id != "":
+        name = _name(replay_id)
+        if re.fullmatch(r"CON|PRN|AUX|NUL|COM[1-9]|LPT[1-9]", name, re.IGNORECASE):
+            raise ValueError("unsafe replay identifier")
+        namespace = directory / name
+        if namespace.resolve() != directory.resolve() / name:
+            raise ValueError("replay namespace cannot redirect outside its path")
+        directory = namespace
     stem = directory / "word-corpus-v1-attempt-1"
     return (
         stem.with_suffix(".json"),
@@ -646,7 +654,9 @@ def _paths(root: Path) -> tuple[Path, Path, Path, Path]:
     )
 
 
-def _receipt(path: Path, event: str, sequence: int, **fields: object) -> None:
+def _receipt(
+    path: Path, event: str, sequence: int, *, replay_id: str = "", **fields: object
+) -> None:
     c._append_receipt(
         path,
         {
@@ -655,30 +665,40 @@ def _receipt(path: Path, event: str, sequence: int, **fields: object) -> None:
             "event": event,
             "sequence": sequence,
             "at": c._utc_now(),
+            **({"replay_id": replay_id} if replay_id else {}),
             **fields,
         },
         create=sequence == 0,
     )
 
 
-def _execute_transport_probe(*, root: Path = ROOT, remote_function: object) -> Path:
+def _execute_transport_probe(
+    *, root: Path = ROOT, replay_id: str = "", remote_function: object
+) -> Path:
+    receipt = _paths(root, replay_id)[3]
     read_registration(root)
-    receipt = _paths(root)[3]
     if receipt.exists():
         raise FileExistsError("the one transport attempt already exists")
     payload = b._transport_probe_payload()
-    _receipt(receipt, "attempt-started", 0)
+    _receipt(receipt, "attempt-started", 0, replay_id=replay_id)
     try:
         observed = getattr(remote_function, "remote")(payload)
         if type(observed) is not bytes or observed != payload:
             raise ValueError("transport changed the echo payload")
     except BaseException as error:
-        _receipt(receipt, "attempt-failed", 1, error_type=type(error).__name__)
+        _receipt(
+            receipt,
+            "attempt-failed",
+            1,
+            replay_id=replay_id,
+            error_type=type(error).__name__,
+        )
         raise
     _receipt(
         receipt,
         "transport-passed",
         1,
+        replay_id=replay_id,
         payload_sha256=hashlib.sha256(payload).hexdigest(),
         payload_bytes=len(payload),
     )
@@ -689,13 +709,14 @@ def _execute_local_attempt(
     *,
     root: Path = ROOT,
     attempt: int = 1,
+    replay_id: str = "",
     confirm_paid_gpu: bool = False,
     remote_function: object,
 ) -> Path:
     c._require_paid_confirmation(confirm_paid_gpu)
     _integer(attempt, 1, 1)
     manifest = read_registration(root)
-    output, receipt, raw, probe = _paths(root)
+    output, receipt, raw, probe = _paths(root, replay_id)
     if any(path.exists() for path in (output, receipt, raw)):
         raise FileExistsError("the one GPU attempt already exists")
     _inputs(manifest, root / ASSET_PATH)
@@ -706,6 +727,7 @@ def _execute_local_attempt(
         len(probe_events) != 2
         or probe_events[-1].get("event") != "transport-passed"
         or probe_events[-1].get("manifest_id") != MANIFEST_ID
+        or any(event.get("replay_id", "") != replay_id for event in probe_events)
         or probe_events[-1].get("payload_sha256")
         != hashlib.sha256(b._transport_probe_payload()).hexdigest()
     ):
@@ -718,12 +740,13 @@ def _execute_local_attempt(
         receipt,
         "attempt-started",
         0,
+        replay_id=replay_id,
         source_snapshot_sha256=snapshot["digest"],
         registration_sha256=registration_hash,
     )
     sequence = 1
     try:
-        _receipt(receipt, "synchronous-call-started", sequence)
+        _receipt(receipt, "synchronous-call-started", sequence, replay_id=replay_id)
         sequence += 1
         payload = getattr(remote_function, "remote")(snapshot, registration_hash)
         b._write_bytes_exclusive(raw, payload)
@@ -731,6 +754,7 @@ def _execute_local_attempt(
             receipt,
             "compressed-result-written",
             sequence,
+            replay_id=replay_id,
             sha256=c._sha256_file(raw),
             size_bytes=raw.stat().st_size,
         )
@@ -747,6 +771,7 @@ def _execute_local_attempt(
             receipt,
             "attempt-failed",
             sequence,
+            replay_id=replay_id,
             error_type=type(error).__name__,
             error_message_sha256=c._sha256_text(str(error)),
         )
@@ -755,6 +780,7 @@ def _execute_local_attempt(
         receipt,
         "record-written",
         sequence,
+        replay_id=replay_id,
         record_sha256=c._sha256_file(output),
         status=record["status"],
         function_call_id=record["worker"]["function_call_id"],
@@ -766,15 +792,21 @@ def _modal_main(
     attempt: int = 1,
     confirm_paid_gpu: bool = False,
     transport_preflight_only: bool = False,
+    replay_id: str = "",
 ) -> None:
     if run_word_corpus is None or run_transport_probe is None:
         raise RuntimeError(f"set {REMOTE_RESOURCES_ENV}=1 before modal run")
     if transport_preflight_only:
-        print(_execute_transport_probe(remote_function=run_transport_probe))
+        print(
+            _execute_transport_probe(
+                replay_id=replay_id, remote_function=run_transport_probe
+            )
+        )
     else:
         print(
             _execute_local_attempt(
                 attempt=attempt,
+                replay_id=replay_id,
                 confirm_paid_gpu=confirm_paid_gpu,
                 remote_function=run_word_corpus,
             )

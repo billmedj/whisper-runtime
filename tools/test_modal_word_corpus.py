@@ -185,11 +185,161 @@ class CorpusGuards(unittest.TestCase):
             paths = {entry["path"] for entry in initial["files"]}
             self.assertTrue(set(corpus.HELPER_PATHS).issubset(paths))
             self.assertIn(corpus.MANIFEST_PATH, paths)
+            self.assertIn(corpus.PRODUCER_PATH, paths)
             helper = root / corpus.HELPER_PATHS[0]
             helper.write_text("# changed\n", encoding="utf-8")
             self.assertNotEqual(
                 initial["digest"], corpus.source_snapshot(root)["digest"]
             )
+            changed_helper = corpus.source_snapshot(root)
+            (root / corpus.PRODUCER_PATH).write_text(
+                "# producer changed\n", encoding="utf-8"
+            )
+            self.assertNotEqual(
+                changed_helper["digest"], corpus.source_snapshot(root)["digest"]
+            )
+
+    def test_replay_paths_keep_legacy_default_and_reject_unsafe_names(self) -> None:
+        root = Path("example")
+        legacy = corpus._paths(root)
+        self.assertEqual(legacy, corpus._paths(root, ""))
+        self.assertEqual(
+            legacy[0], root / "artifacts/modal/word-corpus-v1-attempt-1.json"
+        )
+        named = corpus._paths(root, "repair-20260905_A")
+        self.assertEqual([path.name for path in legacy], [path.name for path in named])
+        self.assertTrue(
+            all(
+                path.parent == root / "artifacts/modal/repair-20260905_A"
+                for path in named
+            )
+        )
+        for replay_id in (
+            ".",
+            "..",
+            "../outside",
+            "a/b",
+            "a\\b",
+            "/absolute",
+            "C:\\absolute",
+            " space",
+            "name.txt",
+            "caf\u00e9",
+            "a" * 65,
+            "CON",
+            "nul",
+            "LPT1",
+            None,
+            True,
+        ):
+            with self.subTest(replay_id=replay_id), self.assertRaises(ValueError):
+                corpus._paths(root, replay_id)
+
+    def test_named_replay_requires_its_own_bound_preflight(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            self.root(root)
+            legacy_probe = corpus._execute_transport_probe(
+                root=root, remote_function=Echo()
+            )
+            named_probe = corpus._paths(root, "repair")[3]
+            remote = SimpleNamespace(remote=lambda *args: self.fail("GPU must not run"))
+            with patch.object(corpus, "_inputs", return_value=[]):
+                with self.assertRaises(FileNotFoundError):
+                    corpus._execute_local_attempt(
+                        root=root,
+                        replay_id="repair",
+                        confirm_paid_gpu=True,
+                        remote_function=remote,
+                    )
+                named_probe.parent.mkdir(parents=True, exist_ok=True)
+                for foreign_id in ("", "other-replay"):
+                    rows = [
+                        json.loads(line)
+                        for line in legacy_probe.read_text().splitlines()
+                    ]
+                    if foreign_id:
+                        for row in rows:
+                            row["replay_id"] = foreign_id
+                    named_probe.write_text(
+                        "\n".join(json.dumps(row) for row in rows), encoding="utf-8"
+                    )
+                    with (
+                        self.subTest(foreign_id=foreign_id),
+                        self.assertRaises(ValueError),
+                    ):
+                        corpus._execute_local_attempt(
+                            root=root,
+                            replay_id="repair",
+                            confirm_paid_gpu=True,
+                            remote_function=remote,
+                        )
+            self.assertFalse(corpus._paths(root, "repair")[1].exists())
+
+    def test_named_replay_is_exclusive_and_preserves_legacy_outputs(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            self.root(root)
+            legacy_paths = corpus._paths(root)
+            legacy_paths[0].parent.mkdir(parents=True, exist_ok=True)
+            for path in legacy_paths:
+                path.write_bytes(b"untouched legacy evidence")
+            replay_id = "repair"
+            probe = corpus._execute_transport_probe(
+                root=root, replay_id=replay_id, remote_function=Echo()
+            )
+            with self.assertRaises(FileExistsError):
+                corpus._execute_transport_probe(
+                    root=root, replay_id=replay_id, remote_function=Echo()
+                )
+            calls = []
+
+            def remote(snapshot, registration_sha256):
+                calls.append((snapshot, registration_sha256))
+                return b"compressed test payload"
+
+            record = {"status": "diagnostic", "worker": {"function_call_id": "fc-test"}}
+            with (
+                patch.object(corpus, "_inputs", return_value=[]),
+                patch.object(corpus.b, "_decode_worker_record", return_value=record),
+            ):
+                output = corpus._execute_local_attempt(
+                    root=root,
+                    replay_id=replay_id,
+                    confirm_paid_gpu=True,
+                    remote_function=SimpleNamespace(remote=remote),
+                )
+                with self.assertRaises(FileExistsError):
+                    corpus._execute_local_attempt(
+                        root=root,
+                        replay_id=replay_id,
+                        confirm_paid_gpu=True,
+                        remote_function=SimpleNamespace(remote=remote),
+                    )
+            self.assertEqual(len(calls), 1)
+            self.assertEqual(calls[0][0], corpus.source_snapshot(root))
+            self.assertEqual(output, corpus._paths(root, replay_id)[0])
+            self.assertEqual(json.loads(output.read_text()), record)
+            for path in (probe, corpus._paths(root, replay_id)[1]):
+                rows = [json.loads(line) for line in path.read_text().splitlines()]
+                self.assertTrue(all(row["replay_id"] == replay_id for row in rows))
+            for path in legacy_paths:
+                self.assertEqual(path.read_bytes(), b"untouched legacy evidence")
+
+    def test_modal_main_forwards_replay_id_for_both_modes(self) -> None:
+        with (
+            patch.object(corpus, "run_word_corpus", Echo()),
+            patch.object(corpus, "run_transport_probe", Echo()),
+            patch.object(corpus, "_execute_transport_probe") as probe,
+            patch.object(corpus, "_execute_local_attempt") as attempt,
+            patch("builtins.print"),
+        ):
+            corpus._modal_main(replay_id="repair", transport_preflight_only=True)
+            self.assertEqual(probe.call_args.kwargs["replay_id"], "repair")
+            attempt.assert_not_called()
+            corpus._modal_main(replay_id="repair", confirm_paid_gpu=True)
+            self.assertEqual(attempt.call_args.kwargs["replay_id"], "repair")
+            self.assertTrue(attempt.call_args.kwargs["confirm_paid_gpu"])
 
     def test_preflight_is_exclusive(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
@@ -198,6 +348,7 @@ class CorpusGuards(unittest.TestCase):
             receipt = corpus._execute_transport_probe(root=root, remote_function=Echo())
             rows = [json.loads(line) for line in receipt.read_text().splitlines()]
             self.assertEqual(rows[-1]["event"], "transport-passed")
+            self.assertTrue(all("replay_id" not in row for row in rows))
             self.assertGreater(rows[-1]["payload_bytes"], 8192)
             with self.assertRaises(FileExistsError):
                 corpus._execute_transport_probe(root=root, remote_function=Echo())
