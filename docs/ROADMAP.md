@@ -38,7 +38,7 @@ A gate closes only when its acceptance cases and results are committed.
 - [x] Select complete segments from a larger analysis span without rewriting
   already committed output.
 
-Evidence includes 270 runtime tests, 208 repository-tool tests, 55 Lean theorem
+Evidence includes 288 runtime tests, 219 repository-tool tests, 55 Lean theorem
 declarations for the abstract protocol, built-package tests, CPU runs, and a
 narrow T4 qualification. The [evidence index](../evidence/README.md) defines each
 record's scope. The [timed-publication smoke](../evidence/native-cpu-tiny-en-jfk-timed-publication-2026-09-05.json)
@@ -65,6 +65,11 @@ admission, and explicit backpressure. Deterministic tests cover rolling windows,
 chunk partitions, cancellation, and retained-resource recovery. Gaps and
 unstable prefixes can still stop this conservative profile. These tests do not
 close the real-audio 30-minute gate below.
+
+An opt-in context profile now separates retained audio from committed output.
+Its 18 additional scripted tests pass. The first GPU comparison completed at the
+function level, but a local deserialization failure lost its result. Recognition
+improvement remains unmeasured; see the [diagnostic status](research/2026-09-05-context-diagnostic-status.md).
 
 Deliver a separately named continuous profile. Keep the existing
 offline-compatible and bounded-preview paths.

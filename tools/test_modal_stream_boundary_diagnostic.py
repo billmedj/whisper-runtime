@@ -3,13 +3,19 @@
 from __future__ import annotations
 
 import importlib
+import json
 import os
+import sys
 import tempfile
 import unittest
 from dataclasses import dataclass
 from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import patch
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
+
+from whisper_runtime.adapters.native_stream import StreamEventKind, TranscriptEvent
 
 with patch.dict(
     os.environ,
@@ -26,21 +32,80 @@ class _Trace:
     decode_index: int
 
 
+@dataclass(frozen=True)
+class _RuntimeTrace:
+    decode_index: int
+    action: StreamEventKind
+
+
 class _TraceStream:
     def __init__(self) -> None:
         self.last_trace = _Trace(1)
 
 
+class _Call:
+    object_id = "fc-test123"
+
+    def __init__(self, receipt: Path, manifest: dict[str, object]) -> None:
+        self.receipt = receipt
+        self.manifest = manifest
+        self.arguments: tuple[object, ...] | None = None
+
+    def get(self) -> str:
+        entries = [json.loads(line) for line in self.receipt.read_text().splitlines()]
+        if [entry["event"] for entry in entries] != [
+            "attempt-started",
+            "call-dispatched",
+        ]:
+            raise AssertionError("the call ID was not persisted before retrieval")
+        assert self.arguments is not None
+        snapshot, registration_sha256 = self.arguments
+        return json.dumps(
+            {
+                "schema_version": "1-diagnostic",
+                "status": "completed",
+                "claim_boundary": self.manifest["claim_boundary"],
+                "source": {
+                    "snapshot": snapshot,
+                    "registration_sha256": registration_sha256,
+                },
+            }
+        )
+
+
+class _FailingCall(_Call):
+    def get(self) -> str:
+        super().get()
+        raise RuntimeError("local retrieval failed")
+
+
 class _Remote:
-    def __init__(self) -> None:
+    def __init__(self, call: _Call) -> None:
+        self.call = call
         self.calls: list[tuple[object, ...]] = []
 
-    def remote(self, *arguments: object) -> dict[str, object]:
+    def spawn(self, *arguments: object) -> _Call:
         self.calls.append(arguments)
-        return {"status": "completed"}
+        self.call.arguments = arguments
+        return self.call
 
 
 class ModalStreamBoundaryDiagnosticTests(unittest.TestCase):
+    def make_root(self, root: Path) -> dict[str, object]:
+        (root / "src" / "whisper_runtime").mkdir(parents=True)
+        (root / "src" / "whisper_runtime" / "sample.py").write_text(
+            "VALUE = 1\n", encoding="utf-8"
+        )
+        for relative in (
+            diagnostic.PRODUCER_PATH,
+            diagnostic.COMMON_PRODUCER_PATH,
+            diagnostic.MANIFEST_PATH,
+        ):
+            target = root / relative
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_bytes((diagnostic.ROOT / relative).read_bytes())
+        return diagnostic._read_registration(root)
+
     def test_registration_fixes_one_unpaced_four_cell_call(self) -> None:
         manifest = diagnostic._read_registration()
         self.assertEqual(manifest["replay_pacing"], "unpaced-source-time")
@@ -82,6 +147,127 @@ class ModalStreamBoundaryDiagnosticTests(unittest.TestCase):
         stream.last_trace = _Trace(2)
         diagnostic._capture_trace(stream, traces)
         self.assertEqual([trace["decode_index"] for trace in traces], [1, 2])
+
+    def test_str_enum_trace_has_a_strict_json_round_trip(self) -> None:
+        payload = diagnostic._plain(
+            {
+                "trace": _RuntimeTrace(1, StreamEventKind.COMMIT),
+                "event": TranscriptEvent(1, StreamEventKind.FINAL, session_version=0),
+            }
+        )
+        self.assertIs(type(payload["trace"]["action"]), str)
+        self.assertIs(type(payload["event"]["kind"]), str)
+        self.assertEqual(json.loads(json.dumps(payload)), payload)
+        encoded = diagnostic._encode_worker_record(payload)
+        self.assertIs(type(encoded), str)
+        self.assertEqual(json.loads(encoded), payload)
+        with self.assertRaisesRegex(ValueError, "finite"):
+            diagnostic._encode_worker_record({"value": float("nan")})
+
+    def test_worker_json_rejects_invalid_or_wrong_attempt_records(self) -> None:
+        manifest = diagnostic._read_registration()
+        snapshot = diagnostic._source_snapshot()
+        registration_sha256 = diagnostic._sha256_file(
+            diagnostic.ROOT / diagnostic.MANIFEST_PATH
+        )
+        valid = {
+            "schema_version": "1-diagnostic",
+            "claim_boundary": manifest["claim_boundary"],
+            "source": {
+                "snapshot": snapshot,
+                "registration_sha256": registration_sha256,
+            },
+        }
+        decoded = diagnostic._decode_worker_record(
+            diagnostic._encode_worker_record(valid),
+            expected_snapshot=snapshot,
+            registration_sha256=registration_sha256,
+            manifest=manifest,
+        )
+        self.assertEqual(decoded, valid)
+        invalid_payloads = (
+            "[]",
+            '{"value":NaN}',
+            diagnostic._encode_worker_record(
+                {
+                    **valid,
+                    "source": {**valid["source"], "snapshot": {"digest": "0" * 64}},
+                }
+            ),
+            diagnostic._encode_worker_record(
+                {
+                    **valid,
+                    "source": {
+                        **valid["source"],
+                        "registration_sha256": "0" * 64,
+                    },
+                }
+            ),
+        )
+        for payload in invalid_payloads:
+            with (
+                self.subTest(payload=payload[:30]),
+                self.assertRaises((TypeError, ValueError)),
+            ):
+                diagnostic._decode_worker_record(
+                    payload,
+                    expected_snapshot=snapshot,
+                    registration_sha256=registration_sha256,
+                    manifest=manifest,
+                )
+
+    def test_spawn_persists_call_id_before_validated_result_retrieval(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            manifest = self.make_root(root)
+            _, receipt = diagnostic._attempt_paths(root, 1)
+            call = _Call(receipt, manifest)
+            remote = _Remote(call)
+            output = diagnostic._execute_local_attempt(
+                root=root,
+                attempt=1,
+                confirm_paid_gpu=True,
+                remote_function=remote,
+            )
+            record = json.loads(output.read_text(encoding="utf-8"))
+            self.assertEqual(record["status"], "completed")
+            entries = [json.loads(line) for line in receipt.read_text().splitlines()]
+            self.assertEqual(
+                [entry["event"] for entry in entries],
+                ["attempt-started", "call-dispatched", "record-written"],
+            )
+            self.assertEqual(entries[1]["function_call_id"], call.object_id)
+            self.assertEqual(len(remote.calls), 1)
+
+    def test_failed_get_preserves_call_id_and_blocks_another_spawn(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            manifest = self.make_root(root)
+            _, receipt = diagnostic._attempt_paths(root, 1)
+            call = _FailingCall(receipt, manifest)
+            remote = _Remote(call)
+            with self.assertRaisesRegex(RuntimeError, "retrieval failed"):
+                diagnostic._execute_local_attempt(
+                    root=root,
+                    attempt=1,
+                    confirm_paid_gpu=True,
+                    remote_function=remote,
+                )
+            entries = [json.loads(line) for line in receipt.read_text().splitlines()]
+            self.assertEqual(
+                [entry["event"] for entry in entries],
+                ["attempt-started", "call-dispatched", "attempt-failed"],
+            )
+            self.assertEqual(entries[1]["function_call_id"], call.object_id)
+            second = _Remote(_Call(receipt, manifest))
+            with self.assertRaises(FileExistsError):
+                diagnostic._execute_local_attempt(
+                    root=root,
+                    attempt=1,
+                    confirm_paid_gpu=True,
+                    remote_function=second,
+                )
+            self.assertEqual(second.calls, [])
 
     def _checks(
         self,

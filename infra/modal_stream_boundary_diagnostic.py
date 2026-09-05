@@ -174,14 +174,16 @@ def _attempt_paths(root: Path, attempt: int) -> tuple[Path, Path]:
 
 
 def _plain(value: object) -> object:
+    # StreamEventKind inherits from str. Resolve all Enum values before the
+    # primitive check so the transport never depends on runtime-only classes.
+    if isinstance(value, Enum):
+        return _plain(value.value)
     if value is None or isinstance(value, (str, bool, int)):
         return value
     if isinstance(value, float):
         if not math.isfinite(value):
             raise ValueError("diagnostic records require finite numbers")
         return value
-    if isinstance(value, Enum):
-        return _plain(value.value)
     if is_dataclass(value) and not isinstance(value, type):
         return {
             field.name: _plain(getattr(value, field.name)) for field in fields(value)
@@ -193,6 +195,48 @@ def _plain(value: object) -> object:
     if isinstance(value, (tuple, list)):
         return [_plain(item) for item in value]
     raise TypeError(f"unsupported diagnostic value type: {type(value).__name__}")
+
+
+def _encode_worker_record(record: object) -> str:
+    payload = _plain(record)
+    if not isinstance(payload, dict):
+        raise TypeError("the Modal worker record must contain one object")
+    return json.dumps(
+        payload,
+        ensure_ascii=False,
+        allow_nan=False,
+        sort_keys=True,
+        separators=(",", ":"),
+    )
+
+
+def _decode_worker_record(
+    payload: object,
+    *,
+    expected_snapshot: Mapping[str, Any],
+    registration_sha256: str,
+    manifest: Mapping[str, Any],
+) -> dict[str, Any]:
+    if not isinstance(payload, str):
+        raise TypeError("the Modal worker must return one JSON string")
+
+    def reject_constant(value: str) -> object:
+        raise ValueError(f"non-finite JSON number: {value}")
+
+    record = json.loads(payload, parse_constant=reject_constant)
+    if not isinstance(record, dict):
+        raise TypeError("the Modal worker JSON must contain one object")
+    source = record.get("source")
+    snapshot = source.get("snapshot") if isinstance(source, Mapping) else None
+    if (
+        record.get("schema_version") != "1-diagnostic"
+        or record.get("claim_boundary") != manifest.get("claim_boundary")
+        or not isinstance(snapshot, Mapping)
+        or snapshot.get("digest") != expected_snapshot.get("digest")
+        or source.get("registration_sha256") != registration_sha256
+    ):
+        raise ValueError("the Modal worker record does not match this attempt")
+    return record
 
 
 def _capture_trace(stream: object, traces: list[dict[str, Any]]) -> None:
@@ -849,10 +893,34 @@ def _execute_local_attempt(
         {**common, "sequence": 0, "event": "attempt-started", "at": _utc_now()},
         create=True,
     )
+    sequence = 1
     try:
-        record = getattr(remote_function, "remote")(snapshot, registration_sha256)
-        if not isinstance(record, dict):
-            raise TypeError("the Modal worker returned a non-object record")
+        call = getattr(remote_function, "spawn")(snapshot, registration_sha256)
+        function_call_id = getattr(call, "object_id", None)
+        if (
+            not isinstance(function_call_id, str)
+            or re.fullmatch(r"fc-[A-Za-z0-9]+", function_call_id) is None
+        ):
+            raise TypeError("Modal did not return a valid FunctionCall ID")
+        _append_receipt(
+            receipt_path,
+            {
+                **common,
+                "sequence": sequence,
+                "event": "call-dispatched",
+                "at": _utc_now(),
+                "function_call_id": function_call_id,
+            },
+            create=False,
+        )
+        sequence += 1
+        payload = getattr(call, "get")()
+        record = _decode_worker_record(
+            payload,
+            expected_snapshot=snapshot,
+            registration_sha256=registration_sha256,
+            manifest=manifest,
+        )
         _write_json_exclusive(output_path, record)
     except BaseException as error:
         if isinstance(error, Exception):
@@ -860,7 +928,7 @@ def _execute_local_attempt(
                 receipt_path,
                 {
                     **common,
-                    "sequence": 1,
+                    "sequence": sequence,
                     "event": "attempt-failed",
                     "at": _utc_now(),
                     "error_type": type(error).__name__,
@@ -873,7 +941,7 @@ def _execute_local_attempt(
         receipt_path,
         {
             **common,
-            "sequence": 1,
+            "sequence": sequence,
             "event": "record-written",
             "at": _utc_now(),
             "record_sha256": _sha256_file(output_path),
@@ -966,12 +1034,14 @@ def _define_modal_resources() -> tuple[Any, Any, Any]:
     )
     def run_stream_boundary_diagnostic(
         expected_snapshot: Mapping[str, Any], registration_sha256: str
-    ) -> dict[str, Any]:
+    ) -> str:
         producer = importlib.import_module("infra.modal_stream_boundary_diagnostic")
-        return producer._run_worker(
-            expected_snapshot,
-            registration_sha256=registration_sha256,
-            modal_module=modal,
+        return producer._encode_worker_record(
+            producer._run_worker(
+                expected_snapshot,
+                registration_sha256=registration_sha256,
+                modal_module=modal,
+            )
         )
 
     main = app.local_entrypoint(name="main")(_modal_main)
