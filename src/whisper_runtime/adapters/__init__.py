@@ -3,8 +3,10 @@
 from .continuous_stream import (
     COALESCED_CONTEXT_CONTINUOUS_PROFILE,
     COALESCED_CONTINUOUS_PROFILE,
+    COALESCED_WORD_CONTINUOUS_PROFILE,
     CONTEXT_CONTINUOUS_PROFILE,
     CONTINUOUS_PROFILE,
+    WORD_CONTINUOUS_PROFILE,
     ContinuousDecodeTrace,
     ContinuousStreamConfig,
     ContinuousStreamMetrics,
@@ -54,12 +56,26 @@ from .native_whisper import (
     NativeWindowRun,
 )
 from .stream_policy import TextAgreementReason, TextPrefixDecision, resolve_text_prefix
+from .word_policy import (
+    AlignedPublication,
+    NativeWordAlignment,
+    WordAgreementDecision,
+    compare_word_hypotheses,
+    select_word_publication,
+)
 
 __all__ = [
     "COALESCED_CONTEXT_CONTINUOUS_PROFILE",
     "COALESCED_CONTINUOUS_PROFILE",
+    "COALESCED_WORD_CONTINUOUS_PROFILE",
     "CONTEXT_CONTINUOUS_PROFILE",
     "CONTINUOUS_PROFILE",
+    "WORD_CONTINUOUS_PROFILE",
+    "AlignedPublication",
+    "NativeWordAlignment",
+    "WordAgreementDecision",
+    "compare_word_hypotheses",
+    "select_word_publication",
     "ContinuousDecodeTrace",
     "ContinuousStreamConfig",
     "ContinuousStreamMetrics",

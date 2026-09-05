@@ -13,7 +13,11 @@ from typing import Callable
 
 from ..errors import TransactionRetainedError
 from ..state import AudioSpan, RequestState, Session, SessionState
-from .native_result import NativeWindowResult, select_native_publication
+from .native_result import (
+    NativeTimestampSegment,
+    NativeWindowResult,
+    select_native_publication,
+)
 from .native_stream import (
     AudioBufferFullError,
     AudioSequenceError,
@@ -23,11 +27,19 @@ from .native_stream import (
 )
 from .native_whisper import NativeDecodeOptions, NativeWhisperAdapter, NativeWindowRun
 from .stream_policy import compare_hypotheses
+from .word_policy import (
+    AlignedPublication,
+    NativeWordAlignment,
+    WordAgreementDecision,
+    compare_word_hypotheses,
+)
 
 CONTINUOUS_PROFILE = "timestamp_agreement_stream/v1"
 CONTEXT_CONTINUOUS_PROFILE = "context_agreement_stream/v1"
 COALESCED_CONTINUOUS_PROFILE = "coalesced_timestamp_agreement_stream/v1"
 COALESCED_CONTEXT_CONTINUOUS_PROFILE = "coalesced_context_agreement_stream/v1"
+WORD_CONTINUOUS_PROFILE = "word_agreement_stream/v1"
+COALESCED_WORD_CONTINUOUS_PROFILE = "coalesced_word_agreement_stream/v1"
 _SAMPLES_PER_MS = 16
 
 
@@ -44,12 +56,14 @@ class ContinuousStreamConfig:
     timestamp_tolerance_ms: int = 200
     left_context_ms: int = 0
     coalesce_previews: bool = False
+    word_alignment: bool = False
 
     def __post_init__(self) -> None:
-        if not isinstance(self.coalesce_previews, bool):
-            raise TypeError("coalesce_previews must be a boolean")
+        for name in ("coalesce_previews", "word_alignment"):
+            if not isinstance(getattr(self, name), bool):
+                raise TypeError(f"{name} must be a boolean")
         for name in self.__dataclass_fields__:
-            if name == "coalesce_previews":
+            if name in ("coalesce_previews", "word_alignment"):
                 continue
             value = getattr(self, name)
             if isinstance(value, bool) or not isinstance(value, int):
@@ -100,6 +114,8 @@ class ContinuousDecodeTrace:
     publication_span: AudioSpan | None
     result: NativeWindowResult
     action: str
+    word_alignment: NativeWordAlignment | None = None
+    word_publication: AlignedPublication | None = None
 
 
 class ContinuousTranscriptStream:
@@ -112,7 +128,8 @@ class ContinuousTranscriptStream:
     a decode does not discard its input; ``close`` abandons the whole stream.
     Opt-in preview coalescing skips obsolete endpoints under backlog. Its
     hypotheses depend on input arrival timing and can differ from the default.
-    Once admitted, a coalesced analysis keeps its input interval across retries.
+    Word alignment is also opt-in; it binds whole-word output to explicit
+    processed coverage. Both options preserve admitted input across retries.
     """
 
     def __init__(
@@ -139,6 +156,8 @@ class ContinuousTranscriptStream:
         self._options = options or NativeDecodeOptions(without_timestamps=False)
         if self._options.without_timestamps:
             raise ValueError("continuous transcription requires timestamp tokens")
+        if self.config.word_alignment and self._options.task != "transcribe":
+            raise ValueError("word-aligned streaming supports transcription only")
         self._adapter = adapter
         self._model = adapter.model_identity
         self._mel_builder = mel_builder
@@ -155,6 +174,9 @@ class ContinuousTranscriptStream:
         self._next_endpoint = self.config.preview_interval_ms * _SAMPLES_PER_MS
         self._last_endpoint = 0
         self._previous: NativeWindowResult | None = None
+        self._word_previous: NativeWordAlignment | None = None
+        self._word_anchor: tuple[NativeTimestampSegment, ...] = ()
+        self._word_pending: WordAgreementDecision | None = None
         self._retry_analysis: tuple[int, int, bool] | None = None
         self._run: NativeWindowRun | None = None
         self._run_end = 0
@@ -175,6 +197,12 @@ class ContinuousTranscriptStream:
 
     @property
     def profile_id(self) -> str:
+        if self.config.word_alignment:
+            return (
+                COALESCED_WORD_CONTINUOUS_PROFILE
+                if self.config.coalesce_previews
+                else WORD_CONTINUOUS_PROFILE
+            )
         if self.config.coalesce_previews:
             return (
                 COALESCED_CONTEXT_CONTINUOUS_PROFILE
@@ -357,7 +385,9 @@ class ContinuousTranscriptStream:
                 raise StreamNeedsResolutionError(
                     "no stable contiguous prefix within the audio window; input retained"
                 )
-            if self.config.coalesce_previews and self._retry_analysis is None:
+            if (
+                self.config.coalesce_previews or self.config.word_alignment
+            ) and self._retry_analysis is None:
                 # Admission is immutable even if preprocessing/startup fails,
                 # or more PCM/EOF arrives while a failed run is recovered.
                 self._retry_analysis = (start, endpoint, final)
@@ -390,6 +420,8 @@ class ContinuousTranscriptStream:
         ):
             run.close()
             raise NativeStreamError("native result does not match the admitted audio")
+        if self.config.word_alignment:
+            return self._resolve_words(run, result)
         decision = compare_hypotheses(
             self._previous,
             result,
@@ -432,12 +464,7 @@ class ContinuousTranscriptStream:
             self._run = None
             return self._publish_commit()
         run.close()  # Fence before exposing a provisional result or retaining it.
-        self._run = None
-        self._retry_analysis = None
-        self._record_decode()
         self._previous = result
-        self._last_endpoint = self._run_end
-        self._next_endpoint = self._run_end + self.config.preview_interval_ms * 16
         text = result.text
         if self._run_start < self._head:
             preview_span = self._context_span(result, final=False)
@@ -446,6 +473,78 @@ class ContinuousTranscriptStream:
                 if preview_span is not None
                 else ""
             )
+        return self._publish_preview(text)
+
+    def _resolve_words(
+        self, run: NativeWindowRun, result: NativeWindowResult
+    ) -> tuple[TranscriptEvent, ...]:
+        alignment = run.prepare_word_alignment()
+        if alignment.native != result:
+            run.close()
+            raise NativeStreamError("word alignment does not match the native result")
+        decision = compare_word_hypotheses(
+            self._word_previous,
+            alignment,
+            committed_through_ms=self._head // _SAMPLES_PER_MS,
+            anchor=self._word_anchor,
+            holdback_ms=self.config.holdback_ms,
+            timestamp_tolerance_ms=self.config.timestamp_tolerance_ms,
+            final=self._run_final,
+        )
+        publication = decision.publication
+        self._trace(
+            result,
+            None,
+            decision.reason,
+            "commit"
+            if publication is not None
+            else "unresolved"
+            if self._run_final
+            else "preview",
+            word_alignment=alignment,
+            word_publication=publication,
+        )
+        if publication is not None:
+            self._word_pending = decision
+            self._pending_end = (
+                self._run_end
+                if self._run_final
+                else publication.end_ms * _SAMPLES_PER_MS
+            )
+            self._pending_final = self._run_final
+            self._pending_state = run.finish(
+                committed_through_ms=self._pending_end // _SAMPLES_PER_MS,
+                aligned_publication=publication,
+            )
+            self._run = None
+            return self._publish_commit()
+        if self._run_final:
+            self._unresolved_eof = True
+            run.close()
+            self._run = None
+            self._retry_analysis = None
+            self._record_decode()
+            raise StreamNeedsResolutionError(
+                f"EOF word alignment is unresolved ({decision.reason}); input retained"
+            )
+        run.close()
+        self._word_previous = alignment
+        self._previous = result
+        # Provisional text uses estimated positions only. It has no commit authority.
+        text = "".join(
+            word.text
+            for word in alignment.words
+            if word.span.start_ms >= self._head // _SAMPLES_PER_MS
+        ).strip()
+        return self._publish_preview(text)
+
+    def _publish_preview(self, text: str) -> tuple[TranscriptEvent, ...]:
+        """Advance the preview cursor only after native cleanup has succeeded."""
+        self._run = None
+        self._retry_analysis = None
+        self._record_decode()
+        self._last_endpoint = self._run_end
+        self._next_endpoint = self._run_end + self.config.preview_interval_ms * 16
         return (self._text_event(text, self._head, self._run_end),)
 
     def _context_span(
@@ -478,6 +577,9 @@ class ContinuousTranscriptStream:
         span: AudioSpan | None,
         reason: str,
         action: str,
+        *,
+        word_alignment: NativeWordAlignment | None = None,
+        word_publication: AlignedPublication | None = None,
     ) -> None:
         self._trace_count += 1
         self._last_trace = ContinuousDecodeTrace(
@@ -491,6 +593,8 @@ class ContinuousTranscriptStream:
             span,
             result,
             action,
+            word_alignment,
+            word_publication,
         )
 
     def _publish_commit(self) -> tuple[TranscriptEvent, ...]:
@@ -499,6 +603,10 @@ class ContinuousTranscriptStream:
         if state != self._session.snapshot() or not state.windows:
             raise NativeStreamError("committed result does not belong to this session")
         result = state.windows[-1].result
+        if self.config.word_alignment and (
+            self._word_pending is None or self._word_pending.publication != result
+        ):
+            raise NativeStreamError("committed result does not match the word decision")
         record = state.windows[-1]
         end = self._pending_end
         if (
@@ -545,6 +653,10 @@ class ContinuousTranscriptStream:
             self._retained + self.config.max_window_ms * 16 - interval,
         )
         self._previous = None
+        self._word_previous = None
+        if self._word_pending is not None:
+            self._word_anchor = self._word_pending.next_anchor
+            self._word_pending = None
         self._pending_state = None
         self._retry_analysis = None
         self._segment += 1

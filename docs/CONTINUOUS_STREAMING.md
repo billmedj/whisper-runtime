@@ -1,4 +1,4 @@
-# Timestamp agreement stream
+# Continuous transcription
 
 `timestamp_agreement_stream/v1` is an experimental rolling-input profile. It
 uses the existing native decoder, completion fences, and session commits.
@@ -83,6 +83,46 @@ tests measure avoided decode calls, not GPU savings or recognition quality.
 This option needs a matched paced-audio comparison before a performance claim.
 It does not alter EOF, cancellation, or resource-recovery contracts.
 
+## Optional word alignment
+
+Set `ContinuousStreamConfig(word_alignment=True, left_context_ms=2000)` to use
+`word_agreement_stream/v1`. Add `coalesce_previews=True` to use
+`coalesced_word_agreement_stream/v1`. Both are opt-in transcription profiles;
+translation is not supported by this publication rule.
+
+The adapter runs Whisper's request-local word alignment once per completed
+analysis. It preserves the raw result and attaches estimated word times. The
+policy compares whole words, including their tokens and source positions,
+instead of requiring matching native segment boundaries. A native segment may
+cross the committed boundary while its new words remain publishable.
+
+After a commit, at most four published words anchor the next analysis. A match
+must remain near their original source positions. Matching text in a later
+repetition cannot authorize publication. Missing or ambiguous anchors stop
+progress. After a validated anchor, a new word may start before the processed
+boundary by at most `timestamp_tolerance_ms`. The publication records this
+tolerance; the word's original estimate is unchanged. Larger overlaps remain
+unresolved. The next anchor uses only newly published words from one analysis.
+
+An `AlignedPublication` binds a contiguous word slice to its original alignment
+and an explicit processed-audio range. The native transaction commits this
+object. Processed coverage and estimated word bounds are distinct. The stream
+advances its audio boundary and anchor only after the commit
+and resource release succeed. The admitted input range stays fixed across
+cancellation and recovery, even when more input arrives.
+
+Processed coverage is not a claim that every sound was recognized. Natural
+gaps between aligned words are permitted. At explicit EOF, the remaining word
+suffix may commit without a second observation, and coverage extends to the
+input endpoint. An empty suffix is allowed only at EOF. Before EOF, empty text
+does not advance the stream. Word times are estimates, not evidence of silence
+or correct recognition.
+
+Alignment adds model work and may increase memory use. It runs under the same
+execution scope, cancellation checks, model lock, and cleanup fence as decoding.
+The legacy hook-based alignment path is not supported. This option needs a
+matched real-audio run before any claim of quality, latency, or GPU savings.
+
 ## Decision trace
 
 `last_trace` exposes one immutable `ContinuousDecodeTrace` on the owner thread.
@@ -97,6 +137,11 @@ can still fail or await resource recovery. Check transcript events and runtime
 state for the outcome. Do not infer an analysis endpoint from a commit event:
 the latter describes the selected output range.
 
+Word profiles also expose `word_alignment` and `word_publication`. Their raw
+`result` remains unchanged, and `publication_span` is `None`: the publication
+selects words, not native segments. The segment-only trace analyzer does not
+validate this profile.
+
 ## Text-only agreement analysis
 
 `resolve_text_prefix` in `adapters.stream_policy` compares the text-token prefix
@@ -109,7 +154,8 @@ The result identifies exact token indices in the current hypothesis. It does
 not publish text, classify silence, or advance the audio watermark. A candidate
 can end inside a byte-encoded character; a future publication path must check
 text decoding and map source coverage before committing it. Original timestamps
-remain unchanged. Current stream profiles retain their timed-segment rules.
+remain unchanged. This analyzer is separate from the opt-in word alignment
+path above and does not authorize that path's commits.
 
 This comparison is intended for trace analysis and for testing a future text
 publication contract. Agreement alone is not an acoustic alignment or accuracy
@@ -117,7 +163,7 @@ test. An empty anchor is valid only when no text has been committed in the block
 
 ## End of input
 
-At EOF with zero retained context, the remaining window uses the native decode
+In the segment profiles, EOF with zero retained context uses the native decode
 contract. EOF finality does not assert two-hypothesis agreement. A final event
 means all admitted input was processed, not that recognition was error-free.
 
@@ -131,7 +177,7 @@ the input-buffer bound is not a process or GPU memory limit.
 
 If no contiguous prefix can be committed before the analysis-window limit,
 `StreamNeedsResolutionError` stops progress and retains the accepted PCM. The
-producer eventually receives backpressure. The profile does not interpret a
+producer eventually receives backpressure. The segment profiles do not interpret a
 timestamp gap, silence probability, or empty text as proof that audio can be
 discarded. Sustained silence and unstable timestamp boundaries therefore remain
 important cases to resolve before general live use.
@@ -162,3 +208,34 @@ does not close the 30-minute continuous-operation gate in `ROADMAP.md`.
 
 No speedup, lower GPU cost, durable crash recovery, or unrestricted continuous
 transcription is claimed by this profile.
+
+### Word-alignment CPU smoke, 2026-09-05
+
+A local diagnostic used the cached `tiny.en` model on CPU with two Torch threads
+and the patched backend at `70141b8b26acc09f5fe7fadee63d1604178309df`. It repeated
+the backend's 11-second JFK fixture three times. PCM conversion used clipped
+float samples, scaling by 32767, rounding, and signed 16-bit encoding. The
+528,000-sample PCM had SHA-256
+`73412abdfa7bc14c1967d0c55871145665b73254812eccfac8a1acd74452b103`.
+
+Settings were English transcription, timestamp tokens, seed 7, two-second input
+chunks, preview interval, holdback, and retained context. Word alignment was on;
+coalescing was off. The caller drained each chunk before supplying the next,
+then declared EOF. This was not a wall-clock-paced replay.
+
+The first run stopped at EOF with 18 seconds committed: the next word started
+80 ms before the processed boundary after realignment. Tests now cover this
+case. The fix permits bounded start drift only after a valid timed anchor and
+keeps original estimates intact. New anchors use one alignment observation.
+
+The same replay then processed all 528,000 samples in 17 decodes, with eight
+commits including EOF. The loop took 44.998 seconds on CPU. The queue was empty,
+declared capacity was restored, and the model fingerprint was unchanged after
+the run. This is a manual integration smoke, not a registered quality or speed
+comparison; no reference-transcript error metric was computed. It does not
+close the long-session gate. No models were downloaded and no GPU was used.
+
+The complete runtime suite passes 382 tests, including 52 new policy, adapter,
+and stream tests. The same 382 tests pass when imported from the built wheel.
+The repository-tool suite passes 249 tests. Type, lint, format, and distribution
+checks also pass.

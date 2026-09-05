@@ -76,6 +76,13 @@ Text-token agreement analysis and optional preview coalescing are implemented.
 The analyzer has no publication authority. Coalescing preserves admitted input
 across retries and is off by default. Its GPU benefit remains unmeasured.
 
+An opt-in word-aligned profile now connects native word estimates, prefix
+selection, transactional publication, and audio progress. Its 52 additional
+tests cover boundary drift, repeated phrases, rolling input, and recovery.
+The full runtime suite has 382 passing tests. Default segment profiles remain
+unchanged. Alignment adds model work; matched GPU cost and long-session behavior
+are still open gates. See [configuration and limits](CONTINUOUS_STREAMING.md#optional-word-alignment).
+
 Deliver a separately named continuous profile. Keep the existing
 offline-compatible and bounded-preview paths.
 

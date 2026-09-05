@@ -16,6 +16,7 @@ from collections.abc import Callable
 from contextlib import AbstractContextManager
 from dataclasses import dataclass
 from importlib import import_module
+from numbers import Real
 from threading import Condition, RLock, current_thread
 from typing import Protocol, TypeVar, cast, runtime_checkable
 
@@ -45,11 +46,13 @@ from ._model_binding import (
     require_model_available,
 )
 from .native_result import (
+    NativeTimestampSegment,
     NativeTokenizer,
     NativeWindowResult,
     build_native_window_result,
     select_native_publication,
 )
+from .word_policy import AlignedPublication, NativeWordAlignment
 
 
 class NativeAdapterError(RuntimeStateError):
@@ -754,6 +757,84 @@ class _CudaDecodeScope:
 NativeModelIdentityProbe = Callable[[object], ModelSnapshot]
 
 
+def _alignment_number(name: str, value: object) -> float:
+    """Return one finite backend alignment value without coercing strings."""
+
+    if isinstance(value, bool) or not isinstance(value, Real):
+        raise TypeError(f"word alignment {name} must be a finite number")
+    number = float(value)
+    if not math.isfinite(number):
+        raise ValueError(f"word alignment {name} must be finite")
+    return number
+
+
+def _alignment_words(
+    raw_words: object,
+    *,
+    native: NativeWindowResult,
+    text_tokens: tuple[int, ...],
+) -> NativeWordAlignment:
+    """Snapshot mutable backend word timings as bounded immutable values."""
+
+    if not isinstance(raw_words, list):
+        raise TypeError("find_alignment must return a list")
+    duration_seconds = (native.end_ms - native.start_ms) / 1_000
+    words: list[NativeTimestampSegment] = []
+    previous_end_seconds = 0.0
+    previous_end_ms = native.start_ms
+    for raw in raw_words:
+        word = getattr(raw, "word", None)
+        tokens = getattr(raw, "tokens", None)
+        if not isinstance(word, str):
+            raise TypeError("word alignment text must be a string")
+        if not isinstance(tokens, (tuple, list)):
+            raise TypeError("word alignment tokens must be a list or tuple")
+        token_tuple = tuple(tokens)
+        if any(
+            isinstance(token, bool) or not isinstance(token, int) or token < 0
+            for token in token_tuple
+        ):
+            raise ValueError(
+                "word alignment tokens must be nonnegative integers, not booleans"
+            )
+        start_seconds = _alignment_number("start", getattr(raw, "start", None))
+        end_seconds = _alignment_number("end", getattr(raw, "end", None))
+        probability = _alignment_number(
+            "probability", getattr(raw, "probability", None)
+        )
+        if not 0 <= probability <= 1:
+            raise ValueError("word alignment probability must be between zero and one")
+        if (
+            start_seconds < 0
+            or end_seconds < start_seconds
+            or end_seconds > duration_seconds
+        ):
+            raise ValueError("word alignment times must stay within the analysis span")
+        if start_seconds < previous_end_seconds:
+            raise ValueError("word alignment times must not overlap")
+        start_ms = native.start_ms + round(start_seconds * 1_000)
+        end_ms = native.start_ms + round(end_seconds * 1_000)
+        if start_ms < previous_end_ms:
+            raise ValueError("rounded word alignment times must not overlap")
+        words.append(
+            NativeTimestampSegment(
+                span=AudioSpan(start_ms, end_ms),
+                text=word,
+                tokens=token_tuple,
+            )
+        )
+        previous_end_seconds = end_seconds
+        previous_end_ms = end_ms
+
+    if tuple(token for word in words for token in word.tokens) != text_tokens:
+        raise ValueError(
+            "word alignment tokens do not preserve the decoded token stream"
+        )
+    if "".join(word.text for word in words).strip() != native.text:
+        raise ValueError("word alignment text does not match the native result")
+    return NativeWordAlignment(native=native, words=tuple(words))
+
+
 class NativeWindowRun:
     """A transaction-owned native decode that advances one token at a time.
 
@@ -780,6 +861,9 @@ class NativeWindowRun:
         start_ms: int,
         end_ms: int,
         tokenizer: NativeTokenizer | None = None,
+        alignment_model: object | None = None,
+        alignment_batched_mel: object | None = None,
+        alignment_max_frames: int = 3_000,
     ) -> None:
         self._worker = worker
         self._model_binding = model_binding
@@ -792,6 +876,10 @@ class NativeWindowRun:
         self._start_ms = start_ms
         self._end_ms = end_ms
         self._tokenizer = tokenizer
+        self._alignment_model: object | None = alignment_model
+        self._alignment_batched_mel: object | None = alignment_batched_mel
+        self._alignment_max_frames = alignment_max_frames
+        self._prepared_alignment: NativeWordAlignment | None = None
         self._prepared_result: NativeWindowResult | None = None
         self._step_count = 0
         self._complete = complete
@@ -896,10 +984,15 @@ class NativeWindowRun:
         """Return whether stop changed state, delivered a signal, or recovered."""
 
         if self.capacity_released:
+            self._alignment_model = None
+            self._alignment_batched_mel = None
             return False
         changed = self._worker.stop(self._transaction)
         if not self.capacity_released:
             changed = self._worker.recover(self._transaction) or changed
+        if self.capacity_released:
+            self._alignment_model = None
+            self._alignment_batched_mel = None
         return changed
 
     def prepare_result(self) -> NativeWindowResult:
@@ -928,6 +1021,124 @@ class NativeWindowRun:
             self._close_owner(operation_error=operation_error, committed_state=None)
             raise
 
+    def prepare_word_alignment(self) -> NativeWordAlignment:
+        """Estimate immutable word bounds once for a completed native result.
+
+        Alignment is opt in. It reuses the cached native result, runs on the
+        transaction-owned execution scope, and never invokes native result
+        finalization more than once.
+        """
+
+        self._require_open()
+        if not self.complete:
+            raise NativeDecodeContractError(
+                "word alignment requires completed token generation"
+            )
+        try:
+            self._transaction.checkpoint()
+            native = self._prepare_result()
+            if self._prepared_alignment is None:
+                self._prepared_alignment = self._prepare_word_alignment(native)
+            if self._cuda_profile:
+                self._submit(self._require_model_identity)
+                self._transaction.checkpoint()
+            else:
+                with self._model_binding.lock:
+                    self._require_model_identity()
+            return self._prepared_alignment
+        except BaseException as operation_error:
+            self._close_owner(operation_error=operation_error, committed_state=None)
+            raise
+
+    def _prepare_word_alignment(
+        self, native: NativeWindowResult
+    ) -> NativeWordAlignment:
+        metadata = native.metadata
+        tokenizer = self._tokenizer
+        if metadata is None or tokenizer is None:
+            raise NativeDecodeContractError(
+                "word alignment requires native tokens and a tokenizer"
+            )
+        eot = getattr(tokenizer, "eot", None)
+        if isinstance(eot, bool) or not isinstance(eot, int) or eot < 0:
+            raise NativeDecodeContractError(
+                "word alignment requires a nonnegative tokenizer eot token"
+            )
+        text_tokens = tuple(token for token in metadata.tokens if token < eot)
+        decoded = tokenizer.decode(list(text_tokens))
+        if not isinstance(decoded, str):
+            raise NativeDecodeContractError("tokenizer.decode must return a string")
+        if decoded.strip() != native.text:
+            raise NativeDecodeContractError(
+                "decoded text tokens do not match the native result"
+            )
+        duration_ms = self._end_ms - self._start_ms
+        num_frames = min(self._alignment_max_frames, 3_000, (duration_ms + 9) // 10)
+        if not text_tokens:
+            if native.text:
+                raise NativeDecodeContractError(
+                    "an empty token stream must produce an empty native result"
+                )
+            return NativeWordAlignment(native=native, words=())
+        if num_frames == 0:
+            raise NativeDecodeContractError(
+                "nonempty text cannot be aligned to an empty audio span"
+            )
+        model = self._alignment_model
+        batched_mel = self._alignment_batched_mel
+        if model is None or batched_mel is None:
+            raise NativeDecodeContractError("word alignment input is unavailable")
+
+        def align() -> NativeWordAlignment:
+            with self._model_binding.lock:
+                require_model_available(self._model_binding)
+                self._require_model_identity()
+                try:
+                    model_module = import_module("whisper.model")
+                    timing_module = import_module("whisper.timing")
+                except (ImportError, OSError) as exc:
+                    raise NativeDependencyError(
+                        "word alignment requires the patched Whisper timing backend"
+                    ) from exc
+                local_probe = getattr(
+                    model_module, "_uses_request_local_alignment", None
+                )
+                finder = getattr(timing_module, "find_alignment", None)
+                if not callable(local_probe) or not callable(finder):
+                    raise NativeDependencyError(
+                        "the Whisper backend lacks request-local word alignment"
+                    )
+                if local_probe(model) is not True:
+                    raise NativeDependencyError(
+                        "word alignment requires request-local attention capture"
+                    )
+                try:
+                    mel = batched_mel[0]  # type: ignore[index]
+                except (IndexError, KeyError, TypeError) as exc:
+                    raise NativeDecodeContractError(
+                        "the retained mel batch cannot provide one alignment input"
+                    ) from exc
+                raw_words = finder(
+                    model,
+                    tokenizer,
+                    list(text_tokens),
+                    mel,
+                    num_frames,
+                )
+                self._require_model_identity()
+                try:
+                    return _alignment_words(
+                        raw_words,
+                        native=native,
+                        text_tokens=text_tokens,
+                    )
+                except (TypeError, ValueError) as exc:
+                    raise NativeDecodeContractError(str(exc)) from exc
+
+        aligned = self._submit(align)
+        self._transaction.checkpoint()
+        return aligned
+
     def _prepare_result(self) -> NativeWindowResult:
         if self._prepared_result is None:
             results = self._submit(self._backend_run.finalize)
@@ -952,6 +1163,7 @@ class NativeWindowRun:
         *,
         committed_through_ms: int | None = None,
         publication_span: AudioSpan | None = None,
+        aligned_publication: AlignedPublication | None = None,
     ) -> SessionState:
         """Commit a complete run, optionally selecting whole timed segments.
 
@@ -962,11 +1174,30 @@ class NativeWindowRun:
         self._require_open()
         if publication_span is not None and not isinstance(publication_span, AudioSpan):
             raise TypeError("publication_span must be an AudioSpan or None")
+        if aligned_publication is not None and not isinstance(
+            aligned_publication, AlignedPublication
+        ):
+            raise TypeError("aligned_publication must be an AlignedPublication or None")
+        if publication_span is not None and aligned_publication is not None:
+            raise ValueError(
+                "publication_span and aligned_publication cannot be used together"
+            )
+        if aligned_publication is not None:
+            if aligned_publication.alignment is not self._prepared_alignment:
+                raise ValueError(
+                    "aligned_publication must use this run's cached word alignment"
+                )
+            if aligned_publication.window_id != self._window_id:
+                raise ValueError("aligned_publication must match this run's window")
         _validate_committed_boundary(
             committed_through_ms,
-            end_ms=self._end_ms
-            if publication_span is None
-            else publication_span.end_ms,
+            end_ms=(
+                aligned_publication.end_ms
+                if aligned_publication is not None
+                else self._end_ms
+                if publication_span is None
+                else publication_span.end_ms
+            ),
         )
         try:
             self._transaction.checkpoint()
@@ -983,10 +1214,13 @@ class NativeWindowRun:
 
         committed_state: SessionState | None = None
         try:
-            result = self._prepare_result()
-            if publication_span is not None:
+            native_result = self._prepare_result()
+            result: WindowResult = native_result
+            if aligned_publication is not None:
+                result = aligned_publication
+            elif publication_span is not None:
                 try:
-                    result = select_native_publication(result, publication_span)
+                    result = select_native_publication(native_result, publication_span)
                 except (TypeError, ValueError) as exc:
                     raise NativeDecodeContractError(str(exc)) from exc
             if self._cuda_profile:
@@ -1061,6 +1295,9 @@ class NativeWindowRun:
         finally:
             self._closed = True
             self._transaction._owner_departed()
+            if self._transaction.capacity_released:
+                self._alignment_model = None
+                self._alignment_batched_mel = None
 
 
 @dataclass(frozen=True, slots=True, init=False)
@@ -1319,6 +1556,9 @@ class NativeWhisperAdapter:
                 start_ms=start_ms,
                 end_ms=end_ms,
                 tokenizer=tokenizer,
+                alignment_model=self._model,
+                alignment_batched_mel=batched_mel,
+                alignment_max_frames=components.n_frames,
             )
             owner_transferred = True
             return handle
