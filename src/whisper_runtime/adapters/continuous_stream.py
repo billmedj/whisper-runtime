@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from threading import RLock, current_thread
-from typing import Callable
+from typing import Callable, Literal
 
 from ..errors import TransactionRetainedError
 from ..state import AudioSpan, RequestState, Session, SessionState
@@ -45,6 +45,8 @@ CONTEXT_CONTINUOUS_PROFILE = "context_agreement_stream/v1"
 COALESCED_CONTINUOUS_PROFILE = "coalesced_timestamp_agreement_stream/v1"
 COALESCED_CONTEXT_CONTINUOUS_PROFILE = "coalesced_context_agreement_stream/v1"
 WORD_CONTINUOUS_PROFILE = "word_agreement_stream/v1"
+SOURCE_UNIT_PROFILE = "source_unit_stream/v1"
+COALESCED_SOURCE_UNIT_PROFILE = "coalesced_source_unit_stream/v1"
 COALESCED_WORD_CONTINUOUS_PROFILE = "coalesced_word_agreement_stream/v1"
 _SAMPLES_PER_MS = 16
 
@@ -64,13 +66,20 @@ class ContinuousStreamConfig:
     coalesce_previews: bool = False
     word_alignment: bool = False
     input_evidence: bool = False
+    source_units: bool = False
 
     def __post_init__(self) -> None:
-        for name in ("coalesce_previews", "word_alignment", "input_evidence"):
+        flags = (
+            "coalesce_previews",
+            "word_alignment",
+            "input_evidence",
+            "source_units",
+        )
+        for name in flags:
             if not isinstance(getattr(self, name), bool):
                 raise TypeError(f"{name} must be a boolean")
         for name in self.__dataclass_fields__:
-            if name in ("coalesce_previews", "word_alignment", "input_evidence"):
+            if name in flags:
                 continue
             value = getattr(self, name)
             if isinstance(value, bool) or not isinstance(value, int):
@@ -87,6 +96,35 @@ class ContinuousStreamConfig:
             raise ValueError("left context must leave room for growing analyses")
         if self.left_context_ms % 20:
             raise ValueError("left_context_ms must be a multiple of 20 ms")
+        if self.source_units and (
+            not self.input_evidence or self.word_alignment or self.left_context_ms
+        ):
+            raise ValueError(
+                "source_units requires input_evidence, no word alignment, "
+                "and zero left context"
+            )
+
+
+@dataclass(frozen=True, slots=True)
+class SourceUnit:
+    """An externally closed input range, not a claim of correct recognition.
+
+    The origin records who closed the range. It does not certify silence or
+    authorize publication without the selected input-evidence policy.
+    """
+
+    start_sample: int
+    end_sample: int
+    origin: Literal["caller", "end_of_input"]
+
+    def __post_init__(self) -> None:
+        for value in (self.start_sample, self.end_sample):
+            if isinstance(value, bool) or not isinstance(value, int):
+                raise TypeError("source unit boundaries must be integers")
+        if not 0 <= self.start_sample < self.end_sample:
+            raise ValueError("source unit must have a nonempty nonnegative range")
+        if self.origin not in ("caller", "end_of_input"):
+            raise ValueError("source unit origin must be caller or end_of_input")
 
 
 @dataclass(frozen=True, slots=True)
@@ -125,6 +163,7 @@ class ContinuousDecodeTrace:
     word_publication: AlignedPublication | None = None
     audio_evidence: AudioEvidenceDecision | None = None
     silence_publication: SilencePublication | None = None
+    source_unit: SourceUnit | None = None
 
 
 class ContinuousTranscriptStream:
@@ -165,8 +204,12 @@ class ContinuousTranscriptStream:
         self._options = options or NativeDecodeOptions(without_timestamps=False)
         if self._options.without_timestamps:
             raise ValueError("continuous transcription requires timestamp tokens")
-        if self.config.word_alignment and self._options.task != "transcribe":
-            raise ValueError("word-aligned streaming supports transcription only")
+        if (
+            self.config.word_alignment or self.config.source_units
+        ) and self._options.task != "transcribe":
+            raise ValueError(
+                "word-aligned and source-unit streaming support transcription only"
+            )
         self._adapter = adapter
         self._model = adapter.model_identity
         self._mel_builder = mel_builder
@@ -191,6 +234,9 @@ class ContinuousTranscriptStream:
         self._word_anchor: tuple[NativeTimestampSegment, ...] = ()
         self._word_pending: WordAgreementDecision | None = None
         self._retry_analysis: tuple[int, int, bool] | None = None
+        self._unit: SourceUnit | None = None
+        self._retry_unit: SourceUnit | None = None
+        self._run_unit: SourceUnit | None = None
         self._run: NativeWindowRun | None = None
         self._run_end = 0
         self._run_start = 0
@@ -214,6 +260,12 @@ class ContinuousTranscriptStream:
         return f"{base}+input_evidence/v1" if self.config.input_evidence else base
 
     def _base_profile_id(self) -> str:
+        if self.config.source_units:
+            return (
+                COALESCED_SOURCE_UNIT_PROFILE
+                if self.config.coalesce_previews
+                else SOURCE_UNIT_PROFILE
+            )
         if self.config.word_alignment:
             return (
                 COALESCED_WORD_CONTINUOUS_PROFILE
@@ -273,6 +325,7 @@ class ContinuousTranscriptStream:
             return not self._done and (
                 self.active
                 or self._eof
+                or self._unit is not None
                 or self._accepted
                 >= min(
                     self._next_endpoint,
@@ -331,6 +384,42 @@ class ContinuousTranscriptStream:
             self._eof = True
             return True
 
+    def seal_unit(self, end_sample: int) -> SourceUnit:
+        """Close one admitted input range without ending the stream.
+
+        Call on the model-work owner before processing beyond the desired end.
+        Only one boundary can be pending. A running preview is not promoted to
+        a final result: its immutable operation must finish before the sealed
+        range is decoded. This method neither removes PCM nor commits text.
+        """
+        self._require_owner()
+        with self._lock:
+            if not self.config.source_units:
+                raise NativeStreamError("seal_unit requires source_units")
+            if self._done:
+                raise NativeStreamError("input is closed")
+            if (
+                self._unit is not None
+                or self._unresolved_eof
+                or (self._run is not None and self._run_unit is not None)
+                or (self._retry_analysis is not None and self._retry_unit is not None)
+            ):
+                raise NativeStreamError("a source unit is already pending")
+            unit = SourceUnit(self._head, end_sample, "caller")
+            if end_sample > self._accepted:
+                raise ValueError("source unit exceeds admitted audio")
+            if end_sample - self._head > self.config.max_window_ms * 16:
+                raise ValueError("source unit exceeds the analysis window")
+            analyzed_end = self._last_endpoint
+            if self._run is not None:
+                analyzed_end = max(analyzed_end, self._run_end)
+            if self._retry_analysis is not None:
+                analyzed_end = max(analyzed_end, self._retry_analysis[1])
+            if end_sample < analyzed_end:
+                raise ValueError("source unit ends before an admitted analysis")
+            self._unit = unit
+            return unit
+
     def cancel_active(self) -> bool:
         run = self._run
         return False if run is None else run.cancel()
@@ -372,7 +461,7 @@ class ContinuousTranscriptStream:
                 raise
         if self._unresolved_eof:
             raise StreamNeedsResolutionError(
-                "EOF boundary is unresolved; close the stream before retrying "
+                "input boundary is unresolved; close the stream before retrying "
                 "with a different policy"
             )
         with self._lock:
@@ -384,7 +473,15 @@ class ContinuousTranscriptStream:
             bound = self._retained + self.config.max_window_ms * _SAMPLES_PER_MS
             final = self._eof and self._accepted <= bound
             endpoint = self._accepted if final else min(self._next_endpoint, bound)
-            if self.config.coalesce_previews and not final:
+            unit = None
+            if self.config.source_units:
+                unit = self._unit
+                if unit is None and final:
+                    unit = SourceUnit(self._head, self._accepted, "end_of_input")
+                if unit is not None:
+                    endpoint = unit.end_sample
+                    final = self._eof and endpoint == self._accepted
+            if self.config.coalesce_previews and not final and unit is None:
                 ceiling = bound
                 if self._previous is None:
                     # Reserve a later observation at this origin. Preserve the
@@ -398,7 +495,8 @@ class ContinuousTranscriptStream:
             start = self._retained
             if self._retry_analysis is not None:
                 start, endpoint, final = self._retry_analysis
-            if not final and endpoint <= self._last_endpoint:
+                unit = self._retry_unit
+            if not final and unit is None and endpoint <= self._last_endpoint:
                 raise StreamNeedsResolutionError(
                     "no stable contiguous prefix within the audio window; input retained"
                 )
@@ -410,11 +508,14 @@ class ContinuousTranscriptStream:
                 # Admission is immutable even if preprocessing/startup fails,
                 # or more PCM/EOF arrives while a failed run is recovered.
                 self._retry_analysis = (start, endpoint, final)
+                self._retry_unit = unit
             pcm = bytes(memoryview(self._audio)[: (endpoint - start) * 2])
         observation = (
             AudioObservation.from_pcm(pcm) if self.config.input_evidence else None
         )
         window_id = f"{self._id}:window:{start}:{endpoint}"
+        if self.config.source_units:
+            window_id += ":unit" if unit is not None else ":preview"
         self._run = self._adapter.start_window(
             session=self._session,
             request=RequestState(
@@ -430,6 +531,7 @@ class ContinuousTranscriptStream:
             options=self._options,
         )
         self._run_start, self._run_end, self._run_final = start, endpoint, final
+        self._run_unit = unit
         self._run_window_id = window_id
         self._run_observation = observation
         self._audio_decision = None
@@ -453,9 +555,15 @@ class ContinuousTranscriptStream:
                 raise NativeStreamError("input evidence does not match admitted audio")
             self._audio_decision = assess_audio(observation, result)
             if self._audio_decision.state == "non_speech":
+                if self.config.source_units and self._run_unit is None:
+                    self._trace(result, None, "source_unit_open", "preview")
+                    run.close()
+                    return self._publish_preview("")
                 return self._resolve_silence(run, result, observation)
             if self._audio_decision.state != "speech_candidate":
                 return self._defer_audio(run, result)
+        if self.config.source_units:
+            return self._resolve_unit(run, result)
         if self.config.word_alignment:
             return self._resolve_words(run, result)
         decision = compare_hypotheses(
@@ -530,6 +638,29 @@ class ContinuousTranscriptStream:
         )
         return False
 
+    def _resolve_unit(
+        self, run: NativeWindowRun, result: NativeWindowResult
+    ) -> tuple[TranscriptEvent, ...]:
+        """Publish a closed range under a full-result recognition contract.
+
+        Input closure does not establish word accuracy. Unlike the word profile,
+        this profile makes no per-word finality or timing claim. Open-range text
+        can change until the caller closes it and its native run completes.
+        """
+        unit = self._run_unit
+        if unit is None:
+            self._trace(result, None, "source_unit_open", "preview")
+            run.close()
+            return self._publish_preview(result.text)
+        if unit.start_sample != self._head or unit.end_sample != self._run_end:
+            run.close()
+            raise NativeStreamError("source unit does not match admitted analysis")
+        self._trace(result, None, "source_unit", "commit")
+        self._pending_end, self._pending_final = unit.end_sample, self._run_final
+        self._pending_state = run.finish(committed_through_ms=unit.end_sample // 16)
+        self._run = None
+        return self._publish_commit()
+
     def _resolve_silence(
         self,
         run: NativeWindowRun,
@@ -563,26 +694,28 @@ class ContinuousTranscriptStream:
     ) -> tuple[TranscriptEvent, ...]:
         """Suppress unsupported text without granting audio-discard authority."""
         assert self._audio_decision is not None
+        closed = self._run_final or self._run_unit is not None
         self._trace(
             result,
             None,
             self._audio_decision.reason,
-            "unresolved" if self._run_final else "wait_for_input",
+            "unresolved" if closed else "wait_for_input",
         )
         # Preserve the scheduling observation, but never use a rejected result
         # as an agreement witness. Close/fence before exposing any event.
-        if self._run_final:
+        if closed:
             self._unresolved_eof = True
         run.close()
         self._previous = result
         self._previous_eligible = False
         self._word_previous = None
-        if self._run_final:
+        if closed:
             self._run = None
             self._record_decode()
             self._retry_analysis = None
+            boundary = "source unit" if self._run_unit is not None else "EOF"
             raise StreamNeedsResolutionError(
-                f"EOF input evidence is unresolved ({self._audio_decision.reason}); "
+                f"{boundary} input evidence is unresolved ({self._audio_decision.reason}); "
                 "input retained"
             )
         return self._publish_preview("")
@@ -715,6 +848,7 @@ class ContinuousTranscriptStream:
             word_publication,
             self._audio_decision,
             silence_publication,
+            self._run_unit,
         )
 
     def _publish_commit(self) -> tuple[TranscriptEvent, ...]:
@@ -723,6 +857,12 @@ class ContinuousTranscriptStream:
         if state != self._session.snapshot() or not state.windows:
             raise NativeStreamError("committed result does not belong to this session")
         result = state.windows[-1].result
+        if (
+            self._run_unit is not None
+            and self._unit is not None
+            and self._unit != self._run_unit
+        ):
+            raise NativeStreamError("committed source unit changed")
         if self._silence_pending is not None and result != self._silence_pending:
             raise NativeStreamError(
                 "committed result does not match the silence decision"
@@ -763,13 +903,17 @@ class ContinuousTranscriptStream:
         with self._lock:
             retained = (
                 end
-                if self._pending_final or self._silence_pending is not None
+                if self._pending_final
+                or self._silence_pending is not None
+                or self._run_unit is not None
                 else max(self._retained, end - self.config.left_context_ms * 16)
             )
             del self._audio[: (retained - self._retained) * 2]
             self._retained = retained
             self._head = end
             self._done = self._pending_final
+            if self._run_unit is not None:
+                self._unit = None
         # Establish a fresh growing pair after rebasing. Starting immediately at
         # the old endpoint can exhaust a full window before a second observation.
         self._last_endpoint = end
@@ -778,6 +922,8 @@ class ContinuousTranscriptStream:
             self._run_end + interval,
             self._retained + self.config.max_window_ms * 16 - interval,
         )
+        if self.config.source_units:
+            self._next_endpoint = end + interval
         self._previous = None
         self._previous_eligible = True
         self._word_previous = None

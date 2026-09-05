@@ -3,14 +3,17 @@
 from .continuous_stream import (
     COALESCED_CONTEXT_CONTINUOUS_PROFILE,
     COALESCED_CONTINUOUS_PROFILE,
+    COALESCED_SOURCE_UNIT_PROFILE,
     COALESCED_WORD_CONTINUOUS_PROFILE,
     CONTEXT_CONTINUOUS_PROFILE,
     CONTINUOUS_PROFILE,
+    SOURCE_UNIT_PROFILE,
     WORD_CONTINUOUS_PROFILE,
     ContinuousDecodeTrace,
     ContinuousStreamConfig,
     ContinuousStreamMetrics,
     ContinuousTranscriptStream,
+    SourceUnit,
     StreamNeedsResolutionError,
 )
 from .legacy_whisper import (
@@ -67,9 +70,11 @@ from .word_policy import (
 __all__ = [
     "COALESCED_CONTEXT_CONTINUOUS_PROFILE",
     "COALESCED_CONTINUOUS_PROFILE",
+    "COALESCED_SOURCE_UNIT_PROFILE",
     "COALESCED_WORD_CONTINUOUS_PROFILE",
     "CONTEXT_CONTINUOUS_PROFILE",
     "CONTINUOUS_PROFILE",
+    "SOURCE_UNIT_PROFILE",
     "WORD_CONTINUOUS_PROFILE",
     "AlignedPublication",
     "NativeWordAlignment",
@@ -80,6 +85,7 @@ __all__ = [
     "ContinuousStreamConfig",
     "ContinuousStreamMetrics",
     "ContinuousTranscriptStream",
+    "SourceUnit",
     "StreamNeedsResolutionError",
     "BOUNDED_PREFIX_PROFILE",
     "LEGACY_WHISPER_ENVELOPE_VERSION",

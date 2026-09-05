@@ -31,6 +31,74 @@ overflow behavior outside this contract.
 
 ## Publication rule
 
+### Caller-delimited source units
+
+Set `source_units=True, input_evidence=True` to select
+`source_unit_stream/v1+input_evidence/v1`. This separate transcription profile
+requires zero left context and disables word alignment. Existing profiles and
+defaults are unchanged.
+With preview coalescing enabled, the profile ID starts with
+`coalesced_source_unit_stream/v1` instead.
+
+The caller closes an admitted audio range with `stream.seal_unit(end_sample)`.
+Use exact, absolute 16 kHz sample positions. Call it on the model-work owner
+after pushing audio through that boundary and before processing beyond it.
+Only one boundary can be pending. The next unit starts where the preceding
+unit commits; admitted audio after that point remains in the same bounded buffer.
+After `finish_input()`, the caller may still close remaining admitted ranges
+before their analysis starts. This does not reopen audio admission.
+
+For example, a caller that owns the boundaries can drive one session as follows:
+
+```python
+config = ContinuousStreamConfig(source_units=True, input_evidence=True)
+# Construct stream with the same native adapter, mel builder, and config.
+for sequence, pcm_unit in enumerate(bounded_audio_units):
+    stream.push(sequence, pcm_unit)
+    stream.seal_unit(stream.accepted_samples)
+    while stream.ready:
+        consume(stream.step())
+stream.finish_input()
+while stream.ready:
+    consume(stream.step())
+```
+
+This example supplies whole units. To expose previews while audio arrives,
+push smaller chunks and drive `step()` between them; seal before driving the
+chunk that reaches the desired boundary. Handle overload and unresolved input
+explicitly. Do not catch those errors and silently continue with later audio.
+
+Within an open unit, native results are provisional. Closing the unit schedules
+a full-range native result under the input-evidence policy. Publication still
+waits for the existing transaction and resource-release path. It emits the same
+revision and commit events as other profiles. Agreement history does not cross
+unit boundaries. `finish_input()` closes the final range; an intermediate unit
+never emits a final-session event.
+
+A preview already in flight is not converted into a final analysis. Its retry
+keeps the original PCM, operation identity, and EOF snapshot. A subsequent
+closed-unit analysis has a distinct identity even at the same source endpoint.
+`last_trace.source_unit` records exact range boundaries and either `caller` or
+`end_of_input` as the origin. `last_trace.eof` means that this analysis reaches
+the global EOF observed at admission, not merely that input is closed.
+
+This is a full-result recognition contract, not a word-agreement contract or a
+proof of complete recognition. The boundary is external input, not detected
+speech or evidence that a gap is silent. Low-confidence or nonlexical results
+at a closed boundary stop with `StreamNeedsResolutionError` and retain admitted
+PCM. Repeating `step()` does not spend more work on that unresolved boundary.
+Exact digital zeros use the existing empty silence publication; this profile
+still decodes them and does not yet bypass the model.
+
+Each unit must fit the configured analysis window. The caller must handle
+continuous speech that has no suitable boundary; the runtime does not split or
+discard it automatically. Short units can lose context and increase fixed
+model overhead. Provisional captions can appear before a pause, but final text
+waits for closure. Automatic endpoint detection, overlap handling, and paced
+latency remain separate acceptance tests.
+
+### Timestamp agreement
+
 Two successive analyses must start at the same source position and the second
 must contain more audio. Closed timestamp segments qualify when their text and
 tokens match exactly, timestamps are within the configured tolerance, and the

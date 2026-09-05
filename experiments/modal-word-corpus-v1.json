@@ -147,6 +147,30 @@
       "input_evidence": true
     }
   },
+  "source_units_profile": {
+    "profile_id": "source_unit_stream/v1+input_evidence/v1",
+    "stream_config": {
+      "preview_interval_ms": 2000,
+      "max_window_ms": 30000,
+      "max_buffer_ms": 40000,
+      "timestamp_tolerance_ms": 200,
+      "coalesce_previews": false,
+      "holdback_ms": 2000,
+      "left_context_ms": 0,
+      "word_alignment": false,
+      "input_evidence": true,
+      "source_units": true
+    }
+  },
+  "source_unit_boundaries": {
+    "case_id": "three-speakers-repeat-pauses",
+    "authority": "caller-supplied-fixture-oracle",
+    "acoustic_detection": false,
+    "end_samples": [
+      56080, 88080, 174240, 206240, 333280, 365280,
+      421360, 453360, 539520, 571520, 698560
+    ]
+  },
   "fixtures": [
     {
       "id": "6930-75918-0000",

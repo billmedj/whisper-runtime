@@ -50,6 +50,34 @@ INPUT_EVIDENCE_PROFILE = {
     "profile_id": "word_agreement_stream/v1+input_evidence/v1",
     "stream_config": {**STREAM_CONFIG, "input_evidence": True},
 }
+SOURCE_UNITS_PROFILE = {
+    "profile_id": "source_unit_stream/v1+input_evidence/v1",
+    "stream_config": {
+        **STREAM_CONFIG,
+        "input_evidence": True,
+        "source_units": True,
+        "word_alignment": False,
+        "left_context_ms": 0,
+    },
+}
+SOURCE_UNIT_BOUNDARIES = {
+    "case_id": "three-speakers-repeat-pauses",
+    "authority": "caller-supplied-fixture-oracle",
+    "acoustic_detection": False,
+    "end_samples": [
+        56080,
+        88080,
+        174240,
+        206240,
+        333280,
+        365280,
+        421360,
+        453360,
+        539520,
+        571520,
+        698560,
+    ],
+}
 
 
 def _helper(name: str) -> Any:
@@ -107,6 +135,8 @@ def read_registration(root: Path = ROOT) -> dict[str, Any]:
         ("claim_boundary", CLAIMS),
         ("stream_config", STREAM_CONFIG),
         ("input_evidence_profile", INPUT_EVIDENCE_PROFILE),
+        ("source_units_profile", SOURCE_UNITS_PROFILE),
+        ("source_unit_boundaries", SOURCE_UNIT_BOUNDARIES),
         ("rng_seed", 7),
     ):
         _equal(manifest.get(key), expected, key)
@@ -219,6 +249,7 @@ def read_registration(root: Path = ROOT) -> dict[str, Any]:
         raise ValueError("corpus exceeds 180 seconds of source audio")
     for case in cases:
         _equal(case["chunk_ms"], 1000, "chunk cadence")
+    _source_unit_plan(manifest)
     return manifest
 
 
@@ -318,6 +349,7 @@ def _source_progress(
         and (
             trace.get("word_publication") is not None
             or trace.get("silence_publication") is not None
+            or trace.get("source_unit") is not None
         )
     }
     commits = [event for event in events if event.get("kind") == "commit"]
@@ -347,10 +379,12 @@ def _source_progress(
 
 
 def _stream_profile(
-    manifest: Mapping[str, Any], input_evidence: bool
+    manifest: Mapping[str, Any], input_evidence: bool, source_units: bool = False
 ) -> dict[str, Any]:
-    if type(input_evidence) is not bool:
-        raise ValueError("input_evidence must be a boolean")
+    if type(input_evidence) is not bool or type(source_units) is not bool:
+        raise ValueError("profile flags must be booleans")
+    if source_units:
+        return manifest["source_units_profile"]
     return (
         manifest["input_evidence_profile"]
         if input_evidence
@@ -362,7 +396,12 @@ def _stream_profile(
 
 
 def _trace_checks(
-    traces: list[dict[str, Any]], *, input_evidence: bool
+    traces: list[dict[str, Any]],
+    *,
+    input_evidence: bool,
+    word_alignment: bool = True,
+    source_units: bool = False,
+    registered_units: list[dict[str, Any]] | None = None,
 ) -> dict[str, bool]:
     normal = [
         trace
@@ -373,9 +412,33 @@ def _trace_checks(
             and trace["audio_evidence"].get("state") == "speech_candidate"
         )
     ]
-    checks = b._trace_profile_checks(normal, word_alignment=True)
+    checks = b._trace_profile_checks(normal, word_alignment=word_alignment)
     valid = True
+    unit_valid = True
+    expected_units = {
+        (unit["start_sample"], unit["end_sample"]) for unit in registered_units or []
+    }
     for trace in traces:
+        unit = trace.get("source_unit")
+        if not source_units:
+            unit_valid &= unit is None
+        elif unit is None:
+            unit_valid &= trace.get("action") != "commit"
+        else:
+            unit_valid &= (
+                isinstance(unit, Mapping)
+                and unit.get("start_sample")
+                == trace["analysis_start_sample"]
+                == trace["committed_before_sample"]
+                and unit.get("end_sample") == trace["analysis_end_sample"]
+                and unit.get("end_sample") > unit.get("start_sample")
+                and unit.get("origin") in {"caller", "end_of_input"}
+                and (unit["origin"] != "end_of_input" or trace.get("eof") is True)
+                and (
+                    registered_units is None
+                    or (unit["start_sample"], unit["end_sample"]) in expected_units
+                )
+            )
         evidence = trace.get("audio_evidence")
         if evidence is None:
             valid &= not input_evidence and trace.get("silence_publication") is None
@@ -391,6 +454,19 @@ def _trace_checks(
             result.get("metadata"), Mapping
         ):
             checks["trace_preserves_native_metadata"] = False
+        analysis_span = (
+            (
+                result.get("analysis_span")
+                or {"start_ms": result.get("start_ms"), "end_ms": result.get("end_ms")}
+            )
+            if isinstance(result, Mapping)
+            else None
+        )
+        if source_units and unit is not None:
+            unit_valid &= analysis_span == {
+                "start_ms": trace["analysis_start_sample"] // 16,
+                "end_ms": trace["analysis_end_sample"] // 16,
+            }
         state = evidence.get("state")
         observation = evidence.get("observation", {})
         valid &= (
@@ -411,7 +487,13 @@ def _trace_checks(
             and trace.get("publication_span") is None
         )
         if silence is None:
-            valid &= trace.get("action") in {"wait_for_input", "unresolved"}
+            valid &= trace.get("action") in {"wait_for_input", "unresolved"} or (
+                source_units
+                and state == "non_speech"
+                and trace.get("source_unit") is None
+                and trace.get("reason") == "source_unit_open"
+                and trace.get("action") == "preview"
+            )
         else:
             valid &= (
                 state == "non_speech"
@@ -421,13 +503,13 @@ def _trace_checks(
                 and silence.get("observation") == observation
                 and isinstance(result, Mapping)
                 and silence.get("window_id") == result.get("window_id")
-                and silence.get("analysis_span") == result.get("analysis_span")
+                and silence.get("analysis_span") == analysis_span
                 and trace["analysis_start_sample"]
                 <= trace["committed_before_sample"]
                 < trace["analysis_end_sample"]
                 and silence.get("start_ms") == trace["committed_before_sample"] // 16
                 and silence.get("end_ms") == trace["analysis_end_sample"] // 16
-                and result.get("analysis_span")
+                and analysis_span
                 == {
                     "start_ms": trace["analysis_start_sample"] // 16,
                     "end_ms": trace["analysis_end_sample"] // 16,
@@ -435,7 +517,155 @@ def _trace_checks(
                 and trace.get("action") == "commit"
             )
     checks["input_evidence_trace_contract"] = valid
+    checks["source_unit_trace_contract"] = unit_valid
     return checks
+
+
+def _source_unit_plan(manifest: Mapping[str, Any]) -> list[dict[str, Any]]:
+    """Frozen fixture boundaries are oracle input, never acoustic inference."""
+    cases = [
+        case
+        for case in manifest["cases"]
+        if case["id"] == SOURCE_UNIT_BOUNDARIES["case_id"]
+    ]
+    if len(cases) != 1:
+        raise ValueError("source-unit diagnostic requires its registered mixed case")
+    inventory = {fixture["id"]: fixture for fixture in manifest["fixtures"]}
+    units, occurrences, start = [], {}, 0
+    for index, part in enumerate(cases[0]["parts"]):
+        unit = {"index": index, "start_sample": start, "origin": "caller"}
+        if set(part) == {"fixture_id"} and part["fixture_id"] in inventory:
+            fixture = inventory[part["fixture_id"]]
+            occurrences[fixture["id"]] = occurrences.get(fixture["id"], 0) + 1
+            count = fixture["sample_count"]
+            unit.update(
+                kind="fixture",
+                fixture_id=fixture["id"],
+                occurrence=occurrences[fixture["id"]],
+                pcm_sha256=fixture["pcm_sha256"],
+                reference_text=fixture["reference_text"],
+            )
+        elif set(part) == {"silence_ms"}:
+            count = _integer(part["silence_ms"], 1, 180000) * 16
+            unit.update(
+                kind="digital_silence",
+                reference_text="",
+                pcm_sha256=hashlib.sha256(bytes(count * 2)).hexdigest(),
+            )
+        else:
+            raise ValueError("unregistered source unit")
+        start += count
+        units.append({**unit, "end_sample": start})
+    _equal(
+        [unit["end_sample"] for unit in units],
+        SOURCE_UNIT_BOUNDARIES["end_samples"],
+        "source unit endpoints",
+    )
+    _equal(start, cases[0]["sample_count"], "source unit coverage")
+    return units
+
+
+def _drive_source_units(
+    stream: Any, pcm: bytes, units: list[dict[str, Any]], *, chunk_bytes: int
+) -> tuple[
+    list[dict[str, Any]], list[dict[str, Any]], int, int, dict[str, object] | None, int
+]:
+    """One controller owns all units, pauses, push sequence and event positions."""
+    events, traces = [], []
+    steps = chunks = accepted_samples = 0
+    error_record = None
+    if (
+        chunk_bytes <= 0
+        or chunk_bytes % 2
+        or not units
+        or units[-1]["end_sample"] * 2 != len(pcm)
+    ):
+        raise ValueError("source units must cover the exact complete PCM")
+    cursor = 0
+    for unit in units:
+        end = unit["end_sample"] * 2
+        if (
+            unit["start_sample"] * 2 != cursor
+            or end <= cursor
+            or hashlib.sha256(pcm[cursor:end]).hexdigest() != unit["pcm_sha256"]
+        ):
+            raise ValueError(
+                "source unit PCM or contiguous coverage differs from registration"
+            )
+        cursor = end
+    try:
+        with stream:
+            offset = 0
+            for unit in units:
+                endpoint = unit["end_sample"] * 2
+                while offset < endpoint:
+                    end = min(offset + chunk_bytes, endpoint)
+                    chunk = pcm[offset:end]
+                    stream.push(chunks, chunk)
+                    chunks += 1
+                    accepted_samples += len(chunk) // 2
+                    offset = end
+                    if offset == endpoint:
+                        stream.seal_unit(unit["end_sample"])
+                        if offset == len(pcm):
+                            stream.finish_input()
+                    while stream.ready:
+                        try:
+                            batch = stream.step()
+                        except Exception:
+                            b._capture_trace(stream, traces)
+                            raise
+                        steps += 1
+                        if steps > b.MAX_DRIVER_STEPS:
+                            raise RuntimeError(
+                                "the driver exceeded its fixed step bound"
+                            )
+                        b._capture_trace(stream, traces)
+                        events.extend(b._plain(event) for event in batch)
+    except Exception as error:
+        error_record = b._safe_stream_error(error)
+    return events, traces, steps, chunks, error_record, accepted_samples
+
+
+def _source_unit_results(
+    events: list[dict[str, Any]],
+    units: list[dict[str, Any]],
+    controls: Mapping[str, Any],
+) -> list[dict[str, Any]]:
+    results = []
+    for unit in units:
+        local = [
+            event
+            for event in events
+            if event.get("start_sample") is not None
+            and unit["start_sample"] <= event["start_sample"]
+            and event.get("end_sample") is not None
+            and event["end_sample"] <= unit["end_sample"]
+        ]
+        text = c._normalized_committed_text(local)
+        committed = any(
+            event.get("kind") == "commit" and event["end_sample"] == unit["end_sample"]
+            for event in local
+        )
+        control = (
+            controls[unit["fixture_id"]]["text"] if unit["kind"] == "fixture" else ""
+        )
+        results.append(
+            {
+                **unit,
+                "completed": committed,
+                "text": text,
+                "comparison_scope": "complete_source_unit"
+                if committed
+                else "partial_source_unit",
+                "offline_control_text": control,
+                "against_human_reference": b._word_difference(
+                    text, unit["reference_text"]
+                ),
+                "against_fixture_control": b._word_difference(text, control),
+            }
+        )
+    return results
 
 
 def _run_worker(
@@ -444,9 +674,11 @@ def _run_worker(
     registration_sha256: str,
     modal_module: Any,
     input_evidence: bool = False,
+    source_units: bool = False,
 ) -> dict[str, Any]:
     manifest = read_registration(RUNTIME_ROOT)
-    profile = _stream_profile(manifest, input_evidence)
+    profile = _stream_profile(manifest, input_evidence, source_units)
+    input_evidence = input_evidence or source_units
     _equal(source_snapshot(RUNTIME_ROOT), expected_snapshot, "remote source snapshot")
     _equal(
         c._sha256_file(RUNTIME_ROOT / MANIFEST_PATH),
@@ -566,8 +798,28 @@ def _run_worker(
     if budget.available != capacity or worker.queue_depth:
         raise RuntimeError("warmup retained capacity")
     cases, stopped = [], None
+    units = _source_unit_plan(manifest) if source_units else []
+    fixture_controls = {}
     for case, pcm in zip(manifest["cases"], pcms):
+        if source_units and case["id"] != SOURCE_UNIT_BOUNDARIES["case_id"]:
+            continue
         try:
+            if source_units:
+                for fixture in manifest["fixtures"]:
+                    torch.manual_seed(seed)
+                    torch.cuda.manual_seed_all(seed)
+                    fixture_audio = (
+                        np.frombuffer(
+                            (REMOTE_ASSETS / fixture["filename"]).read_bytes(),
+                            dtype="<i2",
+                        ).astype(np.float32)
+                        / 32768.0
+                    )
+                    fixture_controls[fixture["id"]] = b._offline_result(
+                        model.transcribe(
+                            fixture_audio, **manifest["offline_control_options"]
+                        )
+                    )
             torch.manual_seed(seed)
             torch.cuda.manual_seed_all(seed)
             audio = np.frombuffer(pcm, dtype="<i2").astype(np.float32) / 32768.0
@@ -592,17 +844,25 @@ def _run_worker(
                 int(torch.cuda.memory_reserved(0)),
             )
             started = time.perf_counter_ns()
-            events, traces, steps, accepted_chunks, error = b._drive_stream(
-                stream, pcm, chunk_bytes=case["chunk_ms"] * 32
-            )
+            if source_units:
+                events, traces, steps, accepted_chunks, error, accepted_samples = (
+                    _drive_source_units(
+                        stream, pcm, units, chunk_bytes=case["chunk_ms"] * 32
+                    )
+                )
+            else:
+                events, traces, steps, accepted_chunks, error = b._drive_stream(
+                    stream, pcm, chunk_bytes=case["chunk_ms"] * 32
+                )
+                accepted_samples = min(
+                    accepted_chunks * case["chunk_ms"] * 16, len(pcm) // 2
+                )
             torch.cuda.synchronize(0)
             elapsed = time.perf_counter_ns() - started
             checks = b._event_checks(
                 events,
                 traces,
-                accepted_samples=min(
-                    accepted_chunks * case["chunk_ms"] * 16, len(pcm) // 2
-                ),
+                accepted_samples=accepted_samples,
                 total_samples=len(pcm) // 2,
                 state=stream.state,
                 metrics=stream.metrics,
@@ -613,7 +873,15 @@ def _run_worker(
                 max_buffer_samples=STREAM_CONFIG["max_buffer_ms"] * 16,
                 error_record=error,
             )
-            checks.update(_trace_checks(traces, input_evidence=input_evidence))
+            checks.update(
+                _trace_checks(
+                    traces,
+                    input_evidence=input_evidence,
+                    word_alignment=profile["stream_config"]["word_alignment"],
+                    source_units=source_units,
+                    registered_units=units if source_units else None,
+                )
+            )
             checks["profile_id_matches_config"] = (
                 stream.profile_id == profile["profile_id"]
             )
@@ -633,6 +901,39 @@ def _run_worker(
             complete = (
                 checks["final_event_once"] and checks["full_input_committed_at_eof"]
             )
+            unit_results = (
+                _source_unit_results(events, units, fixture_controls)
+                if source_units
+                else []
+            )
+            if source_units:
+                expected_spans = {
+                    (unit["start_sample"], unit["end_sample"]) for unit in units
+                }
+                observed_spans = [
+                    (event["start_sample"], event["end_sample"])
+                    for event in events
+                    if event.get("kind") == "commit"
+                ]
+                checks["source_unit_ownership"] = len(observed_spans) == len(
+                    set(observed_spans)
+                ) and all(span in expected_spans for span in observed_spans)
+                checks["source_unit_pause_text_empty"] = all(
+                    unit["text"] == ""
+                    for unit in unit_results
+                    if unit["kind"] == "digital_silence"
+                )
+                checks["source_unit_completion_accounted"] = not complete or all(
+                    unit["completed"] for unit in unit_results
+                )
+                lifecycle &= all(
+                    checks[key]
+                    for key in (
+                        "source_unit_ownership",
+                        "source_unit_pause_text_empty",
+                        "source_unit_completion_accounted",
+                    )
+                )
             passed = lifecycle and (policy_resolution or (error is None and complete))
             text = c._normalized_committed_text(events)
             cases.append(
@@ -655,6 +956,25 @@ def _run_worker(
                     "driver_steps": steps,
                     "accepted_chunks": accepted_chunks,
                     "offline_control": offline,
+                    **(
+                        {
+                            "source_unit_boundaries": manifest[
+                                "source_unit_boundaries"
+                            ],
+                            "source_units": unit_results,
+                            "fixture_controls": fixture_controls,
+                            "against_concatenated_fixture_controls": b._word_difference(
+                                text,
+                                " ".join(
+                                    unit["offline_control_text"]
+                                    for unit in unit_results
+                                    if unit["kind"] == "fixture"
+                                ),
+                            ),
+                        }
+                        if source_units
+                        else {}
+                    ),
                     "recognition": {
                         "comparison_scope": "complete_committed_transcript"
                         if complete
@@ -711,6 +1031,7 @@ def _run_worker(
         "claim_boundary": manifest["claim_boundary"],
         "replay_pacing": "unpaced-source-time",
         "input_evidence": input_evidence,
+        "source_units": source_units,
         **profile,
         "source": {
             "image_base_commit": BASE_COMMIT,
@@ -769,6 +1090,7 @@ def _receipt(
     *,
     replay_id: str = "",
     input_evidence: bool | None = None,
+    source_units: bool | None = None,
     **fields: object,
 ) -> None:
     c._append_receipt(
@@ -783,6 +1105,7 @@ def _receipt(
             **(
                 {"input_evidence": input_evidence} if input_evidence is not None else {}
             ),
+            **({"source_units": source_units} if source_units is not None else {}),
             **fields,
         },
         create=sequence == 0,
@@ -828,15 +1151,17 @@ def _execute_local_attempt(
     attempt: int = 1,
     replay_id: str = "",
     input_evidence: bool = False,
+    source_units: bool = False,
     confirm_paid_gpu: bool = False,
     remote_function: object,
 ) -> Path:
     c._require_paid_confirmation(confirm_paid_gpu)
     _integer(attempt, 1, 1)
     manifest = read_registration(root)
-    profile = _stream_profile(manifest, input_evidence)
+    profile = _stream_profile(manifest, input_evidence, source_units)
+    input_evidence = input_evidence or source_units
     if input_evidence and not replay_id:
-        raise ValueError("input-evidence runs require a named replay namespace")
+        raise ValueError("diagnostic variants require a named replay namespace")
     output, receipt, raw, probe = _paths(root, replay_id)
     if any(path.exists() for path in (output, receipt, raw)):
         raise FileExistsError("the one GPU attempt already exists")
@@ -863,6 +1188,7 @@ def _execute_local_attempt(
         0,
         replay_id=replay_id,
         input_evidence=input_evidence if replay_id else None,
+        source_units=source_units if replay_id else None,
         **profile,
         source_snapshot_sha256=snapshot["digest"],
         registration_sha256=registration_hash,
@@ -875,10 +1201,13 @@ def _execute_local_attempt(
             sequence,
             replay_id=replay_id,
             input_evidence=input_evidence if replay_id else None,
+            source_units=source_units if replay_id else None,
         )
         sequence += 1
         args = (
-            (snapshot, registration_hash, True)
+            (snapshot, registration_hash, True, True)
+            if source_units
+            else (snapshot, registration_hash, True)
             if input_evidence
             else (snapshot, registration_hash)
         )
@@ -890,6 +1219,7 @@ def _execute_local_attempt(
             sequence,
             replay_id=replay_id,
             input_evidence=input_evidence if replay_id else None,
+            source_units=source_units if replay_id else None,
             sha256=c._sha256_file(raw),
             size_bytes=raw.stat().st_size,
         )
@@ -901,6 +1231,7 @@ def _execute_local_attempt(
             manifest=manifest,
         )
         _equal(record.get("input_evidence"), input_evidence, "worker input evidence")
+        _equal(record.get("source_units"), source_units, "worker source units")
         for key, expected in profile.items():
             _equal(record.get(key), expected, f"worker {key}")
         c._write_json_exclusive(output, record)
@@ -911,6 +1242,7 @@ def _execute_local_attempt(
             sequence,
             replay_id=replay_id,
             input_evidence=input_evidence if replay_id else None,
+            source_units=source_units if replay_id else None,
             error_type=type(error).__name__,
             error_message_sha256=c._sha256_text(str(error)),
         )
@@ -921,6 +1253,7 @@ def _execute_local_attempt(
         sequence,
         replay_id=replay_id,
         input_evidence=input_evidence if replay_id else None,
+        source_units=source_units if replay_id else None,
         record_sha256=c._sha256_file(output),
         status=record["status"],
         function_call_id=record["worker"]["function_call_id"],
@@ -934,6 +1267,7 @@ def _modal_main(
     transport_preflight_only: bool = False,
     replay_id: str = "",
     input_evidence: bool = False,
+    source_units: bool = False,
 ) -> None:
     if run_word_corpus is None or run_transport_probe is None:
         raise RuntimeError(f"set {REMOTE_RESOURCES_ENV}=1 before modal run")
@@ -949,6 +1283,7 @@ def _modal_main(
                 attempt=attempt,
                 replay_id=replay_id,
                 input_evidence=input_evidence,
+                source_units=source_units,
                 confirm_paid_gpu=confirm_paid_gpu,
                 remote_function=run_word_corpus,
             )
@@ -1029,6 +1364,7 @@ def _define_modal_resources() -> tuple[Any, Any, Any, Any]:
         snapshot: Mapping[str, Any],
         registration_sha256: str,
         input_evidence: bool = False,
+        source_units: bool = False,
     ) -> bytes:
         producer = importlib.import_module("infra.modal_word_corpus")
         return producer.b._encode_worker_record(
@@ -1037,6 +1373,7 @@ def _define_modal_resources() -> tuple[Any, Any, Any, Any]:
                 registration_sha256=registration_sha256,
                 modal_module=modal,
                 input_evidence=input_evidence,
+                source_units=source_units,
             )
         )
 
