@@ -52,6 +52,8 @@ class AlignedPublication(WindowResult):
     A final publication relies on the caller's explicit EOF completion authority.
     Explicit boundary_tolerance_ms permits bounded estimated-word overlap at the
     processed start only; it never clips or rewrites the original word times.
+    Nonfinal coverage must end on a unit containing Unicode alphanumeric text,
+    not standalone punctuation. This is a publication rule, not a speech detector.
     """
 
     alignment: NativeWordAlignment
@@ -99,8 +101,12 @@ class AlignedPublication(WindowResult):
                 raise ValueError(
                     "final publication must cover the full remaining suffix"
                 )
-        elif not selected or self.end_ms != selected[-1].span.end_ms:
-            raise ValueError("nonfinal coverage must end at its last selected word")
+        elif (
+            not selected
+            or not _has_lexical_text(selected[-1])
+            or self.end_ms != selected[-1].span.end_ms
+        ):
+            raise ValueError("nonfinal coverage must end at its last lexical word")
 
 
 def select_word_publication(
@@ -178,7 +184,9 @@ def compare_word_hypotheses(
     alignment options. Nonfinal observations require the same origin and a
     strictly growing analysis end. EOF finality explicitly waives that test, not
     anchor validation. Gaps are processed under this opt-in policy, never inferred
-    to be silence. Empty text cannot advance a nonfinal publication.
+    to be silence. Empty or punctuation-only text cannot advance a nonfinal
+    publication. Trailing standalone nonlexical units wait for a stable lexical
+    word or explicit EOF; internal punctuation and all raw estimates stay intact.
 
     An anchor contains at most four actually published words. Only whole source
     word spans still available after the retained origin are used. A missing or
@@ -240,7 +248,9 @@ def compare_word_hypotheses(
             for word in anchor
             if word.span.start_ms >= span.start_ms and word.span.end_ms > span.start_ms
         )
-        if not retained_anchor:
+        if not retained_anchor or (
+            not final and not any(_has_lexical_text(word) for word in retained_anchor)
+        ):
             return wait("anchor_missing")
         reason, after_start = _anchor_end(
             current.words,
@@ -290,6 +300,10 @@ def compare_word_hypotheses(
             if after.span.end_ms > span.end_ms - holdback_ms:
                 break
             selected_end += 1
+        while selected_end > after_start and not _has_lexical_text(
+            current.words[selected_end - 1]
+        ):
+            selected_end -= 1
         if selected_end == after_start:
             return wait(stop_reason)
         coverage_end = current.words[selected_end - 1].span.end_ms
@@ -308,6 +322,10 @@ def compare_word_hypotheses(
     return WordAgreementDecision(
         "eof" if final else "candidate", publication, next_anchor
     )
+
+
+def _has_lexical_text(word: NativeTimestampSegment) -> bool:
+    return any(character.isalnum() for character in word.text)
 
 
 def _same_word(

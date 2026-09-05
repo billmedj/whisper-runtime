@@ -604,6 +604,116 @@ class WordAgreementTests(unittest.TestCase):
         self.assertEqual(decision.reason, "unstable")
         self.assertIsNone(decision.publication)
 
+    def test_corpus_joined_traces_3_10_11_cannot_commit_only_long_period(self) -> None:
+        anchor = (
+            word(1295, 2000, 2340, " place"),
+            word(31095, 2340, 2700, " amidst"),
+            word(262, 2700, 3000, " the"),
+            word(29804, 3000, 3480, " tents"),
+        )
+        common = (
+            word(284, 1480, 1760, " to"),
+            word(663, 1760, 2000, " its"),
+            word(1295, 2000, 2340, " place"),
+            word(31095, 2340, 2660, " amidst"),
+            word(262, 2660, 3020, " the"),
+        )
+        before = aligned(
+            common + (word(29804, 3020, 3660, " tents"), word(13, 3660, 11440, ".")),
+            start=1480,
+            end=20000,
+        )
+        current = aligned(
+            common + (word(29804, 3020, 3680, " tents"), word(13, 3680, 11340, ".")),
+            start=1480,
+            end=22000,
+        )
+        original_words, original_native = current.words, current.native
+        decision = self.decide(
+            before,
+            current,
+            committed_through_ms=3480,
+            anchor=anchor,
+            holdback_ms=2000,
+            timestamp_tolerance_ms=200,
+        )
+        self.assertEqual(decision.reason, "incomplete")
+        self.assertIsNone(decision.publication)
+        self.assertEqual(decision.next_anchor, anchor)
+        self.assertIs(current.words, original_words)
+        self.assertIs(current.native, original_native)
+        self.assertEqual(current.words[-1], word(13, 3680, 11340, "."))
+        with self.assertRaises(ValueError):
+            select_word_publication(current, 6, 7, AudioSpan(3480, 11340))
+
+    def test_nonlexical_suffix_waits_without_rewriting_native_words(self) -> None:
+        for punctuation in (".", "…", "?!", "—", "🎵"):
+            with self.subTest(punctuation=punctuation):
+                trailing = word(13, 100, 700, punctuation)
+                for prefix in ((), (word(1, 0, 100, " hello"),)):
+                    words = prefix + (trailing,)
+                    current = aligned(words, end=1000)
+                    decision = self.decide(aligned(words, end=800), current)
+                    if prefix:
+                        self.assertEqual(decision.publication.text, "hello")
+                        self.assertEqual(decision.publication.end_ms, 100)
+                        self.assertEqual(decision.next_anchor, prefix)
+                    else:
+                        self.assertEqual(decision.reason, "incomplete")
+                        self.assertIsNone(decision.publication)
+                    self.assertEqual(current.words, words)
+                    with self.assertRaises(ValueError):
+                        select_word_publication(
+                            current, 0, len(words), AudioSpan(0, 700)
+                        )
+
+    def test_internal_punctuation_is_preserved_before_stable_unicode_lexical_text(
+        self,
+    ) -> None:
+        for text in ("你好", "مرحبا", "٣", "hello."):
+            with self.subTest(text=text):
+                words = (
+                    word(13, 0, 100, "."),
+                    word(1, 100, 200, " " + text),
+                    word(14, 200, 500, "!"),
+                )
+                current = aligned(words, end=1000)
+                decision = self.decide(aligned(words, end=800), current)
+                self.assertEqual(decision.publication.text, ". " + text)
+                self.assertEqual(decision.publication.word_end, 2)
+                self.assertEqual(decision.publication.end_ms, 200)
+                self.assertIs(decision.publication.alignment, current)
+                self.assertEqual(decision.next_anchor, words[:2])
+
+    def test_nonlexical_anchor_cannot_authorize_nonfinal_progress(self) -> None:
+        anchor = (word(13, 0, 100, "."),)
+        words = anchor + (word(1, 100, 200, " next"),)
+        before, current = aligned(words, end=600), aligned(words, end=1000)
+        decision = self.decide(before, current, committed_through_ms=100, anchor=anchor)
+        self.assertEqual(decision.reason, "anchor_missing")
+        self.assertIsNone(decision.publication)
+        self.assertEqual(decision.next_anchor, anchor)
+        # Explicit EOF keeps its existing authority, rather than becoming VAD.
+        final = self.decide(
+            None, current, committed_through_ms=100, anchor=anchor, final=True
+        )
+        self.assertEqual(final.reason, "eof")
+        self.assertEqual(final.publication.text, "next")
+        self.assertEqual(final.publication.end_ms, 1000)
+
+    def test_eof_still_publishes_exact_trailing_nonlexical_units(self) -> None:
+        for words in (
+            (word(13, 0, 200, "."),),
+            (word(1, 0, 100, "hello"), word(13, 100, 200, ".")),
+        ):
+            with self.subTest(words=words):
+                current = aligned(words, end=1000)
+                decision = self.decide(None, current, final=True)
+                self.assertEqual(decision.reason, "eof")
+                self.assertEqual(decision.publication.text, current.native.text)
+                self.assertEqual(decision.publication.end_ms, 1000)
+                self.assertIs(decision.publication.alignment, current)
+
     def test_start_drift_larger_than_tolerance_remains_unresolved(self) -> None:
         anchor = (word(1, 0, 80),)
         words = (word(1, 0, 70), word(2, 75, 200))
