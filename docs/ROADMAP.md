@@ -1,6 +1,6 @@
 # Delivery milestones
 
-Updated: 2026-09-05.
+Updated: 2026-09-06.
 
 The project has two goals: control inference execution, and make continuous
 Whisper transcription practical. Lower compute cost is a target to measure,
@@ -158,6 +158,15 @@ and no false final event is emitted. The run used 534 passing runtime tests and
 published anchors and test whether this also avoids missing native continuation.
 Do not advance to long-session qualification or claim general noise tolerance
 from this failed diagnostic.
+
+The [bounded word-context comparison](research/2026-09-05-word-context.md)
+then preserves complete estimated words and multiple lexical anchor witnesses
+before a partial commit. Normal and attenuated candidates complete. Noise
+advances from 6.10 to 33.54 seconds but stops on a 540 ms anchor-end mismatch.
+The no-added-pauses case remains at 21.26 seconds with a missing native suffix.
+Matched controls reproduce their failures. The candidate remains unqualified
+and opt-in. Distinguish timestamp uncertainty from missing recognition before
+the next acoustic run; do not advance to long-session or efficiency claims.
 
 Deliver a separately named continuous profile. Keep the existing
 offline-compatible and bounded-preview paths.

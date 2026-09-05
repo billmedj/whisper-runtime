@@ -1,5 +1,15 @@
 # Integration evidence
 
+The [word-context comparison](modal-t4-tiny-en-word-context-2026-09-06.json)
+is **failed**, with matched controls. The candidate advances noisy-input
+publication from 6.10 to 33.54 seconds, but does not finish its 43.66 seconds.
+The no-added-pauses case remains at 21.26 seconds. Normal and attenuated
+candidates complete within their matched quality gates. At the final noisy
+boundary the lexical anchor exists but its last word's end shifts by 540 ms;
+the no-added-pauses native result still omits the continuation. See the
+[comparison and limits](../docs/research/2026-09-05-word-context.md).
+No general acoustic qualification or performance advantage follows.
+
 The [acoustic-boundary T4 diagnostic](modal-t4-tiny-en-acoustic-boundaries-2026-09-05.json)
 is **failed**. The quiet control and the new hybrid profile complete the normal
 43.66-second input; the attenuated hybrid also completes. Without detected

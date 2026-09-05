@@ -217,6 +217,10 @@ The limit must cover the desired overlap, use a multiple of 20 ms, and leave
 room for two preview intervals plus positive growth within the analysis window.
 This heuristic uses estimated word boundaries, not a guarantee of sufficient
 acoustic context. See the [registered comparison](research/2026-09-05-word-context.md).
+That comparison fails: noisy-input coverage advances from 6.10 to 33.54 seconds,
+but EOF remains unresolved. The no-added-pauses case still stops at 21.26 seconds.
+Normal and attenuated cases complete. Keep this profile opt-in; it does not
+qualify unattended continuous speech.
 
 ### Timestamp agreement
 
