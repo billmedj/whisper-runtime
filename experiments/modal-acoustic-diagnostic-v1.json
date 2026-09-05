@@ -1,0 +1,27 @@
+{
+  "schema_version": "1-diagnostic",
+  "id": "modal-acoustic-diagnostic-v1",
+  "modal_sdk": "1.5.5",
+  "case_ids": ["mixed-control", "concatenated-no-added-pauses", "mixed-continuous-noise64", "mixed-attenuated32"],
+  "cells": ["quiet:mixed-control", "hybrid:mixed-control", "hybrid:concatenated-no-added-pauses", "hybrid:mixed-continuous-noise64", "hybrid:mixed-attenuated32"],
+  "hybrid_changes": {"word_boundary_fallback": true, "left_context_ms": 2000},
+  "chunk_ms": 1000,
+  "rng_seed": 7,
+  "acceptance": {
+    "real_final_and_full_coverage": true,
+    "native_capacity_restored": true,
+    "hybrid_human_edits_at_most_offline": true,
+    "legacy_normalized_control_edits": 0,
+    "legacy_human_edits": 6,
+    "legacy_reference_words": 88
+  },
+  "execution": {"gpu": "T4", "cpu": 2, "memory_mib": 4096, "timeout_seconds": 180, "startup_timeout_seconds": 300, "max_containers": 1, "min_containers": 0, "configured_retries": 0, "gpu_client_calls": 1},
+  "claim_boundary": {"recognition_improvement": false, "performance_benchmark": false, "production_readiness": false, "generalization_beyond_this_input": false, "physical_execution_or_spending_cap": false},
+  "notes": [
+    "Unpaced synthetic stress fixtures; no live latency or GPU efficiency claim.",
+    "One cached model, four offline controls, five streaming cells.",
+    "A policy failure is not a passing cell. Continue after policy failure; stop after lifecycle failure.",
+    "One configured client call and no automatic client retry do not rule out provider rescheduling.",
+    "Word alignment estimates and processed coverage do not prove omission-free recognition."
+  ]
+}

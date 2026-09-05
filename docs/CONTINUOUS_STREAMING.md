@@ -157,6 +157,40 @@ is no forced cut for continuous speech at the analysis limit. Such input stops
 with explicit backpressure. Real microphones, background noise, faint voices,
 cross-boundary words and paced latency need separate validation.
 
+### Word boundaries with quiet endpoints
+
+The experimental `word_boundary_fallback=True` option combines word-prefix
+agreement during speech with closure at an observed quiet endpoint. It requires
+`source_units=True`, `input_evidence=True`, a `QuietEndpointConfig`, and positive
+`left_context_ms`. Keep the separate `word_alignment` flag false: this combined
+profile selects alignment internally.
+
+```python
+config = ContinuousStreamConfig(
+    preview_interval_ms=2000,
+    holdback_ms=2000,
+    left_context_ms=2000,
+    input_evidence=True,
+    source_units=True,
+    endpointing=QuietEndpointConfig(),
+    word_boundary_fallback=True,
+)
+```
+
+Its profile identifier is
+`word_boundary_quiet_endpoint_stream/v1+input_evidence/v1`.
+Open windows can commit an agreed word prefix and retain context for the next
+analysis. A queued quiet endpoint beyond the current window waits for supported
+prefix progress. It cannot force a cut. At a closed unit, alignment must exclude
+previously committed context before publishing the remaining suffix. A closed
+unit does not emit the stream's final event; that still requires source EOF.
+
+This option does not guarantee that quiet intervals contain no speech, that
+word timing is correct, or that every anchor will resolve. Uncertain input and
+unresolved anchors retain the existing explicit failure behavior. See the
+[acoustic diagnostic plan and results](research/2026-09-05-acoustic-boundaries.md).
+All existing profile defaults remain unchanged.
+
 ### Timestamp agreement
 
 Two successive analyses must start at the same source position and the second

@@ -55,6 +55,10 @@ SOURCE_UNIT_PROFILE = "source_unit_stream/v1"
 COALESCED_SOURCE_UNIT_PROFILE = "coalesced_source_unit_stream/v1"
 QUIET_ENDPOINT_PROFILE = "quiet_endpoint_stream/v1"
 COALESCED_QUIET_ENDPOINT_PROFILE = "coalesced_quiet_endpoint_stream/v1"
+WORD_BOUNDARY_QUIET_ENDPOINT_PROFILE = "word_boundary_quiet_endpoint_stream/v1"
+COALESCED_WORD_BOUNDARY_QUIET_ENDPOINT_PROFILE = (
+    "coalesced_word_boundary_quiet_endpoint_stream/v1"
+)
 COALESCED_WORD_CONTINUOUS_PROFILE = "coalesced_word_agreement_stream/v1"
 _SAMPLES_PER_MS = 16
 
@@ -76,6 +80,7 @@ class ContinuousStreamConfig:
     input_evidence: bool = False
     source_units: bool = False
     endpointing: QuietEndpointConfig | None = None
+    word_boundary_fallback: bool = False
 
     def __post_init__(self) -> None:
         flags = (
@@ -83,6 +88,7 @@ class ContinuousStreamConfig:
             "word_alignment",
             "input_evidence",
             "source_units",
+            "word_boundary_fallback",
         )
         for name in flags:
             if not isinstance(getattr(self, name), bool):
@@ -106,11 +112,23 @@ class ContinuousStreamConfig:
         if self.left_context_ms % 20:
             raise ValueError("left_context_ms must be a multiple of 20 ms")
         if self.source_units and (
-            not self.input_evidence or self.word_alignment or self.left_context_ms
+            not self.input_evidence
+            or self.word_alignment
+            or (self.left_context_ms and not self.word_boundary_fallback)
         ):
             raise ValueError(
                 "source_units requires input_evidence, no word alignment, "
-                "and zero left context"
+                "and zero left context unless word_boundary_fallback is selected"
+            )
+        if self.word_boundary_fallback and (
+            not self.source_units
+            or not self.input_evidence
+            or self.endpointing is None
+            or not self.left_context_ms
+        ):
+            raise ValueError(
+                "word_boundary_fallback requires source_units, input_evidence, "
+                "endpointing, and positive left context"
             )
         if self.endpointing is not None:
             if not isinstance(self.endpointing, QuietEndpointConfig):
@@ -127,6 +145,9 @@ class SourceUnit:
 
     The origin records who closed the range. It does not certify silence or
     authorize publication without the selected input-evidence policy.
+    The hybrid word profile may already have committed a prefix of this range;
+    the original quiet observation is preserved while alignment selects only
+    the unpublished suffix.
     """
 
     start_sample: int
@@ -294,6 +315,12 @@ class ContinuousTranscriptStream:
         return f"{base}+input_evidence/v1" if self.config.input_evidence else base
 
     def _base_profile_id(self) -> str:
+        if self.config.word_boundary_fallback:
+            return (
+                COALESCED_WORD_BOUNDARY_QUIET_ENDPOINT_PROFILE
+                if self.config.coalesce_previews
+                else WORD_BOUNDARY_QUIET_ENDPOINT_PROFILE
+            )
         if self.config.endpointing is not None:
             return (
                 COALESCED_QUIET_ENDPOINT_PROFILE
@@ -526,12 +553,21 @@ class ContinuousTranscriptStream:
                 if unit is None and self._endpoints and self._retry_analysis is None:
                     proposal = self._endpoints[0]
                     if proposal.end_sample > bound:
-                        raise StreamNeedsResolutionError(
-                            "automatic endpoint exceeds the analysis window; input retained"
+                        if not self.config.word_boundary_fallback:
+                            raise StreamNeedsResolutionError(
+                                "automatic endpoint exceeds the analysis window; input retained"
+                            )
+                        # Keep the observation queued. Only a supported word
+                        # prefix may rebase the window; never manufacture a cut.
+                    else:
+                        unit = SourceUnit(
+                            min(self._head, proposal.quiet_start_sample)
+                            if self.config.word_boundary_fallback
+                            else self._head,
+                            proposal.end_sample,
+                            "quiet_run",
+                            proposal,
                         )
-                    unit = SourceUnit(
-                        self._head, proposal.end_sample, "quiet_run", proposal
-                    )
                 if unit is None and final:
                     unit = SourceUnit(self._head, self._accepted, "end_of_input")
                 if unit is not None:
@@ -614,10 +650,14 @@ class ContinuousTranscriptStream:
                 if self.config.source_units and self._run_unit is None:
                     self._trace(result, None, "source_unit_open", "preview")
                     run.close()
+                    if self.config.word_boundary_fallback:
+                        self._word_previous = None
                     return self._publish_preview("")
                 return self._resolve_silence(run, result, observation)
             if self._audio_decision.state != "speech_candidate":
                 return self._defer_audio(run, result)
+        if self.config.word_boundary_fallback:
+            return self._resolve_words(run, result)
         if self.config.source_units:
             return self._resolve_unit(run, result)
         if self.config.word_alignment:
@@ -779,6 +819,19 @@ class ContinuousTranscriptStream:
     def _resolve_words(
         self, run: NativeWindowRun, result: NativeWindowResult
     ) -> tuple[TranscriptEvent, ...]:
+        # The word selector's final=True closes this analysis suffix, not the
+        # stream. Trace reason maps it to source_unit; EOF/FINAL stay source EOF.
+        # Alignment still validates/excludes retained committed words.
+        unit = self._run_unit
+        closed_unit = self.config.word_boundary_fallback and unit is not None
+        closed = self._run_final or closed_unit
+        if (
+            closed_unit
+            and unit is not None
+            and (unit.start_sample > self._head or unit.end_sample != self._run_end)
+        ):
+            run.close()
+            raise NativeStreamError("source unit does not match admitted analysis")
         alignment = run.prepare_word_alignment()
         if alignment.native != result:
             run.close()
@@ -790,7 +843,7 @@ class ContinuousTranscriptStream:
             anchor=self._word_anchor,
             holdback_ms=self.config.holdback_ms,
             timestamp_tolerance_ms=self.config.timestamp_tolerance_ms,
-            final=self._run_final,
+            final=closed,
         )
         publication = decision.publication
         if publication is not None and not self._publication_supported(
@@ -800,11 +853,13 @@ class ContinuousTranscriptStream:
         self._trace(
             result,
             None,
-            decision.reason,
+            "source_unit"
+            if closed_unit and publication is not None
+            else decision.reason,
             "commit"
             if publication is not None
             else "unresolved"
-            if self._run_final
+            if closed
             else "preview",
             word_alignment=alignment,
             word_publication=publication,
@@ -812,9 +867,7 @@ class ContinuousTranscriptStream:
         if publication is not None:
             self._word_pending = decision
             self._pending_end = (
-                self._run_end
-                if self._run_final
-                else publication.end_ms * _SAMPLES_PER_MS
+                self._run_end if closed else publication.end_ms * _SAMPLES_PER_MS
             )
             self._pending_final = self._run_final
             self._pending_state = run.finish(
@@ -823,14 +876,15 @@ class ContinuousTranscriptStream:
             )
             self._run = None
             return self._publish_commit()
-        if self._run_final:
+        if closed:
             self._unresolved_eof = True
             run.close()
             self._run = None
             self._retry_analysis = None
             self._record_decode()
+            boundary = "source unit" if closed_unit else "EOF"
             raise StreamNeedsResolutionError(
-                f"EOF word alignment is unresolved ({decision.reason}); input retained"
+                f"{boundary} word alignment is unresolved ({decision.reason}); input retained"
             )
         run.close()
         self._word_previous = alignment
@@ -929,7 +983,7 @@ class ContinuousTranscriptStream:
                 if not self._endpoints or self._endpoints[0] != self._run_unit.endpoint:
                     raise NativeStreamError("committed endpoint observation changed")
         if (
-            self.config.word_alignment
+            (self.config.word_alignment or self.config.word_boundary_fallback)
             and self._silence_pending is None
             and (self._word_pending is None or self._word_pending.publication != result)
         ):
@@ -985,7 +1039,9 @@ class ContinuousTranscriptStream:
             self._run_end + interval,
             self._retained + self.config.max_window_ms * 16 - interval,
         )
-        if self.config.source_units:
+        if self.config.source_units and (
+            not self.config.word_boundary_fallback or self._run_unit is not None
+        ):
             self._next_endpoint = end + interval
         self._previous = None
         self._previous_eligible = True
@@ -994,7 +1050,11 @@ class ContinuousTranscriptStream:
             self._word_anchor = ()
             self._silence_pending = None
         if self._word_pending is not None:
-            self._word_anchor = self._word_pending.next_anchor
+            self._word_anchor = (
+                ()
+                if self.config.word_boundary_fallback and self._run_unit is not None
+                else self._word_pending.next_anchor
+            )
             self._word_pending = None
         self._pending_state = None
         self._retry_analysis = None
