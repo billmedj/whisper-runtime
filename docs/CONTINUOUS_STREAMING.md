@@ -254,5 +254,8 @@ The later [T4 comparison](research/2026-09-05-word-alignment-comparison.md) stop
 at a partially retained anchor. The [repair replay](research/2026-09-05-word-alignment-replay.md)
 passes that boundary and commits through 12.78 seconds. It then stops on a
 window-leading word start mismatch. The window-edge exception above was added
-after that run; the recorded T4 result does not validate it. The CPU success
-above is not GPU qualification.
+after that run. A [subsequent T4 replay](research/2026-09-05-word-alignment-completion.md)
+completes the word profile with eight commits across 33 seconds, zero normalized
+word edits against the model controls, and restored capacity. Exact strings
+differ. This short unpaced test does not qualify long-session or live latency;
+its final 11.26 seconds are committed at EOF. The segment profile still stalls.

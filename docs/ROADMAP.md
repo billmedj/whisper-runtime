@@ -93,9 +93,13 @@ The repair is covered by two additional local tests (384 total). The
 12.78 seconds, including the repaired boundary. A window-leading word start
 estimate then prevents the next anchor match. EOF completion remains unproven
 for this word-aligned configuration.
-The window-edge matching repair is now covered by four additional local tests
+The window-edge matching repair is covered by four additional local tests
 (388 total). It preserves the full anchor text, word ends, and neighboring
-bounds. Its corrected rolling trajectory still needs a GPU replay.
+bounds. The [next T4 replay](research/2026-09-05-word-alignment-completion.md)
+completes the word profile's 33 seconds with eight commits and restored capacity.
+Its 66 normalized words match the model controls, but exact strings differ.
+The segment profile still stops at 8 seconds. The last word commit covers
+11.26 seconds at EOF; paced latency and the long-session gate remain open.
 
 Deliver a separately named continuous profile. Keep the existing
 offline-compatible and bounded-preview paths.

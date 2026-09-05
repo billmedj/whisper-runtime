@@ -1,5 +1,13 @@
 # Integration evidence
 
+The [T4 window-edge repair replay](modal-t4-tiny-en-word-alignment-v6-2026-09-05.json)
+completes all 33 seconds in the word-aligned cell, with eight commits, unchanged
+committed revisions, and restored capacity. Its 66 words match the model controls
+after case and punctuation normalization; exact strings differ. The segment cell
+remains unresolved at 8 seconds, so the overall record remains `unresolved`.
+This unpaced repeated-fixture result does not qualify live latency or efficiency.
+See the [completion report](../docs/research/2026-09-05-word-alignment-completion.md).
+
 The [T4 anchor-repair replay](modal-t4-tiny-en-word-alignment-v5-2026-09-05.json)
 removes the first word-profile blockage. Committed coverage advances from
 5.70 to 12.78 seconds; the segment profile remains at 8.00 seconds. Both still
