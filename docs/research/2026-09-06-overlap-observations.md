@@ -175,3 +175,9 @@ requested work; it is not replay authority or a cache across changed audio.
 CPU regression checks: `PYTHONPATH=src python -B -m unittest tools.test_modal_resolution_handoff`.
 The archive checks need no GPU. Full input reconstruction also needs the existing
 local PCM fixtures; it does not download them.
+
+Follow-up: the [CPU disagreement replay](2026-09-06-resolution-disagreements.md)
+now exposes these separate comparisons. It also identifies two existing
+earlier-start controls, leaving three new intervals for a fixed guard screen.
+The saved noisy control restores the anchor but still omits the continuation;
+this narrows the boundary hypothesis without a new GPU run.

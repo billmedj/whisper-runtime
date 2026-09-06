@@ -79,8 +79,10 @@ from .word_policy import (
     AnchorDiagnostic,
     NativeWordAlignment,
     WordAgreementDecision,
+    WordSequenceDiagnostic,
     compare_word_hypotheses,
     diagnose_word_anchor,
+    diagnose_word_sequence,
     select_word_publication,
 )
 
@@ -106,8 +108,10 @@ __all__ = [
     "AnchorDiagnostic",
     "NativeWordAlignment",
     "WordAgreementDecision",
+    "WordSequenceDiagnostic",
     "compare_word_hypotheses",
     "diagnose_word_anchor",
+    "diagnose_word_sequence",
     "select_word_publication",
     "ContinuousAnalysisIdentity",
     "ContinuousDecodeTrace",

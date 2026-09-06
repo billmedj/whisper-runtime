@@ -211,6 +211,14 @@ with retained acoustic context. No live recovery or relaxed publication rule
 follows from this result. Analysis receipts now retain declared model, options
 and seed; missing effective identities remain unknown.
 
+The [CPU disagreement replay](research/2026-09-06-resolution-disagreements.md)
+now separates text, tokens and estimated timing without changing publication.
+The earlier-start noisy control restores the anchor but still omits the next
+utterance. A fixed context guard is therefore not a universal recovery rule.
+Two proposed guard intervals already have recorded controls; three need new
+observations after identity checks. No new GPU measurement or live-recovery
+qualification is part of this diagnostic change.
+
 Deliver a separately named continuous profile. Keep the existing
 offline-compatible and bounded-preview paths.
 

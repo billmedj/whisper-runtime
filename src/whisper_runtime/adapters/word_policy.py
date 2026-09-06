@@ -141,6 +141,59 @@ def select_word_publication(
 
 
 @dataclass(frozen=True, slots=True)
+class WordSequenceDiagnostic:
+    """Separate text, token, and estimated-time differences without accepting them.
+
+    Case-fold equality is a string property, not semantic equivalence. Deltas
+    compare corresponding positions only when every unit is case-fold equal;
+    they cannot locate a missing word or establish acoustic correspondence.
+    Empty sequences supply no timing witnesses. No publication rule uses this
+    diagnostic, and it contains no replacement text or selected word slice.
+    """
+
+    left_unit_count: int
+    right_unit_count: int
+    text_relation: Literal["exact_units", "casefold_equal_units", "different_units"]
+    unit_tokens_equal: bool
+    max_start_delta_ms: int | None
+    max_end_delta_ms: int | None
+
+
+def diagnose_word_sequence(
+    left: tuple[NativeTimestampSegment, ...],
+    right: tuple[NativeTimestampSegment, ...],
+) -> WordSequenceDiagnostic:
+    """Compare complete supplied sequences; do not search or repair alignment.
+
+    The caller supplies the correspondence. Raw units, punctuation, whitespace,
+    token segmentation and timing estimates remain intact. The function requires
+    no model, reference transcript, threshold, or execution state.
+    """
+    before, after = _words(left), _words(right)
+    same_length = len(before) == len(after)
+    exact = same_length and all(a.text == b.text for a, b in zip(before, after))
+    folded = same_length and all(
+        a.text.casefold() == b.text.casefold() for a, b in zip(before, after)
+    )
+    return WordSequenceDiagnostic(
+        len(before),
+        len(after),
+        "exact_units"
+        if exact
+        else "casefold_equal_units"
+        if folded
+        else "different_units",
+        same_length and all(a.tokens == b.tokens for a, b in zip(before, after)),
+        max(abs(a.span.start_ms - b.span.start_ms) for a, b in zip(before, after))
+        if folded and before
+        else None,
+        max(abs(a.span.end_ms - b.span.end_ms) for a, b in zip(before, after))
+        if folded and before
+        else None,
+    )
+
+
+@dataclass(frozen=True, slots=True)
 class AnchorDiagnostic:
     """Observed correspondence, not acoustic truth or publication authority.
 

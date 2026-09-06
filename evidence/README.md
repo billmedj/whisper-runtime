@@ -1,5 +1,13 @@
 # Integration evidence
 
+The [CPU disagreement replay](resolution-disagreements-2026-09-06.json) separates
+complete-unit text, token and estimated-time differences in the fixed overlap
+archive. All five original refusals remain unchanged. Reusing two recorded
+intervals leaves three new intervals for a prospective context-guard comparison,
+subject to PCM and execution-identity checks. No GPU work is performed. The
+[report](../docs/research/2026-09-06-resolution-disagreements.md) explains why the
+saved noisy control already refutes this guard as a universal recovery rule.
+
 The [fixed overlap observations](modal-t4-tiny-en-resolution-handoff-2026-09-06.json)
 complete seven native windows on one T4 at source commit `2dbf1dc`. All five
 structural handoff assessments reject; none authorizes publication. The new
