@@ -72,6 +72,11 @@ structural eligibility cannot authorize recovery or omission-free completion.
 
 ## Next bounded measurement
 
+The [seven-window follow-up](2026-09-06-overlap-observations.md) fixes the four
+overlaps above and three observations of the later paced noisy failure. It
+keeps legacy alignment and the existing structural thresholds. Recorded output
+from a previous worker requires an explicit provenance comparison before reuse.
+
 Register the fixed overlap as an explicitly costed alternative in a future
 terminal-state comparison. Keep every disagreement and failed decode; score
 full prefix-plus-suffix outputs against human references only after assessment.
