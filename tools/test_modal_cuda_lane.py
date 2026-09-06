@@ -1,6 +1,7 @@
 """Validate the lane experiment without loading CUDA or Modal."""
 
 import copy
+import json
 import unittest
 from unittest.mock import patch
 
@@ -8,6 +9,48 @@ from infra import modal_cuda_lane as experiment
 
 
 class CudaLaneExperimentTests(unittest.TestCase):
+    def test_archived_alternating_record_replays_exactly(self):
+        record = json.loads(
+            (
+                experiment.ROOT / "evidence/modal-t4-tiny-en-cuda-lane-2026-09-06.json"
+            ).read_bytes()
+        )
+        self.assertEqual(experiment.summarize(record["cells"]), record["summary"])
+        self.assertTrue(record["summary"]["exact_alignment_equal"])
+        self.assertFalse(record["summary"]["warm_reused_allocation_flat"])
+        distinct = len(
+            {stream for cell in record["cells"] for stream in cell["streams"]}
+        )
+        self.assertEqual(distinct, 7)
+        self.assertEqual(
+            record["after_handle_release"]["allocated_bytes"]
+            - record["cells"][0]["before"]["allocated_bytes"],
+            distinct * 8519680,
+        )
+
+    def test_blocked_schedule_separates_consecutive_calls_from_switches(self):
+        cells = self.cells()
+        released = 100
+        for index, (cell, arm) in enumerate(
+            zip(cells, experiment.ORDERS["blocked-v2"])
+        ):
+            cell["arm"] = arm
+            switch = index == 0 or cells[index - 1]["arm"] != arm
+            cell["after_close"]["allocated_bytes"] = cell["before"][
+                "allocated_bytes"
+            ] + (8 if arm == "fresh" else 1 if switch else 0)
+            released += 8 if arm == "fresh" or index == 0 else 0
+            cell["after_handle_release"] = dict(allocated_bytes=released)
+        summary = experiment.summarize(cells, order="blocked-v2")
+        self.assertFalse(summary["warm_reused_allocation_flat"])
+        self.assertTrue(summary["consecutive_reused_allocation_flat"])
+        cells[2]["after_handle_release"]["allocated_bytes"] += 1
+        self.assertFalse(
+            experiment.summarize(cells, order="blocked-v2")[
+                "consecutive_reused_allocation_flat"
+            ]
+        )
+
     def cells(self):
         cells = []
         allocated = 100

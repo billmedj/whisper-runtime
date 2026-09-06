@@ -15,6 +15,11 @@ ROOT = shared.ROOT
 REMOTE_ROOT = shared.REMOTE_ROOT
 PRODUCER = "infra/modal_cuda_lane.py"
 ROUNDS = 6
+ORDERS = {
+    "alternating-v1": ["reused", "fresh"] * ROUNDS,
+    "blocked-v2": ["reused"] * 4 + ["fresh"] * 4 + ["reused"] * 4,
+}
+ACTIVE_ORDER = "blocked-v2"
 CLAIMS = dict.fromkeys(
     ("full_stream_recovery", "general_speedup", "production_readiness"), False
 )
@@ -36,12 +41,12 @@ def snapshot(root=ROOT):
     return dict(commit=base["commit"], digest=shared._hash(files), files=files)
 
 
-def summarize(cells):
+def summarize(cells, *, order="alternating-v1"):
     """Evaluate matched output and post-close allocation, not allocator reserve."""
     if len(cells) != ROUNDS * 2:
         raise ValueError("twelve completed observations are required")
-    if [cell["arm"] for cell in cells] != ["reused", "fresh"] * ROUNDS:
-        raise ValueError("observations must preserve registered alternating order")
+    if order not in ORDERS or [cell["arm"] for cell in cells] != ORDERS[order]:
+        raise ValueError("observations must preserve registered order")
     if any(
         cell["call_index"] != index
         or cell["closed"] is not True
@@ -69,7 +74,7 @@ def summarize(cells):
             cell["after_close"]["allocated_bytes"] - cell["before"]["allocated_bytes"]
         )
 
-    return {
+    result = {
         "exact_alignment_equal": len(hashes) == 1,
         "reused_stream_count": len({cell["streams"][0] for cell in reuse}),
         "fresh_stream_count": len({cell["streams"][0] for cell in fresh}),
@@ -80,6 +85,21 @@ def summarize(cells):
         "warm_reused_allocation_flat": all(delta(cell) == 0 for cell in reuse[1:]),
         "encoder_calls": [len(cell["encoder_frames"]) for cell in cells],
     }
+    if order == "blocked-v2":
+        consecutive = [
+            right["after_handle_release"]["allocated_bytes"]
+            - left["after_handle_release"]["allocated_bytes"]
+            for left, right in zip(cells, cells[1:])
+            if left["arm"] == right["arm"] == "reused"
+        ]
+        result["post_handle_release_allocated_bytes"] = [
+            cell["after_handle_release"]["allocated_bytes"] for cell in cells
+        ]
+        result["consecutive_reused_allocated_deltas_bytes"] = consecutive
+        result["consecutive_reused_allocation_flat"] = len(consecutive) == 6 and all(
+            value == 0 for value in consecutive
+        )
+    return result
 
 
 def run_worker(expected_snapshot):
@@ -220,7 +240,7 @@ def run_worker(expected_snapshot):
         return run
 
     cells, persistent, previous, failure = [], None, None, None
-    for index, arm in enumerate(["reused", "fresh"] * ROUNDS, 1):
+    for index, arm in enumerate(ORDERS[ACTIVE_ORDER], 1):
         cell = dict(call_index=index, arm=arm, encoder_frames=[], streams=[])
         cells.append(cell)
         try:
@@ -246,11 +266,15 @@ def run_worker(expected_snapshot):
             with binding.lock:
                 binding._cuda_lane = persistent
             cell["after_close"] = memory()
+            # V1 tested stale cancellation and retained a closed handle.
+            # V2 isolates physical residency by dropping it before each sample.
+            previous = None
+            cell["after_handle_release"] = memory()
         except Exception as error:
             failure = b._safe_stream_error(error)
             cell["error"] = failure
             break
-    summary = summarize(cells) if failure is None else None
+    summary = summarize(cells, order=ACTIVE_ORDER) if failure is None else None
     # The cached backend retains its finalized feature tensor in a closed handle.
     # Per-call samples contain one such handle; measure its release separately.
     previous = None
@@ -260,7 +284,7 @@ def run_worker(expected_snapshot):
     call_id = modal.current_function_call_id()
     return {
         "schema_version": "1-diagnostic",
-        "experiment_id": "modal-cuda-lane-v1",
+        "experiment_id": "modal-cuda-lane-v2",
         "status": "completed" if failure is None else "failed",
         "error": failure,
         "qualified": False,
@@ -281,7 +305,8 @@ def run_worker(expected_snapshot):
         ),
         "scope": dict(
             single_host_thread=True,
-            alternating_order=True,
+            order=ACTIVE_ORDER,
+            alternating_order=False,
             first_pair_cold=True,
             same_pcm_mel_options=True,
             full_stream=False,
@@ -289,6 +314,8 @@ def run_worker(expected_snapshot):
             reused_lane_held_between_arms=True,
             maximum_native_windows=ROUNDS * 2,
             post_close_retains_one_handle=True,
+            drops_handle_before_next_window=True,
+            stale_cancellation_tested=False,
             timing_excludes_preprocessing_and_collection=True,
         ),
         "source": dict(
@@ -333,8 +360,12 @@ def run(*, replay_id, confirm_paid_gpu=False, root=ROOT):
                 registration_sha256=shared._sha((root / PRODUCER).read_bytes()),
                 manifest=dict(claim_boundary=CLAIMS),
             )
+            if record["scope"]["order"] != ACTIVE_ORDER:
+                raise ValueError("worker schedule differs")
             summary = (
-                summarize(record["cells"]) if record["status"] == "completed" else None
+                summarize(record["cells"], order=ACTIVE_ORDER)
+                if record["status"] == "completed"
+                else None
             )
             if record["source"]["snapshot"] != expected or record["summary"] != summary:
                 raise ValueError("worker source or recomputed summary differs")

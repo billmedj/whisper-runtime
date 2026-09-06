@@ -16,6 +16,7 @@
 *.yaml text eol=lf
 
 patches/openai-whisper/SHA256SUMS text eol=lf
+patches/openai-whisper/experimental/SHA256SUMS text eol=lf
 
 *.flac binary
 *.pt binary

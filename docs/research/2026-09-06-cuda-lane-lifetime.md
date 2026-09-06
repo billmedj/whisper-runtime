@@ -60,3 +60,46 @@ one input and alternating calls do not establish a general speedup.
 
 This experiment does not change the alignment encoder path or the live
 publication policy. They require separate comparisons.
+
+## First T4 result
+
+The [alternating record](../../evidence/modal-t4-tiny-en-cuda-lane-2026-09-06.json)
+completed on source `3d991fb`. All twelve outputs match exactly after excluding
+only the transaction window ID. All windows released their capacity; every
+stale cancellation returned false. Model parameters did not change. The Modal
+application stopped with zero tasks.
+
+The reused arm used one stream; the fresh arm used six other streams. After
+dropping the final handle, allocated memory was 211,838,976 bytes, against
+152,201,216 bytes before the first call. The difference is exactly seven times
+8,519,680 bytes. This strongly supports stream-associated persistent workspace
+allocation. It does not independently identify the allocating library.
+
+The registered per-call plateau test failed: warm reused calls added 931,840
+bytes, while later fresh calls added 7,587,840 bytes. Their pair totals equal
+8,519,680 bytes. Every post-close sample is accounted for by distinct-stream
+workspaces plus one retained-handle footprint. That footprint alternates between
+2,305,024 and 3,236,864 bytes and vanishes when the final handle is dropped.
+Allocator block reuse or delayed frees could explain this transfer. The record
+does not distinguish them. It would be incorrect to report a zero per-call
+delta from this experiment.
+
+The complete record SHA-256 is
+`6c6e2e271ffc93101efb151ebc96a801aaf8ec14c340d1e214b57a308fba65d3`.
+
+## Follow-up: consecutive calls without retained handles
+
+Version 2 retains the same backend, model, input, precision and twelve-call
+limit. The order is four reused, four fresh, then four reused calls. The driver
+drops each closed handle before measuring physical residency and starting the
+next call. Stale cancellation was covered by version 1 and is not repeated.
+There is no cache clearing, thread change or new publication policy.
+
+The prediction is identical allocated bytes after handle release between each
+pair of consecutive reused calls, both before and after the fresh-stream block.
+The six consecutive reused comparisons must have exactly zero delta. Reserved
+memory and switch effects are reported separately, without adjusting a tolerance
+after the result. Complete words, tokens and times must still match. The CPU
+replay keeps the original failed plateau metric and original record unchanged.
+
+This is one additional bounded T4 call, not an automatic retry of version 1.
