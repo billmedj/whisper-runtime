@@ -158,6 +158,20 @@ The new [handoff assessment](2026-09-06-resolution-handoff.md) addresses what
 evidence a different retained-audio window must provide before a continuation
 can be considered. No such recovery is enabled by this comparison.
 
+### Post-run diagnostic repair
+
+The failing path had already computed word alignment, but `_defer_audio` omitted
+it and its anchor diagnostic from the trace. That prevented the bounded probe
+from using the observation. A subsequent local change preserves those values
+and permits the existing opt-in probe on already-aligned EOF refusals. It does
+not attach the unsupported publication, relax the input-evidence decision, or
+start probes for generic score failures or nonfinal source units.
+
+Five new scripted tests cover default-off behavior, original evidence, the
+single-attempt limit, and recovery after initial/candidate fence failures.
+The full runtime suite passes 600 tests. This repair did not run in the archived
+T4 comparison, whose source remains `b1901c7`.
+
 ## Next step
 
 Keep encoder reuse opt-in. It now has exact-output evidence on these paced
@@ -167,3 +181,11 @@ PCM identities attached. Establish the handoff rule before another full replay;
 do not loosen the refusal to turn this record green. Extend to unseen inputs
 and longer sessions after the short noisy case can complete under a measured
 quality policy.
+
+The smallest planned follow-up is seven native windows: re-observe the new
+noisy control `[1680,10890]` ms with its full alignment retained; compare
+`[3680,10890]` and the anchor-bearing `[2020,10890]`; then observe one fixed
+overlap for each of the four earlier states listed in the handoff report.
+These windows have not run. The new control must remain a separate observation,
+not an edit to the historical trace. Reuse existing candidate evidence only
+after matching its PCM, model, tokenizer and decode configuration.

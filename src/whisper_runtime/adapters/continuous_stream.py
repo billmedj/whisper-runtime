@@ -865,9 +865,18 @@ class ContinuousTranscriptStream:
         return self._publish_commit()
 
     def _defer_audio(
-        self, run: NativeWindowRun, result: NativeWindowResult
+        self,
+        run: NativeWindowRun,
+        result: NativeWindowResult,
+        *,
+        word_alignment: NativeWordAlignment | None = None,
+        anchor_diagnostic: AnchorDiagnostic | None = None,
     ) -> tuple[TranscriptEvent, ...]:
-        """Suppress unsupported text without granting audio-discard authority."""
+        """Retain computed evidence, never an unsupported publication.
+
+        Only an already aligned EOF refusal can enter the existing opt-in probe.
+        Generic audio-score failures and nonfinal source units cannot add work.
+        """
         assert self._audio_decision is not None
         closed = self._run_final or self._run_unit is not None
         self._trace(
@@ -875,11 +884,16 @@ class ContinuousTranscriptStream:
             None,
             self._audio_decision.reason,
             "unresolved" if closed else "wait_for_input",
+            word_alignment=word_alignment,
+            anchor_diagnostic=anchor_diagnostic,
         )
         # Preserve the scheduling observation, but never use a rejected result
         # as an agreement witness. Close/fence before exposing any event.
+        scheduled = False
         if closed:
             self._unresolved_eof = True
+            if word_alignment is not None:
+                scheduled = self._schedule_resolution_probe()
         run.close()
         self._previous = result
         self._previous_eligible = False
@@ -888,6 +902,8 @@ class ContinuousTranscriptStream:
             self._run = None
             self._record_decode()
             self._retry_analysis = None
+            if scheduled:
+                return ()
             boundary = "source unit" if self._run_unit is not None else "EOF"
             raise StreamNeedsResolutionError(
                 f"{boundary} input evidence is unresolved ({self._audio_decision.reason}); "
@@ -928,7 +944,12 @@ class ContinuousTranscriptStream:
         if publication is not None and not self._publication_supported(
             publication.text
         ):
-            return self._defer_audio(run, result)
+            return self._defer_audio(
+                run,
+                result,
+                word_alignment=alignment,
+                anchor_diagnostic=decision.anchor_diagnostic,
+            )
         retained = None
         reason = decision.reason
         if publication is not None and not closed and self.config.word_context_limit_ms:

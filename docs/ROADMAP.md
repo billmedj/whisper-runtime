@@ -195,6 +195,10 @@ specifies one anchor-bearing overlap and checks full continuation agreement,
 frozen state and PCM correspondence. Adversarial tests cover repeated anchors,
 stale state and omitted boundary words. It cannot authorize publication; all
 four stored head-only cases still lack the required overlap observation.
+The paced test also exposed a refusal path that omitted already computed word
+alignment. A local repair preserves this evidence and connects aligned EOF
+refusals to the same opt-in, single-attempt probe. Its scripted tests pass; the
+repair and proposed overlap windows still need a real-audio run.
 
 Deliver a separately named continuous profile. Keep the existing
 offline-compatible and bounded-preview paths.

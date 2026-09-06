@@ -314,6 +314,12 @@ encoder forward instead of two with exact words and times on eight inputs.
 Features themselves differ from the legacy path. Defaults and the active
 backend patch series remain unchanged; other workloads need parity checks.
 
+The [paced comparison](research/2026-09-06-paced-feature-reuse.md) also preserves
+published text and spans on complete normal and attenuated inputs, with fewer
+encoder forwards and lower observed allocation peaks. Both modes still fail
+to complete the noisy prefix. This single-worker diagnostic does not qualify
+general service latency or noisy live transcription.
+
 ## Strict CUDA profile
 
 The CUDA profile is deliberately narrow:

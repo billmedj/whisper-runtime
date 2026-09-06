@@ -56,6 +56,190 @@ class ContinuousResolutionProbeTests(unittest.TestCase):
         self.assertEqual(bytes(stream._audio), source)
         self.assertFalse(stream.done)
 
+    def unsupported_pending(self, *, enabled=True, finish=True, punctuation=True):
+        stream, adapter, source, events = self.pending(enabled=enabled, finish=finish)
+
+        def observed(window_id, start, end):
+            result = word_result(window_id, start, end)
+            if start == 200:
+                return result
+            words = tuple(
+                item
+                if item.span.start_ms < 200
+                else replace(item, text=".", tokens=(13,))
+                for item in result.metadata.segments
+                if punctuation or item.span.start_ms < 200
+            )
+            return replace(
+                result,
+                text="".join(item.text for item in words).strip(),
+                metadata=replace(
+                    result.metadata,
+                    segments=words,
+                    tokens=tuple(token for item in words for token in item.tokens),
+                ),
+            )
+
+        adapter.result_factory = observed
+        return stream, adapter, source, events
+
+    def test_default_unsupported_suffix_preserves_computed_alignment_without_probe(
+        self,
+    ):
+        stream, adapter, source, _ = self.unsupported_pending(enabled=False)
+        state, anchor = stream.state, stream._word_anchor
+        before = stream.metrics
+        with self.assertRaisesRegex(StreamNeedsResolutionError, "no_lexical_text"):
+            self.decode(stream)
+        trace = stream.last_trace
+        self.assertEqual(trace.reason, "no_lexical_text")
+        self.assertEqual(trace.word_alignment.native.text, "w0 w1.")
+        self.assertEqual(trace.anchor_diagnostic.status, "matched")
+        self.assertEqual(trace.audio_evidence.reason, "no_lexical_text")
+        self.assertIsNone(trace.word_publication)
+        self.assertIsNone(trace.publication_span)
+        self.assertIsNone(stream.resolution_observation)
+        self.assertEqual(stream.metrics.decode_count, before.decode_count + 1)
+        self.assertEqual(stream.metrics.events_emitted, before.events_emitted)
+        for _ in range(3):
+            with self.assertRaises(StreamNeedsResolutionError):
+                stream.step()
+        self.assert_frozen(stream, state, anchor, source)
+        self.assert_released(adapter)
+
+    def test_unsupported_eof_suffix_uses_only_one_existing_probe_without_publication(
+        self,
+    ):
+        for punctuation in (False, True):
+            with self.subTest(punctuation=punctuation):
+                stream, adapter, source, _ = self.unsupported_pending(
+                    punctuation=punctuation
+                )
+                state, anchor = stream.state, stream._word_anchor
+                before = stream.metrics
+                self.assertEqual(self.decode(stream), ())
+                observation = stream.resolution_observation
+                self.assertEqual(observation.status, "scheduled")
+                self.assertEqual(observation.source.reason, "no_lexical_text")
+                self.assertEqual(observation.source.anchor_diagnostic.status, "matched")
+                self.assertIsNotNone(observation.source.word_alignment)
+                self.assertIsNone(observation.source.word_publication)
+                self.assertEqual(observation.anchor, anchor)
+                self.assertEqual(observation.session_version, state.version)
+                with patch.object(
+                    type(adapter.runs[-1]),
+                    "finish",
+                    side_effect=AssertionError("never publish unsupported text"),
+                ):
+                    with self.assertRaisesRegex(
+                        StreamNeedsResolutionError, "no_lexical_text.*observed"
+                    ):
+                        self.decode(stream)
+                self.assertIs(stream.resolution_observation.source, observation.source)
+                self.assertEqual(adapter.calls[-1][1:3], (200, 300))
+                self.assertEqual(adapter.inputs[-1], source[200 * 32 :])
+                self.assertEqual(stream.metrics.decode_count, before.decode_count + 2)
+                self.assertEqual(stream.metrics.events_emitted, before.events_emitted)
+                count = len(adapter.calls)
+                for _ in range(3):
+                    with self.assertRaises(StreamNeedsResolutionError):
+                        stream.step()
+                self.assertEqual(len(adapter.calls), count)
+                self.assert_frozen(stream, state, anchor, source)
+                self.assert_released(adapter)
+
+    def test_unsupported_nonfinal_source_unit_preserves_words_but_never_probes(self):
+        stream, adapter, source, _ = self.unsupported_pending(finish=False)
+        state, anchor = stream.state, stream._word_anchor
+        extra = pcm_ms(100, 903) + pcm_ms(40, 1)
+        stream.push(1, extra)
+        with self.assertRaisesRegex(StreamNeedsResolutionError, "no_lexical_text"):
+            self.drain(stream)
+        self.assertFalse(stream.last_trace.eof)
+        self.assertIsNotNone(stream.last_trace.source_unit)
+        self.assertIsNotNone(stream.last_trace.word_alignment)
+        self.assertIsNone(stream.last_trace.word_publication)
+        self.assertIsNone(stream.resolution_observation)
+        self.assert_frozen(stream, state, anchor, source + extra)
+        self.assert_released(adapter)
+
+    def test_audio_failures_without_alignment_do_not_gain_a_probe(self):
+        for reason, score in (
+            ("missing_speech_score", None),
+            ("conflicting_speech_score", 0.9),
+            ("no_lexical_text", 0.01),
+        ):
+            with self.subTest(reason=reason):
+                stream, adapter, source, _ = self.pending()
+                state, anchor = stream.state, stream._word_anchor
+
+                def observed(window_id, start, end):
+                    result = word_result(window_id, start, end)
+                    if reason == "no_lexical_text":
+                        result = replace_words(
+                            result, lambda item: replace(item, text=".", tokens=(13,))
+                        )
+                    return replace(
+                        result, metadata=replace(result.metadata, no_speech_prob=score)
+                    )
+
+                adapter.result_factory = observed
+                with patch.object(
+                    type(adapter.runs[-1]),
+                    "prepare_word_alignment",
+                    side_effect=AssertionError("no alignment requested"),
+                ):
+                    with self.assertRaisesRegex(StreamNeedsResolutionError, reason):
+                        self.decode(stream)
+                self.assertIsNone(stream.last_trace.word_alignment)
+                self.assertIsNone(stream.last_trace.anchor_diagnostic)
+                self.assertIsNone(stream.resolution_observation)
+                self.assert_frozen(stream, state, anchor, source)
+                self.assert_released(adapter)
+
+    def test_unsupported_suffix_original_and_candidate_fences_require_recovery(self):
+        for stage in ("original", "candidate"):
+            with self.subTest(stage=stage):
+                stream, adapter, source, _ = self.unsupported_pending()
+                state, anchor = stream.state, stream._word_anchor
+                if stage == "candidate":
+                    self.decode(stream)
+                stream.step()
+                stream.step()
+                run = adapter.runs[-1]
+                run.fence.fail = True
+                with self.assertRaises(TransactionRetainedError) as raised:
+                    stream.step()
+                observation = stream.resolution_observation
+                self.assertEqual(observation.source.reason, "no_lexical_text")
+                self.assertIsNotNone(observation.source.word_alignment)
+                self.assertEqual(
+                    observation.status, "scheduled" if stage == "original" else "failed"
+                )
+                self.assertIsNone(raised.exception.committed_state)
+                count = len(adapter.calls)
+                with self.assertRaisesRegex(NativeStreamError, "retained"):
+                    stream.step()
+                self.assertEqual(len(adapter.calls), count)
+                self.assert_frozen(stream, state, anchor, source)
+                run.fence.fail = False
+                self.assertTrue(adapter.worker.recover(raised.exception.transaction))
+                self.assertEqual(stream.step(), ())
+                if stage == "original":
+                    with self.assertRaisesRegex(
+                        StreamNeedsResolutionError, "no_lexical_text"
+                    ):
+                        self.decode(stream)
+                    self.assertEqual(len(adapter.calls), count + 1)
+                else:
+                    with self.assertRaisesRegex(
+                        StreamNeedsResolutionError, "no_lexical_text"
+                    ):
+                        stream.step()
+                    self.assertEqual(len(adapter.calls), count)
+                self.assert_frozen(stream, state, anchor, source)
+                self.assert_released(adapter)
+
     def test_configuration_is_boolean_and_requires_word_policy(self):
         self.assertFalse(ContinuousStreamConfig().resolution_probe)
         for value in (None, 0, 1, 0.0, "true"):

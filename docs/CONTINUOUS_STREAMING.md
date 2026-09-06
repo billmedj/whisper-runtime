@@ -348,6 +348,12 @@ copy is bounded by the analysis-window limit. Candidate admission waits for
 the original run's successful fence, including explicit recovery if needed.
 Non-EOF refusals and identical windows do not trigger this probe.
 
+An input-evidence refusal after word alignment, such as a selected suffix with
+no lexical text, retains that computed alignment and its anchor diagnostic in
+the trace. At EOF it can use the same opt-in probe path. The unsupported
+publication is never attached to the trace or committed. Generic score failures
+that precede alignment and nonfinal source-unit refusals gain no extra work.
+
 Continue calling `step()` to drive the probe. It prepares raw aligned words,
 closes without calling `finish()`, and raises `StreamNeedsResolutionError`.
 It emits no candidate transcript, commit or final event; accepted PCM, frozen
