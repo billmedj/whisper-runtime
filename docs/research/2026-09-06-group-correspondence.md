@@ -100,7 +100,9 @@ The [fixed inventory](2026-09-06-group-validation-inventory.md) was recorded
 before scoring. Its [CPU report](../../evidence/group-validation-2026-09-06.json)
 reconstructs anchors only from confirmed, ordered historical commits. Group
 results cannot change that history. Report SHA-256:
-`356a9fcf14771676ce829043d6e637bf7fc99c841d0d1bd69662b869111973b5`.
+`02be7a9a1889d796754cf7ea9599ffa8d7b7f1779e1ced95abac06035f3668fb`.
+The report uses LF line endings, as stored by Git. Its analysis-source hashes
+match commit `a5c5276`; later CLI output also uses LF on Windows.
 
 | Recorded input | Enrolled observations | Strict matches | Group matches |
 | --- | ---: | ---: | ---: |

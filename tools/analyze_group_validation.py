@@ -395,7 +395,7 @@ def main(argv=None):
         if args.output is None:
             print(text, end="")
         else:
-            with args.output.open("x", encoding="utf-8") as handle:
+            with args.output.open("x", encoding="utf-8", newline="\n") as handle:
                 handle.write(text)
     except (OSError, ValueError, TypeError, KeyError) as error:
         parser.error(str(error))

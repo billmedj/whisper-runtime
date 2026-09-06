@@ -119,7 +119,7 @@ class GroupValidationTests(unittest.TestCase):
         payload = (ROOT / "evidence/group-validation-2026-09-06.json").read_bytes()
         self.assertEqual(
             hashlib.sha256(payload).hexdigest(),
-            "356a9fcf14771676ce829043d6e637bf7fc99c841d0d1bd69662b869111973b5",
+            "02be7a9a1889d796754cf7ea9599ffa8d7b7f1779e1ced95abac06035f3668fb",
         )
         archived = json.loads(payload)
         actual = json.loads(json.dumps(replay.analyze_records(self.payloads)))
@@ -136,6 +136,7 @@ class GroupValidationTests(unittest.TestCase):
             output = Path(directory) / "report.json"
             self.assertEqual(replay.main(["--output", str(output)]), 0)
             saved = output.read_bytes()
+            self.assertNotIn(b"\r", saved)
             self.assertEqual(
                 json.loads(saved),
                 json.loads(json.dumps(replay.analyze_records(self.payloads))),
