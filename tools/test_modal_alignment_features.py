@@ -1,6 +1,8 @@
 """Replay the parity criteria without a GPU or native backend."""
 
 import copy
+import hashlib
+import json
 import tempfile
 import unittest
 from pathlib import Path
@@ -11,6 +13,46 @@ from infra import modal_alignment_features as experiment
 
 
 class AlignmentFeaturesExperimentTests(unittest.TestCase):
+    def test_archived_t4_comparison(self):
+        path = (
+            experiment.ROOT
+            / "evidence/modal-t4-tiny-en-alignment-features-2026-09-06.json"
+        )
+        raw = path.read_bytes()
+        self.assertEqual(
+            hashlib.sha256(raw).hexdigest(),
+            "85dde1179ae00c0ba9153f3ef52b51f22115081352c1409a0920a964c21d9782",
+        )
+        record = json.loads(raw)
+        self.assertEqual(record["status"], "completed")
+        self.assertEqual(record["native_window_count"], 16)
+        with patch.object(experiment, "input_records", return_value=record["inputs"]):
+            experiment.validate_record(record, record["source"]["snapshot"])
+        summary = experiment.summarize(record["cells"])
+        for field in (
+            "all_native_equal",
+            "all_words_equal",
+            "all_expected_encoder_counts",
+            "all_expected_encoder_paths",
+        ):
+            self.assertTrue(summary[field])
+        self.assertEqual(summary["baseline_encoder_calls"], 16)
+        self.assertEqual(summary["reuse_encoder_calls"], 8)
+        for cell in record["cells"]:
+            comparisons = cell["feature_comparison"]
+            self.assertTrue(comparisons["decode_between_runs"]["exact"])
+            self.assertFalse(comparisons["decode_vs_legacy_alignment"]["exact"])
+            self.assertFalse(comparisons["decode_vs_legacy_alignment"]["allclose"])
+            for arm in cell["arms"].values():
+                self.assertEqual(
+                    arm["after_handle_release"]["allocated_bytes"], 160720896
+                )
+        # Output parity is not acoustic correctness. No stream published this.
+        silence = record["cells"][6]["arms"]["reuse"]["alignment"]["native"]
+        self.assertEqual(silence["text"], "you")
+        self.assertEqual(record["scope"]["actual_stream_commits"], 0)
+        self.assertFalse(record["qualified"])
+
     def cells(self):
         result = []
         for index in range(8):

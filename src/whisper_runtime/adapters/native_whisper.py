@@ -1444,9 +1444,17 @@ class NativeWindowRun:
         return committed_state
 
     def close(self) -> bool:
-        """Abort an unfinished run and release its resources after fencing."""
+        """Abort an unfinished run and release its resources after fencing.
+
+        External ``worker.recover(transaction)`` does not notify this handle.
+        Call ``close()`` or ``stop()`` afterward to drop borrowed inputs and an
+        opted-in backend handle; retaining this object alone can retain tensors.
+        An already closed call stays false and never repeats native cleanup.
+        """
 
         if self.closed:
+            if self.capacity_released:
+                self._release_alignment_inputs()
             return False
         self._require_owner()
         try:

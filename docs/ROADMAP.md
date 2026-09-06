@@ -3,8 +3,8 @@
 Updated: 2026-09-06.
 
 The project has two goals: control inference execution, and make continuous
-Whisper transcription practical. Lower compute cost is a target to measure,
-not an established property of the current runtime.
+Whisper transcription practical. Same-window encoder reuse now avoids measured
+work; lower live-service cost remains a target to validate.
 
 This page defines delivery gates. The [architecture RFC](rfcs/0001-state-resource-execution.md)
 remains the design reference; its numbered implementation steps are not release
@@ -19,7 +19,7 @@ A gate closes only when its acceptance cases and results are committed.
 | D1 | Continuous transcription with progressive commits | Experimental rolling profile implemented; long-session gate open | D0 |
 | D2 | A usable local live-transcription entry point | Paced API and PC-to-Modal reference tested; microphone and CLI gate open | D1 |
 | D3 | Broader quality and failure coverage | Initial coverage; expand alongside D1-D2 | D0; release gate for D2 |
-| D4 | Measured compute and memory improvements | Short T4 memory plateau verified; compute and live gates open | D1 and matched D3 baselines |
+| D4 | Measured compute and memory improvements | Short T4 memory plateau and same-window encoder reuse verified; live gate open | D1 and matched D3 baselines |
 | D5 | A reproducible developer release | Package builds; release gates remain open | D2 and D3; D4 for efficiency claims |
 | D6 | Durable recovery and finer resource scheduling | Later | D3 and a recovery contract |
 | D7 | Multiple channels, translation, and a second backend | Later | D1-D3 and per-output contracts |
@@ -183,6 +183,13 @@ No result is a complete live-stream recovery. Next, test fallback selection for
 ineligible timing mismatches, then verify publication and retention in a paced
 stream. The held-out failure is now development data, not an unseen test.
 
+The opt-in [EOF resolution probe](CONTINUOUS_STREAMING.md#optional-eof-resolution-probe)
+now connects one distinct retained-audio candidate to the controller. It records
+the candidate after the refused original run releases its resources. It never
+publishes the candidate or evicts audio. Scripted tests cover unchanged prefix,
+attempt limits, cancellation and recovery. Full recovery still needs a justified
+publication boundary and real-stream validation.
+
 Deliver a separately named continuous profile. Keep the existing
 offline-compatible and bounded-preview paths.
 
@@ -282,7 +289,7 @@ authorize or start new GPU spending.
 
 ## D4. Measured compute and memory improvements
 
-**Status: short fixed-workload memory improvement verified; full gate open.**
+**Status: short memory and fixed-window compute improvements verified; full gate open.**
 
 Remove unnecessary work before adding scheduling or caching complexity.
 
@@ -292,18 +299,24 @@ control adds 8,519,680 bytes per new stream; the reused lane adds none after its
 first call on this input. Words, tokens and times match exactly. This does not
 close the long-session or live efficiency gates.
 
-The runtime now retains one fenced CUDA lane per model binding. An optional
-same-window alignment-feature patch passes seven CPU tests, but is not enabled
-in the runtime. Actual decode-feature GPU parity remains untested. The T4 runs
-still execute two encoders per analysis. Preserve the legacy alignment control.
+The runtime retains one fenced CUDA lane per model binding. An explicit
+`reuse_alignment_features=True` execution profile can also borrow its own
+decode features for alignment using the optional backend patch. The
+[paired T4 comparison](research/2026-09-06-alignment-feature-handoff.md) removes
+one encoder forward on all eight inputs while preserving exact words and times.
+The default path and active backend patch manifest remain unchanged. This is
+same-window reuse, not a cache across growing audio. No general latency or live
+cost advantage follows from the fixed-window comparison.
 
 - [x] Add opt-in preview coalescing with bounded state and immutable retries.
 - [x] Reuse one CUDA lane under exact ownership and completion fences; verify
   short fixed-input allocation and output parity on T4.
+- [x] Borrow same-window decode features for alignment behind an opt-in profile;
+  verify encoder counts and exact output parity on eight T4 inputs.
 - [ ] Measure avoided work and quality changes on matched paced input.
-- [ ] Reuse preprocessing or encoder output only when input identity and the
-  chosen profile permit it. New audio does not make Whisper's noncausal encoder
-  cache append-only.
+- [ ] Evaluate additional preprocessing reuse with explicit input identity and
+  profile limits. New audio does not make Whisper's noncausal encoder cache
+  append-only.
 - [ ] Schedule and batch compatible work without sharing mutable request state
   or mixing outputs.
 - [ ] Compare fixed-window computations separately from live services. Match

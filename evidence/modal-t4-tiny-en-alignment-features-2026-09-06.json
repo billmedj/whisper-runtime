@@ -1,0 +1,5418 @@
+{
+  "backend": {
+    "base_commit": "a0b9695ae1cc52bad4b8626fe9fb6ea4ac0ee650",
+    "base_tree": "c011d2563c26763b5f147026e6b18ef85bccd4fb",
+    "patch_sha256": "e665bca7abea5ab273c34ecf4d63c050f8c7120c7fdd9c411038b4f7511cd169",
+    "patched_tree": "32163d5cdb87babc1cd415a86cc5a58116c86a16",
+    "timing_sha256": "25c9bca776064721b5f8fbe1fff7a4d62cfc9e4f65fa5012d1c5076affc39b93"
+  },
+  "cells": [
+    {
+      "arms": {
+        "baseline": {
+          "after_handle_release": {
+            "allocated_bytes": 160720896,
+            "reserved_bytes": 432013312
+          },
+          "alignment": {
+            "native": {
+              "analysis_span": {
+                "end_ms": 33660,
+                "start_ms": 19180
+              },
+              "end_ms": 33660,
+              "metadata": {
+                "avg_logprob": -1.0010071992874146,
+                "compression_ratio": 0.6521739130434783,
+                "language": "en",
+                "no_speech_prob": 0.16248546540737152,
+                "segments": [
+                  {
+                    "span": {
+                      "end_ms": 33180,
+                      "start_ms": 19180
+                    },
+                    "text": " It's the tents.",
+                    "tokens": [
+                      632,
+                      338,
+                      262,
+                      29804,
+                      13
+                    ]
+                  }
+                ],
+                "temperature": 0.0,
+                "timestamps_complete": true,
+                "tokens": [
+                  50363,
+                  632,
+                  338,
+                  262,
+                  29804,
+                  13,
+                  51063
+                ]
+              },
+              "publication_segment_indices": null,
+              "start_ms": 19180,
+              "text": "It's the tents.",
+              "window_id": "features:1"
+            },
+            "words": [
+              {
+                "span": {
+                  "end_ms": 19520,
+                  "start_ms": 19180
+                },
+                "text": " It's",
+                "tokens": [
+                  632,
+                  338
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 19660,
+                  "start_ms": 19520
+                },
+                "text": " the",
+                "tokens": [
+                  262
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 20340,
+                  "start_ms": 19660
+                },
+                "text": " tents",
+                "tokens": [
+                  29804
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 28880,
+                  "start_ms": 20340
+                },
+                "text": ".",
+                "tokens": [
+                  13
+                ]
+              }
+            ]
+          },
+          "alignment_wall_ns": 3340140285,
+          "before": {
+            "allocated_bytes": 152201216,
+            "reserved_bytes": 255852544
+          },
+          "call_index": 1,
+          "capacity_restored": true,
+          "closed": true,
+          "decode_wall_ns": 1213897425,
+          "encoder_calls": [
+            {
+              "input_frames": 3000,
+              "phase": "decode",
+              "use_sdpa": null
+            },
+            {
+              "input_frames": 3000,
+              "phase": "alignment",
+              "use_sdpa": false
+            }
+          ],
+          "peak_allocated_bytes": 290098176,
+          "peak_reserved_bytes": 432013312,
+          "wall_ns": 4554411906
+        },
+        "reuse": {
+          "after_handle_release": {
+            "allocated_bytes": 160720896,
+            "reserved_bytes": 432013312
+          },
+          "alignment": {
+            "native": {
+              "analysis_span": {
+                "end_ms": 33660,
+                "start_ms": 19180
+              },
+              "end_ms": 33660,
+              "metadata": {
+                "avg_logprob": -1.0010071992874146,
+                "compression_ratio": 0.6521739130434783,
+                "language": "en",
+                "no_speech_prob": 0.16248546540737152,
+                "segments": [
+                  {
+                    "span": {
+                      "end_ms": 33180,
+                      "start_ms": 19180
+                    },
+                    "text": " It's the tents.",
+                    "tokens": [
+                      632,
+                      338,
+                      262,
+                      29804,
+                      13
+                    ]
+                  }
+                ],
+                "temperature": 0.0,
+                "timestamps_complete": true,
+                "tokens": [
+                  50363,
+                  632,
+                  338,
+                  262,
+                  29804,
+                  13,
+                  51063
+                ]
+              },
+              "publication_segment_indices": null,
+              "start_ms": 19180,
+              "text": "It's the tents.",
+              "window_id": "features:2"
+            },
+            "words": [
+              {
+                "span": {
+                  "end_ms": 19520,
+                  "start_ms": 19180
+                },
+                "text": " It's",
+                "tokens": [
+                  632,
+                  338
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 19660,
+                  "start_ms": 19520
+                },
+                "text": " the",
+                "tokens": [
+                  262
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 20340,
+                  "start_ms": 19660
+                },
+                "text": " tents",
+                "tokens": [
+                  29804
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 28880,
+                  "start_ms": 20340
+                },
+                "text": ".",
+                "tokens": [
+                  13
+                ]
+              }
+            ]
+          },
+          "alignment_wall_ns": 8542342,
+          "before": {
+            "allocated_bytes": 160720896,
+            "reserved_bytes": 432013312
+          },
+          "call_index": 2,
+          "capacity_restored": true,
+          "closed": true,
+          "decode_wall_ns": 70292017,
+          "encoder_calls": [
+            {
+              "input_frames": 3000,
+              "phase": "decode",
+              "use_sdpa": null
+            }
+          ],
+          "peak_allocated_bytes": 190260736,
+          "peak_reserved_bytes": 432013312,
+          "wall_ns": 79108140
+        }
+      },
+      "feature_comparison": {
+        "decode_between_runs": {
+          "allclose": true,
+          "atol": 1e-06,
+          "exact": true,
+          "max_abs": 0.0,
+          "rms": 0.0,
+          "rtol": 1e-05
+        },
+        "decode_vs_legacy_alignment": {
+          "allclose": false,
+          "atol": 1e-06,
+          "exact": false,
+          "max_abs": 0.0008921623229980469,
+          "rms": 2.5765580186629164e-06,
+          "rtol": 1e-05
+        }
+      },
+      "id": "context:concatenated-no-added-pauses:current",
+      "order": [
+        "baseline",
+        "reuse"
+      ]
+    },
+    {
+      "arms": {
+        "baseline": {
+          "after_handle_release": {
+            "allocated_bytes": 160720896,
+            "reserved_bytes": 432013312
+          },
+          "alignment": {
+            "native": {
+              "analysis_span": {
+                "end_ms": 33660,
+                "start_ms": 21260
+              },
+              "end_ms": 33660,
+              "metadata": {
+                "avg_logprob": -0.2599936832081188,
+                "compression_ratio": 1.3524590163934427,
+                "language": "en",
+                "no_speech_prob": 0.06845315545797348,
+                "segments": [
+                  {
+                    "span": {
+                      "end_ms": 26260,
+                      "start_ms": 21260
+                    },
+                    "text": " She lay in her chair in happy dreamy pleasure at son and bird and tree.",
+                    "tokens": [
+                      1375,
+                      3830,
+                      287,
+                      607,
+                      5118,
+                      287,
+                      3772,
+                      4320,
+                      88,
+                      9476,
+                      379,
+                      3367,
+                      290,
+                      6512,
+                      290,
+                      5509,
+                      13
+                    ]
+                  },
+                  {
+                    "span": {
+                      "end_ms": 31260,
+                      "start_ms": 26260
+                    },
+                    "text": " And the gardeners boy chopped the tree into small pieces.",
+                    "tokens": [
+                      843,
+                      262,
+                      11376,
+                      364,
+                      2933,
+                      20720,
+                      262,
+                      5509,
+                      656,
+                      1402,
+                      5207,
+                      13
+                    ]
+                  },
+                  {
+                    "span": {
+                      "end_ms": 33260,
+                      "start_ms": 31260
+                    },
+                    "text": " There was a whole heap lying there.",
+                    "tokens": [
+                      1318,
+                      373,
+                      257,
+                      2187,
+                      24575,
+                      9105,
+                      612,
+                      13
+                    ]
+                  }
+                ],
+                "temperature": 0.0,
+                "timestamps_complete": true,
+                "tokens": [
+                  50363,
+                  1375,
+                  3830,
+                  287,
+                  607,
+                  5118,
+                  287,
+                  3772,
+                  4320,
+                  88,
+                  9476,
+                  379,
+                  3367,
+                  290,
+                  6512,
+                  290,
+                  5509,
+                  13,
+                  50613,
+                  50613,
+                  843,
+                  262,
+                  11376,
+                  364,
+                  2933,
+                  20720,
+                  262,
+                  5509,
+                  656,
+                  1402,
+                  5207,
+                  13,
+                  50863,
+                  50863,
+                  1318,
+                  373,
+                  257,
+                  2187,
+                  24575,
+                  9105,
+                  612,
+                  13,
+                  50963
+                ]
+              },
+              "publication_segment_indices": null,
+              "start_ms": 21260,
+              "text": "She lay in her chair in happy dreamy pleasure at son and bird and tree. And the gardeners boy chopped the tree into small pieces. There was a whole heap lying there.",
+              "window_id": "features:4"
+            },
+            "words": [
+              {
+                "span": {
+                  "end_ms": 21540,
+                  "start_ms": 21260
+                },
+                "text": " She",
+                "tokens": [
+                  1375
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 21760,
+                  "start_ms": 21540
+                },
+                "text": " lay",
+                "tokens": [
+                  3830
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 21880,
+                  "start_ms": 21760
+                },
+                "text": " in",
+                "tokens": [
+                  287
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 22100,
+                  "start_ms": 21880
+                },
+                "text": " her",
+                "tokens": [
+                  607
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 22440,
+                  "start_ms": 22100
+                },
+                "text": " chair",
+                "tokens": [
+                  5118
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 22720,
+                  "start_ms": 22440
+                },
+                "text": " in",
+                "tokens": [
+                  287
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 23080,
+                  "start_ms": 22720
+                },
+                "text": " happy",
+                "tokens": [
+                  3772
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 23580,
+                  "start_ms": 23080
+                },
+                "text": " dreamy",
+                "tokens": [
+                  4320,
+                  88
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 23880,
+                  "start_ms": 23580
+                },
+                "text": " pleasure",
+                "tokens": [
+                  9476
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 24200,
+                  "start_ms": 23880
+                },
+                "text": " at",
+                "tokens": [
+                  379
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 24400,
+                  "start_ms": 24200
+                },
+                "text": " son",
+                "tokens": [
+                  3367
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 24660,
+                  "start_ms": 24400
+                },
+                "text": " and",
+                "tokens": [
+                  290
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 24860,
+                  "start_ms": 24660
+                },
+                "text": " bird",
+                "tokens": [
+                  6512
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 25160,
+                  "start_ms": 24860
+                },
+                "text": " and",
+                "tokens": [
+                  290
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 25600,
+                  "start_ms": 25160
+                },
+                "text": " tree",
+                "tokens": [
+                  5509
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 26340,
+                  "start_ms": 25600
+                },
+                "text": ".",
+                "tokens": [
+                  13
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 26460,
+                  "start_ms": 26340
+                },
+                "text": " And",
+                "tokens": [
+                  843
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 26700,
+                  "start_ms": 26460
+                },
+                "text": " the",
+                "tokens": [
+                  262
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 27240,
+                  "start_ms": 26700
+                },
+                "text": " gardeners",
+                "tokens": [
+                  11376,
+                  364
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 27800,
+                  "start_ms": 27240
+                },
+                "text": " boy",
+                "tokens": [
+                  2933
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 28120,
+                  "start_ms": 27800
+                },
+                "text": " chopped",
+                "tokens": [
+                  20720
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 28540,
+                  "start_ms": 28120
+                },
+                "text": " the",
+                "tokens": [
+                  262
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 28880,
+                  "start_ms": 28540
+                },
+                "text": " tree",
+                "tokens": [
+                  5509
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 29240,
+                  "start_ms": 28880
+                },
+                "text": " into",
+                "tokens": [
+                  656
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 29680,
+                  "start_ms": 29240
+                },
+                "text": " small",
+                "tokens": [
+                  1402
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 30300,
+                  "start_ms": 29680
+                },
+                "text": " pieces",
+                "tokens": [
+                  5207
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 31360,
+                  "start_ms": 30300
+                },
+                "text": ".",
+                "tokens": [
+                  13
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 31480,
+                  "start_ms": 31360
+                },
+                "text": " There",
+                "tokens": [
+                  1318
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 31680,
+                  "start_ms": 31480
+                },
+                "text": " was",
+                "tokens": [
+                  373
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 31840,
+                  "start_ms": 31680
+                },
+                "text": " a",
+                "tokens": [
+                  257
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 32140,
+                  "start_ms": 31840
+                },
+                "text": " whole",
+                "tokens": [
+                  2187
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 32460,
+                  "start_ms": 32140
+                },
+                "text": " heap",
+                "tokens": [
+                  24575
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 32780,
+                  "start_ms": 32460
+                },
+                "text": " lying",
+                "tokens": [
+                  9105
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 33280,
+                  "start_ms": 32780
+                },
+                "text": " there",
+                "tokens": [
+                  612
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 33640,
+                  "start_ms": 33280
+                },
+                "text": ".",
+                "tokens": [
+                  13
+                ]
+              }
+            ]
+          },
+          "alignment_wall_ns": 20372911,
+          "before": {
+            "allocated_bytes": 160720896,
+            "reserved_bytes": 432013312
+          },
+          "call_index": 4,
+          "capacity_restored": true,
+          "closed": true,
+          "decode_wall_ns": 187744974,
+          "encoder_calls": [
+            {
+              "input_frames": 3000,
+              "phase": "decode",
+              "use_sdpa": null
+            },
+            {
+              "input_frames": 3000,
+              "phase": "alignment",
+              "use_sdpa": false
+            }
+          ],
+          "peak_allocated_bytes": 290098176,
+          "peak_reserved_bytes": 432013312,
+          "wall_ns": 208344617
+        },
+        "reuse": {
+          "after_handle_release": {
+            "allocated_bytes": 160720896,
+            "reserved_bytes": 432013312
+          },
+          "alignment": {
+            "native": {
+              "analysis_span": {
+                "end_ms": 33660,
+                "start_ms": 21260
+              },
+              "end_ms": 33660,
+              "metadata": {
+                "avg_logprob": -0.2599936832081188,
+                "compression_ratio": 1.3524590163934427,
+                "language": "en",
+                "no_speech_prob": 0.06845315545797348,
+                "segments": [
+                  {
+                    "span": {
+                      "end_ms": 26260,
+                      "start_ms": 21260
+                    },
+                    "text": " She lay in her chair in happy dreamy pleasure at son and bird and tree.",
+                    "tokens": [
+                      1375,
+                      3830,
+                      287,
+                      607,
+                      5118,
+                      287,
+                      3772,
+                      4320,
+                      88,
+                      9476,
+                      379,
+                      3367,
+                      290,
+                      6512,
+                      290,
+                      5509,
+                      13
+                    ]
+                  },
+                  {
+                    "span": {
+                      "end_ms": 31260,
+                      "start_ms": 26260
+                    },
+                    "text": " And the gardeners boy chopped the tree into small pieces.",
+                    "tokens": [
+                      843,
+                      262,
+                      11376,
+                      364,
+                      2933,
+                      20720,
+                      262,
+                      5509,
+                      656,
+                      1402,
+                      5207,
+                      13
+                    ]
+                  },
+                  {
+                    "span": {
+                      "end_ms": 33260,
+                      "start_ms": 31260
+                    },
+                    "text": " There was a whole heap lying there.",
+                    "tokens": [
+                      1318,
+                      373,
+                      257,
+                      2187,
+                      24575,
+                      9105,
+                      612,
+                      13
+                    ]
+                  }
+                ],
+                "temperature": 0.0,
+                "timestamps_complete": true,
+                "tokens": [
+                  50363,
+                  1375,
+                  3830,
+                  287,
+                  607,
+                  5118,
+                  287,
+                  3772,
+                  4320,
+                  88,
+                  9476,
+                  379,
+                  3367,
+                  290,
+                  6512,
+                  290,
+                  5509,
+                  13,
+                  50613,
+                  50613,
+                  843,
+                  262,
+                  11376,
+                  364,
+                  2933,
+                  20720,
+                  262,
+                  5509,
+                  656,
+                  1402,
+                  5207,
+                  13,
+                  50863,
+                  50863,
+                  1318,
+                  373,
+                  257,
+                  2187,
+                  24575,
+                  9105,
+                  612,
+                  13,
+                  50963
+                ]
+              },
+              "publication_segment_indices": null,
+              "start_ms": 21260,
+              "text": "She lay in her chair in happy dreamy pleasure at son and bird and tree. And the gardeners boy chopped the tree into small pieces. There was a whole heap lying there.",
+              "window_id": "features:3"
+            },
+            "words": [
+              {
+                "span": {
+                  "end_ms": 21540,
+                  "start_ms": 21260
+                },
+                "text": " She",
+                "tokens": [
+                  1375
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 21760,
+                  "start_ms": 21540
+                },
+                "text": " lay",
+                "tokens": [
+                  3830
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 21880,
+                  "start_ms": 21760
+                },
+                "text": " in",
+                "tokens": [
+                  287
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 22100,
+                  "start_ms": 21880
+                },
+                "text": " her",
+                "tokens": [
+                  607
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 22440,
+                  "start_ms": 22100
+                },
+                "text": " chair",
+                "tokens": [
+                  5118
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 22720,
+                  "start_ms": 22440
+                },
+                "text": " in",
+                "tokens": [
+                  287
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 23080,
+                  "start_ms": 22720
+                },
+                "text": " happy",
+                "tokens": [
+                  3772
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 23580,
+                  "start_ms": 23080
+                },
+                "text": " dreamy",
+                "tokens": [
+                  4320,
+                  88
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 23880,
+                  "start_ms": 23580
+                },
+                "text": " pleasure",
+                "tokens": [
+                  9476
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 24200,
+                  "start_ms": 23880
+                },
+                "text": " at",
+                "tokens": [
+                  379
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 24400,
+                  "start_ms": 24200
+                },
+                "text": " son",
+                "tokens": [
+                  3367
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 24660,
+                  "start_ms": 24400
+                },
+                "text": " and",
+                "tokens": [
+                  290
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 24860,
+                  "start_ms": 24660
+                },
+                "text": " bird",
+                "tokens": [
+                  6512
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 25160,
+                  "start_ms": 24860
+                },
+                "text": " and",
+                "tokens": [
+                  290
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 25600,
+                  "start_ms": 25160
+                },
+                "text": " tree",
+                "tokens": [
+                  5509
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 26340,
+                  "start_ms": 25600
+                },
+                "text": ".",
+                "tokens": [
+                  13
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 26460,
+                  "start_ms": 26340
+                },
+                "text": " And",
+                "tokens": [
+                  843
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 26700,
+                  "start_ms": 26460
+                },
+                "text": " the",
+                "tokens": [
+                  262
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 27240,
+                  "start_ms": 26700
+                },
+                "text": " gardeners",
+                "tokens": [
+                  11376,
+                  364
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 27800,
+                  "start_ms": 27240
+                },
+                "text": " boy",
+                "tokens": [
+                  2933
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 28120,
+                  "start_ms": 27800
+                },
+                "text": " chopped",
+                "tokens": [
+                  20720
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 28540,
+                  "start_ms": 28120
+                },
+                "text": " the",
+                "tokens": [
+                  262
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 28880,
+                  "start_ms": 28540
+                },
+                "text": " tree",
+                "tokens": [
+                  5509
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 29240,
+                  "start_ms": 28880
+                },
+                "text": " into",
+                "tokens": [
+                  656
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 29680,
+                  "start_ms": 29240
+                },
+                "text": " small",
+                "tokens": [
+                  1402
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 30300,
+                  "start_ms": 29680
+                },
+                "text": " pieces",
+                "tokens": [
+                  5207
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 31360,
+                  "start_ms": 30300
+                },
+                "text": ".",
+                "tokens": [
+                  13
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 31480,
+                  "start_ms": 31360
+                },
+                "text": " There",
+                "tokens": [
+                  1318
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 31680,
+                  "start_ms": 31480
+                },
+                "text": " was",
+                "tokens": [
+                  373
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 31840,
+                  "start_ms": 31680
+                },
+                "text": " a",
+                "tokens": [
+                  257
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 32140,
+                  "start_ms": 31840
+                },
+                "text": " whole",
+                "tokens": [
+                  2187
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 32460,
+                  "start_ms": 32140
+                },
+                "text": " heap",
+                "tokens": [
+                  24575
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 32780,
+                  "start_ms": 32460
+                },
+                "text": " lying",
+                "tokens": [
+                  9105
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 33280,
+                  "start_ms": 32780
+                },
+                "text": " there",
+                "tokens": [
+                  612
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 33640,
+                  "start_ms": 33280
+                },
+                "text": ".",
+                "tokens": [
+                  13
+                ]
+              }
+            ]
+          },
+          "alignment_wall_ns": 11831559,
+          "before": {
+            "allocated_bytes": 160720896,
+            "reserved_bytes": 432013312
+          },
+          "call_index": 3,
+          "capacity_restored": true,
+          "closed": true,
+          "decode_wall_ns": 240958175,
+          "encoder_calls": [
+            {
+              "input_frames": 3000,
+              "phase": "decode",
+              "use_sdpa": null
+            }
+          ],
+          "peak_allocated_bytes": 196034048,
+          "peak_reserved_bytes": 432013312,
+          "wall_ns": 253011394
+        }
+      },
+      "feature_comparison": {
+        "decode_between_runs": {
+          "allclose": true,
+          "atol": 1e-06,
+          "exact": true,
+          "max_abs": 0.0,
+          "rms": 0.0,
+          "rtol": 1e-05
+        },
+        "decode_vs_legacy_alignment": {
+          "allclose": false,
+          "atol": 1e-06,
+          "exact": false,
+          "max_abs": 2.956390380859375e-05,
+          "rms": 1.2427829479822775e-06,
+          "rtol": 1e-05
+        }
+      },
+      "id": "context:concatenated-no-added-pauses:alternative",
+      "order": [
+        "reuse",
+        "baseline"
+      ]
+    },
+    {
+      "arms": {
+        "baseline": {
+          "after_handle_release": {
+            "allocated_bytes": 160720896,
+            "reserved_bytes": 432013312
+          },
+          "alignment": {
+            "native": {
+              "analysis_span": {
+                "end_ms": 43660,
+                "start_ms": 31160
+              },
+              "end_ms": 43660,
+              "metadata": {
+                "avg_logprob": -0.33771366543240017,
+                "compression_ratio": 1.2571428571428571,
+                "language": "en",
+                "no_speech_prob": 0.11726357787847519,
+                "segments": [
+                  {
+                    "span": {
+                      "end_ms": 36360,
+                      "start_ms": 31160
+                    },
+                    "text": " Amy pleasure at son and bird and tree.",
+                    "tokens": [
+                      14235,
+                      9476,
+                      379,
+                      3367,
+                      290,
+                      6512,
+                      290,
+                      5509,
+                      13
+                    ]
+                  },
+                  {
+                    "span": {
+                      "end_ms": 41320,
+                      "start_ms": 36360
+                    },
+                    "text": " And the gardeners boy chopped the tree into small pieces.",
+                    "tokens": [
+                      843,
+                      262,
+                      11376,
+                      364,
+                      2933,
+                      20720,
+                      262,
+                      5509,
+                      656,
+                      1402,
+                      5207,
+                      13
+                    ]
+                  },
+                  {
+                    "span": {
+                      "end_ms": 43140,
+                      "start_ms": 41320
+                    },
+                    "text": " There was a whole heap lying there.",
+                    "tokens": [
+                      1318,
+                      373,
+                      257,
+                      2187,
+                      24575,
+                      9105,
+                      612,
+                      13
+                    ]
+                  }
+                ],
+                "temperature": 0.0,
+                "timestamps_complete": true,
+                "tokens": [
+                  50363,
+                  14235,
+                  9476,
+                  379,
+                  3367,
+                  290,
+                  6512,
+                  290,
+                  5509,
+                  13,
+                  50623,
+                  50623,
+                  843,
+                  262,
+                  11376,
+                  364,
+                  2933,
+                  20720,
+                  262,
+                  5509,
+                  656,
+                  1402,
+                  5207,
+                  13,
+                  50871,
+                  50871,
+                  1318,
+                  373,
+                  257,
+                  2187,
+                  24575,
+                  9105,
+                  612,
+                  13,
+                  50962
+                ]
+              },
+              "publication_segment_indices": null,
+              "start_ms": 31160,
+              "text": "Amy pleasure at son and bird and tree. And the gardeners boy chopped the tree into small pieces. There was a whole heap lying there.",
+              "window_id": "features:5"
+            },
+            "words": [
+              {
+                "span": {
+                  "end_ms": 31540,
+                  "start_ms": 31160
+                },
+                "text": " Amy",
+                "tokens": [
+                  14235
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 31880,
+                  "start_ms": 31540
+                },
+                "text": " pleasure",
+                "tokens": [
+                  9476
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 32220,
+                  "start_ms": 31880
+                },
+                "text": " at",
+                "tokens": [
+                  379
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 32400,
+                  "start_ms": 32220
+                },
+                "text": " son",
+                "tokens": [
+                  3367
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 32640,
+                  "start_ms": 32400
+                },
+                "text": " and",
+                "tokens": [
+                  290
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 32880,
+                  "start_ms": 32640
+                },
+                "text": " bird",
+                "tokens": [
+                  6512
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 33160,
+                  "start_ms": 32880
+                },
+                "text": " and",
+                "tokens": [
+                  290
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 34080,
+                  "start_ms": 33160
+                },
+                "text": " tree",
+                "tokens": [
+                  5509
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 34360,
+                  "start_ms": 34080
+                },
+                "text": ".",
+                "tokens": [
+                  13
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 36480,
+                  "start_ms": 34360
+                },
+                "text": " And",
+                "tokens": [
+                  843
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 36700,
+                  "start_ms": 36480
+                },
+                "text": " the",
+                "tokens": [
+                  262
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 37240,
+                  "start_ms": 36700
+                },
+                "text": " gardeners",
+                "tokens": [
+                  11376,
+                  364
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 37800,
+                  "start_ms": 37240
+                },
+                "text": " boy",
+                "tokens": [
+                  2933
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 38120,
+                  "start_ms": 37800
+                },
+                "text": " chopped",
+                "tokens": [
+                  20720
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 38540,
+                  "start_ms": 38120
+                },
+                "text": " the",
+                "tokens": [
+                  262
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 38880,
+                  "start_ms": 38540
+                },
+                "text": " tree",
+                "tokens": [
+                  5509
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 39260,
+                  "start_ms": 38880
+                },
+                "text": " into",
+                "tokens": [
+                  656
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 39700,
+                  "start_ms": 39260
+                },
+                "text": " small",
+                "tokens": [
+                  1402
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 40300,
+                  "start_ms": 39700
+                },
+                "text": " pieces",
+                "tokens": [
+                  5207
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 41180,
+                  "start_ms": 40300
+                },
+                "text": ".",
+                "tokens": [
+                  13
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 41480,
+                  "start_ms": 41180
+                },
+                "text": " There",
+                "tokens": [
+                  1318
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 41680,
+                  "start_ms": 41480
+                },
+                "text": " was",
+                "tokens": [
+                  373
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 41840,
+                  "start_ms": 41680
+                },
+                "text": " a",
+                "tokens": [
+                  257
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 42120,
+                  "start_ms": 41840
+                },
+                "text": " whole",
+                "tokens": [
+                  2187
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 42460,
+                  "start_ms": 42120
+                },
+                "text": " heap",
+                "tokens": [
+                  24575
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 42800,
+                  "start_ms": 42460
+                },
+                "text": " lying",
+                "tokens": [
+                  9105
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 43300,
+                  "start_ms": 42800
+                },
+                "text": " there",
+                "tokens": [
+                  612
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 43640,
+                  "start_ms": 43300
+                },
+                "text": ".",
+                "tokens": [
+                  13
+                ]
+              }
+            ]
+          },
+          "alignment_wall_ns": 216842957,
+          "before": {
+            "allocated_bytes": 160720896,
+            "reserved_bytes": 432013312
+          },
+          "call_index": 5,
+          "capacity_restored": true,
+          "closed": true,
+          "decode_wall_ns": 150711074,
+          "encoder_calls": [
+            {
+              "input_frames": 3000,
+              "phase": "decode",
+              "use_sdpa": null
+            },
+            {
+              "input_frames": 3000,
+              "phase": "alignment",
+              "use_sdpa": false
+            }
+          ],
+          "peak_allocated_bytes": 290098176,
+          "peak_reserved_bytes": 432013312,
+          "wall_ns": 367823326
+        },
+        "reuse": {
+          "after_handle_release": {
+            "allocated_bytes": 160720896,
+            "reserved_bytes": 432013312
+          },
+          "alignment": {
+            "native": {
+              "analysis_span": {
+                "end_ms": 43660,
+                "start_ms": 31160
+              },
+              "end_ms": 43660,
+              "metadata": {
+                "avg_logprob": -0.33771366543240017,
+                "compression_ratio": 1.2571428571428571,
+                "language": "en",
+                "no_speech_prob": 0.11726357787847519,
+                "segments": [
+                  {
+                    "span": {
+                      "end_ms": 36360,
+                      "start_ms": 31160
+                    },
+                    "text": " Amy pleasure at son and bird and tree.",
+                    "tokens": [
+                      14235,
+                      9476,
+                      379,
+                      3367,
+                      290,
+                      6512,
+                      290,
+                      5509,
+                      13
+                    ]
+                  },
+                  {
+                    "span": {
+                      "end_ms": 41320,
+                      "start_ms": 36360
+                    },
+                    "text": " And the gardeners boy chopped the tree into small pieces.",
+                    "tokens": [
+                      843,
+                      262,
+                      11376,
+                      364,
+                      2933,
+                      20720,
+                      262,
+                      5509,
+                      656,
+                      1402,
+                      5207,
+                      13
+                    ]
+                  },
+                  {
+                    "span": {
+                      "end_ms": 43140,
+                      "start_ms": 41320
+                    },
+                    "text": " There was a whole heap lying there.",
+                    "tokens": [
+                      1318,
+                      373,
+                      257,
+                      2187,
+                      24575,
+                      9105,
+                      612,
+                      13
+                    ]
+                  }
+                ],
+                "temperature": 0.0,
+                "timestamps_complete": true,
+                "tokens": [
+                  50363,
+                  14235,
+                  9476,
+                  379,
+                  3367,
+                  290,
+                  6512,
+                  290,
+                  5509,
+                  13,
+                  50623,
+                  50623,
+                  843,
+                  262,
+                  11376,
+                  364,
+                  2933,
+                  20720,
+                  262,
+                  5509,
+                  656,
+                  1402,
+                  5207,
+                  13,
+                  50871,
+                  50871,
+                  1318,
+                  373,
+                  257,
+                  2187,
+                  24575,
+                  9105,
+                  612,
+                  13,
+                  50962
+                ]
+              },
+              "publication_segment_indices": null,
+              "start_ms": 31160,
+              "text": "Amy pleasure at son and bird and tree. And the gardeners boy chopped the tree into small pieces. There was a whole heap lying there.",
+              "window_id": "features:6"
+            },
+            "words": [
+              {
+                "span": {
+                  "end_ms": 31540,
+                  "start_ms": 31160
+                },
+                "text": " Amy",
+                "tokens": [
+                  14235
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 31880,
+                  "start_ms": 31540
+                },
+                "text": " pleasure",
+                "tokens": [
+                  9476
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 32220,
+                  "start_ms": 31880
+                },
+                "text": " at",
+                "tokens": [
+                  379
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 32400,
+                  "start_ms": 32220
+                },
+                "text": " son",
+                "tokens": [
+                  3367
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 32640,
+                  "start_ms": 32400
+                },
+                "text": " and",
+                "tokens": [
+                  290
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 32880,
+                  "start_ms": 32640
+                },
+                "text": " bird",
+                "tokens": [
+                  6512
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 33160,
+                  "start_ms": 32880
+                },
+                "text": " and",
+                "tokens": [
+                  290
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 34080,
+                  "start_ms": 33160
+                },
+                "text": " tree",
+                "tokens": [
+                  5509
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 34360,
+                  "start_ms": 34080
+                },
+                "text": ".",
+                "tokens": [
+                  13
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 36480,
+                  "start_ms": 34360
+                },
+                "text": " And",
+                "tokens": [
+                  843
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 36700,
+                  "start_ms": 36480
+                },
+                "text": " the",
+                "tokens": [
+                  262
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 37240,
+                  "start_ms": 36700
+                },
+                "text": " gardeners",
+                "tokens": [
+                  11376,
+                  364
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 37800,
+                  "start_ms": 37240
+                },
+                "text": " boy",
+                "tokens": [
+                  2933
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 38120,
+                  "start_ms": 37800
+                },
+                "text": " chopped",
+                "tokens": [
+                  20720
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 38540,
+                  "start_ms": 38120
+                },
+                "text": " the",
+                "tokens": [
+                  262
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 38880,
+                  "start_ms": 38540
+                },
+                "text": " tree",
+                "tokens": [
+                  5509
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 39260,
+                  "start_ms": 38880
+                },
+                "text": " into",
+                "tokens": [
+                  656
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 39700,
+                  "start_ms": 39260
+                },
+                "text": " small",
+                "tokens": [
+                  1402
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 40300,
+                  "start_ms": 39700
+                },
+                "text": " pieces",
+                "tokens": [
+                  5207
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 41180,
+                  "start_ms": 40300
+                },
+                "text": ".",
+                "tokens": [
+                  13
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 41480,
+                  "start_ms": 41180
+                },
+                "text": " There",
+                "tokens": [
+                  1318
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 41680,
+                  "start_ms": 41480
+                },
+                "text": " was",
+                "tokens": [
+                  373
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 41840,
+                  "start_ms": 41680
+                },
+                "text": " a",
+                "tokens": [
+                  257
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 42120,
+                  "start_ms": 41840
+                },
+                "text": " whole",
+                "tokens": [
+                  2187
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 42460,
+                  "start_ms": 42120
+                },
+                "text": " heap",
+                "tokens": [
+                  24575
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 42800,
+                  "start_ms": 42460
+                },
+                "text": " lying",
+                "tokens": [
+                  9105
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 43300,
+                  "start_ms": 42800
+                },
+                "text": " there",
+                "tokens": [
+                  612
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 43640,
+                  "start_ms": 43300
+                },
+                "text": ".",
+                "tokens": [
+                  13
+                ]
+              }
+            ]
+          },
+          "alignment_wall_ns": 8285060,
+          "before": {
+            "allocated_bytes": 160720896,
+            "reserved_bytes": 432013312
+          },
+          "call_index": 6,
+          "capacity_restored": true,
+          "closed": true,
+          "decode_wall_ns": 151045295,
+          "encoder_calls": [
+            {
+              "input_frames": 3000,
+              "phase": "decode",
+              "use_sdpa": null
+            }
+          ],
+          "peak_allocated_bytes": 190260736,
+          "peak_reserved_bytes": 432013312,
+          "wall_ns": 159553677
+        }
+      },
+      "feature_comparison": {
+        "decode_between_runs": {
+          "allclose": true,
+          "atol": 1e-06,
+          "exact": true,
+          "max_abs": 0.0,
+          "rms": 0.0,
+          "rtol": 1e-05
+        },
+        "decode_vs_legacy_alignment": {
+          "allclose": false,
+          "atol": 1e-06,
+          "exact": false,
+          "max_abs": 3.4689903259277344e-05,
+          "rms": 1.3298263984074584e-06,
+          "rtol": 1e-05
+        }
+      },
+      "id": "context:mixed-continuous-noise64:current",
+      "order": [
+        "baseline",
+        "reuse"
+      ]
+    },
+    {
+      "arms": {
+        "baseline": {
+          "after_handle_release": {
+            "allocated_bytes": 160720896,
+            "reserved_bytes": 436207616
+          },
+          "alignment": {
+            "native": {
+              "analysis_span": {
+                "end_ms": 43660,
+                "start_ms": 33540
+              },
+              "end_ms": 43660,
+              "metadata": {
+                "avg_logprob": -0.23886831283569335,
+                "compression_ratio": 1.1204819277108433,
+                "language": "en",
+                "no_speech_prob": 0.05181732773780823,
+                "segments": [
+                  {
+                    "span": {
+                      "end_ms": 41340,
+                      "start_ms": 33540
+                    },
+                    "text": " And the gardeners boy chopped the tree into small pieces.",
+                    "tokens": [
+                      843,
+                      262,
+                      11376,
+                      364,
+                      2933,
+                      20720,
+                      262,
+                      5509,
+                      656,
+                      1402,
+                      5207,
+                      13
+                    ]
+                  },
+                  {
+                    "span": {
+                      "end_ms": 43140,
+                      "start_ms": 41340
+                    },
+                    "text": " There was a whole heap lying there.",
+                    "tokens": [
+                      1318,
+                      373,
+                      257,
+                      2187,
+                      24575,
+                      9105,
+                      612,
+                      13
+                    ]
+                  }
+                ],
+                "temperature": 0.0,
+                "timestamps_complete": true,
+                "tokens": [
+                  50363,
+                  843,
+                  262,
+                  11376,
+                  364,
+                  2933,
+                  20720,
+                  262,
+                  5509,
+                  656,
+                  1402,
+                  5207,
+                  13,
+                  50753,
+                  50753,
+                  1318,
+                  373,
+                  257,
+                  2187,
+                  24575,
+                  9105,
+                  612,
+                  13,
+                  50843
+                ]
+              },
+              "publication_segment_indices": null,
+              "start_ms": 33540,
+              "text": "And the gardeners boy chopped the tree into small pieces. There was a whole heap lying there.",
+              "window_id": "features:8"
+            },
+            "words": [
+              {
+                "span": {
+                  "end_ms": 36460,
+                  "start_ms": 33540
+                },
+                "text": " And",
+                "tokens": [
+                  843
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 36700,
+                  "start_ms": 36460
+                },
+                "text": " the",
+                "tokens": [
+                  262
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 37240,
+                  "start_ms": 36700
+                },
+                "text": " gardeners",
+                "tokens": [
+                  11376,
+                  364
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 37800,
+                  "start_ms": 37240
+                },
+                "text": " boy",
+                "tokens": [
+                  2933
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 38140,
+                  "start_ms": 37800
+                },
+                "text": " chopped",
+                "tokens": [
+                  20720
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 38540,
+                  "start_ms": 38140
+                },
+                "text": " the",
+                "tokens": [
+                  262
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 38860,
+                  "start_ms": 38540
+                },
+                "text": " tree",
+                "tokens": [
+                  5509
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 39240,
+                  "start_ms": 38860
+                },
+                "text": " into",
+                "tokens": [
+                  656
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 39700,
+                  "start_ms": 39240
+                },
+                "text": " small",
+                "tokens": [
+                  1402
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 40300,
+                  "start_ms": 39700
+                },
+                "text": " pieces",
+                "tokens": [
+                  5207
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 41400,
+                  "start_ms": 40300
+                },
+                "text": ".",
+                "tokens": [
+                  13
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 41460,
+                  "start_ms": 41400
+                },
+                "text": " There",
+                "tokens": [
+                  1318
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 41680,
+                  "start_ms": 41460
+                },
+                "text": " was",
+                "tokens": [
+                  373
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 41840,
+                  "start_ms": 41680
+                },
+                "text": " a",
+                "tokens": [
+                  257
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 42140,
+                  "start_ms": 41840
+                },
+                "text": " whole",
+                "tokens": [
+                  2187
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 42480,
+                  "start_ms": 42140
+                },
+                "text": " heap",
+                "tokens": [
+                  24575
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 42800,
+                  "start_ms": 42480
+                },
+                "text": " lying",
+                "tokens": [
+                  9105
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 43260,
+                  "start_ms": 42800
+                },
+                "text": " there",
+                "tokens": [
+                  612
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 43640,
+                  "start_ms": 43260
+                },
+                "text": ".",
+                "tokens": [
+                  13
+                ]
+              }
+            ]
+          },
+          "alignment_wall_ns": 23329207,
+          "before": {
+            "allocated_bytes": 160720896,
+            "reserved_bytes": 436207616
+          },
+          "call_index": 8,
+          "capacity_restored": true,
+          "closed": true,
+          "decode_wall_ns": 111841671,
+          "encoder_calls": [
+            {
+              "input_frames": 3000,
+              "phase": "decode",
+              "use_sdpa": null
+            },
+            {
+              "input_frames": 3000,
+              "phase": "alignment",
+              "use_sdpa": false
+            }
+          ],
+          "peak_allocated_bytes": 290098176,
+          "peak_reserved_bytes": 436207616,
+          "wall_ns": 135391941
+        },
+        "reuse": {
+          "after_handle_release": {
+            "allocated_bytes": 160720896,
+            "reserved_bytes": 436207616
+          },
+          "alignment": {
+            "native": {
+              "analysis_span": {
+                "end_ms": 43660,
+                "start_ms": 33540
+              },
+              "end_ms": 43660,
+              "metadata": {
+                "avg_logprob": -0.23886831283569335,
+                "compression_ratio": 1.1204819277108433,
+                "language": "en",
+                "no_speech_prob": 0.05181732773780823,
+                "segments": [
+                  {
+                    "span": {
+                      "end_ms": 41340,
+                      "start_ms": 33540
+                    },
+                    "text": " And the gardeners boy chopped the tree into small pieces.",
+                    "tokens": [
+                      843,
+                      262,
+                      11376,
+                      364,
+                      2933,
+                      20720,
+                      262,
+                      5509,
+                      656,
+                      1402,
+                      5207,
+                      13
+                    ]
+                  },
+                  {
+                    "span": {
+                      "end_ms": 43140,
+                      "start_ms": 41340
+                    },
+                    "text": " There was a whole heap lying there.",
+                    "tokens": [
+                      1318,
+                      373,
+                      257,
+                      2187,
+                      24575,
+                      9105,
+                      612,
+                      13
+                    ]
+                  }
+                ],
+                "temperature": 0.0,
+                "timestamps_complete": true,
+                "tokens": [
+                  50363,
+                  843,
+                  262,
+                  11376,
+                  364,
+                  2933,
+                  20720,
+                  262,
+                  5509,
+                  656,
+                  1402,
+                  5207,
+                  13,
+                  50753,
+                  50753,
+                  1318,
+                  373,
+                  257,
+                  2187,
+                  24575,
+                  9105,
+                  612,
+                  13,
+                  50843
+                ]
+              },
+              "publication_segment_indices": null,
+              "start_ms": 33540,
+              "text": "And the gardeners boy chopped the tree into small pieces. There was a whole heap lying there.",
+              "window_id": "features:7"
+            },
+            "words": [
+              {
+                "span": {
+                  "end_ms": 36460,
+                  "start_ms": 33540
+                },
+                "text": " And",
+                "tokens": [
+                  843
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 36700,
+                  "start_ms": 36460
+                },
+                "text": " the",
+                "tokens": [
+                  262
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 37240,
+                  "start_ms": 36700
+                },
+                "text": " gardeners",
+                "tokens": [
+                  11376,
+                  364
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 37800,
+                  "start_ms": 37240
+                },
+                "text": " boy",
+                "tokens": [
+                  2933
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 38140,
+                  "start_ms": 37800
+                },
+                "text": " chopped",
+                "tokens": [
+                  20720
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 38540,
+                  "start_ms": 38140
+                },
+                "text": " the",
+                "tokens": [
+                  262
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 38860,
+                  "start_ms": 38540
+                },
+                "text": " tree",
+                "tokens": [
+                  5509
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 39240,
+                  "start_ms": 38860
+                },
+                "text": " into",
+                "tokens": [
+                  656
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 39700,
+                  "start_ms": 39240
+                },
+                "text": " small",
+                "tokens": [
+                  1402
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 40300,
+                  "start_ms": 39700
+                },
+                "text": " pieces",
+                "tokens": [
+                  5207
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 41400,
+                  "start_ms": 40300
+                },
+                "text": ".",
+                "tokens": [
+                  13
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 41460,
+                  "start_ms": 41400
+                },
+                "text": " There",
+                "tokens": [
+                  1318
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 41680,
+                  "start_ms": 41460
+                },
+                "text": " was",
+                "tokens": [
+                  373
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 41840,
+                  "start_ms": 41680
+                },
+                "text": " a",
+                "tokens": [
+                  257
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 42140,
+                  "start_ms": 41840
+                },
+                "text": " whole",
+                "tokens": [
+                  2187
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 42480,
+                  "start_ms": 42140
+                },
+                "text": " heap",
+                "tokens": [
+                  24575
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 42800,
+                  "start_ms": 42480
+                },
+                "text": " lying",
+                "tokens": [
+                  9105
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 43260,
+                  "start_ms": 42800
+                },
+                "text": " there",
+                "tokens": [
+                  612
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 43640,
+                  "start_ms": 43260
+                },
+                "text": ".",
+                "tokens": [
+                  13
+                ]
+              }
+            ]
+          },
+          "alignment_wall_ns": 199788485,
+          "before": {
+            "allocated_bytes": 160720896,
+            "reserved_bytes": 432013312
+          },
+          "call_index": 7,
+          "capacity_restored": true,
+          "closed": true,
+          "decode_wall_ns": 107724876,
+          "encoder_calls": [
+            {
+              "input_frames": 3000,
+              "phase": "decode",
+              "use_sdpa": null
+            }
+          ],
+          "peak_allocated_bytes": 190260736,
+          "peak_reserved_bytes": 436207616,
+          "wall_ns": 307770335
+        }
+      },
+      "feature_comparison": {
+        "decode_between_runs": {
+          "allclose": true,
+          "atol": 1e-06,
+          "exact": true,
+          "max_abs": 0.0,
+          "rms": 0.0,
+          "rtol": 1e-05
+        },
+        "decode_vs_legacy_alignment": {
+          "allclose": false,
+          "atol": 1e-06,
+          "exact": false,
+          "max_abs": 3.0517578125e-05,
+          "rms": 1.4020715957347457e-06,
+          "rtol": 1e-05
+        }
+      },
+      "id": "context:mixed-continuous-noise64:alternative",
+      "order": [
+        "reuse",
+        "baseline"
+      ]
+    },
+    {
+      "arms": {
+        "baseline": {
+          "after_handle_release": {
+            "allocated_bytes": 160720896,
+            "reserved_bytes": 436207616
+          },
+          "alignment": {
+            "native": {
+              "analysis_span": {
+                "end_ms": 8220,
+                "start_ms": 0
+              },
+              "end_ms": 8220,
+              "metadata": {
+                "avg_logprob": -0.48839939001834753,
+                "compression_ratio": 1.175257731958763,
+                "language": "en",
+                "no_speech_prob": 0.01083979569375515,
+                "segments": [
+                  {
+                    "span": {
+                      "end_ms": 6320,
+                      "start_ms": 0
+                    },
+                    "text": " There is no danger of the modern commentators on the Tímías following into the absurdities",
+                    "tokens": [
+                      1318,
+                      318,
+                      645,
+                      3514,
+                      286,
+                      262,
+                      3660,
+                      25699,
+                      319,
+                      262,
+                      309,
+                      8836,
+                      76,
+                      8836,
+                      292,
+                      1708,
+                      656,
+                      262,
+                      12986,
+                      871
+                    ]
+                  },
+                  {
+                    "span": {
+                      "end_ms": 7840,
+                      "start_ms": 6320
+                    },
+                    "text": " of the Neoplatanists.",
+                    "tokens": [
+                      286,
+                      262,
+                      3169,
+                      404,
+                      15460,
+                      272,
+                      1023,
+                      13
+                    ]
+                  }
+                ],
+                "temperature": 0.0,
+                "timestamps_complete": true,
+                "tokens": [
+                  50363,
+                  1318,
+                  318,
+                  645,
+                  3514,
+                  286,
+                  262,
+                  3660,
+                  25699,
+                  319,
+                  262,
+                  309,
+                  8836,
+                  76,
+                  8836,
+                  292,
+                  1708,
+                  656,
+                  262,
+                  12986,
+                  871,
+                  50679,
+                  50679,
+                  286,
+                  262,
+                  3169,
+                  404,
+                  15460,
+                  272,
+                  1023,
+                  13,
+                  50755
+                ]
+              },
+              "publication_segment_indices": null,
+              "start_ms": 0,
+              "text": "There is no danger of the modern commentators on the Tímías following into the absurdities of the Neoplatanists.",
+              "window_id": "features:9"
+            },
+            "words": [
+              {
+                "span": {
+                  "end_ms": 760,
+                  "start_ms": 0
+                },
+                "text": " There",
+                "tokens": [
+                  1318
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 920,
+                  "start_ms": 760
+                },
+                "text": " is",
+                "tokens": [
+                  318
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 1120,
+                  "start_ms": 920
+                },
+                "text": " no",
+                "tokens": [
+                  645
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 1480,
+                  "start_ms": 1120
+                },
+                "text": " danger",
+                "tokens": [
+                  3514
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 1900,
+                  "start_ms": 1480
+                },
+                "text": " of",
+                "tokens": [
+                  286
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 2140,
+                  "start_ms": 1900
+                },
+                "text": " the",
+                "tokens": [
+                  262
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 2520,
+                  "start_ms": 2140
+                },
+                "text": " modern",
+                "tokens": [
+                  3660
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 3180,
+                  "start_ms": 2520
+                },
+                "text": " commentators",
+                "tokens": [
+                  25699
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 3560,
+                  "start_ms": 3180
+                },
+                "text": " on",
+                "tokens": [
+                  319
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 3820,
+                  "start_ms": 3560
+                },
+                "text": " the",
+                "tokens": [
+                  262
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 4540,
+                  "start_ms": 3820
+                },
+                "text": " Tímías",
+                "tokens": [
+                  309,
+                  8836,
+                  76,
+                  8836,
+                  292
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 5100,
+                  "start_ms": 4540
+                },
+                "text": " following",
+                "tokens": [
+                  1708
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 5420,
+                  "start_ms": 5100
+                },
+                "text": " into",
+                "tokens": [
+                  656
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 5600,
+                  "start_ms": 5420
+                },
+                "text": " the",
+                "tokens": [
+                  262
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 6380,
+                  "start_ms": 5600
+                },
+                "text": " absurdities",
+                "tokens": [
+                  12986,
+                  871
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 6620,
+                  "start_ms": 6380
+                },
+                "text": " of",
+                "tokens": [
+                  286
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 6760,
+                  "start_ms": 6620
+                },
+                "text": " the",
+                "tokens": [
+                  262
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 7720,
+                  "start_ms": 6760
+                },
+                "text": " Neoplatanists",
+                "tokens": [
+                  3169,
+                  404,
+                  15460,
+                  272,
+                  1023
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 7860,
+                  "start_ms": 7720
+                },
+                "text": ".",
+                "tokens": [
+                  13
+                ]
+              }
+            ]
+          },
+          "alignment_wall_ns": 210335471,
+          "before": {
+            "allocated_bytes": 160720896,
+            "reserved_bytes": 436207616
+          },
+          "call_index": 9,
+          "capacity_restored": true,
+          "closed": true,
+          "decode_wall_ns": 146570778,
+          "encoder_calls": [
+            {
+              "input_frames": 3000,
+              "phase": "decode",
+              "use_sdpa": null
+            },
+            {
+              "input_frames": 3000,
+              "phase": "alignment",
+              "use_sdpa": false
+            }
+          ],
+          "peak_allocated_bytes": 290098176,
+          "peak_reserved_bytes": 436207616,
+          "wall_ns": 357164545
+        },
+        "reuse": {
+          "after_handle_release": {
+            "allocated_bytes": 160720896,
+            "reserved_bytes": 436207616
+          },
+          "alignment": {
+            "native": {
+              "analysis_span": {
+                "end_ms": 8220,
+                "start_ms": 0
+              },
+              "end_ms": 8220,
+              "metadata": {
+                "avg_logprob": -0.48839939001834753,
+                "compression_ratio": 1.175257731958763,
+                "language": "en",
+                "no_speech_prob": 0.01083979569375515,
+                "segments": [
+                  {
+                    "span": {
+                      "end_ms": 6320,
+                      "start_ms": 0
+                    },
+                    "text": " There is no danger of the modern commentators on the Tímías following into the absurdities",
+                    "tokens": [
+                      1318,
+                      318,
+                      645,
+                      3514,
+                      286,
+                      262,
+                      3660,
+                      25699,
+                      319,
+                      262,
+                      309,
+                      8836,
+                      76,
+                      8836,
+                      292,
+                      1708,
+                      656,
+                      262,
+                      12986,
+                      871
+                    ]
+                  },
+                  {
+                    "span": {
+                      "end_ms": 7840,
+                      "start_ms": 6320
+                    },
+                    "text": " of the Neoplatanists.",
+                    "tokens": [
+                      286,
+                      262,
+                      3169,
+                      404,
+                      15460,
+                      272,
+                      1023,
+                      13
+                    ]
+                  }
+                ],
+                "temperature": 0.0,
+                "timestamps_complete": true,
+                "tokens": [
+                  50363,
+                  1318,
+                  318,
+                  645,
+                  3514,
+                  286,
+                  262,
+                  3660,
+                  25699,
+                  319,
+                  262,
+                  309,
+                  8836,
+                  76,
+                  8836,
+                  292,
+                  1708,
+                  656,
+                  262,
+                  12986,
+                  871,
+                  50679,
+                  50679,
+                  286,
+                  262,
+                  3169,
+                  404,
+                  15460,
+                  272,
+                  1023,
+                  13,
+                  50755
+                ]
+              },
+              "publication_segment_indices": null,
+              "start_ms": 0,
+              "text": "There is no danger of the modern commentators on the Tímías following into the absurdities of the Neoplatanists.",
+              "window_id": "features:10"
+            },
+            "words": [
+              {
+                "span": {
+                  "end_ms": 760,
+                  "start_ms": 0
+                },
+                "text": " There",
+                "tokens": [
+                  1318
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 920,
+                  "start_ms": 760
+                },
+                "text": " is",
+                "tokens": [
+                  318
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 1120,
+                  "start_ms": 920
+                },
+                "text": " no",
+                "tokens": [
+                  645
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 1480,
+                  "start_ms": 1120
+                },
+                "text": " danger",
+                "tokens": [
+                  3514
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 1900,
+                  "start_ms": 1480
+                },
+                "text": " of",
+                "tokens": [
+                  286
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 2140,
+                  "start_ms": 1900
+                },
+                "text": " the",
+                "tokens": [
+                  262
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 2520,
+                  "start_ms": 2140
+                },
+                "text": " modern",
+                "tokens": [
+                  3660
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 3180,
+                  "start_ms": 2520
+                },
+                "text": " commentators",
+                "tokens": [
+                  25699
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 3560,
+                  "start_ms": 3180
+                },
+                "text": " on",
+                "tokens": [
+                  319
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 3820,
+                  "start_ms": 3560
+                },
+                "text": " the",
+                "tokens": [
+                  262
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 4540,
+                  "start_ms": 3820
+                },
+                "text": " Tímías",
+                "tokens": [
+                  309,
+                  8836,
+                  76,
+                  8836,
+                  292
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 5100,
+                  "start_ms": 4540
+                },
+                "text": " following",
+                "tokens": [
+                  1708
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 5420,
+                  "start_ms": 5100
+                },
+                "text": " into",
+                "tokens": [
+                  656
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 5600,
+                  "start_ms": 5420
+                },
+                "text": " the",
+                "tokens": [
+                  262
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 6380,
+                  "start_ms": 5600
+                },
+                "text": " absurdities",
+                "tokens": [
+                  12986,
+                  871
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 6620,
+                  "start_ms": 6380
+                },
+                "text": " of",
+                "tokens": [
+                  286
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 6760,
+                  "start_ms": 6620
+                },
+                "text": " the",
+                "tokens": [
+                  262
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 7720,
+                  "start_ms": 6760
+                },
+                "text": " Neoplatanists",
+                "tokens": [
+                  3169,
+                  404,
+                  15460,
+                  272,
+                  1023
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 7860,
+                  "start_ms": 7720
+                },
+                "text": ".",
+                "tokens": [
+                  13
+                ]
+              }
+            ]
+          },
+          "alignment_wall_ns": 7838880,
+          "before": {
+            "allocated_bytes": 160720896,
+            "reserved_bytes": 436207616
+          },
+          "call_index": 10,
+          "capacity_restored": true,
+          "closed": true,
+          "decode_wall_ns": 143460338,
+          "encoder_calls": [
+            {
+              "input_frames": 3000,
+              "phase": "decode",
+              "use_sdpa": null
+            }
+          ],
+          "peak_allocated_bytes": 190260736,
+          "peak_reserved_bytes": 436207616,
+          "wall_ns": 151531368
+        }
+      },
+      "feature_comparison": {
+        "decode_between_runs": {
+          "allclose": true,
+          "atol": 1e-06,
+          "exact": true,
+          "max_abs": 0.0,
+          "rms": 0.0,
+          "rtol": 1e-05
+        },
+        "decode_vs_legacy_alignment": {
+          "allclose": false,
+          "atol": 1e-06,
+          "exact": false,
+          "max_abs": 6.973743438720703e-05,
+          "rms": 1.3160798496349673e-06,
+          "rtol": 1e-05
+        }
+      },
+      "id": "previously-heldout:2961-960-0004:clean:full",
+      "order": [
+        "baseline",
+        "reuse"
+      ]
+    },
+    {
+      "arms": {
+        "baseline": {
+          "after_handle_release": {
+            "allocated_bytes": 160720896,
+            "reserved_bytes": 436207616
+          },
+          "alignment": {
+            "native": {
+              "analysis_span": {
+                "end_ms": 7740,
+                "start_ms": 0
+              },
+              "end_ms": 7740,
+              "metadata": {
+                "avg_logprob": -0.2801812489827474,
+                "compression_ratio": 1.1235955056179776,
+                "language": "en",
+                "no_speech_prob": 0.012439200654625893,
+                "segments": [
+                  {
+                    "span": {
+                      "end_ms": 6580,
+                      "start_ms": 0
+                    },
+                    "text": " Jack would become Eva's happy husband and would remain amidst the hurried duties of the",
+                    "tokens": [
+                      3619,
+                      561,
+                      1716,
+                      32355,
+                      338,
+                      3772,
+                      5229,
+                      290,
+                      561,
+                      3520,
+                      31095,
+                      262,
+                      31662,
+                      10741,
+                      286,
+                      262
+                    ]
+                  },
+                  {
+                    "span": {
+                      "end_ms": 7360,
+                      "start_ms": 6580
+                    },
+                    "text": " eager world.",
+                    "tokens": [
+                      11069,
+                      995,
+                      13
+                    ]
+                  }
+                ],
+                "temperature": 0.0,
+                "timestamps_complete": true,
+                "tokens": [
+                  50363,
+                  3619,
+                  561,
+                  1716,
+                  32355,
+                  338,
+                  3772,
+                  5229,
+                  290,
+                  561,
+                  3520,
+                  31095,
+                  262,
+                  31662,
+                  10741,
+                  286,
+                  262,
+                  50692,
+                  50692,
+                  11069,
+                  995,
+                  13,
+                  50731
+                ]
+              },
+              "publication_segment_indices": null,
+              "start_ms": 0,
+              "text": "Jack would become Eva's happy husband and would remain amidst the hurried duties of the eager world.",
+              "window_id": "features:12"
+            },
+            "words": [
+              {
+                "span": {
+                  "end_ms": 940,
+                  "start_ms": 0
+                },
+                "text": " Jack",
+                "tokens": [
+                  3619
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 1140,
+                  "start_ms": 940
+                },
+                "text": " would",
+                "tokens": [
+                  561
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 1540,
+                  "start_ms": 1140
+                },
+                "text": " become",
+                "tokens": [
+                  1716
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 2200,
+                  "start_ms": 1540
+                },
+                "text": " Eva's",
+                "tokens": [
+                  32355,
+                  338
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 2260,
+                  "start_ms": 2200
+                },
+                "text": " happy",
+                "tokens": [
+                  3772
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 2740,
+                  "start_ms": 2260
+                },
+                "text": " husband",
+                "tokens": [
+                  5229
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 3840,
+                  "start_ms": 2740
+                },
+                "text": " and",
+                "tokens": [
+                  290
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 4080,
+                  "start_ms": 3840
+                },
+                "text": " would",
+                "tokens": [
+                  561
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 4440,
+                  "start_ms": 4080
+                },
+                "text": " remain",
+                "tokens": [
+                  3520
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 5140,
+                  "start_ms": 4440
+                },
+                "text": " amidst",
+                "tokens": [
+                  31095
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 5680,
+                  "start_ms": 5140
+                },
+                "text": " the",
+                "tokens": [
+                  262
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 5960,
+                  "start_ms": 5680
+                },
+                "text": " hurried",
+                "tokens": [
+                  31662
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 6300,
+                  "start_ms": 5960
+                },
+                "text": " duties",
+                "tokens": [
+                  10741
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 6660,
+                  "start_ms": 6300
+                },
+                "text": " of",
+                "tokens": [
+                  286
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 6780,
+                  "start_ms": 6660
+                },
+                "text": " the",
+                "tokens": [
+                  262
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 6980,
+                  "start_ms": 6780
+                },
+                "text": " eager",
+                "tokens": [
+                  11069
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 7420,
+                  "start_ms": 6980
+                },
+                "text": " world",
+                "tokens": [
+                  995
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 7720,
+                  "start_ms": 7420
+                },
+                "text": ".",
+                "tokens": [
+                  13
+                ]
+              }
+            ]
+          },
+          "alignment_wall_ns": 24346685,
+          "before": {
+            "allocated_bytes": 160720896,
+            "reserved_bytes": 436207616
+          },
+          "call_index": 12,
+          "capacity_restored": true,
+          "closed": true,
+          "decode_wall_ns": 129997035,
+          "encoder_calls": [
+            {
+              "input_frames": 3000,
+              "phase": "decode",
+              "use_sdpa": null
+            },
+            {
+              "input_frames": 3000,
+              "phase": "alignment",
+              "use_sdpa": false
+            }
+          ],
+          "peak_allocated_bytes": 290098176,
+          "peak_reserved_bytes": 436207616,
+          "wall_ns": 154556024
+        },
+        "reuse": {
+          "after_handle_release": {
+            "allocated_bytes": 160720896,
+            "reserved_bytes": 436207616
+          },
+          "alignment": {
+            "native": {
+              "analysis_span": {
+                "end_ms": 7740,
+                "start_ms": 0
+              },
+              "end_ms": 7740,
+              "metadata": {
+                "avg_logprob": -0.2801812489827474,
+                "compression_ratio": 1.1235955056179776,
+                "language": "en",
+                "no_speech_prob": 0.012439200654625893,
+                "segments": [
+                  {
+                    "span": {
+                      "end_ms": 6580,
+                      "start_ms": 0
+                    },
+                    "text": " Jack would become Eva's happy husband and would remain amidst the hurried duties of the",
+                    "tokens": [
+                      3619,
+                      561,
+                      1716,
+                      32355,
+                      338,
+                      3772,
+                      5229,
+                      290,
+                      561,
+                      3520,
+                      31095,
+                      262,
+                      31662,
+                      10741,
+                      286,
+                      262
+                    ]
+                  },
+                  {
+                    "span": {
+                      "end_ms": 7360,
+                      "start_ms": 6580
+                    },
+                    "text": " eager world.",
+                    "tokens": [
+                      11069,
+                      995,
+                      13
+                    ]
+                  }
+                ],
+                "temperature": 0.0,
+                "timestamps_complete": true,
+                "tokens": [
+                  50363,
+                  3619,
+                  561,
+                  1716,
+                  32355,
+                  338,
+                  3772,
+                  5229,
+                  290,
+                  561,
+                  3520,
+                  31095,
+                  262,
+                  31662,
+                  10741,
+                  286,
+                  262,
+                  50692,
+                  50692,
+                  11069,
+                  995,
+                  13,
+                  50731
+                ]
+              },
+              "publication_segment_indices": null,
+              "start_ms": 0,
+              "text": "Jack would become Eva's happy husband and would remain amidst the hurried duties of the eager world.",
+              "window_id": "features:11"
+            },
+            "words": [
+              {
+                "span": {
+                  "end_ms": 940,
+                  "start_ms": 0
+                },
+                "text": " Jack",
+                "tokens": [
+                  3619
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 1140,
+                  "start_ms": 940
+                },
+                "text": " would",
+                "tokens": [
+                  561
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 1540,
+                  "start_ms": 1140
+                },
+                "text": " become",
+                "tokens": [
+                  1716
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 2200,
+                  "start_ms": 1540
+                },
+                "text": " Eva's",
+                "tokens": [
+                  32355,
+                  338
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 2260,
+                  "start_ms": 2200
+                },
+                "text": " happy",
+                "tokens": [
+                  3772
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 2740,
+                  "start_ms": 2260
+                },
+                "text": " husband",
+                "tokens": [
+                  5229
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 3840,
+                  "start_ms": 2740
+                },
+                "text": " and",
+                "tokens": [
+                  290
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 4080,
+                  "start_ms": 3840
+                },
+                "text": " would",
+                "tokens": [
+                  561
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 4440,
+                  "start_ms": 4080
+                },
+                "text": " remain",
+                "tokens": [
+                  3520
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 5140,
+                  "start_ms": 4440
+                },
+                "text": " amidst",
+                "tokens": [
+                  31095
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 5680,
+                  "start_ms": 5140
+                },
+                "text": " the",
+                "tokens": [
+                  262
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 5960,
+                  "start_ms": 5680
+                },
+                "text": " hurried",
+                "tokens": [
+                  31662
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 6300,
+                  "start_ms": 5960
+                },
+                "text": " duties",
+                "tokens": [
+                  10741
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 6660,
+                  "start_ms": 6300
+                },
+                "text": " of",
+                "tokens": [
+                  286
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 6780,
+                  "start_ms": 6660
+                },
+                "text": " the",
+                "tokens": [
+                  262
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 6980,
+                  "start_ms": 6780
+                },
+                "text": " eager",
+                "tokens": [
+                  11069
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 7420,
+                  "start_ms": 6980
+                },
+                "text": " world",
+                "tokens": [
+                  995
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 7720,
+                  "start_ms": 7420
+                },
+                "text": ".",
+                "tokens": [
+                  13
+                ]
+              }
+            ]
+          },
+          "alignment_wall_ns": 7901918,
+          "before": {
+            "allocated_bytes": 160720896,
+            "reserved_bytes": 436207616
+          },
+          "call_index": 11,
+          "capacity_restored": true,
+          "closed": true,
+          "decode_wall_ns": 108273864,
+          "encoder_calls": [
+            {
+              "input_frames": 3000,
+              "phase": "decode",
+              "use_sdpa": null
+            }
+          ],
+          "peak_allocated_bytes": 190260736,
+          "peak_reserved_bytes": 436207616,
+          "wall_ns": 116391145
+        }
+      },
+      "feature_comparison": {
+        "decode_between_runs": {
+          "allclose": true,
+          "atol": 1e-06,
+          "exact": true,
+          "max_abs": 0.0,
+          "rms": 0.0,
+          "rtol": 1e-05
+        },
+        "decode_vs_legacy_alignment": {
+          "allclose": false,
+          "atol": 1e-06,
+          "exact": false,
+          "max_abs": 4.100799560546875e-05,
+          "rms": 1.1995221796608085e-06,
+          "rtol": 1e-05
+        }
+      },
+      "id": "previously-heldout:8455-210777-0028:noise64:full",
+      "order": [
+        "reuse",
+        "baseline"
+      ]
+    },
+    {
+      "arms": {
+        "baseline": {
+          "after_handle_release": {
+            "allocated_bytes": 160720896,
+            "reserved_bytes": 436207616
+          },
+          "alignment": {
+            "native": {
+              "analysis_span": {
+                "end_ms": 2000,
+                "start_ms": 0
+              },
+              "end_ms": 2000,
+              "metadata": {
+                "avg_logprob": -0.700106680393219,
+                "compression_ratio": 0.2727272727272727,
+                "language": "en",
+                "no_speech_prob": 0.94770747423172,
+                "segments": [],
+                "temperature": 0.0,
+                "timestamps_complete": false,
+                "tokens": [
+                  50363,
+                  345,
+                  50466
+                ]
+              },
+              "publication_segment_indices": null,
+              "start_ms": 0,
+              "text": "you",
+              "window_id": "features:13"
+            },
+            "words": [
+              {
+                "span": {
+                  "end_ms": 1980,
+                  "start_ms": 0
+                },
+                "text": " you",
+                "tokens": [
+                  345
+                ]
+              }
+            ]
+          },
+          "alignment_wall_ns": 190081592,
+          "before": {
+            "allocated_bytes": 160720896,
+            "reserved_bytes": 436207616
+          },
+          "call_index": 13,
+          "capacity_restored": true,
+          "closed": true,
+          "decode_wall_ns": 31185605,
+          "encoder_calls": [
+            {
+              "input_frames": 3000,
+              "phase": "decode",
+              "use_sdpa": null
+            },
+            {
+              "input_frames": 3000,
+              "phase": "alignment",
+              "use_sdpa": false
+            }
+          ],
+          "peak_allocated_bytes": 290098176,
+          "peak_reserved_bytes": 436207616,
+          "wall_ns": 221525129
+        },
+        "reuse": {
+          "after_handle_release": {
+            "allocated_bytes": 160720896,
+            "reserved_bytes": 436207616
+          },
+          "alignment": {
+            "native": {
+              "analysis_span": {
+                "end_ms": 2000,
+                "start_ms": 0
+              },
+              "end_ms": 2000,
+              "metadata": {
+                "avg_logprob": -0.700106680393219,
+                "compression_ratio": 0.2727272727272727,
+                "language": "en",
+                "no_speech_prob": 0.94770747423172,
+                "segments": [],
+                "temperature": 0.0,
+                "timestamps_complete": false,
+                "tokens": [
+                  50363,
+                  345,
+                  50466
+                ]
+              },
+              "publication_segment_indices": null,
+              "start_ms": 0,
+              "text": "you",
+              "window_id": "features:14"
+            },
+            "words": [
+              {
+                "span": {
+                  "end_ms": 1980,
+                  "start_ms": 0
+                },
+                "text": " you",
+                "tokens": [
+                  345
+                ]
+              }
+            ]
+          },
+          "alignment_wall_ns": 6889870,
+          "before": {
+            "allocated_bytes": 160720896,
+            "reserved_bytes": 436207616
+          },
+          "call_index": 14,
+          "capacity_restored": true,
+          "closed": true,
+          "decode_wall_ns": 41022192,
+          "encoder_calls": [
+            {
+              "input_frames": 3000,
+              "phase": "decode",
+              "use_sdpa": null
+            }
+          ],
+          "peak_allocated_bytes": 190260736,
+          "peak_reserved_bytes": 436207616,
+          "wall_ns": 48130307
+        }
+      },
+      "feature_comparison": {
+        "decode_between_runs": {
+          "allclose": true,
+          "atol": 1e-06,
+          "exact": true,
+          "max_abs": 0.0,
+          "rms": 0.0,
+          "rtol": 1e-05
+        },
+        "decode_vs_legacy_alignment": {
+          "allclose": false,
+          "atol": 1e-06,
+          "exact": false,
+          "max_abs": 2.92360782623291e-05,
+          "rms": 1.1992729287868023e-06,
+          "rtol": 1e-05
+        }
+      },
+      "id": "digital-silence",
+      "order": [
+        "baseline",
+        "reuse"
+      ]
+    },
+    {
+      "arms": {
+        "baseline": {
+          "after_handle_release": {
+            "allocated_bytes": 160720896,
+            "reserved_bytes": 436207616
+          },
+          "alignment": {
+            "native": {
+              "analysis_span": {
+                "end_ms": 8220,
+                "start_ms": 0
+              },
+              "end_ms": 8220,
+              "metadata": {
+                "avg_logprob": -0.5441680235021255,
+                "compression_ratio": 1.1616161616161615,
+                "language": "en",
+                "no_speech_prob": 0.048801109194755554,
+                "segments": [
+                  {
+                    "span": {
+                      "end_ms": 6320,
+                      "start_ms": 0
+                    },
+                    "text": " There is no danger of the modern commentators on the Tímías following into the absurdities",
+                    "tokens": [
+                      1318,
+                      318,
+                      645,
+                      3514,
+                      286,
+                      262,
+                      3660,
+                      25699,
+                      319,
+                      262,
+                      309,
+                      8836,
+                      76,
+                      8836,
+                      292,
+                      1708,
+                      656,
+                      262,
+                      12986,
+                      871
+                    ]
+                  },
+                  {
+                    "span": {
+                      "end_ms": 7840,
+                      "start_ms": 6320
+                    },
+                    "text": " of the Neo-Plaidnists.",
+                    "tokens": [
+                      286,
+                      262,
+                      21227,
+                      12,
+                      3646,
+                      1698,
+                      77,
+                      1023,
+                      13
+                    ]
+                  }
+                ],
+                "temperature": 0.0,
+                "timestamps_complete": true,
+                "tokens": [
+                  50363,
+                  1318,
+                  318,
+                  645,
+                  3514,
+                  286,
+                  262,
+                  3660,
+                  25699,
+                  319,
+                  262,
+                  309,
+                  8836,
+                  76,
+                  8836,
+                  292,
+                  1708,
+                  656,
+                  262,
+                  12986,
+                  871,
+                  50679,
+                  50679,
+                  286,
+                  262,
+                  21227,
+                  12,
+                  3646,
+                  1698,
+                  77,
+                  1023,
+                  13,
+                  50755
+                ]
+              },
+              "publication_segment_indices": null,
+              "start_ms": 0,
+              "text": "There is no danger of the modern commentators on the Tímías following into the absurdities of the Neo-Plaidnists.",
+              "window_id": "features:16"
+            },
+            "words": [
+              {
+                "span": {
+                  "end_ms": 760,
+                  "start_ms": 0
+                },
+                "text": " There",
+                "tokens": [
+                  1318
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 920,
+                  "start_ms": 760
+                },
+                "text": " is",
+                "tokens": [
+                  318
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 1120,
+                  "start_ms": 920
+                },
+                "text": " no",
+                "tokens": [
+                  645
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 1480,
+                  "start_ms": 1120
+                },
+                "text": " danger",
+                "tokens": [
+                  3514
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 1900,
+                  "start_ms": 1480
+                },
+                "text": " of",
+                "tokens": [
+                  286
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 2080,
+                  "start_ms": 1900
+                },
+                "text": " the",
+                "tokens": [
+                  262
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 2520,
+                  "start_ms": 2080
+                },
+                "text": " modern",
+                "tokens": [
+                  3660
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 3180,
+                  "start_ms": 2520
+                },
+                "text": " commentators",
+                "tokens": [
+                  25699
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 3560,
+                  "start_ms": 3180
+                },
+                "text": " on",
+                "tokens": [
+                  319
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 3760,
+                  "start_ms": 3560
+                },
+                "text": " the",
+                "tokens": [
+                  262
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 4580,
+                  "start_ms": 3760
+                },
+                "text": " Tímías",
+                "tokens": [
+                  309,
+                  8836,
+                  76,
+                  8836,
+                  292
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 5100,
+                  "start_ms": 4580
+                },
+                "text": " following",
+                "tokens": [
+                  1708
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 5440,
+                  "start_ms": 5100
+                },
+                "text": " into",
+                "tokens": [
+                  656
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 5600,
+                  "start_ms": 5440
+                },
+                "text": " the",
+                "tokens": [
+                  262
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 6380,
+                  "start_ms": 5600
+                },
+                "text": " absurdities",
+                "tokens": [
+                  12986,
+                  871
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 6620,
+                  "start_ms": 6380
+                },
+                "text": " of",
+                "tokens": [
+                  286
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 6740,
+                  "start_ms": 6620
+                },
+                "text": " the",
+                "tokens": [
+                  262
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 6960,
+                  "start_ms": 6740
+                },
+                "text": " Neo",
+                "tokens": [
+                  21227
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 7700,
+                  "start_ms": 6960
+                },
+                "text": "-Plaidnists",
+                "tokens": [
+                  12,
+                  3646,
+                  1698,
+                  77,
+                  1023
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 7860,
+                  "start_ms": 7700
+                },
+                "text": ".",
+                "tokens": [
+                  13
+                ]
+              }
+            ]
+          },
+          "alignment_wall_ns": 31178346,
+          "before": {
+            "allocated_bytes": 160720896,
+            "reserved_bytes": 436207616
+          },
+          "call_index": 16,
+          "capacity_restored": true,
+          "closed": true,
+          "decode_wall_ns": 176080681,
+          "encoder_calls": [
+            {
+              "input_frames": 3000,
+              "phase": "decode",
+              "use_sdpa": null
+            },
+            {
+              "input_frames": 3000,
+              "phase": "alignment",
+              "use_sdpa": false
+            }
+          ],
+          "peak_allocated_bytes": 290098176,
+          "peak_reserved_bytes": 436207616,
+          "wall_ns": 207497831
+        },
+        "reuse": {
+          "after_handle_release": {
+            "allocated_bytes": 160720896,
+            "reserved_bytes": 436207616
+          },
+          "alignment": {
+            "native": {
+              "analysis_span": {
+                "end_ms": 8220,
+                "start_ms": 0
+              },
+              "end_ms": 8220,
+              "metadata": {
+                "avg_logprob": -0.5441680235021255,
+                "compression_ratio": 1.1616161616161615,
+                "language": "en",
+                "no_speech_prob": 0.048801109194755554,
+                "segments": [
+                  {
+                    "span": {
+                      "end_ms": 6320,
+                      "start_ms": 0
+                    },
+                    "text": " There is no danger of the modern commentators on the Tímías following into the absurdities",
+                    "tokens": [
+                      1318,
+                      318,
+                      645,
+                      3514,
+                      286,
+                      262,
+                      3660,
+                      25699,
+                      319,
+                      262,
+                      309,
+                      8836,
+                      76,
+                      8836,
+                      292,
+                      1708,
+                      656,
+                      262,
+                      12986,
+                      871
+                    ]
+                  },
+                  {
+                    "span": {
+                      "end_ms": 7840,
+                      "start_ms": 6320
+                    },
+                    "text": " of the Neo-Plaidnists.",
+                    "tokens": [
+                      286,
+                      262,
+                      21227,
+                      12,
+                      3646,
+                      1698,
+                      77,
+                      1023,
+                      13
+                    ]
+                  }
+                ],
+                "temperature": 0.0,
+                "timestamps_complete": true,
+                "tokens": [
+                  50363,
+                  1318,
+                  318,
+                  645,
+                  3514,
+                  286,
+                  262,
+                  3660,
+                  25699,
+                  319,
+                  262,
+                  309,
+                  8836,
+                  76,
+                  8836,
+                  292,
+                  1708,
+                  656,
+                  262,
+                  12986,
+                  871,
+                  50679,
+                  50679,
+                  286,
+                  262,
+                  21227,
+                  12,
+                  3646,
+                  1698,
+                  77,
+                  1023,
+                  13,
+                  50755
+                ]
+              },
+              "publication_segment_indices": null,
+              "start_ms": 0,
+              "text": "There is no danger of the modern commentators on the Tímías following into the absurdities of the Neo-Plaidnists.",
+              "window_id": "features:15"
+            },
+            "words": [
+              {
+                "span": {
+                  "end_ms": 760,
+                  "start_ms": 0
+                },
+                "text": " There",
+                "tokens": [
+                  1318
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 920,
+                  "start_ms": 760
+                },
+                "text": " is",
+                "tokens": [
+                  318
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 1120,
+                  "start_ms": 920
+                },
+                "text": " no",
+                "tokens": [
+                  645
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 1480,
+                  "start_ms": 1120
+                },
+                "text": " danger",
+                "tokens": [
+                  3514
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 1900,
+                  "start_ms": 1480
+                },
+                "text": " of",
+                "tokens": [
+                  286
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 2080,
+                  "start_ms": 1900
+                },
+                "text": " the",
+                "tokens": [
+                  262
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 2520,
+                  "start_ms": 2080
+                },
+                "text": " modern",
+                "tokens": [
+                  3660
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 3180,
+                  "start_ms": 2520
+                },
+                "text": " commentators",
+                "tokens": [
+                  25699
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 3560,
+                  "start_ms": 3180
+                },
+                "text": " on",
+                "tokens": [
+                  319
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 3760,
+                  "start_ms": 3560
+                },
+                "text": " the",
+                "tokens": [
+                  262
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 4580,
+                  "start_ms": 3760
+                },
+                "text": " Tímías",
+                "tokens": [
+                  309,
+                  8836,
+                  76,
+                  8836,
+                  292
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 5100,
+                  "start_ms": 4580
+                },
+                "text": " following",
+                "tokens": [
+                  1708
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 5440,
+                  "start_ms": 5100
+                },
+                "text": " into",
+                "tokens": [
+                  656
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 5600,
+                  "start_ms": 5440
+                },
+                "text": " the",
+                "tokens": [
+                  262
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 6380,
+                  "start_ms": 5600
+                },
+                "text": " absurdities",
+                "tokens": [
+                  12986,
+                  871
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 6620,
+                  "start_ms": 6380
+                },
+                "text": " of",
+                "tokens": [
+                  286
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 6740,
+                  "start_ms": 6620
+                },
+                "text": " the",
+                "tokens": [
+                  262
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 6960,
+                  "start_ms": 6740
+                },
+                "text": " Neo",
+                "tokens": [
+                  21227
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 7700,
+                  "start_ms": 6960
+                },
+                "text": "-Plaidnists",
+                "tokens": [
+                  12,
+                  3646,
+                  1698,
+                  77,
+                  1023
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 7860,
+                  "start_ms": 7700
+                },
+                "text": ".",
+                "tokens": [
+                  13
+                ]
+              }
+            ]
+          },
+          "alignment_wall_ns": 9392817,
+          "before": {
+            "allocated_bytes": 160720896,
+            "reserved_bytes": 436207616
+          },
+          "call_index": 15,
+          "capacity_restored": true,
+          "closed": true,
+          "decode_wall_ns": 174399405,
+          "encoder_calls": [
+            {
+              "input_frames": 3000,
+              "phase": "decode",
+              "use_sdpa": null
+            }
+          ],
+          "peak_allocated_bytes": 190260736,
+          "peak_reserved_bytes": 436207616,
+          "wall_ns": 184034395
+        }
+      },
+      "feature_comparison": {
+        "decode_between_runs": {
+          "allclose": true,
+          "atol": 1e-06,
+          "exact": true,
+          "max_abs": 0.0,
+          "rms": 0.0,
+          "rtol": 1e-05
+        },
+        "decode_vs_legacy_alignment": {
+          "allclose": false,
+          "atol": 1e-06,
+          "exact": false,
+          "max_abs": 4.6372413635253906e-05,
+          "rms": 1.7890465213750652e-06,
+          "rtol": 1e-05
+        }
+      },
+      "id": "attenuated32:2961-960-0004",
+      "order": [
+        "reuse",
+        "baseline"
+      ]
+    }
+  ],
+  "claim_boundary": {
+    "cross_window_reuse": false,
+    "full_stream_recovery": false,
+    "general_speedup": false,
+    "production_readiness": false
+  },
+  "error": null,
+  "experiment_id": "modal-alignment-features-v1",
+  "inputs": [
+    {
+      "end_ms": 33660,
+      "id": "context:concatenated-no-added-pauses:current",
+      "pcm_sha256": "ffad5657800797fa8cf9e4d6b6178f64834c9d1e8362f720dc1ad130fe6ea1f6",
+      "sample_count": 231680,
+      "start_ms": 19180
+    },
+    {
+      "end_ms": 33660,
+      "id": "context:concatenated-no-added-pauses:alternative",
+      "pcm_sha256": "2011ceb95bec6982f358ccab62bab0c39f7017e8cac7807c225e78c9b0d0efad",
+      "sample_count": 198400,
+      "start_ms": 21260
+    },
+    {
+      "end_ms": 43660,
+      "id": "context:mixed-continuous-noise64:current",
+      "pcm_sha256": "3c89f355c44c1198e105ca2af595440d82254e029145ac9ddd9e1db4144b481f",
+      "sample_count": 200000,
+      "start_ms": 31160
+    },
+    {
+      "end_ms": 43660,
+      "id": "context:mixed-continuous-noise64:alternative",
+      "pcm_sha256": "4dc3a5378ba493ece581efad7071ce556e8c8d8af8494f5d94a8f87ac99350d5",
+      "sample_count": 161920,
+      "start_ms": 33540
+    },
+    {
+      "end_ms": 8220,
+      "id": "previously-heldout:2961-960-0004:clean:full",
+      "pcm_sha256": "cd368c6d12c2a1c51e688815ccaffba48e4bdca7cec1045746076936f034c23e",
+      "sample_count": 131520,
+      "start_ms": 0
+    },
+    {
+      "end_ms": 7740,
+      "id": "previously-heldout:8455-210777-0028:noise64:full",
+      "pcm_sha256": "9539b42bc8e9770f891fa9aac98d53fa1d9f354a983f8f8488d6138d9637ac34",
+      "sample_count": 123840,
+      "start_ms": 0
+    },
+    {
+      "end_ms": 2000,
+      "id": "digital-silence",
+      "pcm_sha256": "4f7988030a00d082fe445e00a2ac5dab502300ff1b80e8592dd569867b60ef74",
+      "sample_count": 32000,
+      "start_ms": 0
+    },
+    {
+      "end_ms": 8220,
+      "id": "attenuated32:2961-960-0004",
+      "pcm_sha256": "b32611c71f2ad45cae22909fbdc948ab7c4d23c37198680a69c7f02ea7017cec",
+      "sample_count": 131520,
+      "start_ms": 0
+    }
+  ],
+  "model": {
+    "final_sha256": "sha256:8041a80119a588f542472da35e97d0372fce1d9709ed9874475e9c03deac5de6",
+    "initial_sha256": "sha256:8041a80119a588f542472da35e97d0372fce1d9709ed9874475e9c03deac5de6",
+    "unchanged": true
+  },
+  "native_window_count": 16,
+  "qualified": false,
+  "schema_version": "1-diagnostic",
+  "scope": {
+    "actual_stream_commits": 0,
+    "cached_model": true,
+    "default_alignment_unchanged": true,
+    "feature_snapshots_on_cpu": true,
+    "forward_hook_overhead_included": true,
+    "maximum_native_windows": 16,
+    "reference_routing": false,
+    "same_lane": true,
+    "single_host_thread": true,
+    "timing_excludes_preprocessing_and_collection": true
+  },
+  "source": {
+    "registration_sha256": "475c98d2311a85da250a10bcb2733cd990ec029aecfb8fe633667ca41ca53f01",
+    "snapshot": {
+      "commit": "27ee020817c3b8f614b535cbf0fdf5bdca058f5b",
+      "digest": "98bf199ca0a20962c6f4ef57c6ff5f7ad5a0dcfca05df7e7143c480ef3eb0022",
+      "files": [
+        {
+          "path": "artifacts/resolution-inputs-v1/2961-960-0004.pcm",
+          "sha256": "cd368c6d12c2a1c51e688815ccaffba48e4bdca7cec1045746076936f034c23e",
+          "size_bytes": 263040
+        },
+        {
+          "path": "artifacts/resolution-inputs-v1/8455-210777-0028.pcm",
+          "sha256": "02984e9efd81309838ad20b949be23156c97ea0035178065016e930d23128bc3",
+          "size_bytes": 247520
+        },
+        {
+          "path": "evidence/modal-t4-tiny-en-word-context-2026-09-06.json",
+          "sha256": "f96e524e01574b6f2f8df3f9e09932b990313bba9354799a58703da043526b85",
+          "size_bytes": 1952996
+        },
+        {
+          "path": "experiments/modal-acoustic-diagnostic-v2.json",
+          "sha256": "479f768e4c20b3cbf05d3518bd7b9c974dc40b7a539b449d593b260bf46dbfde",
+          "size_bytes": 3432
+        },
+        {
+          "path": "experiments/modal-word-corpus-v1.json",
+          "sha256": "0de0f0af9ec7a9f949d636721f036ed457b4417aa9e12da3faf6de42f1ebf925",
+          "size_bytes": 13179
+        },
+        {
+          "path": "experiments/modal-word-resolution-inputs-v1.json",
+          "sha256": "a86b2960fa04211eccb8e88be1426967350d8416245678897292bff18dff214c",
+          "size_bytes": 4867
+        },
+        {
+          "path": "experiments/modal-word-resolution-v1.json",
+          "sha256": "80aa66b95f51bd5d50d912946f1d1af4d18d56d46a2d5564955129be344adfc2",
+          "size_bytes": 2147
+        },
+        {
+          "path": "infra/modal_acoustic_diagnostic.py",
+          "sha256": "04cf1066659a34ce83620cca4598befab700a8f91d6bd3f081275354d4c82355",
+          "size_bytes": 31627
+        },
+        {
+          "path": "infra/modal_alignment_features.py",
+          "sha256": "475c98d2311a85da250a10bcb2733cd990ec029aecfb8fe633667ca41ca53f01",
+          "size_bytes": 17366
+        },
+        {
+          "path": "infra/modal_continuous_smoke.py",
+          "sha256": "5f88560cdacb0780e108cd9b222b95a361f5a8b1107b7db59da5b5db55596f70",
+          "size_bytes": 36793
+        },
+        {
+          "path": "infra/modal_native_cuda_qualification.py",
+          "sha256": "178285839ced6820d1fb139fa328ff10f8dbbd13e771eb9be50920358316e151",
+          "size_bytes": 98278
+        },
+        {
+          "path": "infra/modal_stream_boundary_diagnostic.py",
+          "sha256": "a6c3d4d848acbc9e481ae49ae638abe45dcce74704d129967fbf92b755e2faa2",
+          "size_bytes": 60265
+        },
+        {
+          "path": "infra/modal_word_corpus.py",
+          "sha256": "3d518a6d633f0a4fc4e1dd265343168dd44cba0051e64ba738bb62123973328c",
+          "size_bytes": 74872
+        },
+        {
+          "path": "infra/modal_word_resolution.py",
+          "sha256": "7c2a2d99ebbc467ff50f04337be58fcb4c5a7def9bc0ec2d4663a76b8e062770",
+          "size_bytes": 14113
+        },
+        {
+          "path": "infra/word_resolution_worker.py",
+          "sha256": "dc6fe30ec130a20f0f8b0091baf76eda5fe465f46ba22d69ba1754405de5f5ad",
+          "size_bytes": 17172
+        },
+        {
+          "path": "patches/openai-whisper/experimental/0008-Add-optional-alignment-audio-features.patch",
+          "sha256": "e665bca7abea5ab273c34ecf4d63c050f8c7120c7fdd9c411038b4f7511cd169",
+          "size_bytes": 9475
+        },
+        {
+          "path": "src/whisper_runtime/__init__.py",
+          "sha256": "6b6c549bf89264c59b8808cf5cba240599af10f0cd12610a859ff964d6fed2aa",
+          "size_bytes": 1533
+        },
+        {
+          "path": "src/whisper_runtime/adapters/__init__.py",
+          "sha256": "03b568872fc2c797f0c4d46f94465c90a9f565d0bc6ca2fb52ad1796168b9518",
+          "size_bytes": 4101
+        },
+        {
+          "path": "src/whisper_runtime/adapters/_model_binding.py",
+          "sha256": "3040ef1cf63cb415fd6063d627a4b9464f0691cf05c02e8a72d94bdc28302707",
+          "size_bytes": 6664
+        },
+        {
+          "path": "src/whisper_runtime/adapters/audio_endpoints.py",
+          "sha256": "bbdb2d3bf19a436189de88e85d2ba2d5cd91861d1d6f2876fc46e30327dd6550",
+          "size_bytes": 5570
+        },
+        {
+          "path": "src/whisper_runtime/adapters/audio_evidence.py",
+          "sha256": "14db21a12f4c8ea3da76bede0814ac2cd1422162165fd65db1bcf951de176184",
+          "size_bytes": 9094
+        },
+        {
+          "path": "src/whisper_runtime/adapters/continuous_stream.py",
+          "sha256": "f49a90acb3cd65ce14180af070482321e359ea3a7ecda97f39e3726b299bb056",
+          "size_bytes": 58767
+        },
+        {
+          "path": "src/whisper_runtime/adapters/legacy_whisper.py",
+          "sha256": "14b6f771c114238317d5118ba64c64334857e8e9da1d0f360baeeef48f3415e0",
+          "size_bytes": 33513
+        },
+        {
+          "path": "src/whisper_runtime/adapters/native_result.py",
+          "sha256": "3198b3996e7445449d7c74092ecef79d5a3615c1ebb48951c9bc7bbba3c18d92",
+          "size_bytes": 12573
+        },
+        {
+          "path": "src/whisper_runtime/adapters/native_stream.py",
+          "sha256": "01898983175014ac33e66c00be5bc92b96d0f300c0b20eb57a13cb4f384f0c39",
+          "size_bytes": 27068
+        },
+        {
+          "path": "src/whisper_runtime/adapters/native_whisper.py",
+          "sha256": "bf561833450c65a3c84634d9691adad01eaa6bf4d4b7ab95b65a53c1051a36f0",
+          "size_bytes": 74790
+        },
+        {
+          "path": "src/whisper_runtime/adapters/paced_replay.py",
+          "sha256": "04628898703772f7c3f45c7de2f7fae4f772b5192bc48c813a625737bf2b377e",
+          "size_bytes": 11659
+        },
+        {
+          "path": "src/whisper_runtime/adapters/stream_policy.py",
+          "sha256": "452d71993ffd9395a36a8b6a68fbe34b53d90665cc13ad22058b49ca32b0f5a9",
+          "size_bytes": 13353
+        },
+        {
+          "path": "src/whisper_runtime/adapters/word_policy.py",
+          "sha256": "f7746ff54c6ca7fa250af8f6b85c88976e10d44a1fafae48626e1527bcc7a60e",
+          "size_bytes": 21812
+        },
+        {
+          "path": "src/whisper_runtime/errors.py",
+          "sha256": "87127fee36ff6706360f8ad82ea49a0dea870d9cd1831ceec3aeb31c2d8e89df",
+          "size_bytes": 2439
+        },
+        {
+          "path": "src/whisper_runtime/execution.py",
+          "sha256": "ea758adb9ea4204f29f5b444ecf54331d751b66e3b4373014179522a225cef44",
+          "size_bytes": 7533
+        },
+        {
+          "path": "src/whisper_runtime/model.py",
+          "sha256": "bfe66fb074d308447e94af78851db46a1819d291cad9fde742b28dcc0be629c0",
+          "size_bytes": 558
+        },
+        {
+          "path": "src/whisper_runtime/resources.py",
+          "sha256": "5beec172371839ab73bb3ca594b22460f37723f1347db74841a43a4a102716d5",
+          "size_bytes": 6384
+        },
+        {
+          "path": "src/whisper_runtime/state.py",
+          "sha256": "2b234b2a9b7618a4834cdc906052c3ca46ecab0a73eba04d9eb3f891dc01c312",
+          "size_bytes": 11988
+        },
+        {
+          "path": "src/whisper_runtime/transaction.py",
+          "sha256": "d9e4622ff289b182d7a2b23ebc6243e661da9f9061484107b3da09feb1ed44e4",
+          "size_bytes": 37581
+        },
+        {
+          "path": "src/whisper_runtime/worker.py",
+          "sha256": "92dc3f3366903c4304aaa7919dc84d8252bbdd02279d876701159bf0e092e077",
+          "size_bytes": 11824
+        },
+        {
+          "path": "tools/analyze_stream_text_agreement.py",
+          "sha256": "f5ff71ef3b0dec465d550cd3b218ffbb08a61640f7ee31cae6a0693d750ca13a",
+          "size_bytes": 15098
+        },
+        {
+          "path": "tools/analyze_word_resolution.py",
+          "sha256": "6e04c5e4eff4513666fdcd30daa86a6004e2acc0551a8204759f8b990dc9f13b",
+          "size_bytes": 14825
+        },
+        {
+          "path": "tools/prepare_acoustic_cases.py",
+          "sha256": "8d2eaa65dc5a6ce57589d91efac2c773901ba59fe14a54cf9a5d1028ac62c79d",
+          "size_bytes": 11344
+        },
+        {
+          "path": "tools/prepare_speech_corpus.py",
+          "sha256": "7ee1771a5642cddc6679a368c354a856ee99bd22d2b9e90caee8fb273b6c12a8",
+          "size_bytes": 17184
+        },
+        {
+          "path": "tools/word_anchor_reconciliation.py",
+          "sha256": "dfdea9d80d6c2abb8aa489c5b70938f1f478574fb349ba22140103f3bc9bcc29",
+          "size_bytes": 9732
+        }
+      ]
+    }
+  },
+  "status": "completed",
+  "summary": {
+    "all_expected_encoder_counts": true,
+    "all_expected_encoder_paths": true,
+    "all_native_equal": true,
+    "all_words_equal": true,
+    "baseline_encoder_calls": 16,
+    "cells": [
+      {
+        "baseline_encoder_calls": 2,
+        "expected_encoder_counts": true,
+        "expected_encoder_paths": true,
+        "id": "context:concatenated-no-added-pauses:current",
+        "native_equal": true,
+        "reuse_encoder_calls": 1,
+        "words_equal": true
+      },
+      {
+        "baseline_encoder_calls": 2,
+        "expected_encoder_counts": true,
+        "expected_encoder_paths": true,
+        "id": "context:concatenated-no-added-pauses:alternative",
+        "native_equal": true,
+        "reuse_encoder_calls": 1,
+        "words_equal": true
+      },
+      {
+        "baseline_encoder_calls": 2,
+        "expected_encoder_counts": true,
+        "expected_encoder_paths": true,
+        "id": "context:mixed-continuous-noise64:current",
+        "native_equal": true,
+        "reuse_encoder_calls": 1,
+        "words_equal": true
+      },
+      {
+        "baseline_encoder_calls": 2,
+        "expected_encoder_counts": true,
+        "expected_encoder_paths": true,
+        "id": "context:mixed-continuous-noise64:alternative",
+        "native_equal": true,
+        "reuse_encoder_calls": 1,
+        "words_equal": true
+      },
+      {
+        "baseline_encoder_calls": 2,
+        "expected_encoder_counts": true,
+        "expected_encoder_paths": true,
+        "id": "previously-heldout:2961-960-0004:clean:full",
+        "native_equal": true,
+        "reuse_encoder_calls": 1,
+        "words_equal": true
+      },
+      {
+        "baseline_encoder_calls": 2,
+        "expected_encoder_counts": true,
+        "expected_encoder_paths": true,
+        "id": "previously-heldout:8455-210777-0028:noise64:full",
+        "native_equal": true,
+        "reuse_encoder_calls": 1,
+        "words_equal": true
+      },
+      {
+        "baseline_encoder_calls": 2,
+        "expected_encoder_counts": true,
+        "expected_encoder_paths": true,
+        "id": "digital-silence",
+        "native_equal": true,
+        "reuse_encoder_calls": 1,
+        "words_equal": true
+      },
+      {
+        "baseline_encoder_calls": 2,
+        "expected_encoder_counts": true,
+        "expected_encoder_paths": true,
+        "id": "attenuated32:2961-960-0004",
+        "native_equal": true,
+        "reuse_encoder_calls": 1,
+        "words_equal": true
+      }
+    ],
+    "reuse_encoder_calls": 8
+  },
+  "worker": {
+    "function_call_id": "fc-01M1T4ZMQA1AQHDF36VTYTSEM7",
+    "function_call_id_sha256": "1b2017904aed8ca0de68fb6d781cb4bfc54de500adde912ea3772062586672dc",
+    "modal": "1.5.5"
+  },
+  "app_id": "ap-ZFqgWMomF5q6jK2UigBSDj"
+}

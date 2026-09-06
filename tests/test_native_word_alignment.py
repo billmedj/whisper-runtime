@@ -612,6 +612,56 @@ class NativeAlignmentFeatureReuseTests(unittest.TestCase):
         self.assertIsNone(run._backend_run)
         self.assertEqual(session.snapshot().version, 0)
 
+    def test_external_recovery_then_close_releases_inputs_without_repeating_cleanup(
+        self,
+    ) -> None:
+        for number, failure in enumerate(("cleanup", "lease")):
+            with self.subTest(failure=failure):
+                features = AudioFeatures()
+                run, backend, mel, session, _ = self.start(
+                    raw_result(audio_features=features), request=self.request(number)
+                )
+                run.step()
+                run.prepare_result()
+                backend.fail_cleanup = failure == "cleanup"
+                lease = run._transaction._lease
+                original_release = type(lease).release
+
+                def release(target):
+                    if failure == "lease":
+                        raise RuntimeError("lease release failed")
+                    return original_release(target)
+
+                with patch.object(type(lease), "release", new=release):
+                    with self.assertRaises(TransactionRetainedError) as raised:
+                        run.close()
+                retained = raised.exception
+                self.assertTrue(run.closed)
+                self.assertFalse(run.capacity_released)
+                cleanup_calls = backend.cleanup_calls
+                self.assertFalse(run.close())
+                self.assertEqual(backend.cleanup_calls, cleanup_calls)
+                self.assertIs(run._alignment_audio_features, features)
+                self.assertIs(run._alignment_batched_mel, mel.batch)
+                self.assertIs(run._backend_run, backend)
+                backend.fail_cleanup = False
+                self.assertTrue(self.worker.recover(retained.transaction))
+                self.assertTrue(run.capacity_released)
+                # Worker retirement has no handle notification. The public
+                # idempotent close refreshes ownership without another fence.
+                self.assertIs(run._alignment_audio_features, features)
+                cleanup_calls = backend.cleanup_calls
+                self.assertFalse(run.close())
+                self.assertFalse(run.close())
+                self.assertEqual(backend.cleanup_calls, cleanup_calls)
+                self.assertIsNone(run._alignment_audio_features)
+                self.assertIsNone(run._alignment_model)
+                self.assertIsNone(run._alignment_batched_mel)
+                self.assertIsNone(run._backend_run)
+                self.assertEqual(self.budget.available, self.capacity)
+                self.assertEqual(self.worker.queue_depth, 0)
+                self.assertEqual(session.snapshot().version, 0)
+
     def test_closed_run_does_not_keep_features_alive_or_reuse_them_in_next_window(
         self,
     ) -> None:
@@ -645,7 +695,9 @@ class NativeCudaWordAlignmentTests(unittest.TestCase):
     ) -> None:
         events: list[str] = []
         runtime = fixtures.FakeCudaRuntime(events)
-        adapter, _, budget, model = self.make_adapter(reuse_alignment_features=True)
+        adapter, worker, budget, model = self.make_adapter(
+            reuse_alignment_features=True
+        )
         model.dims.n_audio_state = 4
         features = AudioFeatures(device=model.device)
         backend = ResultRun(raw_result(audio_features=features))
@@ -687,12 +739,16 @@ class NativeCudaWordAlignmentTests(unittest.TestCase):
             run.step()
             run.prepare_word_alignment()
             runtime.fail_event_synchronize = True
-            with self.assertRaises(TransactionRetainedError):
+            with self.assertRaises(TransactionRetainedError) as raised:
                 run.finish()
             self.assertFalse(run.capacity_released)
             self.assertIs(run._alignment_audio_features, features)
             runtime.fail_event_synchronize = False
-            self.assertTrue(run.stop())
+            self.assertTrue(worker.recover(raised.exception.transaction))
+            after_recovery = tuple(events)
+            self.assertIs(run._alignment_audio_features, features)
+            self.assertFalse(run.close())
+            self.assertEqual(tuple(events), after_recovery)
         self.assertEqual(streams, runtime.streams)
         self.assertTrue(run.capacity_released)
         self.assertIsNone(run._alignment_audio_features)

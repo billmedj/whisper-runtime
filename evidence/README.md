@@ -1,5 +1,15 @@
 # Integration evidence
 
+The [same-window feature comparison](modal-t4-tiny-en-alignment-features-2026-09-06.json)
+completes eight paired inputs on one T4 at source commit `27ee020`. Reuse removes
+one of two encoder forwards per analysis, with exact native and aligned-word
+outputs on every pair. Decode and legacy alignment features are numerically
+different; output equality is measured, not assumed. All sixteen runs close
+and restore capacity. Native output on digital silence remains incorrect.
+See the [report](../docs/research/2026-09-06-alignment-feature-handoff.md) for
+identities, memory, timing regressions and scope. This validates opt-in
+fixed-window reuse, not general speedup, live recovery or acoustic accuracy.
+
 The [CUDA lane comparison](modal-t4-tiny-en-cuda-lane-2026-09-06.json) preserves
 exact native output across twelve analyses. Alternating arms exposed a retained
 result-handle measurement effect; its original per-call plateau criterion failed.

@@ -39,9 +39,11 @@ and failure, malformed-input rejection, and unchanged default/custom behavior.
 They do not establish GPU parity, acoustic correctness, or service latency
 savings. Native adapter tests separately cover ownership and recovery. Its
 opt-in profile permits `prepare_word_alignment(reuse_alignment_features=False)`
-as a legacy control; it cannot change modes after alignment is cached. A paired
-T4 comparison of actual decode-produced features is defined in the
-[handoff report](../../../docs/research/2026-09-06-alignment-feature-handoff.md).
+as a legacy control; it cannot change modes after alignment is cached. The
+[paired T4 comparison](../../../docs/research/2026-09-06-alignment-feature-handoff.md#t4-result)
+of actual decode features preserves exact words and times on eight inputs,
+with one encoder forward instead of two. Encoded features themselves differ.
+These results do not change the default path or qualify other workloads.
 
 ## Explicit local application
 

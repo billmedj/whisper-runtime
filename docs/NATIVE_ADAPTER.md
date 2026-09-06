@@ -166,8 +166,9 @@ weights to the declared `ModelSnapshot`; metadata alone is not a strong
 checkpoint identity.
 
 This adapter does not yet support audio batches, stage-specific resource costs,
-durable mid-window checkpoints, word alignment, or continuous streaming. The committed CUDA
-records cover only the pinned single-lane case described below. They do not
+or durable mid-window checkpoints. Word alignment is opt-in; the separate
+[continuous controller](CONTINUOUS_STREAMING.md) manages rolling audio windows.
+The committed CUDA records cover the pinned single-lane cases described below. They do not
 establish general CUDA compatibility, memory bounds, latency, or throughput.
 
 ## Analysis context and published text
@@ -286,6 +287,33 @@ passing default and bounded-preview regression checks. The timed control omits
 a comma present in the untimed control; equality is checked within each
 decoding profile, not between timestamp-enabled and timestamp-free decoding.
 
+## Optional same-window feature reuse
+
+`run.prepare_word_alignment()` estimates word bounds before publication. By
+default, it uses the legacy alignment encoder. With the
+[experimental backend patch](../patches/openai-whisper/experimental/README.md)
+applied explicitly, construct the adapter with
+`NativeExecutionProfile(..., reuse_alignment_features=True)` to borrow the
+encoder output from that same completed decode instead. The execution profile
+is bound to the model; it cannot be changed in place.
+
+The adapter accepts no caller-supplied feature tensor. It checks the private
+feature shape, model device and FP32 dtype. Growing or shifted audio requires
+a new decode; there is no cache across windows. A per-run
+`prepare_word_alignment(reuse_alignment_features=False)` selects the legacy
+control within an opted-in profile. An existing alignment cannot switch modes.
+
+Keep the handle inside its context manager. Features remain borrowed until
+the completion fence and capacity release succeed. If recovery is performed
+directly through `worker.recover(transaction)`, call `close()` or `stop()` on
+any retained handle afterward to drop its references. Repeated `close()` does
+not repeat backend cleanup.
+
+The [T4 comparison](research/2026-09-06-alignment-feature-handoff.md) records one
+encoder forward instead of two with exact words and times on eight inputs.
+Features themselves differ from the legacy path. Defaults and the active
+backend patch series remain unchanged; other workloads need parity checks.
+
 ## Strict CUDA profile
 
 The CUDA profile is deliberately narrow:
@@ -297,8 +325,9 @@ The CUDA profile is deliberately narrow:
 - the model must already be on that exact device;
 - the input mel must remain a CPU `float32` tensor.
 
-The adapter creates the CUDA stream only after the worker admits the
-transaction. It copies the batched mel to the selected device on that stream.
+The adapter creates a CUDA lane after admission and retains it on the model
+binding. Each transaction borrows it exclusively until its completion fence
+succeeds. It copies the batched mel to the selected device on that stream.
 Task construction, run creation, prefill, token steps, finalization, the final
 model identity check, and cleanup use the same stream. The task and run must use
 the patched built-in request-local cache path. Extensions and legacy cache
@@ -314,8 +343,9 @@ cancelling thread.
 
 The first stream use performs a conservative device synchronization after
 admission. This establishes a boundary with model initialization before the
-private stream starts. This path does not support CUDA concurrency, word
-alignment, or external mutation of the bound model. The adapter does not derive
+private stream starts. This path does not support CUDA concurrency or external
+mutation of the bound model. Optional word alignment uses the same owned lane.
+The adapter does not derive
 its resource vector from measured GPU memory.
 
 Two validated integration records exercise this boundary with the same pinned
