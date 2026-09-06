@@ -465,6 +465,33 @@ class NativeWhisperAdapterTests(unittest.TestCase):
             rng_seed=7,
         )
 
+    def test_alignment_feature_profile_is_explicit_and_boolean(self) -> None:
+        self.assertFalse(self.profile.reuse_alignment_features)
+        self.assertTrue(
+            NativeExecutionProfile(
+                "features", self.capacity, reuse_alignment_features=True
+            ).reuse_alignment_features
+        )
+        for invalid in (None, 0, 1, "true"):
+            with self.subTest(value=invalid):
+                with self.assertRaisesRegex(TypeError, "reuse_alignment_features"):
+                    NativeExecutionProfile(
+                        "features", self.capacity, reuse_alignment_features=invalid
+                    )
+
+    def test_model_binding_rejects_mixed_alignment_feature_capabilities(self) -> None:
+        with self.assertRaisesRegex(ValueError, "multiple execution profiles"):
+            NativeWhisperAdapter(
+                self.worker,
+                self.model,
+                probe,
+                NativeExecutionProfile(
+                    self.profile.profile_id,
+                    self.capacity,
+                    reuse_alignment_features=True,
+                ),
+            )
+
     def dual_adapter(
         self,
     ) -> tuple[
@@ -2437,6 +2464,7 @@ class NativeWhisperCudaAdapterTests(unittest.TestCase):
         self,
         *,
         model_device: FakeDevice | None = None,
+        reuse_alignment_features: bool = False,
     ) -> tuple[NativeWhisperAdapter, Worker, Budget, FakeNativeModel]:
         budget = Budget(self.capacity)
         worker = Worker(
@@ -2457,6 +2485,7 @@ class NativeWhisperCudaAdapterTests(unittest.TestCase):
                 "tiny.en/cuda-float32",
                 self.capacity,
                 device="cuda:1",
+                reuse_alignment_features=reuse_alignment_features,
             ),
         )
         return adapter, worker, budget, model

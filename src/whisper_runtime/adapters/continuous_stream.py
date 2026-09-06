@@ -8,9 +8,10 @@ the stream never evicts uncommitted audio to make room.
 from __future__ import annotations
 
 from collections import deque
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
+from hashlib import sha256
 from threading import RLock, current_thread
-from typing import Callable, Literal
+from typing import Callable, Literal, NoReturn
 
 from ..errors import TransactionRetainedError
 from ..state import AudioSpan, RequestState, Session, SessionState
@@ -83,6 +84,7 @@ class ContinuousStreamConfig:
     endpointing: QuietEndpointConfig | None = None
     word_boundary_fallback: bool = False
     word_context_limit_ms: int = 0
+    resolution_probe: bool = False
 
     def __post_init__(self) -> None:
         flags = (
@@ -91,6 +93,7 @@ class ContinuousStreamConfig:
             "input_evidence",
             "source_units",
             "word_boundary_fallback",
+            "resolution_probe",
         )
         for name in flags:
             if not isinstance(getattr(self, name), bool):
@@ -148,6 +151,10 @@ class ContinuousStreamConfig:
                 raise ValueError(
                     "word context must leave room for two growing analyses"
                 )
+        if self.resolution_probe and not (
+            self.word_alignment or self.word_boundary_fallback
+        ):
+            raise ValueError("resolution_probe requires a word-aligned profile")
         if self.endpointing is not None:
             if not isinstance(self.endpointing, QuietEndpointConfig):
                 raise TypeError("endpointing must be QuietEndpointConfig or None")
@@ -234,6 +241,27 @@ class ContinuousDecodeTrace:
     anchor_diagnostic: AnchorDiagnostic | None = None
 
 
+@dataclass(frozen=True, slots=True)
+class ContinuousResolutionObservation:
+    """One connected EOF probe, never authority to recover or publish a suffix.
+
+    ``source`` preserves the original refusal. The frozen anchor and version
+    remain authoritative; a head-only candidate can omit speech at its estimated
+    cut even when its text looks plausible. Native words/times are never changed.
+    Only one bounded observation is retained, with no reference transcript.
+    """
+
+    source: ContinuousDecodeTrace
+    anchor: tuple[NativeTimestampSegment, ...]
+    session_version: int
+    analysis_start_sample: int
+    analysis_end_sample: int
+    status: Literal["scheduled", "running", "observed", "failed", "unavailable"]
+    reason: str
+    pcm_sha256: str | None = None
+    candidate: NativeWordAlignment | None = None
+
+
 class ContinuousTranscriptStream:
     """Experimental mono 16 kHz s16le stream; no hidden threads or event queue.
 
@@ -246,6 +274,8 @@ class ContinuousTranscriptStream:
     hypotheses depend on input arrival timing and can differ from the default.
     Word alignment is also opt-in; it binds whole-word output to explicit
     processed coverage. Both options preserve admitted input across retries.
+    ``resolution_probe`` observes at most one different retained window after an
+    EOF word refusal. It never publishes or turns that refusal into completion.
     """
 
     def __init__(
@@ -324,6 +354,10 @@ class ContinuousTranscriptStream:
         self._decode_count = self._decoded_samples = 0
         self._trace_count = 0
         self._last_trace: ContinuousDecodeTrace | None = None
+        self._resolution: ContinuousResolutionObservation | None = None
+        self._resolution_pcm: bytes | None = None
+        self._resolution_active = False
+        self._resolution_retained: TransactionRetainedError | None = None
 
     @property
     def config(self) -> ContinuousStreamConfig:
@@ -332,6 +366,8 @@ class ContinuousTranscriptStream:
     @property
     def profile_id(self) -> str:
         base = self._base_profile_id()
+        if self.config.resolution_probe:
+            base += "+resolution_probe/v1"
         return f"{base}+input_evidence/v1" if self.config.input_evidence else base
 
     def _base_profile_id(self) -> str:
@@ -381,6 +417,12 @@ class ContinuousTranscriptStream:
         """Inspect the latest decode decision on the model-work owner thread."""
         self._require_owner()
         return self._last_trace
+
+    @property
+    def resolution_observation(self) -> ContinuousResolutionObservation | None:
+        """Inspect the bounded probe separately from authoritative stream state."""
+        self._require_owner()
+        return self._resolution
 
     @property
     def expected_chunk(self) -> int:
@@ -527,6 +569,10 @@ class ContinuousTranscriptStream:
         self._require_owner()
         if not self.ready:
             return ()
+        if self._resolution_retained is not None:
+            if not self._resolution_retained.transaction.capacity_released:
+                raise self._resolution_retained
+            self._resolution_retained = None
         run = self._run
         if run is not None:
             if run.closed:
@@ -540,6 +586,13 @@ class ContinuousTranscriptStream:
                 if self._unresolved_eof:
                     self._record_decode()
                     self._retry_analysis = None
+                if (
+                    self._resolution_active
+                    and self._resolution is not None
+                    and self._resolution.status == "running"
+                ):
+                    self._fail_resolution("closed_without_observation")
+                self._resolution_active = False
                 return ()
             try:
                 if not run.complete:
@@ -547,17 +600,21 @@ class ContinuousTranscriptStream:
                     return ()
                 return self._resolve(run)
             except TransactionRetainedError as error:
+                if self._resolution_active:
+                    self._fail_resolution("native_capacity_retained")
                 self._pending_state = error.committed_state
                 raise
             except BaseException:
+                if self._resolution_active:
+                    self._fail_resolution("native_operation_failed")
                 if run.capacity_released:
                     self._run = None
+                    self._resolution_active = False
                 raise
+        if self._resolution is not None and self._resolution.status == "scheduled":
+            return self._start_resolution_probe()
         if self._unresolved_eof:
-            raise StreamNeedsResolutionError(
-                "input boundary is unresolved; close the stream before retrying "
-                "with a different policy"
-            )
+            self._raise_unresolved()
         with self._lock:
             if self._eof and self._head == self._accepted:
                 self._audio.clear()
@@ -658,6 +715,8 @@ class ContinuousTranscriptStream:
         ):
             run.close()
             raise NativeStreamError("native result does not match the admitted audio")
+        if self._resolution_active:
+            return self._resolve_resolution_probe(run, result)
         if self.config.input_evidence:
             observation = self._run_observation
             if observation is None or observation.sample_count != (
@@ -914,10 +973,13 @@ class ContinuousTranscriptStream:
             return self._publish_commit()
         if closed:
             self._unresolved_eof = True
+            scheduled = self._schedule_resolution_probe()
             run.close()
             self._run = None
             self._retry_analysis = None
             self._record_decode()
+            if scheduled:
+                return ()
             boundary = "source unit" if closed_unit else "EOF"
             raise StreamNeedsResolutionError(
                 f"{boundary} word alignment is unresolved ({decision.reason}); input retained"
@@ -933,6 +995,135 @@ class ContinuousTranscriptStream:
             if word.span.start_ms >= self._head // _SAMPLES_PER_MS
         ).strip()
         return self._publish_preview(text)
+
+    def _schedule_resolution_probe(self) -> bool:
+        """Freeze one distinct EOF suffix; admission still waits for the fence."""
+        if not self.config.resolution_probe or not self._run_final:
+            return False
+        if self._resolution is not None:
+            return False
+        source = self._last_trace
+        assert source is not None and source.word_publication is None
+        with self._lock:
+            distinct = self._retained <= self._run_start < self._head < self._run_end
+            offset = (self._head - self._retained) * 2
+            length = (self._run_end - self._head) * 2
+            pcm = (
+                bytes(memoryview(self._audio)[offset : offset + length])
+                if distinct
+                else None
+            )
+            self._resolution = ContinuousResolutionObservation(
+                source=source,
+                anchor=self._word_anchor,
+                session_version=self.state.version,
+                analysis_start_sample=self._head,
+                analysis_end_sample=self._run_end,
+                status="scheduled" if distinct else "unavailable",
+                reason="distinct_retained_suffix" if distinct else "no_distinct_suffix",
+                pcm_sha256=sha256(pcm).hexdigest() if pcm is not None else None,
+            )
+            self._resolution_pcm = pcm
+        return distinct
+
+    def _start_resolution_probe(self) -> tuple[TranscriptEvent, ...]:
+        """Consume the single attempt, including startup/cancellation failures."""
+        observation = self._resolution
+        pcm = self._resolution_pcm
+        assert observation is not None and observation.status == "scheduled"
+        self._resolution = replace(observation, status="running")
+        self._resolution_pcm = None
+        try:
+            if (
+                pcm is None
+                or self._head != observation.source.committed_before_sample
+                or self._retained != observation.source.retained_from_sample
+                or self._word_anchor != observation.anchor
+                or self.state.version != observation.session_version
+                or len(pcm) // 2
+                != observation.analysis_end_sample - observation.analysis_start_sample
+            ):
+                raise NativeStreamError("frozen resolution input or prefix changed")
+            start, end = (
+                observation.analysis_start_sample,
+                observation.analysis_end_sample,
+            )
+            window_id = f"{self._id}:resolution:{start}:{end}"
+            self._run_start, self._run_end, self._run_final = start, end, True
+            self._run_unit = observation.source.source_unit
+            self._run_window_id = window_id
+            self._run_observation = (
+                AudioObservation.from_pcm(pcm) if self.config.input_evidence else None
+            )
+            self._audio_decision = None
+            self._run = self._adapter.start_window(
+                session=self._session,
+                request=RequestState(
+                    f"{window_id}:request",
+                    self._session.session_id,
+                    self._model,
+                    rng_seed=self._seed,
+                ),
+                window_id=window_id,
+                mel=self._mel_builder(pcm),
+                start_ms=start // 16,
+                end_ms=end // 16,
+                options=self._options,
+            )
+            self._resolution_active = True
+        except BaseException as error:
+            self._fail_resolution("native_start_failed")
+            if isinstance(error, TransactionRetainedError):
+                self._resolution_retained = error
+            raise
+        return ()
+
+    def _resolve_resolution_probe(
+        self, run: NativeWindowRun, result: NativeWindowResult
+    ) -> tuple[TranscriptEvent, ...]:
+        """Observe raw words, then close without any publication selector."""
+        observation = self._resolution
+        assert observation is not None
+        alignment = run.prepare_word_alignment()
+        if alignment.native != result:
+            run.close()
+            raise NativeStreamError("word alignment does not match the native result")
+        if self._run_observation is not None:
+            self._audio_decision = assess_audio(self._run_observation, result)
+        self._resolution = replace(observation, candidate=alignment)
+        self._trace(
+            result,
+            None,
+            "resolution_probe_has_no_publication_authority",
+            "resolution_observation",
+            word_alignment=alignment,
+        )
+        run.close()
+        self._resolution = replace(
+            self._resolution,
+            status="observed",
+            reason="no_publication_authority",
+        )
+        self._run = None
+        self._resolution_active = False
+        self._record_decode()
+        self._raise_unresolved()
+
+    def _fail_resolution(self, reason: str) -> None:
+        assert self._resolution is not None
+        self._resolution = replace(self._resolution, status="failed", reason=reason)
+
+    def _raise_unresolved(self) -> NoReturn:
+        if self._resolution is not None:
+            raise StreamNeedsResolutionError(
+                f"EOF word alignment remains unresolved ({self._resolution.source.reason}); "
+                f"resolution probe {self._resolution.status} "
+                f"({self._resolution.reason}); input retained"
+            )
+        raise StreamNeedsResolutionError(
+            "input boundary is unresolved; close the stream before retrying "
+            "with a different policy"
+        )
 
     def _word_context_start(self, decision: WordAgreementDecision) -> int | None:
         """Select bounded context from this alignment before committing any output.
@@ -1173,6 +1364,13 @@ class ContinuousTranscriptStream:
         self._require_owner()
         if self.done:
             return False
+        if (
+            self._resolution_retained is not None
+            and not self._resolution_retained.transaction.capacity_released
+        ):
+            raise NativeStreamError(
+                "native capacity is retained; recover before closing"
+            )
         if self._run is not None:
             self._run.close()
             if not self._run.capacity_released:
@@ -1181,6 +1379,7 @@ class ContinuousTranscriptStream:
                 )
             self._run = None
         with self._lock:
+            self._resolution_pcm = None
             self._retry_analysis = None
             self._eof = self._done = True
         return True

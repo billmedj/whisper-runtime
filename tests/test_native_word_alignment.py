@@ -2,6 +2,7 @@
 
 import math
 import unittest
+import weakref
 from collections.abc import Callable
 from types import SimpleNamespace
 from unittest.mock import patch
@@ -96,7 +97,10 @@ class Harness(fixtures.BackendHarness):
 
 
 def raw_result(
-    *, text: str = "hello world", tokens: list[int] | None = None
+    *,
+    text: str = "hello world",
+    tokens: list[int] | None = None,
+    audio_features: object | None = None,
 ) -> SimpleNamespace:
     return SimpleNamespace(
         text=text,
@@ -106,6 +110,7 @@ def raw_result(
         no_speech_prob=0.01,
         temperature=0.0,
         compression_ratio=1.0,
+        audio_features=audio_features,
     )
 
 
@@ -170,7 +175,10 @@ class NativeWordAlignmentTests(unittest.TestCase):
         with patch.object(
             native_whisper,
             "_load_native_components",
-            return_value=Harness([backend]).components(),
+            return_value=Harness(
+                [backend],
+                torch_module=fixtures.FakeTorchModule(fixtures.FakeCudaRuntime([])),
+            ).components(),
         ):
             run = self.adapter.start_window(
                 session=state,
@@ -396,10 +404,300 @@ class NativeWordAlignmentTests(unittest.TestCase):
         self.assertIsNone(run._alignment_batched_mel)
 
 
+class AudioFeatures:
+    def __init__(self, *, device: fixtures.FakeDevice | None = None) -> None:
+        self.shape = (1_500, 4)
+        self.dtype = fixtures.FAKE_FLOAT32
+        self.device = device or fixtures.FakeDevice("cpu")
+
+
+class NativeAlignmentFeatureReuseTests(unittest.TestCase):
+    request = NativeWordAlignmentTests.request
+    start = NativeWordAlignmentTests.start
+
+    def setUp(self) -> None:
+        fixtures.NativeWhisperAdapterTests.setUp(self)
+        self.model = fixtures.FakeNativeModel(self.identity)
+        self.model.dims.n_audio_state = 4
+        self.profile = native_whisper.NativeExecutionProfile(
+            "feature-reuse", self.capacity, reuse_alignment_features=True
+        )
+        self.adapter = native_whisper.NativeWhisperAdapter(
+            self.worker, self.model, fixtures.probe, self.profile
+        )
+
+    @staticmethod
+    def words() -> list[SimpleNamespace]:
+        return [timing(" hello", [1], 0.1, 0.4), timing(" world", [2], 0.4, 0.9)]
+
+    def test_only_own_finalized_features_are_cached_and_fenced_before_release(
+        self,
+    ) -> None:
+        features = AudioFeatures()
+        result = raw_result(audio_features=features)
+        run, backend, _, session, _ = self.start(result)
+        backend.audio_features = AudioFeatures()  # never borrow mutable run state
+        calls = []
+
+        def finder(*args: object, audio_features: object = None) -> object:
+            calls.append(audio_features)
+            self.assertIs(args[0], self.model)
+            return self.words()
+
+        self.assertIsNone(run._alignment_audio_features)
+        with patch.object(
+            native_whisper, "import_module", side_effect=ImportHarness(finder)
+        ):
+            run.step()
+            run.prepare_result()
+            self.assertIs(run._alignment_audio_features, features)
+            result.audio_features = (
+                AudioFeatures()
+            )  # cached owner input cannot be replaced
+            aligned = run.prepare_word_alignment()
+            self.assertIs(run.prepare_word_alignment(), aligned)
+            backend.on_cleanup = lambda: self.assertIs(
+                run._alignment_audio_features, features
+            )
+            run.finish()
+        self.assertEqual(calls, [features])
+        self.assertEqual(backend.finalize_calls, 1)
+        self.assertIsNone(run._alignment_audio_features)
+        self.assertIsNone(run._backend_run)
+        self.assertEqual(session.snapshot().version, 1)
+
+    def test_opted_in_control_uses_legacy_signature_and_cannot_switch_cached_mode(
+        self,
+    ) -> None:
+        run, backend, _, _, _ = self.start(raw_result(audio_features=AudioFeatures()))
+        calls = []
+
+        def legacy_finder(*args: object) -> object:
+            calls.append(args)
+            return self.words()
+
+        with (
+            run,
+            patch.object(
+                native_whisper,
+                "import_module",
+                side_effect=ImportHarness(legacy_finder),
+            ),
+        ):
+            run.step()
+            aligned = run.prepare_word_alignment(reuse_alignment_features=False)
+            self.assertIs(
+                run.prepare_word_alignment(reuse_alignment_features=False), aligned
+            )
+            with self.assertRaisesRegex(ValueError, "cannot change"):
+                run.prepare_word_alignment()
+            self.assertFalse(run.closed)
+            run.finish()
+        self.assertEqual(len(calls), 1)
+        self.assertEqual(len(calls[0]), 5)
+        self.assertEqual(backend.finalize_calls, 1)
+
+    def test_disabled_profile_cannot_be_upgraded_and_overrides_are_boolean(
+        self,
+    ) -> None:
+        self.model = fixtures.FakeNativeModel(self.identity)
+        self.adapter = native_whisper.NativeWhisperAdapter(
+            self.worker,
+            self.model,
+            fixtures.probe,
+            native_whisper.NativeExecutionProfile("default", self.capacity),
+        )
+        run, backend, _, _, _ = self.start(raw_result())
+        with run:
+            run.step()
+            with self.assertRaisesRegex(ValueError, "opted-in profile"):
+                run.prepare_word_alignment(reuse_alignment_features=True)
+            for invalid in (0, 1, "true"):
+                with self.subTest(value=invalid):
+                    with self.assertRaisesRegex(TypeError, "boolean or None"):
+                        run.prepare_word_alignment(reuse_alignment_features=invalid)
+            self.assertFalse(run.closed)
+        self.assertEqual(backend.finalize_calls, 0)
+
+    def test_unsupported_backend_rejects_without_fallback_or_publication(self) -> None:
+        for number, finder in enumerate(
+            (lambda *args: self.words(), lambda *args, **kwargs: self.words())
+        ):
+            run, backend, _, session, _ = self.start(
+                raw_result(audio_features=AudioFeatures()), request=self.request(number)
+            )
+            with patch.object(
+                native_whisper, "import_module", side_effect=ImportHarness(finder)
+            ):
+                run.step()
+                with self.assertRaisesRegex(
+                    NativeDependencyError, "optional audio_features backend"
+                ):
+                    run.prepare_word_alignment()
+            self.assertTrue(run.closed)
+            self.assertIsNone(run._alignment_audio_features)
+            self.assertIsNone(run._backend_run)
+            self.assertEqual(backend.finalize_calls, 1)
+            self.assertEqual(session.snapshot().version, 0)
+
+    def test_missing_wrong_shape_precision_and_device_features_fail_closed(
+        self,
+    ) -> None:
+        wrong_shape, wrong_dtype, wrong_device = (
+            AudioFeatures(),
+            AudioFeatures(),
+            AudioFeatures(),
+        )
+        wrong_shape.shape = (1, 1_500, 4)
+        wrong_dtype.dtype = object()
+        wrong_device.device = fixtures.FakeDevice("cuda", 0)
+
+        def finder(*args: object, audio_features: object = None) -> object:
+            raise AssertionError("invalid features must not reach the backend")
+
+        for number, features in enumerate(
+            (None, wrong_shape, wrong_dtype, wrong_device)
+        ):
+            with self.subTest(features=features):
+                run, _, _, session, request = self.start(
+                    raw_result(audio_features=features), request=self.request(number)
+                )
+                with patch.object(
+                    native_whisper, "import_module", side_effect=ImportHarness(finder)
+                ):
+                    run.step()
+                    with self.assertRaisesRegex(
+                        NativeDecodeContractError, "audio_features"
+                    ):
+                        run.prepare_word_alignment()
+                self.assertTrue(run.capacity_released)
+                self.assertIsNone(run._alignment_audio_features)
+                self.assertEqual(session.snapshot().version, 0)
+                self.assertEqual(request.status, RequestStatus.ABORTED)
+
+    def test_failed_cleanup_retains_features_until_successful_recovery(self) -> None:
+        features = AudioFeatures()
+        run, backend, mel, session, _ = self.start(raw_result(audio_features=features))
+        run.step()
+        run.prepare_result()
+        backend.fail_cleanup = True
+        backend.on_cleanup = lambda: self.assertIs(
+            run._alignment_audio_features, features
+        )
+        with self.assertRaises(TransactionRetainedError):
+            run.close()
+        self.assertFalse(run.capacity_released)
+        self.assertIs(run._backend_run, backend)
+        self.assertIs(run._alignment_audio_features, features)
+        self.assertIs(run._alignment_batched_mel, mel.batch)
+        backend.fail_cleanup = False
+        self.assertTrue(run.stop())
+        self.assertTrue(run.capacity_released)
+        self.assertIsNone(run._backend_run)
+        self.assertIsNone(run._alignment_audio_features)
+        self.assertIsNone(run._alignment_batched_mel)
+        self.assertEqual(session.snapshot().version, 0)
+
+    def test_cancellation_does_not_release_features_before_owner_fence(self) -> None:
+        features = AudioFeatures()
+        run, backend, _, session, _ = self.start(raw_result(audio_features=features))
+        run.step()
+        run.prepare_result()
+        self.assertTrue(run.cancel())
+        self.assertIs(run._alignment_audio_features, features)
+        self.assertEqual(backend.cleanup_calls, 0)
+        run.close()
+        self.assertTrue(run.capacity_released)
+        self.assertIsNone(run._alignment_audio_features)
+        self.assertIsNone(run._backend_run)
+        self.assertEqual(session.snapshot().version, 0)
+
+    def test_closed_run_does_not_keep_features_alive_or_reuse_them_in_next_window(
+        self,
+    ) -> None:
+        features = AudioFeatures()
+        reference = weakref.ref(features)
+        run, backend, _, _, _ = self.start(raw_result(audio_features=features))
+        run.step()
+        run.prepare_result()
+        run.close()
+        del features, backend
+        self.assertIsNone(reference())
+        next_features = AudioFeatures()
+        next_run, _, _, _, _ = self.start(
+            raw_result(audio_features=next_features), request=self.request(1)
+        )
+        with next_run:
+            self.assertIsNone(next_run._alignment_audio_features)
+            next_run.step()
+            next_run.prepare_result()
+            self.assertIs(next_run._alignment_audio_features, next_features)
+            self.assertIsNone(run._alignment_audio_features)
+
+
 class NativeCudaWordAlignmentTests(unittest.TestCase):
     setUp = fixtures.NativeWhisperCudaAdapterTests.setUp
     make_adapter = fixtures.NativeWhisperCudaAdapterTests.make_adapter
     request = fixtures.NativeWhisperCudaAdapterTests.request
+
+    def test_reused_features_stay_owned_through_failed_cuda_fence_and_recovery(
+        self,
+    ) -> None:
+        events: list[str] = []
+        runtime = fixtures.FakeCudaRuntime(events)
+        adapter, _, budget, model = self.make_adapter(reuse_alignment_features=True)
+        model.dims.n_audio_state = 4
+        features = AudioFeatures(device=model.device)
+        backend = ResultRun(raw_result(audio_features=features))
+        harness = Harness([backend], torch_module=fixtures.FakeTorchModule(runtime))
+        mel = AlignableCudaMel(runtime, events)
+        streams = []
+
+        def finder(*args: object, audio_features: object = None) -> object:
+            self.assertIs(args[0], model)
+            self.assertIs(audio_features, features)
+            self.assertIsNotNone(runtime.active_stream)
+            streams.append(runtime.active_stream)
+            return NativeAlignmentFeatureReuseTests.words()
+
+        with patch.object(
+            native_whisper, "_load_native_components", return_value=harness.components()
+        ):
+            run = adapter.start_window(
+                session=Session("cuda-session"),
+                request=self.request(),
+                window_id="cuda-feature-window",
+                mel=mel,
+                start_ms=0,
+                end_ms=1_000,
+            )
+        original_wait = fixtures.FakeCudaEvent.synchronize
+
+        def wait(event: fixtures.FakeCudaEvent) -> None:
+            self.assertIs(run._alignment_audio_features, features)
+            self.assertIs(run._backend_run, backend)
+            original_wait(event)
+
+        with (
+            patch.object(
+                native_whisper, "import_module", side_effect=ImportHarness(finder)
+            ),
+            patch.object(fixtures.FakeCudaEvent, "synchronize", new=wait),
+        ):
+            run.step()
+            run.prepare_word_alignment()
+            runtime.fail_event_synchronize = True
+            with self.assertRaises(TransactionRetainedError):
+                run.finish()
+            self.assertFalse(run.capacity_released)
+            self.assertIs(run._alignment_audio_features, features)
+            runtime.fail_event_synchronize = False
+            self.assertTrue(run.stop())
+        self.assertEqual(streams, runtime.streams)
+        self.assertTrue(run.capacity_released)
+        self.assertIsNone(run._alignment_audio_features)
+        self.assertIsNone(run._backend_run)
+        self.assertEqual(budget.available, self.capacity)
 
     def test_alignment_uses_the_transaction_cuda_stream_and_fence(self) -> None:
         events: list[str] = []

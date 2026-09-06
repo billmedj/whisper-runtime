@@ -2,8 +2,12 @@
 
 import copy
 import json
+import tempfile
 import unittest
-from unittest.mock import patch
+from contextlib import nullcontext
+from pathlib import Path
+from types import SimpleNamespace
+from unittest.mock import Mock, patch
 
 from infra import modal_cuda_lane as experiment
 
@@ -138,6 +142,109 @@ class CudaLaneExperimentTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 experiment.run(replay_id="not-started")
             resources.assert_not_called()
+
+    def test_default_validator_preserves_archived_blocked_record(self):
+        record = json.loads(
+            (
+                experiment.ROOT
+                / "evidence/modal-t4-tiny-en-cuda-lane-blocked-2026-09-06.json"
+            ).read_bytes()
+        )
+        expected = record["source"]["snapshot"]
+        experiment.validate_record(record, expected)
+        for key, value in (("summary", {}), ("source", {"snapshot": {}})):
+            with self.subTest(key=key), self.assertRaises(ValueError):
+                experiment.validate_record({**record, key: value}, expected)
+
+    def test_launcher_uses_selected_producer_and_preserves_failed_validation_payload(
+        self,
+    ):
+        for validation_fails in (False, True):
+            with (
+                self.subTest(validation_fails=validation_fails),
+                tempfile.TemporaryDirectory() as directory,
+            ):
+                root = Path(directory)
+                source = root / "infra/example_producer.py"
+                source.parent.mkdir()
+                source.write_bytes(b"# bound producer\n")
+                expected = {"digest": "test-snapshot"}
+                record = {"status": "completed", "source": {"snapshot": expected}}
+                backend = SimpleNamespace(
+                    _transport_probe_payload=Mock(return_value=b"probe"),
+                    _write_bytes_exclusive=lambda path, data: path.write_bytes(data),
+                    _decode_worker_record=Mock(return_value=record),
+                )
+                corpus = SimpleNamespace(
+                    b=backend,
+                    c=SimpleNamespace(
+                        _write_json_exclusive=lambda path, value: path.write_text(
+                            json.dumps(value), encoding="utf-8"
+                        )
+                    ),
+                )
+                producer = SimpleNamespace(
+                    __name__="infra.example_producer",
+                    PRODUCER="infra/example_producer.py",
+                    CLAIMS={"benchmark": False},
+                    snapshot=Mock(return_value=expected),
+                    _corpus=Mock(return_value=corpus),
+                    validate_record=Mock(
+                        side_effect=ValueError("invalid evidence")
+                        if validation_fails
+                        else None
+                    ),
+                )
+                app = SimpleNamespace(
+                    app_id="ap-local-test", run=Mock(return_value=nullcontext())
+                )
+                echo = SimpleNamespace(remote=Mock(return_value=b"probe"))
+                execute = SimpleNamespace(remote=Mock(return_value=b"raw evidence"))
+                with patch.object(
+                    experiment.shared, "resources", return_value=(app, echo, execute)
+                ) as resources:
+                    arguments = dict(
+                        replay_id="selected-producer",
+                        confirm_paid_gpu=True,
+                        root=root,
+                        producer=producer,
+                    )
+                    if validation_fails:
+                        with self.assertRaises(ValueError):
+                            experiment.run(**arguments)
+                    else:
+                        output = experiment.run(**arguments)
+                        self.assertEqual(
+                            json.loads(output.read_bytes())["app_id"], "ap-local-test"
+                        )
+                    resources.assert_called_once_with(
+                        expected, root, worker_module="infra.example_producer"
+                    )
+                    execute.remote.assert_called_once_with()
+                    producer.snapshot.assert_called_once_with(root)
+                    producer._corpus.assert_called_once_with()
+                    producer.validate_record.assert_called_once_with(record, expected)
+                    backend._decode_worker_record.assert_called_once_with(
+                        b"raw evidence",
+                        expected_snapshot=expected,
+                        registration_sha256=experiment.shared._sha(source.read_bytes()),
+                        manifest={"claim_boundary": producer.CLAIMS},
+                    )
+                    output, receipt, raw = experiment.shared._paths(
+                        root, "selected-producer", False
+                    )
+                    self.assertEqual(raw.read_bytes(), b"raw evidence")
+                    self.assertEqual(output.exists(), not validation_fails)
+                    entries = [
+                        json.loads(line) for line in receipt.read_text().splitlines()
+                    ]
+                    self.assertEqual(
+                        entries[-1]["event"],
+                        "attempt-failed" if validation_fails else "record-written",
+                    )
+                    with self.assertRaises(FileExistsError):
+                        experiment.run(**arguments)
+                    execute.remote.assert_called_once_with()
 
 
 if __name__ == "__main__":

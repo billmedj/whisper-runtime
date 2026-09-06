@@ -332,6 +332,44 @@ execution scope, cancellation checks, model lock, and cleanup fence as decoding.
 The legacy hook-based alignment path is not supported. This option needs a
 matched real-audio run before any claim of quality, latency, or GPU savings.
 
+## Optional EOF resolution probe
+
+Set `ContinuousStreamConfig(resolution_probe=True)` alongside `word_alignment=True`
+or a valid `word_boundary_fallback` configuration to connect one experimental
+candidate observation to the stream. The default is `False`; enabling it adds
+`+resolution_probe/v1` before any `+input_evidence/v1` profile suffix.
+
+After an EOF word-policy refusal, the controller may decode one different
+window from the frozen committed boundary to the original analysis endpoint.
+That boundary must lie strictly inside the original retained analysis. The
+controller freezes the exact retained PCM slice, anchor and session version;
+it never retrieves evicted audio or uses a reference transcript. The extra PCM
+copy is bounded by the analysis-window limit. Candidate admission waits for
+the original run's successful fence, including explicit recovery if needed.
+Non-EOF refusals and identical windows do not trigger this probe.
+
+Continue calling `step()` to drive the probe. It prepares raw aligned words,
+closes without calling `finish()`, and raises `StreamNeedsResolutionError`.
+It emits no candidate transcript, commit or final event; accepted PCM, frozen
+commits and the unresolved status remain unchanged. Startup failure or
+cancellation consumes the single attempt. A retained native transaction still
+requires exact recovery; repeated `step()` calls never launch another candidate.
+
+Inspect `stream.resolution_observation` on the owner thread. This immutable
+record retains the original refusal in `source`, the frozen anchor/version,
+candidate sample bounds and PCM SHA-256, and a status of `scheduled`, `running`,
+`observed`, `failed` or `unavailable`. `candidate` contains the unmodified
+`NativeWordAlignment` when available. `last_trace` then describes the candidate
+with action `resolution_observation`, not a publication. Native cleanup can
+still fail after candidate preparation; inspect the observation status and
+resource-release state, not just the presence of words.
+
+This is a connected probe, not recovered live continuation. A head-only result
+can miss speech at the estimated cut, even when its text appears correct.
+Publishing it needs a separately justified handoff rule. The probe does not
+relax timestamp tolerance, apply the experimental local matcher, or claim
+complete acoustic coverage, transcription recovery or inference savings.
+
 ## Decision trace
 
 `last_trace` exposes one immutable `ContinuousDecodeTrace` on the owner thread.

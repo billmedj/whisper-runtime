@@ -16,6 +16,7 @@ from collections.abc import Callable
 from contextlib import AbstractContextManager
 from dataclasses import dataclass
 from importlib import import_module
+from inspect import Parameter, signature
 from numbers import Real
 from threading import Condition, RLock, current_thread
 from typing import Protocol, TypeVar, cast, runtime_checkable
@@ -417,14 +418,17 @@ class NativeDecodeOptions:
 
 @dataclass(frozen=True, slots=True)
 class NativeExecutionProfile:
-    """Fixed device, resources, and concurrency for native decoding."""
+    """Fixed native execution settings; feature reuse is experimental and opt in."""
 
     profile_id: str
     resources: ResourceVector
     max_concurrent_decodes: int = 1
     device: str = "cpu"
+    reuse_alignment_features: bool = False
 
     def __post_init__(self) -> None:
+        if type(self.reuse_alignment_features) is not bool:
+            raise TypeError("reuse_alignment_features must be a boolean")
         if not self.profile_id or self.profile_id.isspace():
             raise ValueError("profile_id must not be empty")
         if not isinstance(self.resources, ResourceVector):
@@ -917,12 +921,14 @@ class NativeWindowRun:
         alignment_model: object | None = None,
         alignment_batched_mel: object | None = None,
         alignment_max_frames: int = 3_000,
+        reuse_alignment_features: bool = False,
+        alignment_float32: object | None = None,
     ) -> None:
         self._worker = worker
         self._model_binding = model_binding
         self._transaction = transaction
         self._execution = execution
-        self._backend_run = backend_run
+        self._backend_run: NativeDecodeRun | None = backend_run
         self._cuda_profile = cuda_profile
         self._require_model_identity = require_model_identity
         self._window_id = window_id
@@ -932,6 +938,10 @@ class NativeWindowRun:
         self._alignment_model: object | None = alignment_model
         self._alignment_batched_mel: object | None = alignment_batched_mel
         self._alignment_max_frames = alignment_max_frames
+        self._reuse_alignment_features = reuse_alignment_features
+        self._alignment_float32 = alignment_float32
+        self._alignment_audio_features: object | None = None
+        self._alignment_reused_features: bool | None = None
         self._prepared_alignment: NativeWordAlignment | None = None
         self._prepared_result: NativeWindowResult | None = None
         self._step_count = 0
@@ -1006,11 +1016,12 @@ class NativeWindowRun:
             # A caller can pause the run until the transaction deadline.
             # Recheck cancellation and expiry before admitting new work.
             self._transaction.checkpoint()
-            reported_value: object = self._submit(self._backend_run.step)
+            backend_run = self._require_backend_run()
+            reported_value: object = self._submit(backend_run.step)
             if type(reported_value) is not bool:
                 raise NativeDecodeContractError("decode step must return a boolean")
             reported_complete = reported_value
-            actual_complete = _require_run_complete(self._backend_run)
+            actual_complete = _require_run_complete(backend_run)
             if reported_complete is not actual_complete:
                 raise NativeDecodeContractError(
                     "decode step completion disagrees with the run state"
@@ -1037,15 +1048,13 @@ class NativeWindowRun:
         """Return whether stop changed state, delivered a signal, or recovered."""
 
         if self.capacity_released:
-            self._alignment_model = None
-            self._alignment_batched_mel = None
+            self._release_alignment_inputs()
             return False
         changed = self._worker.stop(self._transaction)
         if not self.capacity_released:
             changed = self._worker.recover(self._transaction) or changed
         if self.capacity_released:
-            self._alignment_model = None
-            self._alignment_batched_mel = None
+            self._release_alignment_inputs()
         return changed
 
     def prepare_result(self) -> NativeWindowResult:
@@ -1074,15 +1083,38 @@ class NativeWindowRun:
             self._close_owner(operation_error=operation_error, committed_state=None)
             raise
 
-    def prepare_word_alignment(self) -> NativeWordAlignment:
+    def prepare_word_alignment(
+        self, *, reuse_alignment_features: bool | None = None
+    ) -> NativeWordAlignment:
         """Estimate immutable word bounds once for a completed native result.
 
         Alignment is opt in. It reuses the cached native result, runs on the
         transaction-owned execution scope, and never invokes native result
         finalization more than once.
+
+        An opted-in profile may disable feature reuse for a control window.
+        A default profile cannot enable it here. A cached alignment cannot
+        change modes. Reuse does not imply parity with the legacy encoder path.
         """
 
         self._require_open()
+        if (
+            reuse_alignment_features is not None
+            and type(reuse_alignment_features) is not bool
+        ):
+            raise TypeError("reuse_alignment_features must be a boolean or None")
+        reuse = (
+            self._reuse_alignment_features
+            if reuse_alignment_features is None
+            else reuse_alignment_features
+        )
+        if reuse and not self._reuse_alignment_features:
+            raise ValueError("alignment feature reuse requires an opted-in profile")
+        if (
+            self._prepared_alignment is not None
+            and reuse != self._alignment_reused_features
+        ):
+            raise ValueError("a cached word alignment cannot change feature reuse mode")
         if not self.complete:
             raise NativeDecodeContractError(
                 "word alignment requires completed token generation"
@@ -1091,7 +1123,10 @@ class NativeWindowRun:
             self._transaction.checkpoint()
             native = self._prepare_result()
             if self._prepared_alignment is None:
-                self._prepared_alignment = self._prepare_word_alignment(native)
+                self._prepared_alignment = self._prepare_word_alignment(
+                    native, reuse=reuse
+                )
+                self._alignment_reused_features = reuse
             if self._cuda_profile:
                 self._submit(self._require_model_identity)
                 self._transaction.checkpoint()
@@ -1104,7 +1139,7 @@ class NativeWindowRun:
             raise
 
     def _prepare_word_alignment(
-        self, native: NativeWindowResult
+        self, native: NativeWindowResult, *, reuse: bool
     ) -> NativeWordAlignment:
         metadata = native.metadata
         tokenizer = self._tokenizer
@@ -1165,6 +1200,24 @@ class NativeWindowRun:
                     raise NativeDependencyError(
                         "word alignment requires request-local attention capture"
                     )
+                feature_arguments: dict[str, object] = {}
+                if reuse:
+                    try:
+                        parameter = signature(finder).parameters.get("audio_features")
+                    except (TypeError, ValueError) as exc:
+                        raise NativeDependencyError(
+                            "alignment feature reuse requires the optional audio_features backend"
+                        ) from exc
+                    if parameter is None or parameter.kind not in (
+                        Parameter.KEYWORD_ONLY,
+                        Parameter.POSITIONAL_OR_KEYWORD,
+                    ):
+                        raise NativeDependencyError(
+                            "alignment feature reuse requires the optional audio_features backend"
+                        )
+                    feature_arguments["audio_features"] = (
+                        self._require_alignment_features(model)
+                    )
                 try:
                     mel = batched_mel[0]  # type: ignore[index]
                 except (IndexError, KeyError, TypeError) as exc:
@@ -1177,6 +1230,7 @@ class NativeWindowRun:
                     list(text_tokens),
                     mel,
                     num_frames,
+                    **feature_arguments,
                 )
                 self._require_model_identity()
                 try:
@@ -1194,7 +1248,7 @@ class NativeWindowRun:
 
     def _prepare_result(self) -> NativeWindowResult:
         if self._prepared_result is None:
-            results = self._submit(self._backend_run.finalize)
+            results = self._submit(self._require_backend_run().finalize)
             self._transaction.checkpoint()
             if not isinstance(results, list) or len(results) != 1:
                 raise NativeDecodeContractError(
@@ -1207,9 +1261,70 @@ class NativeWindowRun:
                     analysis_span=AudioSpan(self._start_ms, self._end_ms),
                     tokenizer=self._tokenizer,
                 )
+                if self._reuse_alignment_features:
+                    # Only the exact finalized result of this owned backend run
+                    # can supply features. Never accept a caller-provided tensor.
+                    self._alignment_audio_features = getattr(
+                        results[0], "audio_features", None
+                    )
             except (TypeError, ValueError) as exc:
                 raise NativeDecodeContractError(str(exc)) from exc
         return self._prepared_result
+
+    def _require_alignment_features(self, model: object) -> object:
+        features = self._alignment_audio_features
+        if features is None:
+            raise NativeDecodeContractError(
+                "the finalized result has no alignment audio_features"
+            )
+        dims = getattr(model, "dims", None)
+        expected = (
+            getattr(dims, "n_audio_ctx", None),
+            getattr(dims, "n_audio_state", None),
+        )
+        if any(type(axis) is not int or axis <= 0 for axis in expected):
+            raise NativeDecodeContractError(
+                "the model lacks concrete encoder feature dimensions"
+            )
+        if getattr(features, "shape", None) != expected:
+            raise NativeDecodeContractError(
+                "alignment audio_features must match one unbatched model window"
+            )
+        # NativeDecodeOptions fixes FP32. The companion API also validates the
+        # real tensor type; these owner-side checks bind precision and device.
+        if (
+            self._alignment_float32 is None
+            or getattr(features, "dtype", None) != self._alignment_float32
+        ):
+            raise NativeDecodeContractError(
+                "alignment audio_features must use native float32 precision"
+            )
+        try:
+            _require_exact_device(
+                features,
+                subject="alignment audio_features",
+                expected=str(getattr(model, "device", None)),
+            )
+        except ValueError as exc:
+            raise NativeDecodeContractError(str(exc)) from exc
+        return features
+
+    def _require_backend_run(self) -> NativeDecodeRun:
+        run = self._backend_run
+        if run is None:
+            raise NativeDecodeContractError("the native backend run has been released")
+        return run
+
+    def _release_alignment_inputs(self) -> None:
+        """Drop borrowed inputs only after the transaction's fence has released."""
+
+        self._alignment_model = None
+        self._alignment_batched_mel = None
+        self._alignment_audio_features = None
+        if self._reuse_alignment_features:
+            # Completed backend results themselves retain encoder tensors.
+            # The execution scope has already dropped its run after fencing.
+            self._backend_run = None
 
     def finish(
         self,
@@ -1378,8 +1493,7 @@ class NativeWindowRun:
             self._closed = True
             self._transaction._owner_departed()
             if self._transaction.capacity_released:
-                self._alignment_model = None
-                self._alignment_batched_mel = None
+                self._release_alignment_inputs()
 
 
 @dataclass(frozen=True, slots=True, init=False)
@@ -1440,6 +1554,11 @@ class NativeWhisperAdapter:
                 subject="native model object",
                 concurrency=concurrency,
                 device=execution_profile.device,
+                execution_variant=(
+                    "alignment_features/v1"
+                    if execution_profile.reuse_alignment_features
+                    else None
+                ),
             )
 
         object.__setattr__(self, "worker", worker)
@@ -1641,6 +1760,8 @@ class NativeWhisperAdapter:
                 alignment_model=self._model,
                 alignment_batched_mel=batched_mel,
                 alignment_max_frames=components.n_frames,
+                reuse_alignment_features=self.execution_profile.reuse_alignment_features,
+                alignment_float32=getattr(components.torch_module, "float32", None),
             )
             owner_transferred = True
             return handle

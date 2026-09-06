@@ -330,14 +330,35 @@ def run_worker(expected_snapshot):
     }
 
 
-def run(*, replay_id, confirm_paid_gpu=False, root=ROOT):
+def validate_record(record, expected):
+    """Recompute the lane summary and bind it to the dispatched source."""
+    if record["scope"]["order"] != ACTIVE_ORDER:
+        raise ValueError("worker schedule differs")
+    summary = (
+        summarize(record["cells"], order=ACTIVE_ORDER)
+        if record["status"] == "completed"
+        else None
+    )
+    if record["source"]["snapshot"] != expected or record["summary"] != summary:
+        raise ValueError("worker source or recomputed summary differs")
+
+
+def run(*, replay_id, confirm_paid_gpu=False, root=ROOT, producer=None):
+    """Launch one producer with CPU preflight and exclusive evidence files.
+
+    A producer module supplies ``snapshot``, ``PRODUCER``, ``CLAIMS``,
+    ``_corpus``, and ``validate_record(record, expected)``. Its remote entrypoint
+    remains ``run_worker(expected_snapshot)`` through the shared resource helper.
+    """
     if confirm_paid_gpu is not True:
         raise ValueError("GPU work requires --confirm-paid-gpu")
+    if producer is None:
+        producer = importlib.import_module("infra.modal_cuda_lane")
     output, receipt, raw = shared._paths(root, replay_id, False)
     if any(path.exists() for path in (output, receipt, raw)):
         raise FileExistsError("attempt exists; no overwrite or retry")
-    expected = snapshot(root)
-    corpus = _corpus()
+    expected = producer.snapshot(root)
+    corpus = producer._corpus()
     receipt.parent.mkdir(parents=True, exist_ok=True)
     with receipt.open("x", encoding="utf-8") as handle:
         handle.write(
@@ -346,7 +367,7 @@ def run(*, replay_id, confirm_paid_gpu=False, root=ROOT):
         )
     try:
         app, echo, execute = shared.resources(
-            expected, root, worker_module="infra.modal_cuda_lane"
+            expected, root, worker_module=producer.__name__
         )
         with app.run(detach=False):
             probe = corpus.b._transport_probe_payload()
@@ -357,18 +378,12 @@ def run(*, replay_id, confirm_paid_gpu=False, root=ROOT):
             record = corpus.b._decode_worker_record(
                 payload,
                 expected_snapshot=expected,
-                registration_sha256=shared._sha((root / PRODUCER).read_bytes()),
-                manifest=dict(claim_boundary=CLAIMS),
+                registration_sha256=shared._sha(
+                    (root / producer.PRODUCER).read_bytes()
+                ),
+                manifest=dict(claim_boundary=producer.CLAIMS),
             )
-            if record["scope"]["order"] != ACTIVE_ORDER:
-                raise ValueError("worker schedule differs")
-            summary = (
-                summarize(record["cells"], order=ACTIVE_ORDER)
-                if record["status"] == "completed"
-                else None
-            )
-            if record["source"]["snapshot"] != expected or record["summary"] != summary:
-                raise ValueError("worker source or recomputed summary differs")
+            producer.validate_record(record, expected)
             record["app_id"] = app.app_id
         corpus.c._write_json_exclusive(output, record)
         event = dict(event="record-written", sha256=shared._sha(output.read_bytes()))

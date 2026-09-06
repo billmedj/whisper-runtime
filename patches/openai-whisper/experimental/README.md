@@ -2,9 +2,10 @@
 
 This optional patch adds `find_alignment(..., audio_features=None)` and seven
 CPU tests to the existing seven-patch Whisper backend. It is **not** part of
-the active patch manifest, bootstrap, cached Modal image, or native adapter.
-The default call still encodes mel with `use_sdpa=False`; no current runtime
-profile, backend lock, or archived experiment is changed.
+the active patch manifest, bootstrap, or cached Modal image. The native adapter
+now supports it through an explicit `reuse_alignment_features=True` execution
+profile. The default profile still encodes mel with `use_sdpa=False` for
+alignment; existing backend locks and archived experiments are unchanged.
 
 Base tree: `c011d2563c26763b5f147026e6b18ef85bccd4fb`.
 Patched tree: `32163d5cdb87babc1cd415a86cc5a58116c86a16`.
@@ -35,9 +36,12 @@ The CPU tests show exact alignment equality only when supplied features were
 produced by the matching explicit `use_sdpa=False` encoder. They also check
 zero encoder calls on reuse, unchanged features/settings/hooks after success
 and failure, malformed-input rejection, and unchanged default/custom behavior.
-They do not establish GPU parity, acoustic correctness, runtime recovery, or
-service latency savings. Production wiring remains deferred pending a paired
-device comparison of actual decode-produced features and the existing path.
+They do not establish GPU parity, acoustic correctness, or service latency
+savings. Native adapter tests separately cover ownership and recovery. Its
+opt-in profile permits `prepare_word_alignment(reuse_alignment_features=False)`
+as a legacy control; it cannot change modes after alignment is cached. A paired
+T4 comparison of actual decode-produced features is defined in the
+[handoff report](../../../docs/research/2026-09-06-alignment-feature-handoff.md).
 
 ## Explicit local application
 

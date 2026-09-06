@@ -30,9 +30,9 @@ class ModelBinding:
     def __init__(self) -> None:
         self.lock = RLock()
         self.worker: Worker | None = None
-        self.execution_profile: tuple[str, ResourceVector, int, str | None] | None = (
-            None
-        )
+        self.execution_profile: (
+            tuple[str, ResourceVector, int, str | None, str | None] | None
+        ) = None
         self.adapter_kind: str | None = None
         self._cuda_lane: object | None = None
         self._cleanup_failures: set[int] = set()
@@ -143,6 +143,7 @@ def bind_model(
     subject: str,
     concurrency: int = 1,
     device: str | None = None,
+    execution_variant: str | None = None,
 ) -> None:
     """Bind one model to one adapter kind, worker, device, and fixed profile.
 
@@ -156,7 +157,7 @@ def bind_model(
         )
     if binding.worker is not None and binding.worker is not worker:
         raise ValueError(f"one {subject} cannot use multiple workers")
-    profile = (profile_id, resources, concurrency, device)
+    profile = (profile_id, resources, concurrency, device, execution_variant)
     if binding.execution_profile is not None and binding.execution_profile != profile:
         raise ValueError(f"one {subject} cannot use multiple execution profiles")
     binding.adapter_kind = adapter_kind
