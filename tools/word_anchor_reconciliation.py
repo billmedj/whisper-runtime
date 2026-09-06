@@ -14,13 +14,103 @@ offline reference transcript is an input to this rule.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
 from hashlib import sha256
 from typing import Literal
 
 from whisper_runtime.adapters.continuous_stream import ContinuousResolutionObservation
 from whisper_runtime.adapters.native_result import NativeTimestampSegment
-from whisper_runtime.adapters.word_policy import AnchorDiagnostic, NativeWordAlignment
+from whisper_runtime.adapters.word_policy import (
+    AnchorDiagnostic,
+    NativeWordAlignment,
+    diagnose_word_anchor,
+)
+
+
+def diagnose_group_anchor(
+    alignment: NativeWordAlignment,
+    *,
+    anchor: tuple[NativeTimestampSegment, ...],
+    committed_through_ms: int,
+    timestamp_tolerance_ms: int = 200,
+) -> dict:
+    """Compare one frozen group with a native observation, without a proposal.
+
+    This tools-only diagnostic generalizes the saved guard experiment to other
+    input spans. It retains strict validation and its original result, requires
+    one globally unique raw text/token occurrence, and compares group endpoints.
+    Internal deltas remain visible. It neither checks the complete continuation
+    nor authenticates source audio; a match cannot advance text or retention.
+    """
+    strict = diagnose_word_anchor(
+        alignment,
+        anchor=anchor,
+        committed_through_ms=committed_through_ms,
+        timestamp_tolerance_ms=timestamp_tolerance_ms,
+    )
+    result = dict(
+        status=strict.status,
+        word_start=None,
+        word_end=None,
+        strict=asdict(strict),
+        outer_start_delta_ms=None,
+        outer_end_delta_ms=None,
+        max_interior_delta_ms=None,
+        origin_start_exception=False,
+        publication_authorized=False,
+    )
+    if strict.status == "unavailable":
+        return result
+    if (
+        len(anchor) < 2
+        or sum(_lexical(w) for w in anchor) < 2
+        or not _lexical(anchor[0])
+        or not _lexical(anchor[-1])
+        or anchor[-1].span.end_ms != committed_through_ms
+    ):
+        return {**result, "status": "insufficient_anchor"}
+    if strict.lexical_match_count != 1:
+        # The strict matcher can select one timed occurrence among repetitions.
+        # Group comparison deliberately does not use timing to disambiguate.
+        return {
+            **result,
+            "status": "ambiguous" if strict.lexical_match_count > 1 else strict.status,
+        }
+    assert strict.word_start is not None and strict.word_end is not None
+    words = alignment.words[strict.word_start : strict.word_end]
+    first, last = words[0], words[-1]
+    start_delta = first.span.start_ms - anchor[0].span.start_ms
+    end_delta = last.span.end_ms - anchor[-1].span.end_ms
+    origin_exception = (
+        strict.word_start == 0
+        and first.span.start_ms == alignment.native.analyzed_span.start_ms
+        and start_delta < 0
+        and abs(first.span.end_ms - anchor[0].span.end_ms) <= timestamp_tolerance_ms
+    )
+    matched = (
+        strict.status != "relocated"
+        and (abs(start_delta) <= timestamp_tolerance_ms or origin_exception)
+        and abs(end_delta) <= timestamp_tolerance_ms
+    )
+    return dict(
+        result,
+        status="relocated"
+        if strict.status == "relocated"
+        else "matched"
+        if matched
+        else "timing_mismatch",
+        word_start=strict.word_start,
+        word_end=strict.word_end,
+        outer_start_delta_ms=start_delta,
+        outer_end_delta_ms=end_delta,
+        max_interior_delta_ms=max(
+            abs(getattr(new.span, edge) - getattr(old.span, edge))
+            for index, (old, new) in enumerate(zip(anchor, words))
+            for edge in ("start_ms", "end_ms")
+            if (index, edge) not in ((0, "start_ms"), (len(anchor) - 1, "end_ms"))
+        ),
+        origin_start_exception=origin_exception,
+    )
 
 
 @dataclass(frozen=True, slots=True)

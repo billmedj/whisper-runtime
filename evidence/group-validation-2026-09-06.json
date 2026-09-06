@@ -1,0 +1,2671 @@
+{
+  "schema_version": "group-validation/v1",
+  "parameters": {
+    "timestamp_tolerance_ms": 200,
+    "minimum_lexical_anchor_units": 2
+  },
+  "selection": [
+    {
+      "path": "evidence/modal-t4-tiny-en-word-alignment-v6-2026-09-05.json",
+      "collection": "cells",
+      "id_key": "cell_id",
+      "cell_id": "word-left-context-2000",
+      "input_id": "openai-whisper-jfk-flac",
+      "profile_id": "word_agreement_stream/v1",
+      "session_id": "modal-stream-boundary-diagnostic-v6:word-left-context-2000:session",
+      "expected_trace_count": 17,
+      "sample_count": 528000,
+      "pcm_sha256": "a3fd62a5bb6caecc25585b9f81bc6f379726c723f5fec6f1557e01508a192372",
+      "speaker_id": null,
+      "independence": "one_distinct_source_fixture_outside_tuning_states"
+    },
+    {
+      "path": "evidence/modal-t4-tiny-en-word-corpus-v1-2026-09-05.json",
+      "collection": "cases",
+      "id_key": "case_id",
+      "cell_id": "1995-1837-0024",
+      "input_id": "1995-1837-0024",
+      "profile_id": "word_agreement_stream/v1",
+      "session_id": "modal-word-corpus-v1:1995-1837-0024:session",
+      "expected_trace_count": 3,
+      "sample_count": 86160,
+      "pcm_sha256": "c8161a085b6871c73e775254d8e578451cce924609e08d0778323630db8c7a2b",
+      "speaker_id": 1995,
+      "independence": "same_utterance_already_in_tuning_mixtures"
+    },
+    {
+      "path": "evidence/modal-t4-tiny-en-word-corpus-v1-2026-09-05.json",
+      "collection": "cases",
+      "id_key": "case_id",
+      "cell_id": "672-122797-0072",
+      "input_id": "672-122797-0072",
+      "profile_id": "word_agreement_stream/v1",
+      "session_id": "modal-word-corpus-v1:672-122797-0072:session",
+      "expected_trace_count": 4,
+      "sample_count": 127040,
+      "pcm_sha256": "3bfeb4d05da42bcb00d1875e6dfe66e57ac1068afd957ab1851e74ad202becbc",
+      "speaker_id": 672,
+      "independence": "same_utterance_already_in_tuning_mixtures"
+    }
+  ],
+  "inventory_document": {
+    "path": "docs/research/2026-09-06-group-validation-inventory.md",
+    "sha256": "f87928348fa03d8f7f2d623e213ac4ad21908f569aea2b904ab0578f0d260a8a"
+  },
+  "source_sha256": {
+    "tools/analyze_group_validation.py": "c581f00d82f6993b5a6d3aa866b85c5325e6fe1491b3cc6cd1b6eea0db1347fe",
+    "tools/analyze_word_resolution.py": "6e04c5e4eff4513666fdcd30daa86a6004e2acc0551a8204759f8b990dc9f13b",
+    "tools/analyze_stream_text_agreement.py": "f5ff71ef3b0dec465d550cd3b218ffbb08a61640f7ee31cae6a0693d750ca13a",
+    "tools/word_anchor_reconciliation.py": "f983c9a952e45afb0f957bd845c6df7e7d160b9bcbfdb339f974b6ad25ed5aea",
+    "src/whisper_runtime/adapters/word_policy.py": "4613f263f0ca51a4a1d836cb5af7ea96bf1ea00c2c04b035e2272ca6d1b1a70d",
+    "src/whisper_runtime/adapters/native_result.py": "3198b3996e7445449d7c74092ecef79d5a3615c1ebb48951c9bc7bbba3c18d92",
+    "docs/research/2026-09-06-group-validation-inventory.md": "f87928348fa03d8f7f2d623e213ac4ad21908f569aea2b904ab0578f0d260a8a"
+  },
+  "archives": [
+    {
+      "path": "evidence/modal-t4-tiny-en-word-alignment-v6-2026-09-05.json",
+      "sha256": "ed5565fdcc86fabaad7d66d4122842a0ee99b6533a6d60535c9684c9a3346769",
+      "recorded_source": {
+        "image_base_commit": "9c2494234f08b24325d427ea422818b24f460c0c",
+        "public_commit_reproducibility": false,
+        "registration_sha256": "afccf895f5183fbd18846dbb706b10d2a61a20204a46d4b643e44904ecd1fa66",
+        "snapshot": {
+          "algorithm": "sha256-file-manifest-v1",
+          "digest": "ea690cd0bec14cb18811aa1e22dad5d0bed95e7014c1f9bb269334b6e3d31241",
+          "files": [
+            {
+              "path": "experiments/modal-stream-boundary-diagnostic-v6.json",
+              "sha256": "afccf895f5183fbd18846dbb706b10d2a61a20204a46d4b643e44904ecd1fa66",
+              "size_bytes": 7610
+            },
+            {
+              "path": "infra/modal_continuous_smoke.py",
+              "sha256": "5f88560cdacb0780e108cd9b222b95a361f5a8b1107b7db59da5b5db55596f70",
+              "size_bytes": 36793
+            },
+            {
+              "path": "infra/modal_stream_boundary_diagnostic.py",
+              "sha256": "286a71cd64c338f60b4557d60feaf3cb4ee7b032d74bffc640e4fc1818137c6b",
+              "size_bytes": 60264
+            },
+            {
+              "path": "src/whisper_runtime/__init__.py",
+              "sha256": "6b6c549bf89264c59b8808cf5cba240599af10f0cd12610a859ff964d6fed2aa",
+              "size_bytes": 1533
+            },
+            {
+              "path": "src/whisper_runtime/adapters/__init__.py",
+              "sha256": "470d4f1417ff9b3c7195fdea76e9b8d5796cb41c9e6b6fb2893211a0b88aa5af",
+              "size_bytes": 3306
+            },
+            {
+              "path": "src/whisper_runtime/adapters/_model_binding.py",
+              "sha256": "2c749b630c8736234ab844a104a2367be90cfd5004cbb74962016410d216dc74",
+              "size_bytes": 6523
+            },
+            {
+              "path": "src/whisper_runtime/adapters/continuous_stream.py",
+              "sha256": "e5be65ba9f2902253245884388d56a1949d48ffed0bb961c806bb9cfbfaf7152",
+              "size_bytes": 28231
+            },
+            {
+              "path": "src/whisper_runtime/adapters/legacy_whisper.py",
+              "sha256": "14b6f771c114238317d5118ba64c64334857e8e9da1d0f360baeeef48f3415e0",
+              "size_bytes": 33513
+            },
+            {
+              "path": "src/whisper_runtime/adapters/native_result.py",
+              "sha256": "3198b3996e7445449d7c74092ecef79d5a3615c1ebb48951c9bc7bbba3c18d92",
+              "size_bytes": 12573
+            },
+            {
+              "path": "src/whisper_runtime/adapters/native_stream.py",
+              "sha256": "01898983175014ac33e66c00be5bc92b96d0f300c0b20eb57a13cb4f384f0c39",
+              "size_bytes": 27068
+            },
+            {
+              "path": "src/whisper_runtime/adapters/native_whisper.py",
+              "sha256": "b8b216a1186d55fa8eae05cacbdd3259d740cc0c08b37e9cb965db7c0b281a0a",
+              "size_bytes": 64954
+            },
+            {
+              "path": "src/whisper_runtime/adapters/stream_policy.py",
+              "sha256": "452d71993ffd9395a36a8b6a68fbe34b53d90665cc13ad22058b49ca32b0f5a9",
+              "size_bytes": 13353
+            },
+            {
+              "path": "src/whisper_runtime/adapters/word_policy.py",
+              "sha256": "32e269e647c15efc6ea52113996741f607e71e0338831df912340dd35deb359f",
+              "size_bytes": 15635
+            },
+            {
+              "path": "src/whisper_runtime/errors.py",
+              "sha256": "87127fee36ff6706360f8ad82ea49a0dea870d9cd1831ceec3aeb31c2d8e89df",
+              "size_bytes": 2439
+            },
+            {
+              "path": "src/whisper_runtime/execution.py",
+              "sha256": "ea758adb9ea4204f29f5b444ecf54331d751b66e3b4373014179522a225cef44",
+              "size_bytes": 7533
+            },
+            {
+              "path": "src/whisper_runtime/model.py",
+              "sha256": "bfe66fb074d308447e94af78851db46a1819d291cad9fde742b28dcc0be629c0",
+              "size_bytes": 558
+            },
+            {
+              "path": "src/whisper_runtime/resources.py",
+              "sha256": "5beec172371839ab73bb3ca594b22460f37723f1347db74841a43a4a102716d5",
+              "size_bytes": 6384
+            },
+            {
+              "path": "src/whisper_runtime/state.py",
+              "sha256": "2b234b2a9b7618a4834cdc906052c3ca46ecab0a73eba04d9eb3f891dc01c312",
+              "size_bytes": 11988
+            },
+            {
+              "path": "src/whisper_runtime/transaction.py",
+              "sha256": "d9e4622ff289b182d7a2b23ebc6243e661da9f9061484107b3da09feb1ed44e4",
+              "size_bytes": 37581
+            },
+            {
+              "path": "src/whisper_runtime/worker.py",
+              "sha256": "92dc3f3366903c4304aaa7919dc84d8252bbdd02279d876701159bf0e092e077",
+              "size_bytes": 11824
+            }
+          ]
+        }
+      },
+      "recorded_model": {
+        "checkpoint_sha256": "d3dd57d32accea0b295c96e26691aa14d8822fac7d9d27d5dc00b4ca2826dd03",
+        "cloud": "aws",
+        "device": "cuda:0",
+        "gpu": "T4",
+        "model_state_sha256": "sha256:8041a80119a588f542472da35e97d0372fce1d9709ed9874475e9c03deac5de6",
+        "name": "tiny.en",
+        "numeric_precision": "float32",
+        "region": "us-west"
+      }
+    },
+    {
+      "path": "evidence/modal-t4-tiny-en-word-corpus-v1-2026-09-05.json",
+      "sha256": "6c27715f06ec85e1c3591c6ef044adee783328d3e8f1be3451975a1a3b6b9fad",
+      "recorded_source": {
+        "image_base_commit": "9c2494234f08b24325d427ea422818b24f460c0c",
+        "public_commit_reproducibility": false,
+        "registration_sha256": "e308bdc776c0ae2de9efdf5ff81f848be0c5ab1345eb5c19d7374574e29060b8",
+        "snapshot": {
+          "algorithm": "sha256-file-manifest-v1",
+          "digest": "ef027e2838942c13e74049aaf0c9c25face37a1a5275e10329251d7b48a78d4d",
+          "files": [
+            {
+              "path": "experiments/modal-word-corpus-v1.json",
+              "sha256": "e308bdc776c0ae2de9efdf5ff81f848be0c5ab1345eb5c19d7374574e29060b8",
+              "size_bytes": 11073
+            },
+            {
+              "path": "infra/modal_continuous_smoke.py",
+              "sha256": "5f88560cdacb0780e108cd9b222b95a361f5a8b1107b7db59da5b5db55596f70",
+              "size_bytes": 36793
+            },
+            {
+              "path": "infra/modal_stream_boundary_diagnostic.py",
+              "sha256": "a6c3d4d848acbc9e481ae49ae638abe45dcce74704d129967fbf92b755e2faa2",
+              "size_bytes": 60265
+            },
+            {
+              "path": "infra/modal_word_corpus.py",
+              "sha256": "6037e5da65dd3f3e1c4ba681c09c323ea244c74f7153b35d15f9001a3329a25a",
+              "size_bytes": 31477
+            },
+            {
+              "path": "src/whisper_runtime/__init__.py",
+              "sha256": "6b6c549bf89264c59b8808cf5cba240599af10f0cd12610a859ff964d6fed2aa",
+              "size_bytes": 1533
+            },
+            {
+              "path": "src/whisper_runtime/adapters/__init__.py",
+              "sha256": "470d4f1417ff9b3c7195fdea76e9b8d5796cb41c9e6b6fb2893211a0b88aa5af",
+              "size_bytes": 3306
+            },
+            {
+              "path": "src/whisper_runtime/adapters/_model_binding.py",
+              "sha256": "2c749b630c8736234ab844a104a2367be90cfd5004cbb74962016410d216dc74",
+              "size_bytes": 6523
+            },
+            {
+              "path": "src/whisper_runtime/adapters/continuous_stream.py",
+              "sha256": "e5be65ba9f2902253245884388d56a1949d48ffed0bb961c806bb9cfbfaf7152",
+              "size_bytes": 28231
+            },
+            {
+              "path": "src/whisper_runtime/adapters/legacy_whisper.py",
+              "sha256": "14b6f771c114238317d5118ba64c64334857e8e9da1d0f360baeeef48f3415e0",
+              "size_bytes": 33513
+            },
+            {
+              "path": "src/whisper_runtime/adapters/native_result.py",
+              "sha256": "3198b3996e7445449d7c74092ecef79d5a3615c1ebb48951c9bc7bbba3c18d92",
+              "size_bytes": 12573
+            },
+            {
+              "path": "src/whisper_runtime/adapters/native_stream.py",
+              "sha256": "01898983175014ac33e66c00be5bc92b96d0f300c0b20eb57a13cb4f384f0c39",
+              "size_bytes": 27068
+            },
+            {
+              "path": "src/whisper_runtime/adapters/native_whisper.py",
+              "sha256": "b8b216a1186d55fa8eae05cacbdd3259d740cc0c08b37e9cb965db7c0b281a0a",
+              "size_bytes": 64954
+            },
+            {
+              "path": "src/whisper_runtime/adapters/stream_policy.py",
+              "sha256": "452d71993ffd9395a36a8b6a68fbe34b53d90665cc13ad22058b49ca32b0f5a9",
+              "size_bytes": 13353
+            },
+            {
+              "path": "src/whisper_runtime/adapters/word_policy.py",
+              "sha256": "32e269e647c15efc6ea52113996741f607e71e0338831df912340dd35deb359f",
+              "size_bytes": 15635
+            },
+            {
+              "path": "src/whisper_runtime/errors.py",
+              "sha256": "87127fee36ff6706360f8ad82ea49a0dea870d9cd1831ceec3aeb31c2d8e89df",
+              "size_bytes": 2439
+            },
+            {
+              "path": "src/whisper_runtime/execution.py",
+              "sha256": "ea758adb9ea4204f29f5b444ecf54331d751b66e3b4373014179522a225cef44",
+              "size_bytes": 7533
+            },
+            {
+              "path": "src/whisper_runtime/model.py",
+              "sha256": "bfe66fb074d308447e94af78851db46a1819d291cad9fde742b28dcc0be629c0",
+              "size_bytes": 558
+            },
+            {
+              "path": "src/whisper_runtime/resources.py",
+              "sha256": "5beec172371839ab73bb3ca594b22460f37723f1347db74841a43a4a102716d5",
+              "size_bytes": 6384
+            },
+            {
+              "path": "src/whisper_runtime/state.py",
+              "sha256": "2b234b2a9b7618a4834cdc906052c3ca46ecab0a73eba04d9eb3f891dc01c312",
+              "size_bytes": 11988
+            },
+            {
+              "path": "src/whisper_runtime/transaction.py",
+              "sha256": "d9e4622ff289b182d7a2b23ebc6243e661da9f9061484107b3da09feb1ed44e4",
+              "size_bytes": 37581
+            },
+            {
+              "path": "src/whisper_runtime/worker.py",
+              "sha256": "92dc3f3366903c4304aaa7919dc84d8252bbdd02279d876701159bf0e092e077",
+              "size_bytes": 11824
+            }
+          ]
+        }
+      },
+      "recorded_model": {
+        "backend_revision": "a0b9695ae1cc52bad4b8626fe9fb6ea4ac0ee650",
+        "checkpoint_sha256": "d3dd57d32accea0b295c96e26691aa14d8822fac7d9d27d5dc00b4ca2826dd03",
+        "cloud": "aws",
+        "device": "cuda:0",
+        "final_state_sha256": "sha256:8041a80119a588f542472da35e97d0372fce1d9709ed9874475e9c03deac5de6",
+        "final_verification_error": null,
+        "gpu": "T4",
+        "model_state_sha256": "sha256:8041a80119a588f542472da35e97d0372fce1d9709ed9874475e9c03deac5de6",
+        "name": "tiny.en",
+        "numeric_precision": "float32",
+        "observed_state_sha256": "sha256:8041a80119a588f542472da35e97d0372fce1d9709ed9874475e9c03deac5de6",
+        "region": "us-west",
+        "unchanged": true
+      }
+    }
+  ],
+  "scope": {
+    "recorded_anchor_stage_only": true,
+    "group_rule_opt_in": true,
+    "histories_validated_before_scoring": true,
+    "state_changes_from_experimental_results": false,
+    "references_used_for_enrollment_or_correspondence": false,
+    "full_handoff_evaluated": false,
+    "new_native_windows": 0,
+    "pcm_or_execution_identity_reestablished": false,
+    "historical_missing_measurements_preserved": true,
+    "statistically_held_out": false,
+    "publication_authorized": false
+  },
+  "counts": {
+    "traces": 24,
+    "enrolled": 14,
+    "excluded": 10,
+    "distinct_anchor_states": 8,
+    "distinct_outside_tuning_source_fixtures": 1,
+    "exclusion_reasons": {
+      "no_committed_anchor": 7,
+      "insufficient_anchor": 3
+    },
+    "group_statuses": {
+      "matched": 14
+    },
+    "strict_statuses": {
+      "matched": 14
+    }
+  },
+  "cells": [
+    {
+      "id": "word-left-context-2000",
+      "input_id": "openai-whisper-jfk-flac",
+      "session_id": "modal-stream-boundary-diagnostic-v6:word-left-context-2000:session",
+      "source_archive": "evidence/modal-t4-tiny-en-word-alignment-v6-2026-09-05.json",
+      "identity": {
+        "path": "evidence/modal-t4-tiny-en-word-alignment-v6-2026-09-05.json",
+        "collection": "cells",
+        "id_key": "cell_id",
+        "cell_id": "word-left-context-2000",
+        "input_id": "openai-whisper-jfk-flac",
+        "profile_id": "word_agreement_stream/v1",
+        "session_id": "modal-stream-boundary-diagnostic-v6:word-left-context-2000:session",
+        "expected_trace_count": 17,
+        "sample_count": 528000,
+        "pcm_sha256": "a3fd62a5bb6caecc25585b9f81bc6f379726c723f5fec6f1557e01508a192372",
+        "speaker_id": null,
+        "independence": "one_distinct_source_fixture_outside_tuning_states"
+      },
+      "recorded_input": {
+        "chunk_ms": 1000,
+        "construction": "Repeat the converted 11-second PCM exactly three times.",
+        "converted_fixture_pcm_s16le_sha256": "252fca5b7c2acd89dfd4c01b27c67e7e6a6f5ab7d9973e9963732f8307a744d3",
+        "decoded_float32_fingerprint": "59be237a0814faee9f1279bc54c8a482fa7edc09a640ff0fdd18d14d41519065",
+        "duration_ms": 33000,
+        "fixture": "openai-whisper-jfk-flac",
+        "fixture_duration_ms": 11000,
+        "fixture_repetitions": 3,
+        "input_path": "/opt/openai-whisper/tests/jfk.flac",
+        "input_sha256": "63a4b1e4c1dc655ac70961ffbf518acd249df237e5a0152faae9a4a836949715",
+        "pcm_s16le_sha256": "a3fd62a5bb6caecc25585b9f81bc6f379726c723f5fec6f1557e01508a192372",
+        "sample_count": 528000,
+        "sample_rate_hz": 16000,
+        "stream_pcm_s16le_sha256": "a3fd62a5bb6caecc25585b9f81bc6f379726c723f5fec6f1557e01508a192372"
+      },
+      "recorded_status": "completed",
+      "recorded_error": null,
+      "recorded_profile_id": "word_agreement_stream/v1",
+      "recorded_final_state_sha256": "a9682ebe7f98bfb825b8eb0434e11d8f408e6034be2b12d06cbbfbd0208a2c64",
+      "recorded_events_sha256": "f38f58655987d3ccc0b48043b8fbc72d1d8298ecfa89f62e2ca26a5374025369",
+      "confirmed_commit_count": 8,
+      "traces": [
+        {
+          "decode_index": 1,
+          "enrollment": "excluded",
+          "exclusion_reason": "no_committed_anchor",
+          "anchor_state_id": null,
+          "anchor": [],
+          "full_committed_anchor": [],
+          "anchor_origin": null,
+          "analysis_start_ms": 0,
+          "analysis_end_ms": 2000,
+          "head_ms": 0,
+          "eof": false,
+          "recorded_action": "preview",
+          "recorded_reason": "incomplete",
+          "raw_alignment_sha256": "c35888206a46ff97ab8421fcd33b48ca388eaf5f691287df9373feb297111f13",
+          "raw_trace_sha256": "5ef64a18c644a8c7fe47de141634fef08f407f98c0a105398d939137854249da",
+          "native_window_id": "modal-stream-boundary-diagnostic-v6:word-left-context-2000:window:0:32000",
+          "diagnostic": null,
+          "publication_authorized": false
+        },
+        {
+          "decode_index": 2,
+          "enrollment": "excluded",
+          "exclusion_reason": "no_committed_anchor",
+          "anchor_state_id": null,
+          "anchor": [],
+          "full_committed_anchor": [],
+          "anchor_origin": null,
+          "analysis_start_ms": 0,
+          "analysis_end_ms": 4000,
+          "head_ms": 0,
+          "eof": false,
+          "recorded_action": "commit",
+          "recorded_reason": "candidate",
+          "raw_alignment_sha256": "5dc23b0ce8176acb328c8550329a82b384088d9f3fa9391a87558eb44be89ec0",
+          "raw_trace_sha256": "f7044cd94ac45d17c8102bde0e5978507f34079467e29e7be72a4232bd0a6f83",
+          "native_window_id": "modal-stream-boundary-diagnostic-v6:word-left-context-2000:window:0:64000",
+          "diagnostic": null,
+          "publication_authorized": false
+        },
+        {
+          "decode_index": 3,
+          "enrollment": "enrolled",
+          "exclusion_reason": null,
+          "anchor_state_id": "f4b0f3abb396c2a66b5f437b504494d1fcf1cc3371e5da656b1b48c61c86606b",
+          "anchor": [
+            {
+              "span": {
+                "start_ms": 0,
+                "end_ms": 720
+              },
+              "text": " And",
+              "tokens": [
+                843
+              ]
+            },
+            {
+              "span": {
+                "start_ms": 720,
+                "end_ms": 1040
+              },
+              "text": " so",
+              "tokens": [
+                523
+              ]
+            },
+            {
+              "span": {
+                "start_ms": 1040,
+                "end_ms": 1440
+              },
+              "text": " my",
+              "tokens": [
+                616
+              ]
+            },
+            {
+              "span": {
+                "start_ms": 1440,
+                "end_ms": 1760
+              },
+              "text": " fellow",
+              "tokens": [
+                5891
+              ]
+            }
+          ],
+          "full_committed_anchor": [
+            {
+              "span": {
+                "start_ms": 0,
+                "end_ms": 720
+              },
+              "text": " And",
+              "tokens": [
+                843
+              ]
+            },
+            {
+              "span": {
+                "start_ms": 720,
+                "end_ms": 1040
+              },
+              "text": " so",
+              "tokens": [
+                523
+              ]
+            },
+            {
+              "span": {
+                "start_ms": 1040,
+                "end_ms": 1440
+              },
+              "text": " my",
+              "tokens": [
+                616
+              ]
+            },
+            {
+              "span": {
+                "start_ms": 1440,
+                "end_ms": 1760
+              },
+              "text": " fellow",
+              "tokens": [
+                5891
+              ]
+            }
+          ],
+          "anchor_origin": {
+            "decode_index": 2,
+            "commit_sequence_number": 3,
+            "session_version": 1,
+            "word_start": 0,
+            "word_end": 4,
+            "publication_sha256": "011de7d3212473cdb2372e622842ddb0e7c43cd47cbaa96d08aea1e8700e4ed8"
+          },
+          "analysis_start_ms": 0,
+          "analysis_end_ms": 6000,
+          "head_ms": 1760,
+          "eof": false,
+          "recorded_action": "preview",
+          "recorded_reason": "incomplete",
+          "raw_alignment_sha256": "3dda27920ab17cb19de491463aae34253af23e5ef42252d832e314c493ce9161",
+          "raw_trace_sha256": "456c676f88e6a55b78829412f2f64122d205085548a36766153780a2accc562e",
+          "native_window_id": "modal-stream-boundary-diagnostic-v6:word-left-context-2000:window:0:96000",
+          "diagnostic": {
+            "status": "matched",
+            "word_start": 0,
+            "word_end": 4,
+            "strict": {
+              "status": "matched",
+              "observation": "current",
+              "text_match_count": 1,
+              "lexical_match_count": 1,
+              "timed_match_count": 1,
+              "word_start": 0,
+              "word_end": 4,
+              "start_deltas_ms": [
+                0,
+                -20,
+                0,
+                0
+              ],
+              "end_deltas_ms": [
+                -20,
+                0,
+                0,
+                0
+              ]
+            },
+            "outer_start_delta_ms": 0,
+            "outer_end_delta_ms": 0,
+            "max_interior_delta_ms": 20,
+            "origin_start_exception": false,
+            "publication_authorized": false
+          },
+          "publication_authorized": false
+        },
+        {
+          "decode_index": 4,
+          "enrollment": "enrolled",
+          "exclusion_reason": null,
+          "anchor_state_id": "f4b0f3abb396c2a66b5f437b504494d1fcf1cc3371e5da656b1b48c61c86606b",
+          "anchor": [
+            {
+              "span": {
+                "start_ms": 0,
+                "end_ms": 720
+              },
+              "text": " And",
+              "tokens": [
+                843
+              ]
+            },
+            {
+              "span": {
+                "start_ms": 720,
+                "end_ms": 1040
+              },
+              "text": " so",
+              "tokens": [
+                523
+              ]
+            },
+            {
+              "span": {
+                "start_ms": 1040,
+                "end_ms": 1440
+              },
+              "text": " my",
+              "tokens": [
+                616
+              ]
+            },
+            {
+              "span": {
+                "start_ms": 1440,
+                "end_ms": 1760
+              },
+              "text": " fellow",
+              "tokens": [
+                5891
+              ]
+            }
+          ],
+          "full_committed_anchor": [
+            {
+              "span": {
+                "start_ms": 0,
+                "end_ms": 720
+              },
+              "text": " And",
+              "tokens": [
+                843
+              ]
+            },
+            {
+              "span": {
+                "start_ms": 720,
+                "end_ms": 1040
+              },
+              "text": " so",
+              "tokens": [
+                523
+              ]
+            },
+            {
+              "span": {
+                "start_ms": 1040,
+                "end_ms": 1440
+              },
+              "text": " my",
+              "tokens": [
+                616
+              ]
+            },
+            {
+              "span": {
+                "start_ms": 1440,
+                "end_ms": 1760
+              },
+              "text": " fellow",
+              "tokens": [
+                5891
+              ]
+            }
+          ],
+          "anchor_origin": {
+            "decode_index": 2,
+            "commit_sequence_number": 3,
+            "session_version": 1,
+            "word_start": 0,
+            "word_end": 4,
+            "publication_sha256": "011de7d3212473cdb2372e622842ddb0e7c43cd47cbaa96d08aea1e8700e4ed8"
+          },
+          "analysis_start_ms": 0,
+          "analysis_end_ms": 8000,
+          "head_ms": 1760,
+          "eof": false,
+          "recorded_action": "commit",
+          "recorded_reason": "candidate",
+          "raw_alignment_sha256": "fe3423cf95851caca71c19a15d86dc28d81d2dc87daeab13ca7ca26c263d0da7",
+          "raw_trace_sha256": "68671b93ef3a0da88ab1eba80fa8d29ec6f18421c3240bafe43c25d46daf9bb9",
+          "native_window_id": "modal-stream-boundary-diagnostic-v6:word-left-context-2000:window:0:128000",
+          "diagnostic": {
+            "status": "matched",
+            "word_start": 0,
+            "word_end": 4,
+            "strict": {
+              "status": "matched",
+              "observation": "current",
+              "text_match_count": 1,
+              "lexical_match_count": 1,
+              "timed_match_count": 1,
+              "word_start": 0,
+              "word_end": 4,
+              "start_deltas_ms": [
+                0,
+                0,
+                20,
+                20
+              ],
+              "end_deltas_ms": [
+                0,
+                20,
+                20,
+                0
+              ]
+            },
+            "outer_start_delta_ms": 0,
+            "outer_end_delta_ms": 0,
+            "max_interior_delta_ms": 20,
+            "origin_start_exception": false,
+            "publication_authorized": false
+          },
+          "publication_authorized": false
+        },
+        {
+          "decode_index": 5,
+          "enrollment": "enrolled",
+          "exclusion_reason": null,
+          "anchor_state_id": "c1b2a6eb80f26a1ee87a17151874d49cb84b49629465f4fe5610161e85178946",
+          "anchor": [
+            {
+              "span": {
+                "start_ms": 3860,
+                "end_ms": 4620
+              },
+              "text": " not",
+              "tokens": [
+                407
+              ]
+            },
+            {
+              "span": {
+                "start_ms": 4620,
+                "end_ms": 5700
+              },
+              "text": " what",
+              "tokens": [
+                644
+              ]
+            }
+          ],
+          "full_committed_anchor": [
+            {
+              "span": {
+                "start_ms": 1760,
+                "end_ms": 2340
+              },
+              "text": " Americans",
+              "tokens": [
+                3399
+              ]
+            },
+            {
+              "span": {
+                "start_ms": 2340,
+                "end_ms": 3860
+              },
+              "text": " ask",
+              "tokens": [
+                1265
+              ]
+            },
+            {
+              "span": {
+                "start_ms": 3860,
+                "end_ms": 4620
+              },
+              "text": " not",
+              "tokens": [
+                407
+              ]
+            },
+            {
+              "span": {
+                "start_ms": 4620,
+                "end_ms": 5700
+              },
+              "text": " what",
+              "tokens": [
+                644
+              ]
+            }
+          ],
+          "anchor_origin": {
+            "decode_index": 4,
+            "commit_sequence_number": 6,
+            "session_version": 2,
+            "word_start": 4,
+            "word_end": 8,
+            "publication_sha256": "b494001c74f1d9b22f3698dcf736f08c0e190612f62df96428d92825f2808d51"
+          },
+          "analysis_start_ms": 3700,
+          "analysis_end_ms": 10000,
+          "head_ms": 5700,
+          "eof": false,
+          "recorded_action": "preview",
+          "recorded_reason": "incomplete",
+          "raw_alignment_sha256": "ba49b16b9600c184c6e0a809289e64e741b14bcd4a034d3bcfdba1e2d8fbed78",
+          "raw_trace_sha256": "d3c18dc6c7ef4663a021ae5e0f8c23bc848549acf7eca3a87d21e05ed9f705cf",
+          "native_window_id": "modal-stream-boundary-diagnostic-v6:word-left-context-2000:window:59200:160000",
+          "diagnostic": {
+            "status": "matched",
+            "word_start": 0,
+            "word_end": 2,
+            "strict": {
+              "status": "matched",
+              "observation": "current",
+              "text_match_count": 1,
+              "lexical_match_count": 1,
+              "timed_match_count": 1,
+              "word_start": 0,
+              "word_end": 2,
+              "start_deltas_ms": [
+                -160,
+                -140
+              ],
+              "end_deltas_ms": [
+                -140,
+                0
+              ]
+            },
+            "outer_start_delta_ms": -160,
+            "outer_end_delta_ms": 0,
+            "max_interior_delta_ms": 140,
+            "origin_start_exception": true,
+            "publication_authorized": false
+          },
+          "publication_authorized": false
+        },
+        {
+          "decode_index": 6,
+          "enrollment": "enrolled",
+          "exclusion_reason": null,
+          "anchor_state_id": "c1b2a6eb80f26a1ee87a17151874d49cb84b49629465f4fe5610161e85178946",
+          "anchor": [
+            {
+              "span": {
+                "start_ms": 3860,
+                "end_ms": 4620
+              },
+              "text": " not",
+              "tokens": [
+                407
+              ]
+            },
+            {
+              "span": {
+                "start_ms": 4620,
+                "end_ms": 5700
+              },
+              "text": " what",
+              "tokens": [
+                644
+              ]
+            }
+          ],
+          "full_committed_anchor": [
+            {
+              "span": {
+                "start_ms": 1760,
+                "end_ms": 2340
+              },
+              "text": " Americans",
+              "tokens": [
+                3399
+              ]
+            },
+            {
+              "span": {
+                "start_ms": 2340,
+                "end_ms": 3860
+              },
+              "text": " ask",
+              "tokens": [
+                1265
+              ]
+            },
+            {
+              "span": {
+                "start_ms": 3860,
+                "end_ms": 4620
+              },
+              "text": " not",
+              "tokens": [
+                407
+              ]
+            },
+            {
+              "span": {
+                "start_ms": 4620,
+                "end_ms": 5700
+              },
+              "text": " what",
+              "tokens": [
+                644
+              ]
+            }
+          ],
+          "anchor_origin": {
+            "decode_index": 4,
+            "commit_sequence_number": 6,
+            "session_version": 2,
+            "word_start": 4,
+            "word_end": 8,
+            "publication_sha256": "b494001c74f1d9b22f3698dcf736f08c0e190612f62df96428d92825f2808d51"
+          },
+          "analysis_start_ms": 3700,
+          "analysis_end_ms": 12000,
+          "head_ms": 5700,
+          "eof": false,
+          "recorded_action": "commit",
+          "recorded_reason": "candidate",
+          "raw_alignment_sha256": "1d6cd5858826a835cee3981c8777d69a81e23c3a9a8156586125adea346eee64",
+          "raw_trace_sha256": "8d4ed745b0f3c4098bc85d918c0255bd9e90eb14ac52bbcfa617924d351f4aca",
+          "native_window_id": "modal-stream-boundary-diagnostic-v6:word-left-context-2000:window:59200:192000",
+          "diagnostic": {
+            "status": "matched",
+            "word_start": 0,
+            "word_end": 2,
+            "strict": {
+              "status": "matched",
+              "observation": "current",
+              "text_match_count": 1,
+              "lexical_match_count": 1,
+              "timed_match_count": 1,
+              "word_start": 0,
+              "word_end": 2,
+              "start_deltas_ms": [
+                -160,
+                -160
+              ],
+              "end_deltas_ms": [
+                -160,
+                0
+              ]
+            },
+            "outer_start_delta_ms": -160,
+            "outer_end_delta_ms": 0,
+            "max_interior_delta_ms": 160,
+            "origin_start_exception": true,
+            "publication_authorized": false
+          },
+          "publication_authorized": false
+        },
+        {
+          "decode_index": 7,
+          "enrollment": "enrolled",
+          "exclusion_reason": null,
+          "anchor_state_id": "ea1902ec0cd4063c17879449fb354c3bf145727e3373ed0ee0d68bed6395033c",
+          "anchor": [
+            {
+              "span": {
+                "start_ms": 8980,
+                "end_ms": 9280
+              },
+              "text": " you",
+              "tokens": [
+                345
+              ]
+            },
+            {
+              "span": {
+                "start_ms": 9280,
+                "end_ms": 9500
+              },
+              "text": " can",
+              "tokens": [
+                460
+              ]
+            },
+            {
+              "span": {
+                "start_ms": 9500,
+                "end_ms": 9740
+              },
+              "text": " do",
+              "tokens": [
+                466
+              ]
+            },
+            {
+              "span": {
+                "start_ms": 9740,
+                "end_ms": 9920
+              },
+              "text": " for",
+              "tokens": [
+                329
+              ]
+            }
+          ],
+          "full_committed_anchor": [
+            {
+              "span": {
+                "start_ms": 8980,
+                "end_ms": 9280
+              },
+              "text": " you",
+              "tokens": [
+                345
+              ]
+            },
+            {
+              "span": {
+                "start_ms": 9280,
+                "end_ms": 9500
+              },
+              "text": " can",
+              "tokens": [
+                460
+              ]
+            },
+            {
+              "span": {
+                "start_ms": 9500,
+                "end_ms": 9740
+              },
+              "text": " do",
+              "tokens": [
+                466
+              ]
+            },
+            {
+              "span": {
+                "start_ms": 9740,
+                "end_ms": 9920
+              },
+              "text": " for",
+              "tokens": [
+                329
+              ]
+            }
+          ],
+          "anchor_origin": {
+            "decode_index": 6,
+            "commit_sequence_number": 9,
+            "session_version": 3,
+            "word_start": 2,
+            "word_end": 14,
+            "publication_sha256": "6675586186044da5ef3968ecd27adffd4dee41f9349c2e50af94b7654917b633"
+          },
+          "analysis_start_ms": 7920,
+          "analysis_end_ms": 14000,
+          "head_ms": 9920,
+          "eof": false,
+          "recorded_action": "preview",
+          "recorded_reason": "incomplete",
+          "raw_alignment_sha256": "60fda85cd8d1e34c06986f4d90d44aea431171a7b2a88471f722be1609943b7d",
+          "raw_trace_sha256": "b14812d0773a0b3a2a141a221ff14c847d0198747e65e57bfd12e8aed8ebf573",
+          "native_window_id": "modal-stream-boundary-diagnostic-v6:word-left-context-2000:window:126720:224000",
+          "diagnostic": {
+            "status": "matched",
+            "word_start": 2,
+            "word_end": 6,
+            "strict": {
+              "status": "matched",
+              "observation": "current",
+              "text_match_count": 1,
+              "lexical_match_count": 1,
+              "timed_match_count": 1,
+              "word_start": 2,
+              "word_end": 6,
+              "start_deltas_ms": [
+                -20,
+                0,
+                -40,
+                -20
+              ],
+              "end_deltas_ms": [
+                0,
+                -40,
+                -20,
+                0
+              ]
+            },
+            "outer_start_delta_ms": -20,
+            "outer_end_delta_ms": 0,
+            "max_interior_delta_ms": 40,
+            "origin_start_exception": false,
+            "publication_authorized": false
+          },
+          "publication_authorized": false
+        },
+        {
+          "decode_index": 8,
+          "enrollment": "enrolled",
+          "exclusion_reason": null,
+          "anchor_state_id": "ea1902ec0cd4063c17879449fb354c3bf145727e3373ed0ee0d68bed6395033c",
+          "anchor": [
+            {
+              "span": {
+                "start_ms": 8980,
+                "end_ms": 9280
+              },
+              "text": " you",
+              "tokens": [
+                345
+              ]
+            },
+            {
+              "span": {
+                "start_ms": 9280,
+                "end_ms": 9500
+              },
+              "text": " can",
+              "tokens": [
+                460
+              ]
+            },
+            {
+              "span": {
+                "start_ms": 9500,
+                "end_ms": 9740
+              },
+              "text": " do",
+              "tokens": [
+                466
+              ]
+            },
+            {
+              "span": {
+                "start_ms": 9740,
+                "end_ms": 9920
+              },
+              "text": " for",
+              "tokens": [
+                329
+              ]
+            }
+          ],
+          "full_committed_anchor": [
+            {
+              "span": {
+                "start_ms": 8980,
+                "end_ms": 9280
+              },
+              "text": " you",
+              "tokens": [
+                345
+              ]
+            },
+            {
+              "span": {
+                "start_ms": 9280,
+                "end_ms": 9500
+              },
+              "text": " can",
+              "tokens": [
+                460
+              ]
+            },
+            {
+              "span": {
+                "start_ms": 9500,
+                "end_ms": 9740
+              },
+              "text": " do",
+              "tokens": [
+                466
+              ]
+            },
+            {
+              "span": {
+                "start_ms": 9740,
+                "end_ms": 9920
+              },
+              "text": " for",
+              "tokens": [
+                329
+              ]
+            }
+          ],
+          "anchor_origin": {
+            "decode_index": 6,
+            "commit_sequence_number": 9,
+            "session_version": 3,
+            "word_start": 2,
+            "word_end": 14,
+            "publication_sha256": "6675586186044da5ef3968ecd27adffd4dee41f9349c2e50af94b7654917b633"
+          },
+          "analysis_start_ms": 7920,
+          "analysis_end_ms": 16000,
+          "head_ms": 9920,
+          "eof": false,
+          "recorded_action": "commit",
+          "recorded_reason": "candidate",
+          "raw_alignment_sha256": "ca4684e398a767f5328661a32fc36a70068ec63e15de139544f7d2c83eb2653a",
+          "raw_trace_sha256": "750c6211b5f0be72a4f204b531dad8608c3f0b6077d085d6ad008ee1278a4b5a",
+          "native_window_id": "modal-stream-boundary-diagnostic-v6:word-left-context-2000:window:126720:256000",
+          "diagnostic": {
+            "status": "matched",
+            "word_start": 2,
+            "word_end": 6,
+            "strict": {
+              "status": "matched",
+              "observation": "current",
+              "text_match_count": 1,
+              "lexical_match_count": 1,
+              "timed_match_count": 1,
+              "word_start": 2,
+              "word_end": 6,
+              "start_deltas_ms": [
+                -20,
+                0,
+                -40,
+                -20
+              ],
+              "end_deltas_ms": [
+                0,
+                -40,
+                -20,
+                0
+              ]
+            },
+            "outer_start_delta_ms": -20,
+            "outer_end_delta_ms": 0,
+            "max_interior_delta_ms": 40,
+            "origin_start_exception": false,
+            "publication_authorized": false
+          },
+          "publication_authorized": false
+        },
+        {
+          "decode_index": 9,
+          "enrollment": "enrolled",
+          "exclusion_reason": null,
+          "anchor_state_id": "d9b16212292f2292ce93ebea390a8dde708e12cb1c62f4326cb596af39f9fe8e",
+          "anchor": [
+            {
+              "span": {
+                "start_ms": 11660,
+                "end_ms": 11720
+              },
+              "text": " And",
+              "tokens": [
+                843
+              ]
+            },
+            {
+              "span": {
+                "start_ms": 11720,
+                "end_ms": 12060
+              },
+              "text": " so",
+              "tokens": [
+                523
+              ]
+            },
+            {
+              "span": {
+                "start_ms": 12060,
+                "end_ms": 12460
+              },
+              "text": " my",
+              "tokens": [
+                616
+              ]
+            },
+            {
+              "span": {
+                "start_ms": 12460,
+                "end_ms": 12780
+              },
+              "text": " fellow",
+              "tokens": [
+                5891
+              ]
+            }
+          ],
+          "full_committed_anchor": [
+            {
+              "span": {
+                "start_ms": 11660,
+                "end_ms": 11720
+              },
+              "text": " And",
+              "tokens": [
+                843
+              ]
+            },
+            {
+              "span": {
+                "start_ms": 11720,
+                "end_ms": 12060
+              },
+              "text": " so",
+              "tokens": [
+                523
+              ]
+            },
+            {
+              "span": {
+                "start_ms": 12060,
+                "end_ms": 12460
+              },
+              "text": " my",
+              "tokens": [
+                616
+              ]
+            },
+            {
+              "span": {
+                "start_ms": 12460,
+                "end_ms": 12780
+              },
+              "text": " fellow",
+              "tokens": [
+                5891
+              ]
+            }
+          ],
+          "anchor_origin": {
+            "decode_index": 8,
+            "commit_sequence_number": 12,
+            "session_version": 4,
+            "word_start": 6,
+            "word_end": 13,
+            "publication_sha256": "737dbda3063a6ee29b1cdd42815edc4dfc7b67e9e8a09f4c56455c6e7fb52acb"
+          },
+          "analysis_start_ms": 10780,
+          "analysis_end_ms": 18000,
+          "head_ms": 12780,
+          "eof": false,
+          "recorded_action": "preview",
+          "recorded_reason": "incomplete",
+          "raw_alignment_sha256": "e23b2d58e1a27b70abdab4c93d98b887881f87698e705955b5dee6161f1286eb",
+          "raw_trace_sha256": "e4b61b7e9a3a8ffc76fd4a6ba910908d28a5a3e807e0a6319023798fc2860dca",
+          "native_window_id": "modal-stream-boundary-diagnostic-v6:word-left-context-2000:window:172480:288000",
+          "diagnostic": {
+            "status": "matched",
+            "word_start": 0,
+            "word_end": 4,
+            "strict": {
+              "status": "matched",
+              "observation": "current",
+              "text_match_count": 1,
+              "lexical_match_count": 1,
+              "timed_match_count": 1,
+              "word_start": 0,
+              "word_end": 4,
+              "start_deltas_ms": [
+                -880,
+                -20,
+                0,
+                -20
+              ],
+              "end_deltas_ms": [
+                -20,
+                0,
+                -20,
+                -20
+              ]
+            },
+            "outer_start_delta_ms": -880,
+            "outer_end_delta_ms": -20,
+            "max_interior_delta_ms": 20,
+            "origin_start_exception": true,
+            "publication_authorized": false
+          },
+          "publication_authorized": false
+        },
+        {
+          "decode_index": 10,
+          "enrollment": "enrolled",
+          "exclusion_reason": null,
+          "anchor_state_id": "d9b16212292f2292ce93ebea390a8dde708e12cb1c62f4326cb596af39f9fe8e",
+          "anchor": [
+            {
+              "span": {
+                "start_ms": 11660,
+                "end_ms": 11720
+              },
+              "text": " And",
+              "tokens": [
+                843
+              ]
+            },
+            {
+              "span": {
+                "start_ms": 11720,
+                "end_ms": 12060
+              },
+              "text": " so",
+              "tokens": [
+                523
+              ]
+            },
+            {
+              "span": {
+                "start_ms": 12060,
+                "end_ms": 12460
+              },
+              "text": " my",
+              "tokens": [
+                616
+              ]
+            },
+            {
+              "span": {
+                "start_ms": 12460,
+                "end_ms": 12780
+              },
+              "text": " fellow",
+              "tokens": [
+                5891
+              ]
+            }
+          ],
+          "full_committed_anchor": [
+            {
+              "span": {
+                "start_ms": 11660,
+                "end_ms": 11720
+              },
+              "text": " And",
+              "tokens": [
+                843
+              ]
+            },
+            {
+              "span": {
+                "start_ms": 11720,
+                "end_ms": 12060
+              },
+              "text": " so",
+              "tokens": [
+                523
+              ]
+            },
+            {
+              "span": {
+                "start_ms": 12060,
+                "end_ms": 12460
+              },
+              "text": " my",
+              "tokens": [
+                616
+              ]
+            },
+            {
+              "span": {
+                "start_ms": 12460,
+                "end_ms": 12780
+              },
+              "text": " fellow",
+              "tokens": [
+                5891
+              ]
+            }
+          ],
+          "anchor_origin": {
+            "decode_index": 8,
+            "commit_sequence_number": 12,
+            "session_version": 4,
+            "word_start": 6,
+            "word_end": 13,
+            "publication_sha256": "737dbda3063a6ee29b1cdd42815edc4dfc7b67e9e8a09f4c56455c6e7fb52acb"
+          },
+          "analysis_start_ms": 10780,
+          "analysis_end_ms": 20000,
+          "head_ms": 12780,
+          "eof": false,
+          "recorded_action": "commit",
+          "recorded_reason": "candidate",
+          "raw_alignment_sha256": "a8e52b18f8565c9de0cf1213243e6fb3a0c707c2141b34e4513192f9d8cfdd4f",
+          "raw_trace_sha256": "d61377bb4b54597291e226ce22f7bc71c7674ec48d8dad8c153735919dfac761",
+          "native_window_id": "modal-stream-boundary-diagnostic-v6:word-left-context-2000:window:172480:320000",
+          "diagnostic": {
+            "status": "matched",
+            "word_start": 0,
+            "word_end": 4,
+            "strict": {
+              "status": "matched",
+              "observation": "current",
+              "text_match_count": 1,
+              "lexical_match_count": 1,
+              "timed_match_count": 1,
+              "word_start": 0,
+              "word_end": 4,
+              "start_deltas_ms": [
+                -880,
+                -20,
+                0,
+                -20
+              ],
+              "end_deltas_ms": [
+                -20,
+                0,
+                -20,
+                -20
+              ]
+            },
+            "outer_start_delta_ms": -880,
+            "outer_end_delta_ms": -20,
+            "max_interior_delta_ms": 20,
+            "origin_start_exception": true,
+            "publication_authorized": false
+          },
+          "publication_authorized": false
+        },
+        {
+          "decode_index": 11,
+          "enrollment": "enrolled",
+          "exclusion_reason": null,
+          "anchor_state_id": "230325a8b30914d06c78e4f6ad23b1054b5857bad66a9541f2e02e9397c39b3d",
+          "anchor": [
+            {
+              "span": {
+                "start_ms": 16700,
+                "end_ms": 17020
+              },
+              "text": " your",
+              "tokens": [
+                534
+              ]
+            },
+            {
+              "span": {
+                "start_ms": 17020,
+                "end_ms": 17340
+              },
+              "text": " country",
+              "tokens": [
+                1499
+              ]
+            },
+            {
+              "span": {
+                "start_ms": 17340,
+                "end_ms": 17760
+              },
+              "text": " can",
+              "tokens": [
+                460
+              ]
+            },
+            {
+              "span": {
+                "start_ms": 17760,
+                "end_ms": 18000
+              },
+              "text": " do",
+              "tokens": [
+                466
+              ]
+            }
+          ],
+          "full_committed_anchor": [
+            {
+              "span": {
+                "start_ms": 16700,
+                "end_ms": 17020
+              },
+              "text": " your",
+              "tokens": [
+                534
+              ]
+            },
+            {
+              "span": {
+                "start_ms": 17020,
+                "end_ms": 17340
+              },
+              "text": " country",
+              "tokens": [
+                1499
+              ]
+            },
+            {
+              "span": {
+                "start_ms": 17340,
+                "end_ms": 17760
+              },
+              "text": " can",
+              "tokens": [
+                460
+              ]
+            },
+            {
+              "span": {
+                "start_ms": 17760,
+                "end_ms": 18000
+              },
+              "text": " do",
+              "tokens": [
+                466
+              ]
+            }
+          ],
+          "anchor_origin": {
+            "decode_index": 10,
+            "commit_sequence_number": 15,
+            "session_version": 5,
+            "word_start": 4,
+            "word_end": 12,
+            "publication_sha256": "4a80b176a6511e366950c630523a853be2bf445943f87f0f335bf1855067ddc2"
+          },
+          "analysis_start_ms": 16000,
+          "analysis_end_ms": 22000,
+          "head_ms": 18000,
+          "eof": false,
+          "recorded_action": "preview",
+          "recorded_reason": "incomplete",
+          "raw_alignment_sha256": "2cfdb2ef21c50150252a6d0980ee686e1e037944e1e5befbc601f0ed9403a926",
+          "raw_trace_sha256": "d10f62b2fc090ad8f4ce5d46a6d19ff5d64ccb8a93472077132e2f54e2dc449b",
+          "native_window_id": "modal-stream-boundary-diagnostic-v6:word-left-context-2000:window:256000:352000",
+          "diagnostic": {
+            "status": "matched",
+            "word_start": 1,
+            "word_end": 5,
+            "strict": {
+              "status": "matched",
+              "observation": "current",
+              "text_match_count": 1,
+              "lexical_match_count": 1,
+              "timed_match_count": 1,
+              "word_start": 1,
+              "word_end": 5,
+              "start_deltas_ms": [
+                0,
+                20,
+                20,
+                0
+              ],
+              "end_deltas_ms": [
+                20,
+                20,
+                0,
+                20
+              ]
+            },
+            "outer_start_delta_ms": 0,
+            "outer_end_delta_ms": 20,
+            "max_interior_delta_ms": 20,
+            "origin_start_exception": false,
+            "publication_authorized": false
+          },
+          "publication_authorized": false
+        },
+        {
+          "decode_index": 12,
+          "enrollment": "enrolled",
+          "exclusion_reason": null,
+          "anchor_state_id": "230325a8b30914d06c78e4f6ad23b1054b5857bad66a9541f2e02e9397c39b3d",
+          "anchor": [
+            {
+              "span": {
+                "start_ms": 16700,
+                "end_ms": 17020
+              },
+              "text": " your",
+              "tokens": [
+                534
+              ]
+            },
+            {
+              "span": {
+                "start_ms": 17020,
+                "end_ms": 17340
+              },
+              "text": " country",
+              "tokens": [
+                1499
+              ]
+            },
+            {
+              "span": {
+                "start_ms": 17340,
+                "end_ms": 17760
+              },
+              "text": " can",
+              "tokens": [
+                460
+              ]
+            },
+            {
+              "span": {
+                "start_ms": 17760,
+                "end_ms": 18000
+              },
+              "text": " do",
+              "tokens": [
+                466
+              ]
+            }
+          ],
+          "full_committed_anchor": [
+            {
+              "span": {
+                "start_ms": 16700,
+                "end_ms": 17020
+              },
+              "text": " your",
+              "tokens": [
+                534
+              ]
+            },
+            {
+              "span": {
+                "start_ms": 17020,
+                "end_ms": 17340
+              },
+              "text": " country",
+              "tokens": [
+                1499
+              ]
+            },
+            {
+              "span": {
+                "start_ms": 17340,
+                "end_ms": 17760
+              },
+              "text": " can",
+              "tokens": [
+                460
+              ]
+            },
+            {
+              "span": {
+                "start_ms": 17760,
+                "end_ms": 18000
+              },
+              "text": " do",
+              "tokens": [
+                466
+              ]
+            }
+          ],
+          "anchor_origin": {
+            "decode_index": 10,
+            "commit_sequence_number": 15,
+            "session_version": 5,
+            "word_start": 4,
+            "word_end": 12,
+            "publication_sha256": "4a80b176a6511e366950c630523a853be2bf445943f87f0f335bf1855067ddc2"
+          },
+          "analysis_start_ms": 16000,
+          "analysis_end_ms": 24000,
+          "head_ms": 18000,
+          "eof": false,
+          "recorded_action": "commit",
+          "recorded_reason": "candidate",
+          "raw_alignment_sha256": "014cb386625473060bac5787d2fa6b0deb119c5f9658a4b4fc43ff48a47f3a1c",
+          "raw_trace_sha256": "2fa48a3c1f2d8920c6aade740c6d7a23d8735a0bf7958162e4bce463d967dc21",
+          "native_window_id": "modal-stream-boundary-diagnostic-v6:word-left-context-2000:window:256000:384000",
+          "diagnostic": {
+            "status": "matched",
+            "word_start": 1,
+            "word_end": 5,
+            "strict": {
+              "status": "matched",
+              "observation": "current",
+              "text_match_count": 1,
+              "lexical_match_count": 1,
+              "timed_match_count": 1,
+              "word_start": 1,
+              "word_end": 5,
+              "start_deltas_ms": [
+                -20,
+                20,
+                20,
+                0
+              ],
+              "end_deltas_ms": [
+                20,
+                20,
+                0,
+                20
+              ]
+            },
+            "outer_start_delta_ms": -20,
+            "outer_end_delta_ms": 20,
+            "max_interior_delta_ms": 20,
+            "origin_start_exception": false,
+            "publication_authorized": false
+          },
+          "publication_authorized": false
+        },
+        {
+          "decode_index": 13,
+          "enrollment": "enrolled",
+          "exclusion_reason": null,
+          "anchor_state_id": "e10907dcb8fcd572024badebd73f15cffd9bfbf4043357ba4170dd9f5c440a9b",
+          "anchor": [
+            {
+              "span": {
+                "start_ms": 20280,
+                "end_ms": 20500
+              },
+              "text": " can",
+              "tokens": [
+                460
+              ]
+            },
+            {
+              "span": {
+                "start_ms": 20500,
+                "end_ms": 20740
+              },
+              "text": " do",
+              "tokens": [
+                466
+              ]
+            },
+            {
+              "span": {
+                "start_ms": 20740,
+                "end_ms": 20920
+              },
+              "text": " for",
+              "tokens": [
+                329
+              ]
+            },
+            {
+              "span": {
+                "start_ms": 20920,
+                "end_ms": 21220
+              },
+              "text": " your",
+              "tokens": [
+                534
+              ]
+            }
+          ],
+          "full_committed_anchor": [
+            {
+              "span": {
+                "start_ms": 20280,
+                "end_ms": 20500
+              },
+              "text": " can",
+              "tokens": [
+                460
+              ]
+            },
+            {
+              "span": {
+                "start_ms": 20500,
+                "end_ms": 20740
+              },
+              "text": " do",
+              "tokens": [
+                466
+              ]
+            },
+            {
+              "span": {
+                "start_ms": 20740,
+                "end_ms": 20920
+              },
+              "text": " for",
+              "tokens": [
+                329
+              ]
+            },
+            {
+              "span": {
+                "start_ms": 20920,
+                "end_ms": 21220
+              },
+              "text": " your",
+              "tokens": [
+                534
+              ]
+            }
+          ],
+          "anchor_origin": {
+            "decode_index": 12,
+            "commit_sequence_number": 18,
+            "session_version": 6,
+            "word_start": 5,
+            "word_end": 14,
+            "publication_sha256": "93437a21f03f1705a00401fb167d0e46a1f72b9600c1d1f607ff13ea1a2c3ee3"
+          },
+          "analysis_start_ms": 19220,
+          "analysis_end_ms": 26000,
+          "head_ms": 21220,
+          "eof": false,
+          "recorded_action": "preview",
+          "recorded_reason": "incomplete",
+          "raw_alignment_sha256": "d614e68d482a6172a2ea4d7f75e12a989cbc2b714de62bf8605f089792c593cb",
+          "raw_trace_sha256": "989c96d18e22f9b709fb6c982c1d84596fdaa812e43327985f4eb30f2b39ca4e",
+          "native_window_id": "modal-stream-boundary-diagnostic-v6:word-left-context-2000:window:307520:416000",
+          "diagnostic": {
+            "status": "matched",
+            "word_start": 3,
+            "word_end": 7,
+            "strict": {
+              "status": "matched",
+              "observation": "current",
+              "text_match_count": 1,
+              "lexical_match_count": 1,
+              "timed_match_count": 1,
+              "word_start": 3,
+              "word_end": 7,
+              "start_deltas_ms": [
+                0,
+                -20,
+                -20,
+                0
+              ],
+              "end_deltas_ms": [
+                -20,
+                -20,
+                0,
+                -20
+              ]
+            },
+            "outer_start_delta_ms": 0,
+            "outer_end_delta_ms": -20,
+            "max_interior_delta_ms": 20,
+            "origin_start_exception": false,
+            "publication_authorized": false
+          },
+          "publication_authorized": false
+        },
+        {
+          "decode_index": 14,
+          "enrollment": "enrolled",
+          "exclusion_reason": null,
+          "anchor_state_id": "e10907dcb8fcd572024badebd73f15cffd9bfbf4043357ba4170dd9f5c440a9b",
+          "anchor": [
+            {
+              "span": {
+                "start_ms": 20280,
+                "end_ms": 20500
+              },
+              "text": " can",
+              "tokens": [
+                460
+              ]
+            },
+            {
+              "span": {
+                "start_ms": 20500,
+                "end_ms": 20740
+              },
+              "text": " do",
+              "tokens": [
+                466
+              ]
+            },
+            {
+              "span": {
+                "start_ms": 20740,
+                "end_ms": 20920
+              },
+              "text": " for",
+              "tokens": [
+                329
+              ]
+            },
+            {
+              "span": {
+                "start_ms": 20920,
+                "end_ms": 21220
+              },
+              "text": " your",
+              "tokens": [
+                534
+              ]
+            }
+          ],
+          "full_committed_anchor": [
+            {
+              "span": {
+                "start_ms": 20280,
+                "end_ms": 20500
+              },
+              "text": " can",
+              "tokens": [
+                460
+              ]
+            },
+            {
+              "span": {
+                "start_ms": 20500,
+                "end_ms": 20740
+              },
+              "text": " do",
+              "tokens": [
+                466
+              ]
+            },
+            {
+              "span": {
+                "start_ms": 20740,
+                "end_ms": 20920
+              },
+              "text": " for",
+              "tokens": [
+                329
+              ]
+            },
+            {
+              "span": {
+                "start_ms": 20920,
+                "end_ms": 21220
+              },
+              "text": " your",
+              "tokens": [
+                534
+              ]
+            }
+          ],
+          "anchor_origin": {
+            "decode_index": 12,
+            "commit_sequence_number": 18,
+            "session_version": 6,
+            "word_start": 5,
+            "word_end": 14,
+            "publication_sha256": "93437a21f03f1705a00401fb167d0e46a1f72b9600c1d1f607ff13ea1a2c3ee3"
+          },
+          "analysis_start_ms": 19220,
+          "analysis_end_ms": 28000,
+          "head_ms": 21220,
+          "eof": false,
+          "recorded_action": "commit",
+          "recorded_reason": "candidate",
+          "raw_alignment_sha256": "e276c2f2eeea89d032b6c495ea912ec8fc4c976330a7b19e7470a487f1e3718f",
+          "raw_trace_sha256": "9ca2938589f2528cb8eecc77fe6f10be315b8e6f16b12007d5506b2c70475d0a",
+          "native_window_id": "modal-stream-boundary-diagnostic-v6:word-left-context-2000:window:307520:448000",
+          "diagnostic": {
+            "status": "matched",
+            "word_start": 3,
+            "word_end": 7,
+            "strict": {
+              "status": "matched",
+              "observation": "current",
+              "text_match_count": 1,
+              "lexical_match_count": 1,
+              "timed_match_count": 1,
+              "word_start": 3,
+              "word_end": 7,
+              "start_deltas_ms": [
+                0,
+                -20,
+                -20,
+                0
+              ],
+              "end_deltas_ms": [
+                -20,
+                -20,
+                0,
+                0
+              ]
+            },
+            "outer_start_delta_ms": 0,
+            "outer_end_delta_ms": 0,
+            "max_interior_delta_ms": 20,
+            "origin_start_exception": false,
+            "publication_authorized": false
+          },
+          "publication_authorized": false
+        },
+        {
+          "decode_index": 15,
+          "enrollment": "excluded",
+          "exclusion_reason": "insufficient_anchor",
+          "anchor_state_id": null,
+          "anchor": [
+            {
+              "span": {
+                "start_ms": 21220,
+                "end_ms": 21740
+              },
+              "text": " country",
+              "tokens": [
+                1499
+              ]
+            }
+          ],
+          "full_committed_anchor": [
+            {
+              "span": {
+                "start_ms": 21220,
+                "end_ms": 21740
+              },
+              "text": " country",
+              "tokens": [
+                1499
+              ]
+            }
+          ],
+          "anchor_origin": {
+            "decode_index": 14,
+            "commit_sequence_number": 21,
+            "session_version": 7,
+            "word_start": 7,
+            "word_end": 8,
+            "publication_sha256": "5cebcca6ffeada41c8cb4b06d79abc4ed4027a347fc3f60e8c54ff25adb1d64e"
+          },
+          "analysis_start_ms": 19740,
+          "analysis_end_ms": 30000,
+          "head_ms": 21740,
+          "eof": false,
+          "recorded_action": "preview",
+          "recorded_reason": "incomplete",
+          "raw_alignment_sha256": "0a5966a3d137d92c9748b9c07d6f096e94a6c5ce4529efb155fb8ed9aba8ecfc",
+          "raw_trace_sha256": "f7b9c2a851c0c38cc1405574521fb28e9a7ba25be0e9de02267503131995f373",
+          "native_window_id": "modal-stream-boundary-diagnostic-v6:word-left-context-2000:window:315840:480000",
+          "diagnostic": null,
+          "publication_authorized": false
+        },
+        {
+          "decode_index": 16,
+          "enrollment": "excluded",
+          "exclusion_reason": "insufficient_anchor",
+          "anchor_state_id": null,
+          "anchor": [
+            {
+              "span": {
+                "start_ms": 21220,
+                "end_ms": 21740
+              },
+              "text": " country",
+              "tokens": [
+                1499
+              ]
+            }
+          ],
+          "full_committed_anchor": [
+            {
+              "span": {
+                "start_ms": 21220,
+                "end_ms": 21740
+              },
+              "text": " country",
+              "tokens": [
+                1499
+              ]
+            }
+          ],
+          "anchor_origin": {
+            "decode_index": 14,
+            "commit_sequence_number": 21,
+            "session_version": 7,
+            "word_start": 7,
+            "word_end": 8,
+            "publication_sha256": "5cebcca6ffeada41c8cb4b06d79abc4ed4027a347fc3f60e8c54ff25adb1d64e"
+          },
+          "analysis_start_ms": 19740,
+          "analysis_end_ms": 32000,
+          "head_ms": 21740,
+          "eof": false,
+          "recorded_action": "preview",
+          "recorded_reason": "unstable",
+          "raw_alignment_sha256": "703ff95603370167b397da9310a980609cdf8136015ab3139a53f305838444f3",
+          "raw_trace_sha256": "27a7e73708f53d232cad68bb0f3fd6781e471dbfebe3f26cc966cde3dea932cd",
+          "native_window_id": "modal-stream-boundary-diagnostic-v6:word-left-context-2000:window:315840:512000",
+          "diagnostic": null,
+          "publication_authorized": false
+        },
+        {
+          "decode_index": 17,
+          "enrollment": "excluded",
+          "exclusion_reason": "insufficient_anchor",
+          "anchor_state_id": null,
+          "anchor": [
+            {
+              "span": {
+                "start_ms": 21220,
+                "end_ms": 21740
+              },
+              "text": " country",
+              "tokens": [
+                1499
+              ]
+            }
+          ],
+          "full_committed_anchor": [
+            {
+              "span": {
+                "start_ms": 21220,
+                "end_ms": 21740
+              },
+              "text": " country",
+              "tokens": [
+                1499
+              ]
+            }
+          ],
+          "anchor_origin": {
+            "decode_index": 14,
+            "commit_sequence_number": 21,
+            "session_version": 7,
+            "word_start": 7,
+            "word_end": 8,
+            "publication_sha256": "5cebcca6ffeada41c8cb4b06d79abc4ed4027a347fc3f60e8c54ff25adb1d64e"
+          },
+          "analysis_start_ms": 19740,
+          "analysis_end_ms": 33000,
+          "head_ms": 21740,
+          "eof": true,
+          "recorded_action": "commit",
+          "recorded_reason": "eof",
+          "raw_alignment_sha256": "0c27b6da3b7a29bc1a76764a0fcf804543c8d66469a63661d78f01feae24d264",
+          "raw_trace_sha256": "eca68890ce04eaf260c72d0570c7b8a4ef5b67f2e97a56127023b1b14fce323b",
+          "native_window_id": "modal-stream-boundary-diagnostic-v6:word-left-context-2000:window:315840:528000",
+          "diagnostic": null,
+          "publication_authorized": false
+        }
+      ],
+      "publication_authorized": false
+    },
+    {
+      "id": "1995-1837-0024",
+      "input_id": "1995-1837-0024",
+      "session_id": "modal-word-corpus-v1:1995-1837-0024:session",
+      "source_archive": "evidence/modal-t4-tiny-en-word-corpus-v1-2026-09-05.json",
+      "identity": {
+        "path": "evidence/modal-t4-tiny-en-word-corpus-v1-2026-09-05.json",
+        "collection": "cases",
+        "id_key": "case_id",
+        "cell_id": "1995-1837-0024",
+        "input_id": "1995-1837-0024",
+        "profile_id": "word_agreement_stream/v1",
+        "session_id": "modal-word-corpus-v1:1995-1837-0024:session",
+        "expected_trace_count": 3,
+        "sample_count": 86160,
+        "pcm_sha256": "c8161a085b6871c73e775254d8e578451cce924609e08d0778323630db8c7a2b",
+        "speaker_id": 1995,
+        "independence": "same_utterance_already_in_tuning_mixtures"
+      },
+      "recorded_input": {
+        "chunk_ms": 1000,
+        "id": "1995-1837-0024",
+        "parts": [
+          {
+            "fixture_id": "1995-1837-0024"
+          }
+        ],
+        "pcm_sha256": "c8161a085b6871c73e775254d8e578451cce924609e08d0778323630db8c7a2b",
+        "reference_text": "FOR A WHILE SHE LAY IN HER CHAIR IN HAPPY DREAMY PLEASURE AT SUN AND BIRD AND TREE",
+        "sample_count": 86160
+      },
+      "recorded_status": "completed",
+      "recorded_error": null,
+      "recorded_profile_id": "word_agreement_stream/v1",
+      "recorded_final_state_sha256": "e39964121a7040b94c8a55418a32a5648025da512cd4c518a101a3dca613a231",
+      "recorded_events_sha256": "ddbaf18bb27b1027b19d2b793746701e7afb5798c4e149410599c6d571c8ea25",
+      "confirmed_commit_count": 2,
+      "traces": [
+        {
+          "decode_index": 1,
+          "enrollment": "excluded",
+          "exclusion_reason": "no_committed_anchor",
+          "anchor_state_id": null,
+          "anchor": [],
+          "full_committed_anchor": [],
+          "anchor_origin": null,
+          "analysis_start_ms": 0,
+          "analysis_end_ms": 2000,
+          "head_ms": 0,
+          "eof": false,
+          "recorded_action": "preview",
+          "recorded_reason": "incomplete",
+          "raw_alignment_sha256": "49b6fbe18b09ea3f1255d18f08ec4011e4c908de73e0b07aabcfeaeabe13e8b3",
+          "raw_trace_sha256": "30e0a9764081a2d7cf4cc72bc18e6ef7a64bc3cc29cae323d69a0723e10b6fc1",
+          "native_window_id": "modal-word-corpus-v1:1995-1837-0024:window:0:32000",
+          "diagnostic": null,
+          "publication_authorized": false
+        },
+        {
+          "decode_index": 2,
+          "enrollment": "excluded",
+          "exclusion_reason": "no_committed_anchor",
+          "anchor_state_id": null,
+          "anchor": [],
+          "full_committed_anchor": [],
+          "anchor_origin": null,
+          "analysis_start_ms": 0,
+          "analysis_end_ms": 4000,
+          "head_ms": 0,
+          "eof": false,
+          "recorded_action": "commit",
+          "recorded_reason": "candidate",
+          "raw_alignment_sha256": "eb85c4b75d3a8db0c0893c67daf202459a5e02c2a7ee2ca5503518f5a62fe11f",
+          "raw_trace_sha256": "2b911f529581ec374b84244bb88d59b22bf5bcd4d10d81094e5170f2f097163e",
+          "native_window_id": "modal-word-corpus-v1:1995-1837-0024:window:0:64000",
+          "diagnostic": null,
+          "publication_authorized": false
+        },
+        {
+          "decode_index": 3,
+          "enrollment": "enrolled",
+          "exclusion_reason": null,
+          "anchor_state_id": "c1b4d2e78579f3ff2dc1155690df87b27addb1c186208c18e36b7d55a812b6a2",
+          "anchor": [
+            {
+              "span": {
+                "start_ms": 1120,
+                "end_ms": 1220
+              },
+              "text": " she",
+              "tokens": [
+                673
+              ]
+            },
+            {
+              "span": {
+                "start_ms": 1220,
+                "end_ms": 1400
+              },
+              "text": " lay",
+              "tokens": [
+                3830
+              ]
+            },
+            {
+              "span": {
+                "start_ms": 1400,
+                "end_ms": 1540
+              },
+              "text": " in",
+              "tokens": [
+                287
+              ]
+            },
+            {
+              "span": {
+                "start_ms": 1540,
+                "end_ms": 1760
+              },
+              "text": " her",
+              "tokens": [
+                607
+              ]
+            }
+          ],
+          "full_committed_anchor": [
+            {
+              "span": {
+                "start_ms": 1120,
+                "end_ms": 1220
+              },
+              "text": " she",
+              "tokens": [
+                673
+              ]
+            },
+            {
+              "span": {
+                "start_ms": 1220,
+                "end_ms": 1400
+              },
+              "text": " lay",
+              "tokens": [
+                3830
+              ]
+            },
+            {
+              "span": {
+                "start_ms": 1400,
+                "end_ms": 1540
+              },
+              "text": " in",
+              "tokens": [
+                287
+              ]
+            },
+            {
+              "span": {
+                "start_ms": 1540,
+                "end_ms": 1760
+              },
+              "text": " her",
+              "tokens": [
+                607
+              ]
+            }
+          ],
+          "anchor_origin": {
+            "decode_index": 2,
+            "commit_sequence_number": 3,
+            "session_version": 1,
+            "word_start": 0,
+            "word_end": 8,
+            "publication_sha256": "47df8d76bd87f502a38f178a22f83c9db0730a0e10f140cafd1fadfe34cf8d4f"
+          },
+          "analysis_start_ms": 0,
+          "analysis_end_ms": 5385,
+          "head_ms": 1760,
+          "eof": true,
+          "recorded_action": "commit",
+          "recorded_reason": "eof",
+          "raw_alignment_sha256": "bb15d94e5338cd122200b7daf45b266e4f6f0e5c877d7bca1f6a325f5f0fda81",
+          "raw_trace_sha256": "1c293a5140b66d78926bbc75fa158d6ef28397dac3c8879feaec79fea4eef4bd",
+          "native_window_id": "modal-word-corpus-v1:1995-1837-0024:window:0:86160",
+          "diagnostic": {
+            "status": "matched",
+            "word_start": 4,
+            "word_end": 8,
+            "strict": {
+              "status": "matched",
+              "observation": "current",
+              "text_match_count": 1,
+              "lexical_match_count": 1,
+              "timed_match_count": 1,
+              "word_start": 4,
+              "word_end": 8,
+              "start_deltas_ms": [
+                0,
+                0,
+                0,
+                0
+              ],
+              "end_deltas_ms": [
+                0,
+                0,
+                0,
+                0
+              ]
+            },
+            "outer_start_delta_ms": 0,
+            "outer_end_delta_ms": 0,
+            "max_interior_delta_ms": 0,
+            "origin_start_exception": false,
+            "publication_authorized": false
+          },
+          "publication_authorized": false
+        }
+      ],
+      "publication_authorized": false
+    },
+    {
+      "id": "672-122797-0072",
+      "input_id": "672-122797-0072",
+      "session_id": "modal-word-corpus-v1:672-122797-0072:session",
+      "source_archive": "evidence/modal-t4-tiny-en-word-corpus-v1-2026-09-05.json",
+      "identity": {
+        "path": "evidence/modal-t4-tiny-en-word-corpus-v1-2026-09-05.json",
+        "collection": "cases",
+        "id_key": "case_id",
+        "cell_id": "672-122797-0072",
+        "input_id": "672-122797-0072",
+        "profile_id": "word_agreement_stream/v1",
+        "session_id": "modal-word-corpus-v1:672-122797-0072:session",
+        "expected_trace_count": 4,
+        "sample_count": 127040,
+        "pcm_sha256": "3bfeb4d05da42bcb00d1875e6dfe66e57ac1068afd957ab1851e74ad202becbc",
+        "speaker_id": 672,
+        "independence": "same_utterance_already_in_tuning_mixtures"
+      },
+      "recorded_input": {
+        "chunk_ms": 1000,
+        "id": "672-122797-0072",
+        "parts": [
+          {
+            "fixture_id": "672-122797-0072"
+          }
+        ],
+        "pcm_sha256": "3bfeb4d05da42bcb00d1875e6dfe66e57ac1068afd957ab1851e74ad202becbc",
+        "reference_text": "AND THE GARDENER'S BOY CHOPPED THE TREE INTO SMALL PIECES THERE WAS A WHOLE HEAP LYING THERE",
+        "sample_count": 127040
+      },
+      "recorded_status": "completed",
+      "recorded_error": null,
+      "recorded_profile_id": "word_agreement_stream/v1",
+      "recorded_final_state_sha256": "5b923f9e48af670ba50c3ba30cf0b050dcbfdd3cf8cfff20ea35f43cc30f5cf6",
+      "recorded_events_sha256": "f1677fc152b48376ddab7f2f3769ad31eaa99a0c89927920374db53ceaea8e71",
+      "confirmed_commit_count": 2,
+      "traces": [
+        {
+          "decode_index": 1,
+          "enrollment": "excluded",
+          "exclusion_reason": "no_committed_anchor",
+          "anchor_state_id": null,
+          "anchor": [],
+          "full_committed_anchor": [],
+          "anchor_origin": null,
+          "analysis_start_ms": 0,
+          "analysis_end_ms": 2000,
+          "head_ms": 0,
+          "eof": false,
+          "recorded_action": "preview",
+          "recorded_reason": "incomplete",
+          "raw_alignment_sha256": "59d22b32e6a6be93ce86c0831cffc4d00259f6ec313e51f8dd3e5afb63b6b8dc",
+          "raw_trace_sha256": "2887f6663fed21dfb9e84ccdf588d3c6e5029a93c9f035d8528d206c6d07d096",
+          "native_window_id": "modal-word-corpus-v1:672-122797-0072:window:0:32000",
+          "diagnostic": null,
+          "publication_authorized": false
+        },
+        {
+          "decode_index": 2,
+          "enrollment": "excluded",
+          "exclusion_reason": "no_committed_anchor",
+          "anchor_state_id": null,
+          "anchor": [],
+          "full_committed_anchor": [],
+          "anchor_origin": null,
+          "analysis_start_ms": 0,
+          "analysis_end_ms": 4000,
+          "head_ms": 0,
+          "eof": false,
+          "recorded_action": "preview",
+          "recorded_reason": "unstable",
+          "raw_alignment_sha256": "d1285e39a48c9b6439ab664d86963ceb35ee4bf14960c12d2eb15ad6a2058c74",
+          "raw_trace_sha256": "f49957034c3a54c24af57d3e8ee80b9e7d7c36cbd2e212014dc1d66f6dec05d9",
+          "native_window_id": "modal-word-corpus-v1:672-122797-0072:window:0:64000",
+          "diagnostic": null,
+          "publication_authorized": false
+        },
+        {
+          "decode_index": 3,
+          "enrollment": "excluded",
+          "exclusion_reason": "no_committed_anchor",
+          "anchor_state_id": null,
+          "anchor": [],
+          "full_committed_anchor": [],
+          "anchor_origin": null,
+          "analysis_start_ms": 0,
+          "analysis_end_ms": 6000,
+          "head_ms": 0,
+          "eof": false,
+          "recorded_action": "commit",
+          "recorded_reason": "candidate",
+          "raw_alignment_sha256": "b294b7f3f9c46818b7202f3e5eda7cf0507fcc014109111a0ac95c892615e33c",
+          "raw_trace_sha256": "ba06564617b15a6fc015de0b9f39a1a09d8e45d794fe6e7c7949330fa557107d",
+          "native_window_id": "modal-word-corpus-v1:672-122797-0072:window:0:96000",
+          "diagnostic": null,
+          "publication_authorized": false
+        },
+        {
+          "decode_index": 4,
+          "enrollment": "enrolled",
+          "exclusion_reason": null,
+          "anchor_state_id": "7d83a203fab8fa3883e65ed69a4e156e18e38c947349f752f8a5c0d6eaaff3f8",
+          "anchor": [
+            {
+              "span": {
+                "start_ms": 2400,
+                "end_ms": 2820
+              },
+              "text": " the",
+              "tokens": [
+                262
+              ]
+            },
+            {
+              "span": {
+                "start_ms": 2820,
+                "end_ms": 3160
+              },
+              "text": " tree",
+              "tokens": [
+                5509
+              ]
+            },
+            {
+              "span": {
+                "start_ms": 3160,
+                "end_ms": 3500
+              },
+              "text": " into",
+              "tokens": [
+                656
+              ]
+            },
+            {
+              "span": {
+                "start_ms": 3500,
+                "end_ms": 3960
+              },
+              "text": " small",
+              "tokens": [
+                1402
+              ]
+            }
+          ],
+          "full_committed_anchor": [
+            {
+              "span": {
+                "start_ms": 2400,
+                "end_ms": 2820
+              },
+              "text": " the",
+              "tokens": [
+                262
+              ]
+            },
+            {
+              "span": {
+                "start_ms": 2820,
+                "end_ms": 3160
+              },
+              "text": " tree",
+              "tokens": [
+                5509
+              ]
+            },
+            {
+              "span": {
+                "start_ms": 3160,
+                "end_ms": 3500
+              },
+              "text": " into",
+              "tokens": [
+                656
+              ]
+            },
+            {
+              "span": {
+                "start_ms": 3500,
+                "end_ms": 3960
+              },
+              "text": " small",
+              "tokens": [
+                1402
+              ]
+            }
+          ],
+          "anchor_origin": {
+            "decode_index": 3,
+            "commit_sequence_number": 4,
+            "session_version": 1,
+            "word_start": 0,
+            "word_end": 9,
+            "publication_sha256": "daeb13eeee4a3f53bc868e058113547899d9a85c6085cf9ba429f47e3b02a212"
+          },
+          "analysis_start_ms": 1960,
+          "analysis_end_ms": 7940,
+          "head_ms": 3960,
+          "eof": true,
+          "recorded_action": "commit",
+          "recorded_reason": "eof",
+          "raw_alignment_sha256": "072b5078598dcfc52b72e0a443e7f3632283a8a11ac135a2a84992ed9ed23594",
+          "raw_trace_sha256": "d5d62f714389a8337cac73ac0eab1af2bc1ded8700715e02ac2c3a7bd108b2d8",
+          "native_window_id": "modal-word-corpus-v1:672-122797-0072:window:31360:127040",
+          "diagnostic": {
+            "status": "matched",
+            "word_start": 1,
+            "word_end": 5,
+            "strict": {
+              "status": "matched",
+              "observation": "current",
+              "text_match_count": 1,
+              "lexical_match_count": 1,
+              "timed_match_count": 1,
+              "word_start": 1,
+              "word_end": 5,
+              "start_deltas_ms": [
+                0,
+                0,
+                -20,
+                40
+              ],
+              "end_deltas_ms": [
+                0,
+                -20,
+                40,
+                0
+              ]
+            },
+            "outer_start_delta_ms": 0,
+            "outer_end_delta_ms": 0,
+            "max_interior_delta_ms": 40,
+            "origin_start_exception": false,
+            "publication_authorized": false
+          },
+          "publication_authorized": false
+        }
+      ],
+      "publication_authorized": false
+    }
+  ],
+  "publication_authorized": false
+}

@@ -229,9 +229,13 @@ traces the first-word shift to the raw alignment path and compares complete
 anchor groups in a local, post-hoc replay. Four states still reject; speaker
 2961 becomes structurally eligible only when the group rule is combined with
 the live-sized 200 ms boundary tolerance. No text changes or live recovery
-follow. Next, test independent saved observations and define the acoustic
-evidence required before advancing audio retention. Keep the existing live
-policy and raw records unchanged.
+follow. The additional CPU validation scores 14 observations from eight recorded
+anchor states: all match under both rules. It adds one source fixture outside
+the tuning states, with no observed regression or further gain. Synthetic
+repetitions expose a stricter ambiguity refusal in the group rule. Next, test
+the complete fallback handoff while preserving the successful strict path, and
+define what evidence permits audio-retention progress. The live policy and raw
+records remain unchanged.
 
 Deliver a separately named continuous profile. Keep the existing
 offline-compatible and bounded-preview paths.

@@ -1,5 +1,13 @@
 # Integration evidence
 
+The [additional group-anchor replay](group-validation-2026-09-06.json) validates
+24 recorded traces before scoring 14 observations from eight anchor states.
+Both the strict and group rules match all 14. No regression or additional gain
+is observed. This set adds one source fixture outside the tuning states; it is
+not 14 independent tests. Ten exclusions remain explicit. No inference runs or
+live policy changes occur. See the
+[results and repetition tradeoff](../docs/research/2026-09-06-group-correspondence.md#additional-saved-history-validation).
+
 The [group-boundary replay](group-correspondence-2026-09-06.json) is a CPU-only,
 post-hoc comparison on five saved states. Four still reject. Speaker 2961 has
 an exact group and continuation, but becomes structurally eligible only with

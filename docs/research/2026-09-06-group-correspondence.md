@@ -94,13 +94,49 @@ still have no publication authority. The fixed archive hash binds this replay;
 a live producer would also need to validate session state, exact PCM, model and
 alignment identity. Shared omissions can survive exact output agreement.
 
+## Additional saved-history validation
+
+The [fixed inventory](2026-09-06-group-validation-inventory.md) was recorded
+before scoring. Its [CPU report](../../evidence/group-validation-2026-09-06.json)
+reconstructs anchors only from confirmed, ordered historical commits. Group
+results cannot change that history. Report SHA-256:
+`356a9fcf14771676ce829043d6e637bf7fc99c841d0d1bd69662b869111973b5`.
+
+| Recorded input | Enrolled observations | Strict matches | Group matches |
+| --- | ---: | ---: | ---: |
+| JFK fixture, repeated three times | 12 | 12 | 12 |
+| Speaker 1995, standalone utterance | 1 | 1 | 1 |
+| Speaker 672, standalone utterance | 1 | 1 | 1 |
+
+The report includes all 24 traces. Seven have no committed anchor and three
+have only one anchor word; these ten exclusions remain explicit. The 14 enrolled
+observations represent eight anchor states. JFK supplies one source fixture
+outside the five tuning states. The other utterances already occur in the
+tuning mixtures, so this is not a statistically held-out evaluation.
+
+Both rules match all 14 enrolled observations. There is no observed regression
+or additional gain in this set. Two JFK observations use the existing crop-origin
+exception for an 880 ms first-start shift. All interior shifts are at most
+160 ms, so this set does not independently test the larger interior shift seen
+in speaker 2961. The group rule does not cap interior shifts; it reports them
+and constrains only the outer bounds. This tests anchor correspondence, not
+complete continuation or live recovery.
+
+Synthetic tests expose a tradeoff absent from these recorded results: the
+strict matcher can identify one timed occurrence among repeated phrases, while
+the group rule rejects multiple exact occurrences. Group matching must not
+replace that working path. Other tests preserve refusals for changed tokens,
+case, order, group endpoints and relocated phrases. Tests also show why a match
+alone cannot exclude shared omissions or authenticate its source audio.
+
 ## Next gate
 
-Keep the runtime unchanged. Test group matching on additional existing saved
-observations that were not used to choose this rule, including repeated phrases
-and incomplete speech. Preserve provenance and report disagreements rather than
-normalizing them away. Before enabling recovery, establish what permits the
-audio-retention boundary to advance; a group match alone is insufficient.
+Keep the runtime unchanged. The next test should exercise the complete proposed
+handoff, including the continuation, against a frozen audio-retention boundary.
+Retain the strict path when it succeeds. Use group matching only as an explicit
+fallback candidate; reject ambiguity rather than rewriting the committed prefix.
+Before enabling recovery, establish what permits the audio-retention boundary
+to advance. Exact output agreement alone cannot certify acoustic coverage.
 
 When another native diagnostic becomes necessary, retain compact alignment-path
 evidence around the disputed boundary. Repeating the same text-only result cannot
@@ -114,6 +150,8 @@ With `PYTHONPATH=src`:
 ```sh
 python -B -m tools.analyze_group_correspondence evidence/modal-t4-tiny-en-context-guard-2026-09-06.json
 python -B -m unittest tools.test_analyze_group_correspondence
+python -B -m tools.analyze_group_validation
+python -B -m unittest tools.test_analyze_group_validation tools.test_group_anchor_diagnostic
 ```
 
 The optional `--output` argument creates a new file and refuses to overwrite an
