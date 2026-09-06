@@ -1,6 +1,7 @@
 """CPU-only fixtures: synthetic outputs test the protocol, not model recognition."""
 
 import copy
+import hashlib
 import json
 import runpy
 import unittest
@@ -474,6 +475,109 @@ class ContextGuardLocalPCMTests(unittest.TestCase):
                 self.assertIsNotNone(guard["historical_source"])
             else:
                 self.assertIsNone(guard["historical_source"])
+
+
+class ContextGuardArchiveTests(unittest.TestCase):
+    """Replay measured failures without audio, a model, or remote execution."""
+
+    @classmethod
+    def setUpClass(cls):
+        raw = (
+            p.ROOT / "evidence/modal-t4-tiny-en-context-guard-2026-09-06.json"
+        ).read_bytes()
+        cls.digest = hashlib.sha256(raw).hexdigest()
+        cls.record = json.loads(raw)
+
+    def test_completed_observations_preserve_failures_and_release_capacity(self):
+        from tools.analyze_resolution_disagreements import (
+            summarize_guard_correspondence,
+        )
+
+        self.assertEqual(
+            self.digest,
+            "538ff91508b1ea2074a25fb6600860577a917b37d4826f324c2cce2ec8ef71f1",
+        )
+        record = self.record
+        self.assertEqual(record["status"], "completed")
+        self.assertFalse(record["qualified"])
+        self.assertTrue(record["model"]["unchanged"])
+        self.assertTrue(record["capacity_restored"])
+        self.assertEqual(record["native_window_count"], 3)
+        self.assertEqual(
+            [len(c["fresh_windows"]) for c in record["cells"]], [0, 1, 1, 1, 0]
+        )
+        self.assertEqual(
+            [c["summary"]["guard_correspondence"]["reason"] for c in record["cells"]],
+            ["overlap_has_no_lexical_continuation"]
+            + ["overlap_anchor_timing_mismatch"] * 3
+            + ["overlap_anchor_absent"],
+        )
+        for saved, cell, old in zip(
+            record["inputs"], record["cells"], p._seven()["cells"]
+        ):
+            raw = cell["raw_alignments"]
+            for arm, alignment in old["raw_alignments"].items():
+                self.assertEqual(raw[arm], alignment)
+            self.assertEqual(cell["summary"]["historical_summary"], old["summary"])
+            self.assertFalse(cell["summary"]["fresh_control_reproduction"])
+            replay = summarize_guard_correspondence(
+                saved["frozen_state"], raw["guard"], raw["candidate"]
+            )
+            self.assertEqual(replay, cell["summary"]["guard_correspondence"])
+            self.assertFalse(replay["publication_authorized"])
+            self.assertFalse(cell["publication_authorized"])
+            for window in cell["fresh_windows"]:
+                self.assertTrue(window["completed"])
+                self.assertTrue(window["measurement"]["closed"])
+                self.assertTrue(window["capacity_restored"])
+                self.assertEqual(len(window["measurement"]["encoder_calls"]), 2)
+
+    def test_equal_word_tokens_do_not_make_crop_timing_interchangeable(self):
+        cell = self.record["cells"][1]
+        raw = cell["raw_alignments"]
+        left, right = raw["overlap"]["words"], raw["guard"]["words"]
+        self.assertEqual(
+            [(w["text"], w["tokens"]) for w in left],
+            [(w["text"], w["tokens"]) for w in right],
+        )
+        self.assertEqual(left[0]["text"], " For")
+        self.assertEqual(left[0]["span"]["start_ms"], 20720)
+        self.assertEqual(right[0]["span"]["start_ms"], 20220)
+        for arm in ("overlap", "guard"):
+            self.assertEqual(
+                raw[arm]["words"][0]["span"]["start_ms"],
+                raw[arm]["native"]["analysis_span"]["start_ms"],
+            )
+        anchor = self.record["inputs"][1]["frozen_state"]["anchor"]
+        self.assertEqual(
+            [w["span"]["end_ms"] for w in right[:3]],
+            [w["span"]["end_ms"] for w in anchor],
+        )
+        self.assertEqual(right[3]["tokens"], [673])
+        self.assertEqual(raw["candidate"]["words"][0]["tokens"], [1375])
+        self.assertFalse(cell["summary"]["publication_authorized"])
+
+    def test_exact_suffix_does_not_resolve_interior_timing_or_boundary_crossing(self):
+        cell = self.record["cells"][3]
+        raw = cell["raw_alignments"]
+        guard, candidate = raw["guard"]["words"], raw["candidate"]["words"]
+        suffix = guard[7:]
+        self.assertEqual(len(suffix), 15)
+        self.assertEqual(
+            [(w["text"], w["tokens"]) for w in suffix],
+            [(w["text"], w["tokens"]) for w in candidate],
+        )
+        frozen = self.record["inputs"][3]["frozen_state"]
+        self.assertEqual(guard[5]["text"], " the")
+        self.assertEqual(guard[6]["text"], " modern")
+        self.assertEqual(
+            guard[5]["span"]["end_ms"] - frozen["anchor"][2]["span"]["end_ms"], 300
+        )
+        self.assertEqual(
+            guard[6]["span"]["start_ms"] - frozen["anchor"][3]["span"]["start_ms"], 300
+        )
+        self.assertEqual(frozen["head_ms"] - suffix[0]["span"]["start_ms"], 20)
+        self.assertFalse(cell["summary"]["publication_authorized"])
 
 
 if __name__ == "__main__":

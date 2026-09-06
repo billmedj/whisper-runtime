@@ -215,9 +215,17 @@ The [CPU disagreement replay](research/2026-09-06-resolution-disagreements.md)
 now separates text, tokens and estimated timing without changing publication.
 The earlier-start noisy control restores the anchor but still omits the next
 utterance. A fixed context guard is therefore not a universal recovery rule.
-Two proposed guard intervals already have recorded controls; three need new
-observations after identity checks. No new GPU measurement or live-recovery
-qualification is part of this diagnostic change.
+That CPU replay identified two existing controls and three missing intervals.
+
+The [fixed context-guard run](research/2026-09-06-context-guard-observations.md#recorded-result)
+completed those three intervals on one T4 and reused the controls. Two missing
+anchors return, but all five comparisons still reject. The no-pause crop retains
+every word token while moving the first word's estimated start by 500 ms.
+Speaker 2961 has exact suffix agreement but a 300 ms interior anchor shift and
+a 20 ms boundary crossing. All new calls close and restore capacity. Next,
+trace crop-relative alignment through the frozen-boundary path with these saved
+counterexamples, then define and test a boundary rule. Do not search more crops,
+relax tolerances, or enable live publication on this evidence.
 
 Deliver a separately named continuous profile. Keep the existing
 offline-compatible and bounded-preview paths.

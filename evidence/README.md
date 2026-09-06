@@ -1,10 +1,20 @@
 # Integration evidence
 
+The [fixed context-guard observations](modal-t4-tiny-en-context-guard-2026-09-06.json)
+add three T4 windows and reuse two existing controls. Two missing anchors are
+restored, but all five comparisons still reject. One crop changes a word's
+estimated start by 500 ms without changing any word text or word tokens.
+Another has an exact complete suffix but an interior anchor boundary moves
+300 ms. No publication rule or live profile changed. All three new calls close
+and restore capacity. See the
+[results and next test](../docs/research/2026-09-06-context-guard-observations.md#recorded-result)
+and the [single-attempt receipt](modal-context-guard-attempt-2026-09-06.jsonl).
+
 The [CPU disagreement replay](resolution-disagreements-2026-09-06.json) separates
 complete-unit text, token and estimated-time differences in the fixed overlap
-archive. All five original refusals remain unchanged. Reusing two recorded
-intervals leaves three new intervals for a prospective context-guard comparison,
-subject to PCM and execution-identity checks. No GPU work is performed. The
+archive. All five original refusals remain unchanged. It identified two existing
+controls and three missing intervals for the later context-guard comparison.
+This CPU replay performs no GPU work. The
 [report](../docs/research/2026-09-06-resolution-disagreements.md) explains why the
 saved noisy control already refutes this guard as a universal recovery rule.
 
