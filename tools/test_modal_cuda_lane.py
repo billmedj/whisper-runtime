@@ -9,6 +9,28 @@ from infra import modal_cuda_lane as experiment
 
 
 class CudaLaneExperimentTests(unittest.TestCase):
+    def test_archived_blocked_record_has_exact_post_release_plateaus(self):
+        record = json.loads(
+            (
+                experiment.ROOT
+                / "evidence/modal-t4-tiny-en-cuda-lane-blocked-2026-09-06.json"
+            ).read_bytes()
+        )
+        summary = experiment.summarize(record["cells"], order="blocked-v2")
+        self.assertEqual(summary, record["summary"])
+        self.assertTrue(summary["exact_alignment_equal"])
+        self.assertTrue(summary["consecutive_reused_allocation_flat"])
+        self.assertEqual(summary["consecutive_reused_allocated_deltas_bytes"], [0] * 6)
+        self.assertTrue(record["model"]["unchanged"])
+        self.assertEqual(summary["reused_stream_count"], 1)
+        self.assertEqual(summary["fresh_stream_count"], 4)
+        for cell in record["cells"][4:8]:
+            self.assertEqual(
+                cell["after_handle_release"]["allocated_bytes"]
+                - cell["before"]["allocated_bytes"],
+                8519680,
+            )
+
     def test_archived_alternating_record_replays_exactly(self):
         record = json.loads(
             (

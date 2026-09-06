@@ -1,0 +1,2370 @@
+{
+  "after_handle_release": {
+    "allocated_bytes": 194799616,
+    "reserved_bytes": 1136656384
+  },
+  "cells": [
+    {
+      "after_close": {
+        "allocated_bytes": 163025920,
+        "reserved_bytes": 432013312
+      },
+      "after_handle_release": {
+        "allocated_bytes": 160720896,
+        "reserved_bytes": 432013312
+      },
+      "alignment": {
+        "native": {
+          "analysis_span": {
+            "end_ms": 3520,
+            "start_ms": 0
+          },
+          "end_ms": 3520,
+          "metadata": {
+            "avg_logprob": -0.3715718587239583,
+            "compression_ratio": 0.8703703703703703,
+            "language": "en",
+            "no_speech_prob": 0.02597704902291298,
+            "segments": [
+              {
+                "span": {
+                  "end_ms": 3360,
+                  "start_ms": 0
+                },
+                "text": " Concord returned to its place amidst the tents.",
+                "tokens": [
+                  34732,
+                  4504,
+                  284,
+                  663,
+                  1295,
+                  31095,
+                  262,
+                  29804,
+                  13
+                ]
+              }
+            ],
+            "temperature": 0.0,
+            "timestamps_complete": true,
+            "tokens": [
+              50363,
+              34732,
+              4504,
+              284,
+              663,
+              1295,
+              31095,
+              262,
+              29804,
+              13,
+              50531
+            ]
+          },
+          "publication_segment_indices": null,
+          "start_ms": 0,
+          "text": "Concord returned to its place amidst the tents.",
+          "window_id": "lane:1"
+        },
+        "words": [
+          {
+            "span": {
+              "end_ms": 1060,
+              "start_ms": 0
+            },
+            "text": " Concord",
+            "tokens": [
+              34732
+            ]
+          },
+          {
+            "span": {
+              "end_ms": 1640,
+              "start_ms": 1060
+            },
+            "text": " returned",
+            "tokens": [
+              4504
+            ]
+          },
+          {
+            "span": {
+              "end_ms": 1820,
+              "start_ms": 1640
+            },
+            "text": " to",
+            "tokens": [
+              284
+            ]
+          },
+          {
+            "span": {
+              "end_ms": 2000,
+              "start_ms": 1820
+            },
+            "text": " its",
+            "tokens": [
+              663
+            ]
+          },
+          {
+            "span": {
+              "end_ms": 2340,
+              "start_ms": 2000
+            },
+            "text": " place",
+            "tokens": [
+              1295
+            ]
+          },
+          {
+            "span": {
+              "end_ms": 2700,
+              "start_ms": 2340
+            },
+            "text": " amidst",
+            "tokens": [
+              31095
+            ]
+          },
+          {
+            "span": {
+              "end_ms": 3000,
+              "start_ms": 2700
+            },
+            "text": " the",
+            "tokens": [
+              262
+            ]
+          },
+          {
+            "span": {
+              "end_ms": 3260,
+              "start_ms": 3000
+            },
+            "text": " tents",
+            "tokens": [
+              29804
+            ]
+          },
+          {
+            "span": {
+              "end_ms": 3500,
+              "start_ms": 3260
+            },
+            "text": ".",
+            "tokens": [
+              13
+            ]
+          }
+        ]
+      },
+      "arm": "reused",
+      "before": {
+        "allocated_bytes": 152201216,
+        "reserved_bytes": 255852544
+      },
+      "call_index": 1,
+      "capacity_restored": true,
+      "closed": true,
+      "encoder_frames": [
+        3000,
+        3000
+      ],
+      "peak_allocated_bytes": 290098176,
+      "peak_reserved_bytes": 432013312,
+      "stale_cancel_changed_state": false,
+      "streams": [
+        94228029925504
+      ],
+      "wall_ns": 4730264347
+    },
+    {
+      "after_close": {
+        "allocated_bytes": 163957760,
+        "reserved_bytes": 432013312
+      },
+      "after_handle_release": {
+        "allocated_bytes": 160720896,
+        "reserved_bytes": 432013312
+      },
+      "alignment": {
+        "native": {
+          "analysis_span": {
+            "end_ms": 3520,
+            "start_ms": 0
+          },
+          "end_ms": 3520,
+          "metadata": {
+            "avg_logprob": -0.3715718587239583,
+            "compression_ratio": 0.8703703703703703,
+            "language": "en",
+            "no_speech_prob": 0.02597704902291298,
+            "segments": [
+              {
+                "span": {
+                  "end_ms": 3360,
+                  "start_ms": 0
+                },
+                "text": " Concord returned to its place amidst the tents.",
+                "tokens": [
+                  34732,
+                  4504,
+                  284,
+                  663,
+                  1295,
+                  31095,
+                  262,
+                  29804,
+                  13
+                ]
+              }
+            ],
+            "temperature": 0.0,
+            "timestamps_complete": true,
+            "tokens": [
+              50363,
+              34732,
+              4504,
+              284,
+              663,
+              1295,
+              31095,
+              262,
+              29804,
+              13,
+              50531
+            ]
+          },
+          "publication_segment_indices": null,
+          "start_ms": 0,
+          "text": "Concord returned to its place amidst the tents.",
+          "window_id": "lane:2"
+        },
+        "words": [
+          {
+            "span": {
+              "end_ms": 1060,
+              "start_ms": 0
+            },
+            "text": " Concord",
+            "tokens": [
+              34732
+            ]
+          },
+          {
+            "span": {
+              "end_ms": 1640,
+              "start_ms": 1060
+            },
+            "text": " returned",
+            "tokens": [
+              4504
+            ]
+          },
+          {
+            "span": {
+              "end_ms": 1820,
+              "start_ms": 1640
+            },
+            "text": " to",
+            "tokens": [
+              284
+            ]
+          },
+          {
+            "span": {
+              "end_ms": 2000,
+              "start_ms": 1820
+            },
+            "text": " its",
+            "tokens": [
+              663
+            ]
+          },
+          {
+            "span": {
+              "end_ms": 2340,
+              "start_ms": 2000
+            },
+            "text": " place",
+            "tokens": [
+              1295
+            ]
+          },
+          {
+            "span": {
+              "end_ms": 2700,
+              "start_ms": 2340
+            },
+            "text": " amidst",
+            "tokens": [
+              31095
+            ]
+          },
+          {
+            "span": {
+              "end_ms": 3000,
+              "start_ms": 2700
+            },
+            "text": " the",
+            "tokens": [
+              262
+            ]
+          },
+          {
+            "span": {
+              "end_ms": 3260,
+              "start_ms": 3000
+            },
+            "text": " tents",
+            "tokens": [
+              29804
+            ]
+          },
+          {
+            "span": {
+              "end_ms": 3500,
+              "start_ms": 3260
+            },
+            "text": ".",
+            "tokens": [
+              13
+            ]
+          }
+        ]
+      },
+      "arm": "reused",
+      "before": {
+        "allocated_bytes": 160720896,
+        "reserved_bytes": 432013312
+      },
+      "call_index": 2,
+      "capacity_restored": true,
+      "closed": true,
+      "encoder_frames": [
+        3000,
+        3000
+      ],
+      "peak_allocated_bytes": 290098176,
+      "peak_reserved_bytes": 432013312,
+      "stale_cancel_changed_state": false,
+      "streams": [
+        94228029925504
+      ],
+      "wall_ns": 122603252
+    },
+    {
+      "after_close": {
+        "allocated_bytes": 163957760,
+        "reserved_bytes": 432013312
+      },
+      "after_handle_release": {
+        "allocated_bytes": 160720896,
+        "reserved_bytes": 432013312
+      },
+      "alignment": {
+        "native": {
+          "analysis_span": {
+            "end_ms": 3520,
+            "start_ms": 0
+          },
+          "end_ms": 3520,
+          "metadata": {
+            "avg_logprob": -0.3715718587239583,
+            "compression_ratio": 0.8703703703703703,
+            "language": "en",
+            "no_speech_prob": 0.02597704902291298,
+            "segments": [
+              {
+                "span": {
+                  "end_ms": 3360,
+                  "start_ms": 0
+                },
+                "text": " Concord returned to its place amidst the tents.",
+                "tokens": [
+                  34732,
+                  4504,
+                  284,
+                  663,
+                  1295,
+                  31095,
+                  262,
+                  29804,
+                  13
+                ]
+              }
+            ],
+            "temperature": 0.0,
+            "timestamps_complete": true,
+            "tokens": [
+              50363,
+              34732,
+              4504,
+              284,
+              663,
+              1295,
+              31095,
+              262,
+              29804,
+              13,
+              50531
+            ]
+          },
+          "publication_segment_indices": null,
+          "start_ms": 0,
+          "text": "Concord returned to its place amidst the tents.",
+          "window_id": "lane:3"
+        },
+        "words": [
+          {
+            "span": {
+              "end_ms": 1060,
+              "start_ms": 0
+            },
+            "text": " Concord",
+            "tokens": [
+              34732
+            ]
+          },
+          {
+            "span": {
+              "end_ms": 1640,
+              "start_ms": 1060
+            },
+            "text": " returned",
+            "tokens": [
+              4504
+            ]
+          },
+          {
+            "span": {
+              "end_ms": 1820,
+              "start_ms": 1640
+            },
+            "text": " to",
+            "tokens": [
+              284
+            ]
+          },
+          {
+            "span": {
+              "end_ms": 2000,
+              "start_ms": 1820
+            },
+            "text": " its",
+            "tokens": [
+              663
+            ]
+          },
+          {
+            "span": {
+              "end_ms": 2340,
+              "start_ms": 2000
+            },
+            "text": " place",
+            "tokens": [
+              1295
+            ]
+          },
+          {
+            "span": {
+              "end_ms": 2700,
+              "start_ms": 2340
+            },
+            "text": " amidst",
+            "tokens": [
+              31095
+            ]
+          },
+          {
+            "span": {
+              "end_ms": 3000,
+              "start_ms": 2700
+            },
+            "text": " the",
+            "tokens": [
+              262
+            ]
+          },
+          {
+            "span": {
+              "end_ms": 3260,
+              "start_ms": 3000
+            },
+            "text": " tents",
+            "tokens": [
+              29804
+            ]
+          },
+          {
+            "span": {
+              "end_ms": 3500,
+              "start_ms": 3260
+            },
+            "text": ".",
+            "tokens": [
+              13
+            ]
+          }
+        ]
+      },
+      "arm": "reused",
+      "before": {
+        "allocated_bytes": 160720896,
+        "reserved_bytes": 432013312
+      },
+      "call_index": 3,
+      "capacity_restored": true,
+      "closed": true,
+      "encoder_frames": [
+        3000,
+        3000
+      ],
+      "peak_allocated_bytes": 290098176,
+      "peak_reserved_bytes": 432013312,
+      "stale_cancel_changed_state": false,
+      "streams": [
+        94228029925504
+      ],
+      "wall_ns": 123022732
+    },
+    {
+      "after_close": {
+        "allocated_bytes": 163957760,
+        "reserved_bytes": 432013312
+      },
+      "after_handle_release": {
+        "allocated_bytes": 160720896,
+        "reserved_bytes": 432013312
+      },
+      "alignment": {
+        "native": {
+          "analysis_span": {
+            "end_ms": 3520,
+            "start_ms": 0
+          },
+          "end_ms": 3520,
+          "metadata": {
+            "avg_logprob": -0.3715718587239583,
+            "compression_ratio": 0.8703703703703703,
+            "language": "en",
+            "no_speech_prob": 0.02597704902291298,
+            "segments": [
+              {
+                "span": {
+                  "end_ms": 3360,
+                  "start_ms": 0
+                },
+                "text": " Concord returned to its place amidst the tents.",
+                "tokens": [
+                  34732,
+                  4504,
+                  284,
+                  663,
+                  1295,
+                  31095,
+                  262,
+                  29804,
+                  13
+                ]
+              }
+            ],
+            "temperature": 0.0,
+            "timestamps_complete": true,
+            "tokens": [
+              50363,
+              34732,
+              4504,
+              284,
+              663,
+              1295,
+              31095,
+              262,
+              29804,
+              13,
+              50531
+            ]
+          },
+          "publication_segment_indices": null,
+          "start_ms": 0,
+          "text": "Concord returned to its place amidst the tents.",
+          "window_id": "lane:4"
+        },
+        "words": [
+          {
+            "span": {
+              "end_ms": 1060,
+              "start_ms": 0
+            },
+            "text": " Concord",
+            "tokens": [
+              34732
+            ]
+          },
+          {
+            "span": {
+              "end_ms": 1640,
+              "start_ms": 1060
+            },
+            "text": " returned",
+            "tokens": [
+              4504
+            ]
+          },
+          {
+            "span": {
+              "end_ms": 1820,
+              "start_ms": 1640
+            },
+            "text": " to",
+            "tokens": [
+              284
+            ]
+          },
+          {
+            "span": {
+              "end_ms": 2000,
+              "start_ms": 1820
+            },
+            "text": " its",
+            "tokens": [
+              663
+            ]
+          },
+          {
+            "span": {
+              "end_ms": 2340,
+              "start_ms": 2000
+            },
+            "text": " place",
+            "tokens": [
+              1295
+            ]
+          },
+          {
+            "span": {
+              "end_ms": 2700,
+              "start_ms": 2340
+            },
+            "text": " amidst",
+            "tokens": [
+              31095
+            ]
+          },
+          {
+            "span": {
+              "end_ms": 3000,
+              "start_ms": 2700
+            },
+            "text": " the",
+            "tokens": [
+              262
+            ]
+          },
+          {
+            "span": {
+              "end_ms": 3260,
+              "start_ms": 3000
+            },
+            "text": " tents",
+            "tokens": [
+              29804
+            ]
+          },
+          {
+            "span": {
+              "end_ms": 3500,
+              "start_ms": 3260
+            },
+            "text": ".",
+            "tokens": [
+              13
+            ]
+          }
+        ]
+      },
+      "arm": "reused",
+      "before": {
+        "allocated_bytes": 160720896,
+        "reserved_bytes": 432013312
+      },
+      "call_index": 4,
+      "capacity_restored": true,
+      "closed": true,
+      "encoder_frames": [
+        3000,
+        3000
+      ],
+      "peak_allocated_bytes": 290098176,
+      "peak_reserved_bytes": 432013312,
+      "stale_cancel_changed_state": false,
+      "streams": [
+        94228029925504
+      ],
+      "wall_ns": 121583002
+    },
+    {
+      "after_close": {
+        "allocated_bytes": 171545600,
+        "reserved_bytes": 608174080
+      },
+      "after_handle_release": {
+        "allocated_bytes": 169240576,
+        "reserved_bytes": 608174080
+      },
+      "alignment": {
+        "native": {
+          "analysis_span": {
+            "end_ms": 3520,
+            "start_ms": 0
+          },
+          "end_ms": 3520,
+          "metadata": {
+            "avg_logprob": -0.3715718587239583,
+            "compression_ratio": 0.8703703703703703,
+            "language": "en",
+            "no_speech_prob": 0.02597704902291298,
+            "segments": [
+              {
+                "span": {
+                  "end_ms": 3360,
+                  "start_ms": 0
+                },
+                "text": " Concord returned to its place amidst the tents.",
+                "tokens": [
+                  34732,
+                  4504,
+                  284,
+                  663,
+                  1295,
+                  31095,
+                  262,
+                  29804,
+                  13
+                ]
+              }
+            ],
+            "temperature": 0.0,
+            "timestamps_complete": true,
+            "tokens": [
+              50363,
+              34732,
+              4504,
+              284,
+              663,
+              1295,
+              31095,
+              262,
+              29804,
+              13,
+              50531
+            ]
+          },
+          "publication_segment_indices": null,
+          "start_ms": 0,
+          "text": "Concord returned to its place amidst the tents.",
+          "window_id": "lane:5"
+        },
+        "words": [
+          {
+            "span": {
+              "end_ms": 1060,
+              "start_ms": 0
+            },
+            "text": " Concord",
+            "tokens": [
+              34732
+            ]
+          },
+          {
+            "span": {
+              "end_ms": 1640,
+              "start_ms": 1060
+            },
+            "text": " returned",
+            "tokens": [
+              4504
+            ]
+          },
+          {
+            "span": {
+              "end_ms": 1820,
+              "start_ms": 1640
+            },
+            "text": " to",
+            "tokens": [
+              284
+            ]
+          },
+          {
+            "span": {
+              "end_ms": 2000,
+              "start_ms": 1820
+            },
+            "text": " its",
+            "tokens": [
+              663
+            ]
+          },
+          {
+            "span": {
+              "end_ms": 2340,
+              "start_ms": 2000
+            },
+            "text": " place",
+            "tokens": [
+              1295
+            ]
+          },
+          {
+            "span": {
+              "end_ms": 2700,
+              "start_ms": 2340
+            },
+            "text": " amidst",
+            "tokens": [
+              31095
+            ]
+          },
+          {
+            "span": {
+              "end_ms": 3000,
+              "start_ms": 2700
+            },
+            "text": " the",
+            "tokens": [
+              262
+            ]
+          },
+          {
+            "span": {
+              "end_ms": 3260,
+              "start_ms": 3000
+            },
+            "text": " tents",
+            "tokens": [
+              29804
+            ]
+          },
+          {
+            "span": {
+              "end_ms": 3500,
+              "start_ms": 3260
+            },
+            "text": ".",
+            "tokens": [
+              13
+            ]
+          }
+        ]
+      },
+      "arm": "fresh",
+      "before": {
+        "allocated_bytes": 160720896,
+        "reserved_bytes": 432013312
+      },
+      "call_index": 5,
+      "capacity_restored": true,
+      "closed": true,
+      "encoder_frames": [
+        3000,
+        3000
+      ],
+      "peak_allocated_bytes": 298617856,
+      "peak_reserved_bytes": 608174080,
+      "stale_cancel_changed_state": false,
+      "streams": [
+        94228047720640
+      ],
+      "wall_ns": 192832138
+    },
+    {
+      "after_close": {
+        "allocated_bytes": 180065280,
+        "reserved_bytes": 784334848
+      },
+      "after_handle_release": {
+        "allocated_bytes": 177760256,
+        "reserved_bytes": 784334848
+      },
+      "alignment": {
+        "native": {
+          "analysis_span": {
+            "end_ms": 3520,
+            "start_ms": 0
+          },
+          "end_ms": 3520,
+          "metadata": {
+            "avg_logprob": -0.3715718587239583,
+            "compression_ratio": 0.8703703703703703,
+            "language": "en",
+            "no_speech_prob": 0.02597704902291298,
+            "segments": [
+              {
+                "span": {
+                  "end_ms": 3360,
+                  "start_ms": 0
+                },
+                "text": " Concord returned to its place amidst the tents.",
+                "tokens": [
+                  34732,
+                  4504,
+                  284,
+                  663,
+                  1295,
+                  31095,
+                  262,
+                  29804,
+                  13
+                ]
+              }
+            ],
+            "temperature": 0.0,
+            "timestamps_complete": true,
+            "tokens": [
+              50363,
+              34732,
+              4504,
+              284,
+              663,
+              1295,
+              31095,
+              262,
+              29804,
+              13,
+              50531
+            ]
+          },
+          "publication_segment_indices": null,
+          "start_ms": 0,
+          "text": "Concord returned to its place amidst the tents.",
+          "window_id": "lane:6"
+        },
+        "words": [
+          {
+            "span": {
+              "end_ms": 1060,
+              "start_ms": 0
+            },
+            "text": " Concord",
+            "tokens": [
+              34732
+            ]
+          },
+          {
+            "span": {
+              "end_ms": 1640,
+              "start_ms": 1060
+            },
+            "text": " returned",
+            "tokens": [
+              4504
+            ]
+          },
+          {
+            "span": {
+              "end_ms": 1820,
+              "start_ms": 1640
+            },
+            "text": " to",
+            "tokens": [
+              284
+            ]
+          },
+          {
+            "span": {
+              "end_ms": 2000,
+              "start_ms": 1820
+            },
+            "text": " its",
+            "tokens": [
+              663
+            ]
+          },
+          {
+            "span": {
+              "end_ms": 2340,
+              "start_ms": 2000
+            },
+            "text": " place",
+            "tokens": [
+              1295
+            ]
+          },
+          {
+            "span": {
+              "end_ms": 2700,
+              "start_ms": 2340
+            },
+            "text": " amidst",
+            "tokens": [
+              31095
+            ]
+          },
+          {
+            "span": {
+              "end_ms": 3000,
+              "start_ms": 2700
+            },
+            "text": " the",
+            "tokens": [
+              262
+            ]
+          },
+          {
+            "span": {
+              "end_ms": 3260,
+              "start_ms": 3000
+            },
+            "text": " tents",
+            "tokens": [
+              29804
+            ]
+          },
+          {
+            "span": {
+              "end_ms": 3500,
+              "start_ms": 3260
+            },
+            "text": ".",
+            "tokens": [
+              13
+            ]
+          }
+        ]
+      },
+      "arm": "fresh",
+      "before": {
+        "allocated_bytes": 169240576,
+        "reserved_bytes": 608174080
+      },
+      "call_index": 6,
+      "capacity_restored": true,
+      "closed": true,
+      "encoder_frames": [
+        3000,
+        3000
+      ],
+      "peak_allocated_bytes": 307137536,
+      "peak_reserved_bytes": 784334848,
+      "stale_cancel_changed_state": false,
+      "streams": [
+        94228053491184
+      ],
+      "wall_ns": 147296818
+    },
+    {
+      "after_close": {
+        "allocated_bytes": 188584960,
+        "reserved_bytes": 960495616
+      },
+      "after_handle_release": {
+        "allocated_bytes": 186279936,
+        "reserved_bytes": 960495616
+      },
+      "alignment": {
+        "native": {
+          "analysis_span": {
+            "end_ms": 3520,
+            "start_ms": 0
+          },
+          "end_ms": 3520,
+          "metadata": {
+            "avg_logprob": -0.3715718587239583,
+            "compression_ratio": 0.8703703703703703,
+            "language": "en",
+            "no_speech_prob": 0.02597704902291298,
+            "segments": [
+              {
+                "span": {
+                  "end_ms": 3360,
+                  "start_ms": 0
+                },
+                "text": " Concord returned to its place amidst the tents.",
+                "tokens": [
+                  34732,
+                  4504,
+                  284,
+                  663,
+                  1295,
+                  31095,
+                  262,
+                  29804,
+                  13
+                ]
+              }
+            ],
+            "temperature": 0.0,
+            "timestamps_complete": true,
+            "tokens": [
+              50363,
+              34732,
+              4504,
+              284,
+              663,
+              1295,
+              31095,
+              262,
+              29804,
+              13,
+              50531
+            ]
+          },
+          "publication_segment_indices": null,
+          "start_ms": 0,
+          "text": "Concord returned to its place amidst the tents.",
+          "window_id": "lane:7"
+        },
+        "words": [
+          {
+            "span": {
+              "end_ms": 1060,
+              "start_ms": 0
+            },
+            "text": " Concord",
+            "tokens": [
+              34732
+            ]
+          },
+          {
+            "span": {
+              "end_ms": 1640,
+              "start_ms": 1060
+            },
+            "text": " returned",
+            "tokens": [
+              4504
+            ]
+          },
+          {
+            "span": {
+              "end_ms": 1820,
+              "start_ms": 1640
+            },
+            "text": " to",
+            "tokens": [
+              284
+            ]
+          },
+          {
+            "span": {
+              "end_ms": 2000,
+              "start_ms": 1820
+            },
+            "text": " its",
+            "tokens": [
+              663
+            ]
+          },
+          {
+            "span": {
+              "end_ms": 2340,
+              "start_ms": 2000
+            },
+            "text": " place",
+            "tokens": [
+              1295
+            ]
+          },
+          {
+            "span": {
+              "end_ms": 2700,
+              "start_ms": 2340
+            },
+            "text": " amidst",
+            "tokens": [
+              31095
+            ]
+          },
+          {
+            "span": {
+              "end_ms": 3000,
+              "start_ms": 2700
+            },
+            "text": " the",
+            "tokens": [
+              262
+            ]
+          },
+          {
+            "span": {
+              "end_ms": 3260,
+              "start_ms": 3000
+            },
+            "text": " tents",
+            "tokens": [
+              29804
+            ]
+          },
+          {
+            "span": {
+              "end_ms": 3500,
+              "start_ms": 3260
+            },
+            "text": ".",
+            "tokens": [
+              13
+            ]
+          }
+        ]
+      },
+      "arm": "fresh",
+      "before": {
+        "allocated_bytes": 177760256,
+        "reserved_bytes": 784334848
+      },
+      "call_index": 7,
+      "capacity_restored": true,
+      "closed": true,
+      "encoder_frames": [
+        3000,
+        3000
+      ],
+      "peak_allocated_bytes": 315657216,
+      "peak_reserved_bytes": 960495616,
+      "stale_cancel_changed_state": false,
+      "streams": [
+        94228054853552
+      ],
+      "wall_ns": 211494941
+    },
+    {
+      "after_close": {
+        "allocated_bytes": 197104640,
+        "reserved_bytes": 1136656384
+      },
+      "after_handle_release": {
+        "allocated_bytes": 194799616,
+        "reserved_bytes": 1136656384
+      },
+      "alignment": {
+        "native": {
+          "analysis_span": {
+            "end_ms": 3520,
+            "start_ms": 0
+          },
+          "end_ms": 3520,
+          "metadata": {
+            "avg_logprob": -0.3715718587239583,
+            "compression_ratio": 0.8703703703703703,
+            "language": "en",
+            "no_speech_prob": 0.02597704902291298,
+            "segments": [
+              {
+                "span": {
+                  "end_ms": 3360,
+                  "start_ms": 0
+                },
+                "text": " Concord returned to its place amidst the tents.",
+                "tokens": [
+                  34732,
+                  4504,
+                  284,
+                  663,
+                  1295,
+                  31095,
+                  262,
+                  29804,
+                  13
+                ]
+              }
+            ],
+            "temperature": 0.0,
+            "timestamps_complete": true,
+            "tokens": [
+              50363,
+              34732,
+              4504,
+              284,
+              663,
+              1295,
+              31095,
+              262,
+              29804,
+              13,
+              50531
+            ]
+          },
+          "publication_segment_indices": null,
+          "start_ms": 0,
+          "text": "Concord returned to its place amidst the tents.",
+          "window_id": "lane:8"
+        },
+        "words": [
+          {
+            "span": {
+              "end_ms": 1060,
+              "start_ms": 0
+            },
+            "text": " Concord",
+            "tokens": [
+              34732
+            ]
+          },
+          {
+            "span": {
+              "end_ms": 1640,
+              "start_ms": 1060
+            },
+            "text": " returned",
+            "tokens": [
+              4504
+            ]
+          },
+          {
+            "span": {
+              "end_ms": 1820,
+              "start_ms": 1640
+            },
+            "text": " to",
+            "tokens": [
+              284
+            ]
+          },
+          {
+            "span": {
+              "end_ms": 2000,
+              "start_ms": 1820
+            },
+            "text": " its",
+            "tokens": [
+              663
+            ]
+          },
+          {
+            "span": {
+              "end_ms": 2340,
+              "start_ms": 2000
+            },
+            "text": " place",
+            "tokens": [
+              1295
+            ]
+          },
+          {
+            "span": {
+              "end_ms": 2700,
+              "start_ms": 2340
+            },
+            "text": " amidst",
+            "tokens": [
+              31095
+            ]
+          },
+          {
+            "span": {
+              "end_ms": 3000,
+              "start_ms": 2700
+            },
+            "text": " the",
+            "tokens": [
+              262
+            ]
+          },
+          {
+            "span": {
+              "end_ms": 3260,
+              "start_ms": 3000
+            },
+            "text": " tents",
+            "tokens": [
+              29804
+            ]
+          },
+          {
+            "span": {
+              "end_ms": 3500,
+              "start_ms": 3260
+            },
+            "text": ".",
+            "tokens": [
+              13
+            ]
+          }
+        ]
+      },
+      "arm": "fresh",
+      "before": {
+        "allocated_bytes": 186279936,
+        "reserved_bytes": 960495616
+      },
+      "call_index": 8,
+      "capacity_restored": true,
+      "closed": true,
+      "encoder_frames": [
+        3000,
+        3000
+      ],
+      "peak_allocated_bytes": 324176896,
+      "peak_reserved_bytes": 1136656384,
+      "stale_cancel_changed_state": false,
+      "streams": [
+        94228054799648
+      ],
+      "wall_ns": 151489101
+    },
+    {
+      "after_close": {
+        "allocated_bytes": 198036480,
+        "reserved_bytes": 1136656384
+      },
+      "after_handle_release": {
+        "allocated_bytes": 194799616,
+        "reserved_bytes": 1136656384
+      },
+      "alignment": {
+        "native": {
+          "analysis_span": {
+            "end_ms": 3520,
+            "start_ms": 0
+          },
+          "end_ms": 3520,
+          "metadata": {
+            "avg_logprob": -0.3715718587239583,
+            "compression_ratio": 0.8703703703703703,
+            "language": "en",
+            "no_speech_prob": 0.02597704902291298,
+            "segments": [
+              {
+                "span": {
+                  "end_ms": 3360,
+                  "start_ms": 0
+                },
+                "text": " Concord returned to its place amidst the tents.",
+                "tokens": [
+                  34732,
+                  4504,
+                  284,
+                  663,
+                  1295,
+                  31095,
+                  262,
+                  29804,
+                  13
+                ]
+              }
+            ],
+            "temperature": 0.0,
+            "timestamps_complete": true,
+            "tokens": [
+              50363,
+              34732,
+              4504,
+              284,
+              663,
+              1295,
+              31095,
+              262,
+              29804,
+              13,
+              50531
+            ]
+          },
+          "publication_segment_indices": null,
+          "start_ms": 0,
+          "text": "Concord returned to its place amidst the tents.",
+          "window_id": "lane:9"
+        },
+        "words": [
+          {
+            "span": {
+              "end_ms": 1060,
+              "start_ms": 0
+            },
+            "text": " Concord",
+            "tokens": [
+              34732
+            ]
+          },
+          {
+            "span": {
+              "end_ms": 1640,
+              "start_ms": 1060
+            },
+            "text": " returned",
+            "tokens": [
+              4504
+            ]
+          },
+          {
+            "span": {
+              "end_ms": 1820,
+              "start_ms": 1640
+            },
+            "text": " to",
+            "tokens": [
+              284
+            ]
+          },
+          {
+            "span": {
+              "end_ms": 2000,
+              "start_ms": 1820
+            },
+            "text": " its",
+            "tokens": [
+              663
+            ]
+          },
+          {
+            "span": {
+              "end_ms": 2340,
+              "start_ms": 2000
+            },
+            "text": " place",
+            "tokens": [
+              1295
+            ]
+          },
+          {
+            "span": {
+              "end_ms": 2700,
+              "start_ms": 2340
+            },
+            "text": " amidst",
+            "tokens": [
+              31095
+            ]
+          },
+          {
+            "span": {
+              "end_ms": 3000,
+              "start_ms": 2700
+            },
+            "text": " the",
+            "tokens": [
+              262
+            ]
+          },
+          {
+            "span": {
+              "end_ms": 3260,
+              "start_ms": 3000
+            },
+            "text": " tents",
+            "tokens": [
+              29804
+            ]
+          },
+          {
+            "span": {
+              "end_ms": 3500,
+              "start_ms": 3260
+            },
+            "text": ".",
+            "tokens": [
+              13
+            ]
+          }
+        ]
+      },
+      "arm": "reused",
+      "before": {
+        "allocated_bytes": 194799616,
+        "reserved_bytes": 1136656384
+      },
+      "call_index": 9,
+      "capacity_restored": true,
+      "closed": true,
+      "encoder_frames": [
+        3000,
+        3000
+      ],
+      "peak_allocated_bytes": 324176896,
+      "peak_reserved_bytes": 1136656384,
+      "stale_cancel_changed_state": false,
+      "streams": [
+        94228029925504
+      ],
+      "wall_ns": 98892970
+    },
+    {
+      "after_close": {
+        "allocated_bytes": 198036480,
+        "reserved_bytes": 1136656384
+      },
+      "after_handle_release": {
+        "allocated_bytes": 194799616,
+        "reserved_bytes": 1136656384
+      },
+      "alignment": {
+        "native": {
+          "analysis_span": {
+            "end_ms": 3520,
+            "start_ms": 0
+          },
+          "end_ms": 3520,
+          "metadata": {
+            "avg_logprob": -0.3715718587239583,
+            "compression_ratio": 0.8703703703703703,
+            "language": "en",
+            "no_speech_prob": 0.02597704902291298,
+            "segments": [
+              {
+                "span": {
+                  "end_ms": 3360,
+                  "start_ms": 0
+                },
+                "text": " Concord returned to its place amidst the tents.",
+                "tokens": [
+                  34732,
+                  4504,
+                  284,
+                  663,
+                  1295,
+                  31095,
+                  262,
+                  29804,
+                  13
+                ]
+              }
+            ],
+            "temperature": 0.0,
+            "timestamps_complete": true,
+            "tokens": [
+              50363,
+              34732,
+              4504,
+              284,
+              663,
+              1295,
+              31095,
+              262,
+              29804,
+              13,
+              50531
+            ]
+          },
+          "publication_segment_indices": null,
+          "start_ms": 0,
+          "text": "Concord returned to its place amidst the tents.",
+          "window_id": "lane:10"
+        },
+        "words": [
+          {
+            "span": {
+              "end_ms": 1060,
+              "start_ms": 0
+            },
+            "text": " Concord",
+            "tokens": [
+              34732
+            ]
+          },
+          {
+            "span": {
+              "end_ms": 1640,
+              "start_ms": 1060
+            },
+            "text": " returned",
+            "tokens": [
+              4504
+            ]
+          },
+          {
+            "span": {
+              "end_ms": 1820,
+              "start_ms": 1640
+            },
+            "text": " to",
+            "tokens": [
+              284
+            ]
+          },
+          {
+            "span": {
+              "end_ms": 2000,
+              "start_ms": 1820
+            },
+            "text": " its",
+            "tokens": [
+              663
+            ]
+          },
+          {
+            "span": {
+              "end_ms": 2340,
+              "start_ms": 2000
+            },
+            "text": " place",
+            "tokens": [
+              1295
+            ]
+          },
+          {
+            "span": {
+              "end_ms": 2700,
+              "start_ms": 2340
+            },
+            "text": " amidst",
+            "tokens": [
+              31095
+            ]
+          },
+          {
+            "span": {
+              "end_ms": 3000,
+              "start_ms": 2700
+            },
+            "text": " the",
+            "tokens": [
+              262
+            ]
+          },
+          {
+            "span": {
+              "end_ms": 3260,
+              "start_ms": 3000
+            },
+            "text": " tents",
+            "tokens": [
+              29804
+            ]
+          },
+          {
+            "span": {
+              "end_ms": 3500,
+              "start_ms": 3260
+            },
+            "text": ".",
+            "tokens": [
+              13
+            ]
+          }
+        ]
+      },
+      "arm": "reused",
+      "before": {
+        "allocated_bytes": 194799616,
+        "reserved_bytes": 1136656384
+      },
+      "call_index": 10,
+      "capacity_restored": true,
+      "closed": true,
+      "encoder_frames": [
+        3000,
+        3000
+      ],
+      "peak_allocated_bytes": 324176896,
+      "peak_reserved_bytes": 1136656384,
+      "stale_cancel_changed_state": false,
+      "streams": [
+        94228029925504
+      ],
+      "wall_ns": 97710059
+    },
+    {
+      "after_close": {
+        "allocated_bytes": 198036480,
+        "reserved_bytes": 1136656384
+      },
+      "after_handle_release": {
+        "allocated_bytes": 194799616,
+        "reserved_bytes": 1136656384
+      },
+      "alignment": {
+        "native": {
+          "analysis_span": {
+            "end_ms": 3520,
+            "start_ms": 0
+          },
+          "end_ms": 3520,
+          "metadata": {
+            "avg_logprob": -0.3715718587239583,
+            "compression_ratio": 0.8703703703703703,
+            "language": "en",
+            "no_speech_prob": 0.02597704902291298,
+            "segments": [
+              {
+                "span": {
+                  "end_ms": 3360,
+                  "start_ms": 0
+                },
+                "text": " Concord returned to its place amidst the tents.",
+                "tokens": [
+                  34732,
+                  4504,
+                  284,
+                  663,
+                  1295,
+                  31095,
+                  262,
+                  29804,
+                  13
+                ]
+              }
+            ],
+            "temperature": 0.0,
+            "timestamps_complete": true,
+            "tokens": [
+              50363,
+              34732,
+              4504,
+              284,
+              663,
+              1295,
+              31095,
+              262,
+              29804,
+              13,
+              50531
+            ]
+          },
+          "publication_segment_indices": null,
+          "start_ms": 0,
+          "text": "Concord returned to its place amidst the tents.",
+          "window_id": "lane:11"
+        },
+        "words": [
+          {
+            "span": {
+              "end_ms": 1060,
+              "start_ms": 0
+            },
+            "text": " Concord",
+            "tokens": [
+              34732
+            ]
+          },
+          {
+            "span": {
+              "end_ms": 1640,
+              "start_ms": 1060
+            },
+            "text": " returned",
+            "tokens": [
+              4504
+            ]
+          },
+          {
+            "span": {
+              "end_ms": 1820,
+              "start_ms": 1640
+            },
+            "text": " to",
+            "tokens": [
+              284
+            ]
+          },
+          {
+            "span": {
+              "end_ms": 2000,
+              "start_ms": 1820
+            },
+            "text": " its",
+            "tokens": [
+              663
+            ]
+          },
+          {
+            "span": {
+              "end_ms": 2340,
+              "start_ms": 2000
+            },
+            "text": " place",
+            "tokens": [
+              1295
+            ]
+          },
+          {
+            "span": {
+              "end_ms": 2700,
+              "start_ms": 2340
+            },
+            "text": " amidst",
+            "tokens": [
+              31095
+            ]
+          },
+          {
+            "span": {
+              "end_ms": 3000,
+              "start_ms": 2700
+            },
+            "text": " the",
+            "tokens": [
+              262
+            ]
+          },
+          {
+            "span": {
+              "end_ms": 3260,
+              "start_ms": 3000
+            },
+            "text": " tents",
+            "tokens": [
+              29804
+            ]
+          },
+          {
+            "span": {
+              "end_ms": 3500,
+              "start_ms": 3260
+            },
+            "text": ".",
+            "tokens": [
+              13
+            ]
+          }
+        ]
+      },
+      "arm": "reused",
+      "before": {
+        "allocated_bytes": 194799616,
+        "reserved_bytes": 1136656384
+      },
+      "call_index": 11,
+      "capacity_restored": true,
+      "closed": true,
+      "encoder_frames": [
+        3000,
+        3000
+      ],
+      "peak_allocated_bytes": 324176896,
+      "peak_reserved_bytes": 1136656384,
+      "stale_cancel_changed_state": false,
+      "streams": [
+        94228029925504
+      ],
+      "wall_ns": 98671219
+    },
+    {
+      "after_close": {
+        "allocated_bytes": 198036480,
+        "reserved_bytes": 1136656384
+      },
+      "after_handle_release": {
+        "allocated_bytes": 194799616,
+        "reserved_bytes": 1136656384
+      },
+      "alignment": {
+        "native": {
+          "analysis_span": {
+            "end_ms": 3520,
+            "start_ms": 0
+          },
+          "end_ms": 3520,
+          "metadata": {
+            "avg_logprob": -0.3715718587239583,
+            "compression_ratio": 0.8703703703703703,
+            "language": "en",
+            "no_speech_prob": 0.02597704902291298,
+            "segments": [
+              {
+                "span": {
+                  "end_ms": 3360,
+                  "start_ms": 0
+                },
+                "text": " Concord returned to its place amidst the tents.",
+                "tokens": [
+                  34732,
+                  4504,
+                  284,
+                  663,
+                  1295,
+                  31095,
+                  262,
+                  29804,
+                  13
+                ]
+              }
+            ],
+            "temperature": 0.0,
+            "timestamps_complete": true,
+            "tokens": [
+              50363,
+              34732,
+              4504,
+              284,
+              663,
+              1295,
+              31095,
+              262,
+              29804,
+              13,
+              50531
+            ]
+          },
+          "publication_segment_indices": null,
+          "start_ms": 0,
+          "text": "Concord returned to its place amidst the tents.",
+          "window_id": "lane:12"
+        },
+        "words": [
+          {
+            "span": {
+              "end_ms": 1060,
+              "start_ms": 0
+            },
+            "text": " Concord",
+            "tokens": [
+              34732
+            ]
+          },
+          {
+            "span": {
+              "end_ms": 1640,
+              "start_ms": 1060
+            },
+            "text": " returned",
+            "tokens": [
+              4504
+            ]
+          },
+          {
+            "span": {
+              "end_ms": 1820,
+              "start_ms": 1640
+            },
+            "text": " to",
+            "tokens": [
+              284
+            ]
+          },
+          {
+            "span": {
+              "end_ms": 2000,
+              "start_ms": 1820
+            },
+            "text": " its",
+            "tokens": [
+              663
+            ]
+          },
+          {
+            "span": {
+              "end_ms": 2340,
+              "start_ms": 2000
+            },
+            "text": " place",
+            "tokens": [
+              1295
+            ]
+          },
+          {
+            "span": {
+              "end_ms": 2700,
+              "start_ms": 2340
+            },
+            "text": " amidst",
+            "tokens": [
+              31095
+            ]
+          },
+          {
+            "span": {
+              "end_ms": 3000,
+              "start_ms": 2700
+            },
+            "text": " the",
+            "tokens": [
+              262
+            ]
+          },
+          {
+            "span": {
+              "end_ms": 3260,
+              "start_ms": 3000
+            },
+            "text": " tents",
+            "tokens": [
+              29804
+            ]
+          },
+          {
+            "span": {
+              "end_ms": 3500,
+              "start_ms": 3260
+            },
+            "text": ".",
+            "tokens": [
+              13
+            ]
+          }
+        ]
+      },
+      "arm": "reused",
+      "before": {
+        "allocated_bytes": 194799616,
+        "reserved_bytes": 1136656384
+      },
+      "call_index": 12,
+      "capacity_restored": true,
+      "closed": true,
+      "encoder_frames": [
+        3000,
+        3000
+      ],
+      "peak_allocated_bytes": 324176896,
+      "peak_reserved_bytes": 1136656384,
+      "stale_cancel_changed_state": false,
+      "streams": [
+        94228029925504
+      ],
+      "wall_ns": 112051582
+    }
+  ],
+  "claim_boundary": {
+    "full_stream_recovery": false,
+    "general_speedup": false,
+    "production_readiness": false
+  },
+  "error": null,
+  "experiment_id": "modal-cuda-lane-v2",
+  "input": {
+    "fixture_id": "6930-75918-0000",
+    "pcm_sha256": "85a0e0e696a0000de8c0be7e373719b253ef65cae1ad3e5ee7d4a94b22080cf1",
+    "sample_count": 56320
+  },
+  "model": {
+    "backend_revision": "a0b9695ae1cc52bad4b8626fe9fb6ea4ac0ee650",
+    "final_sha256": "sha256:8041a80119a588f542472da35e97d0372fce1d9709ed9874475e9c03deac5de6",
+    "initial_sha256": "sha256:8041a80119a588f542472da35e97d0372fce1d9709ed9874475e9c03deac5de6",
+    "unchanged": true
+  },
+  "qualified": false,
+  "schema_version": "1-diagnostic",
+  "scope": {
+    "alternating_order": false,
+    "cache_clearing": false,
+    "drops_handle_before_next_window": true,
+    "first_pair_cold": true,
+    "full_stream": false,
+    "maximum_native_windows": 12,
+    "order": "blocked-v2",
+    "post_close_retains_one_handle": true,
+    "reused_lane_held_between_arms": true,
+    "same_pcm_mel_options": true,
+    "single_host_thread": true,
+    "stale_cancellation_tested": false,
+    "timing_excludes_preprocessing_and_collection": true
+  },
+  "source": {
+    "registration_sha256": "b541eacf90a4c361657531134ab81581122aeff5c38a41b6618c4e4bf040eefb",
+    "snapshot": {
+      "commit": "111e660a835d5149965be35c3b234a9362ca1ec9",
+      "digest": "7c1a0fad7972fab681cbf212625842ed430d8ec5bd4171840ac9a8dbcc5bb29d",
+      "files": [
+        {
+          "path": "experiments/modal-acoustic-diagnostic-v2.json",
+          "sha256": "479f768e4c20b3cbf05d3518bd7b9c974dc40b7a539b449d593b260bf46dbfde",
+          "size_bytes": 3432
+        },
+        {
+          "path": "experiments/modal-word-corpus-v1.json",
+          "sha256": "0de0f0af9ec7a9f949d636721f036ed457b4417aa9e12da3faf6de42f1ebf925",
+          "size_bytes": 13179
+        },
+        {
+          "path": "infra/modal_acoustic_diagnostic.py",
+          "sha256": "04cf1066659a34ce83620cca4598befab700a8f91d6bd3f081275354d4c82355",
+          "size_bytes": 31627
+        },
+        {
+          "path": "infra/modal_continuous_smoke.py",
+          "sha256": "5f88560cdacb0780e108cd9b222b95a361f5a8b1107b7db59da5b5db55596f70",
+          "size_bytes": 36793
+        },
+        {
+          "path": "infra/modal_cuda_lane.py",
+          "sha256": "b541eacf90a4c361657531134ab81581122aeff5c38a41b6618c4e4bf040eefb",
+          "size_bytes": 15258
+        },
+        {
+          "path": "infra/modal_native_cuda_qualification.py",
+          "sha256": "178285839ced6820d1fb139fa328ff10f8dbbd13e771eb9be50920358316e151",
+          "size_bytes": 98278
+        },
+        {
+          "path": "infra/modal_stream_boundary_diagnostic.py",
+          "sha256": "a6c3d4d848acbc9e481ae49ae638abe45dcce74704d129967fbf92b755e2faa2",
+          "size_bytes": 60265
+        },
+        {
+          "path": "infra/modal_word_corpus.py",
+          "sha256": "3d518a6d633f0a4fc4e1dd265343168dd44cba0051e64ba738bb62123973328c",
+          "size_bytes": 74872
+        },
+        {
+          "path": "src/whisper_runtime/__init__.py",
+          "sha256": "6b6c549bf89264c59b8808cf5cba240599af10f0cd12610a859ff964d6fed2aa",
+          "size_bytes": 1533
+        },
+        {
+          "path": "src/whisper_runtime/adapters/__init__.py",
+          "sha256": "03b568872fc2c797f0c4d46f94465c90a9f565d0bc6ca2fb52ad1796168b9518",
+          "size_bytes": 4101
+        },
+        {
+          "path": "src/whisper_runtime/adapters/_model_binding.py",
+          "sha256": "4cc450d4476f6edc9e6d10e7096913cf7a0110c319d2a1cddc7e835709db4c4d",
+          "size_bytes": 6591
+        },
+        {
+          "path": "src/whisper_runtime/adapters/audio_endpoints.py",
+          "sha256": "bbdb2d3bf19a436189de88e85d2ba2d5cd91861d1d6f2876fc46e30327dd6550",
+          "size_bytes": 5570
+        },
+        {
+          "path": "src/whisper_runtime/adapters/audio_evidence.py",
+          "sha256": "14db21a12f4c8ea3da76bede0814ac2cd1422162165fd65db1bcf951de176184",
+          "size_bytes": 9094
+        },
+        {
+          "path": "src/whisper_runtime/adapters/continuous_stream.py",
+          "sha256": "18a91c43bdffd3c8b87f2e0c9a03305ea33039df2a6001f04e304fffa09bc129",
+          "size_bytes": 49953
+        },
+        {
+          "path": "src/whisper_runtime/adapters/legacy_whisper.py",
+          "sha256": "14b6f771c114238317d5118ba64c64334857e8e9da1d0f360baeeef48f3415e0",
+          "size_bytes": 33513
+        },
+        {
+          "path": "src/whisper_runtime/adapters/native_result.py",
+          "sha256": "3198b3996e7445449d7c74092ecef79d5a3615c1ebb48951c9bc7bbba3c18d92",
+          "size_bytes": 12573
+        },
+        {
+          "path": "src/whisper_runtime/adapters/native_stream.py",
+          "sha256": "01898983175014ac33e66c00be5bc92b96d0f300c0b20eb57a13cb4f384f0c39",
+          "size_bytes": 27068
+        },
+        {
+          "path": "src/whisper_runtime/adapters/native_whisper.py",
+          "sha256": "1dd32ee07ed499da8480e47acd2376fb084040248504bcd2747332ea80eccf9a",
+          "size_bytes": 69075
+        },
+        {
+          "path": "src/whisper_runtime/adapters/paced_replay.py",
+          "sha256": "04628898703772f7c3f45c7de2f7fae4f772b5192bc48c813a625737bf2b377e",
+          "size_bytes": 11659
+        },
+        {
+          "path": "src/whisper_runtime/adapters/stream_policy.py",
+          "sha256": "452d71993ffd9395a36a8b6a68fbe34b53d90665cc13ad22058b49ca32b0f5a9",
+          "size_bytes": 13353
+        },
+        {
+          "path": "src/whisper_runtime/adapters/word_policy.py",
+          "sha256": "f7746ff54c6ca7fa250af8f6b85c88976e10d44a1fafae48626e1527bcc7a60e",
+          "size_bytes": 21812
+        },
+        {
+          "path": "src/whisper_runtime/errors.py",
+          "sha256": "87127fee36ff6706360f8ad82ea49a0dea870d9cd1831ceec3aeb31c2d8e89df",
+          "size_bytes": 2439
+        },
+        {
+          "path": "src/whisper_runtime/execution.py",
+          "sha256": "ea758adb9ea4204f29f5b444ecf54331d751b66e3b4373014179522a225cef44",
+          "size_bytes": 7533
+        },
+        {
+          "path": "src/whisper_runtime/model.py",
+          "sha256": "bfe66fb074d308447e94af78851db46a1819d291cad9fde742b28dcc0be629c0",
+          "size_bytes": 558
+        },
+        {
+          "path": "src/whisper_runtime/resources.py",
+          "sha256": "5beec172371839ab73bb3ca594b22460f37723f1347db74841a43a4a102716d5",
+          "size_bytes": 6384
+        },
+        {
+          "path": "src/whisper_runtime/state.py",
+          "sha256": "2b234b2a9b7618a4834cdc906052c3ca46ecab0a73eba04d9eb3f891dc01c312",
+          "size_bytes": 11988
+        },
+        {
+          "path": "src/whisper_runtime/transaction.py",
+          "sha256": "d9e4622ff289b182d7a2b23ebc6243e661da9f9061484107b3da09feb1ed44e4",
+          "size_bytes": 37581
+        },
+        {
+          "path": "src/whisper_runtime/worker.py",
+          "sha256": "92dc3f3366903c4304aaa7919dc84d8252bbdd02279d876701159bf0e092e077",
+          "size_bytes": 11824
+        },
+        {
+          "path": "tools/prepare_acoustic_cases.py",
+          "sha256": "8d2eaa65dc5a6ce57589d91efac2c773901ba59fe14a54cf9a5d1028ac62c79d",
+          "size_bytes": 11344
+        },
+        {
+          "path": "tools/prepare_speech_corpus.py",
+          "sha256": "7ee1771a5642cddc6679a368c354a856ee99bd22d2b9e90caee8fb273b6c12a8",
+          "size_bytes": 17184
+        }
+      ]
+    }
+  },
+  "status": "completed",
+  "summary": {
+    "consecutive_reused_allocated_deltas_bytes": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    "consecutive_reused_allocation_flat": true,
+    "encoder_calls": [
+      2,
+      2,
+      2,
+      2,
+      2,
+      2,
+      2,
+      2,
+      2,
+      2,
+      2,
+      2
+    ],
+    "exact_alignment_equal": true,
+    "fresh_stream_count": 4,
+    "post_close_allocated_delta_bytes": {
+      "fresh": [
+        10824704,
+        10824704,
+        10824704,
+        10824704
+      ],
+      "reused": [
+        10824704,
+        3236864,
+        3236864,
+        3236864,
+        3236864,
+        3236864,
+        3236864,
+        3236864
+      ]
+    },
+    "post_handle_release_allocated_bytes": [
+      160720896,
+      160720896,
+      160720896,
+      160720896,
+      169240576,
+      177760256,
+      186279936,
+      194799616,
+      194799616,
+      194799616,
+      194799616,
+      194799616
+    ],
+    "reused_stream_count": 1,
+    "warm_reused_allocation_flat": false
+  },
+  "worker": {
+    "function_call_id": "fc-01M1T2XZCAMH7PTF635VH5J501",
+    "function_call_id_sha256": "30b0a345d744ab689d4748b612665ff6c4a4febde8ccf78ceac5c2b1cbfb95f7",
+    "modal": "1.5.5"
+  },
+  "app_id": "ap-bf3BbrpB8cOaEIbd5AFHNt"
+}

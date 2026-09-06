@@ -91,7 +91,7 @@ The complete record SHA-256 is
 
 Version 2 retains the same backend, model, input, precision and twelve-call
 limit. The order is four reused, four fresh, then four reused calls. The driver
-drops each closed handle before measuring physical residency and starting the
+drops each closed handle before measuring PyTorch allocated and reserved memory and starting the
 next call. Stale cancellation was covered by version 1 and is not repeated.
 There is no cache clearing, thread change or new publication policy.
 
@@ -103,3 +103,49 @@ after the result. Complete words, tokens and times must still match. The CPU
 replay keeps the original failed plateau metric and original record unchanged.
 
 This is one additional bounded T4 call, not an automatic retry of version 1.
+
+## Follow-up result
+
+The [consecutive-call record](../../evidence/modal-t4-tiny-en-cuda-lane-blocked-2026-09-06.json)
+completed on source `111e660`. The six predeclared consecutive reused-lane
+comparisons all have exactly zero post-handle-release allocated-byte delta.
+All twelve outputs match exactly after excluding transaction window ID. Model
+parameters are unchanged; all windows close and restore logical capacity.
+
+| Calls | Lane | Allocated bytes after handle release |
+| --- | --- | ---: |
+| 1-4 | Same reused stream | 160,720,896 on every call |
+| 5-8 | Four fresh streams | 169,240,576; 177,760,256; 186,279,936; 194,799,616 |
+| 9-12 | Original reused stream | 194,799,616 on every call |
+
+Each fresh stream adds 8,519,680 bytes. Returning to the original lane adds
+none. Reserved memory is also constant within the two reused blocks, at
+432,013,312 and 1,136,656,384 bytes respectively. The control's stream-associated allocations stay
+resident; the reused lane does not release resources owned by other streams.
+
+The legacy `warm_reused_allocation_flat` field remains false because it compares
+post-close samples that still retain a result handle. Version 2 uses the
+separately registered `consecutive_reused_allocation_flat` field after dropping
+that handle. Its six zero deltas are replayed from the record in CPU tests.
+The legacy `first_pair_cold` metadata label refers to cold-start exposure; it
+does not mark both calls as separate cold starts.
+
+Both T4 applications stopped with zero tasks. There were two paid function
+calls and no automatic GPU retry. Wall times exclude preprocessing and garbage
+collection and do not establish a general latency improvement or actual billing.
+
+The complete version 2 record SHA-256 is
+`8a98dcca52e816cb39a0284f283a5c6381eb1d8a338c655a244b98afb875fc6d`.
+
+## Remaining work
+
+The default CUDA adapter now reuses its lane. This is a short fixed-workload
+memory result, not a long-session qualification or a process-wide memory cap.
+Different host threads can still create separate library handles.
+
+The [optional alignment patch](../../patches/openai-whisper/experimental/README.md)
+has seven passing CPU tests but is not enabled in the runtime or these T4 runs.
+Both runs still execute two encoder forwards per analysis. Compare actual
+decode-produced features with legacy alignment before wiring that handoff.
+The bounded continuation planner is also experimental; full paced recovery
+and publication coverage remain open.

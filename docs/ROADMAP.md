@@ -19,7 +19,7 @@ A gate closes only when its acceptance cases and results are committed.
 | D1 | Continuous transcription with progressive commits | Experimental rolling profile implemented; long-session gate open | D0 |
 | D2 | A usable local live-transcription entry point | Paced API and PC-to-Modal reference tested; microphone and CLI gate open | D1 |
 | D3 | Broader quality and failure coverage | Initial coverage; expand alongside D1-D2 | D0; release gate for D2 |
-| D4 | Measured compute and memory improvements | Not demonstrated | D1 and matched D3 baselines |
+| D4 | Measured compute and memory improvements | Short T4 memory plateau verified; compute and live gates open | D1 and matched D3 baselines |
 | D5 | A reproducible developer release | Package builds; release gates remain open | D2 and D3; D4 for efficiency claims |
 | D6 | Durable recovery and finer resource scheduling | Later | D3 and a recovery contract |
 | D7 | Multiple channels, translation, and a second backend | Later | D1-D3 and per-output contracts |
@@ -282,17 +282,24 @@ authorize or start new GPU spending.
 
 ## D4. Measured compute and memory improvements
 
-**Status: not demonstrated.**
+**Status: short fixed-workload memory improvement verified; full gate open.**
 
 Remove unnecessary work before adding scheduling or caching complexity.
 
-The terminal-window experiment observes two full padded encoder passes per native
-analysis and rising allocator peaks across fresh CUDA streams. These identify
-measurement targets, not proven speedups or a diagnosed memory leak. First test
-same-input feature reuse under matching encoder policies and measure post-close
-allocation with bounded stream reuse. Keep the existing path as the control.
+The [CUDA lifetime comparison](research/2026-09-06-cuda-lane-lifetime.md) verifies
+a post-release allocation plateau on consecutive T4 analyses. The fresh-stream
+control adds 8,519,680 bytes per new stream; the reused lane adds none after its
+first call on this input. Words, tokens and times match exactly. This does not
+close the long-session or live efficiency gates.
+
+The runtime now retains one fenced CUDA lane per model binding. An optional
+same-window alignment-feature patch passes seven CPU tests, but is not enabled
+in the runtime. Actual decode-feature GPU parity remains untested. The T4 runs
+still execute two encoders per analysis. Preserve the legacy alignment control.
 
 - [x] Add opt-in preview coalescing with bounded state and immutable retries.
+- [x] Reuse one CUDA lane under exact ownership and completion fences; verify
+  short fixed-input allocation and output parity on T4.
 - [ ] Measure avoided work and quality changes on matched paced input.
 - [ ] Reuse preprocessing or encoder output only when input identity and the
   chosen profile permit it. New audio does not make Whisper's noncausal encoder

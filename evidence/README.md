@@ -1,5 +1,16 @@
 # Integration evidence
 
+The [CUDA lane comparison](modal-t4-tiny-en-cuda-lane-2026-09-06.json) preserves
+exact native output across twelve analyses. Alternating arms exposed a retained
+result-handle measurement effect; its original per-call plateau criterion failed.
+The [post-handle-release comparison](modal-t4-tiny-en-cuda-lane-blocked-2026-09-06.json)
+then records exactly zero allocation change across six consecutive reused-lane
+comparisons. Four fresh-stream controls each add 8,519,680 bytes. Both models
+are unchanged and both applications stopped. The
+[report](../docs/research/2026-09-06-cuda-lane-lifetime.md) retains both results,
+their measurement scopes, source identities and limits. This is a short repeated
+workload, not a general speedup, live recovery result or long-session memory test.
+
 The [terminal-window experiment](modal-t4-tiny-en-word-resolution-2026-09-06.json)
 completed ten native analyses on one T4 at source commit `1977c68`. Two saved
 failure states reproduce exactly. Diagnostic-based selection reduces word edit
