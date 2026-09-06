@@ -19,6 +19,7 @@ class ModelBinding:
 
     __slots__ = (
         "_cleanup_failures",
+        "_cuda_lane",
         "_retained_errors",
         "adapter_kind",
         "execution_profile",
@@ -33,6 +34,7 @@ class ModelBinding:
             None
         )
         self.adapter_kind: str | None = None
+        self._cuda_lane: object | None = None
         self._cleanup_failures: set[int] = set()
         self._retained_errors: dict[int, BaseException] = {}
 

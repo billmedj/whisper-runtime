@@ -3,9 +3,9 @@
 This adapter targets the opt-in ``DecodingTask._start_run`` API implemented by
 the companion Whisper prototype. PyTorch and Whisper are loaded only when a
 decode starts. The adapter accepts one unbatched 30-second mel window. CPU is
-the default. An explicit CUDA profile uses one transaction-owned stream and an
-event-backed completion fence. The experimental two-lane profile remains CPU
-only.
+the default. An explicit CUDA profile borrows one model-binding-owned stream
+with a fresh transaction scope and event-backed completion fence. The
+experimental two-lane profile remains CPU only.
 """
 
 from __future__ import annotations
@@ -618,8 +618,27 @@ class _CpuDecodeScope:
                 self._condition.notify_all()
 
 
+class _CudaLane:
+    """Keep one stream for a model binding, with at most one exact borrower.
+
+    The binding lock guards ownership. A successful transaction fence returns
+    the lane, not its physical CUDA allocations; stream-local workspaces may
+    remain resident for the binding's lifetime. Decoder state stays in scopes.
+    """
+
+    def __init__(self, cuda: _CudaRuntime, device: str, stream: object) -> None:
+        self.cuda = cuda
+        self.device = device
+        self.stream = stream
+        self.owner: object | None = None
+
+    def require_owner(self, owner: object) -> None:
+        if self.owner is not owner:
+            raise NativeDecodeContractError("the CUDA lane has a different borrower")
+
+
 class _CudaDecodeScope:
-    """Own one CUDA stream and fence it before releasing its lease."""
+    """Exclusively borrow a CUDA lane until this transaction's fence succeeds."""
 
     def __init__(
         self,
@@ -631,6 +650,8 @@ class _CudaDecodeScope:
         self._model_binding = model_binding
         self._torch_module = torch_module
         self._device = device
+        self._lease_token = object()
+        self._lane: _CudaLane | None = None
         self._stream: object | None = None
         self._event: _CudaEvent | None = None
         self._run: object | None = None
@@ -664,25 +685,46 @@ class _CudaDecodeScope:
         return self
 
     def _require_stream(self) -> object:
-        with self._condition:
-            if self._cleaned:
-                raise NativeDecodeContractError(
-                    "a closed execution scope cannot submit CUDA work"
-                )
-            stream = self._stream
-        if stream is not None:
-            return stream
+        with self._model_binding.lock:
+            with self._condition:
+                if self._cleaned:
+                    raise NativeDecodeContractError(
+                        "a closed execution scope cannot submit CUDA work"
+                    )
+                if self._lane is not None:
+                    self._lane.require_owner(self._lease_token)
+                    return self._lane.stream
 
-        cuda = self._torch_module.cuda
-        # This first-use barrier gives the private stream a conservative view
-        # of model initialization without adding CUDA work before admission.
-        with cuda.device(self._device):
-            cuda.synchronize(self._device)
-            created = cuda.Stream(device=self._device)
-        with self._condition:
-            if self._stream is None:
-                self._stream = created
-            return self._stream
+            cuda = self._torch_module.cuda
+            lane = self._model_binding._cuda_lane
+            if lane is None:
+                # Only the first borrower needs the model-initialization
+                # barrier. Later borrowers inherit the prior successful fence
+                # on this same stream; input mel is always copied from CPU.
+                # Do not hold the condition while synchronizing: cancellation
+                # only latches local state and must never wait on CUDA here.
+                with cuda.device(self._device):
+                    cuda.synchronize(self._device)
+                    stream = cuda.Stream(device=self._device)
+                lane = _CudaLane(cuda, self._device, stream)
+                self._model_binding._cuda_lane = lane
+            if not isinstance(lane, _CudaLane):
+                raise NativeDecodeContractError("the model has an invalid CUDA lane")
+            if lane.cuda is not cuda or lane.device != self._device:
+                raise NativeDecodeContractError(
+                    "the CUDA lane runtime and device cannot change"
+                )
+            if lane.owner is not None:
+                raise NativeDecodeContractError("the CUDA lane is already borrowed")
+            with self._condition:
+                if self._cleaned:
+                    raise NativeDecodeContractError(
+                        "a closed execution scope cannot submit CUDA work"
+                    )
+                lane.owner = self._lease_token
+                self._lane = lane
+                self._stream = lane.stream
+                return lane.stream
 
     def invoke(self, operation: Callable[[], _ResultT]) -> _ResultT:
         """Run one operation on this transaction's exact CUDA stream."""
@@ -729,30 +771,40 @@ class _CudaDecodeScope:
                             )
 
                     if stream is not None:
+                        lane = self._lane
+                        if lane is None or lane.stream is not stream:
+                            raise NativeDecodeContractError(
+                                "the CUDA stream has no matching lane"
+                            )
+                        lane.require_owner(self._lease_token)
                         cuda = self._torch_module.cuda
                         with cuda.device(self._device), cuda.stream(stream):
                             event = cuda.Event(enable_timing=False)
                             self._event = event
                             event.record(stream)
                         event.synchronize()
+                        # The lease is returned only after proven quiescence.
+                        # Failed cleanup/record/wait keeps this exact borrower
+                        # for recovery, never handing its stream to a successor.
+                        lane.owner = None
                 except BaseException:
                     self._model_binding.record_cleanup_failure(self)
                     raise
                 else:
                     self._model_binding.clear_cleanup_failure(self)
+                    with self._condition:
+                        self._run = None
+                        self._event = None
+                        self._stream = None
+                        self._lane = None
+                        self._cleaned = True
+                        self._cleanup_in_flight = False
+                        self._condition.notify_all()
         except BaseException:
             with self._condition:
                 self._cleanup_in_flight = False
                 self._condition.notify_all()
             raise
-        else:
-            with self._condition:
-                self._run = None
-                self._event = None
-                self._stream = None
-                self._cleaned = True
-                self._cleanup_in_flight = False
-                self._condition.notify_all()
 
 
 NativeModelIdentityProbe = Callable[[object], ModelSnapshot]

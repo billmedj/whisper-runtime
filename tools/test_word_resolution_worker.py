@@ -7,8 +7,9 @@ import json
 import unittest
 from dataclasses import asdict, replace
 
-from infra.word_resolution_worker import _bootstrap, _evaluate
+from infra.word_resolution_worker import BOUNDED_ROUTING_POLICY, _bootstrap, _evaluate
 from tools.test_word_anchor_reconciliation import _aligned, _word
+from tools.word_anchor_reconciliation import plan_bounded_resolution
 from whisper_runtime import AudioSpan
 
 PARAMETERS = {
@@ -253,6 +254,125 @@ class WordResolutionRoutingTests(unittest.TestCase):
             + timing["diagnostic_wall_ns"]
             + timing["shadow_wall_ns"],
         )
+
+    def test_bounded_fallback_handles_ineligible_timing_without_reference_routing(self):
+        words = (
+            replace(self.current.words[0], span=AudioSpan(0, 1400)),
+        ) + self.current.words[1:]
+        current = _aligned(words)
+        before = asdict(current)
+        for reference in (self.case["reference_text"], "unrelated text"):
+            result = _evaluate(
+                {**self.case, "reference_text": reference},
+                current,
+                self.alternative,
+                PARAMETERS,
+                _difference,
+                routing_policy=BOUNDED_ROUTING_POLICY,
+            )
+            self.assertEqual(result["current_diagnostic"]["status"], "timing_mismatch")
+            self.assertFalse(result["arms"]["baseline"]["available"])
+            self.assertEqual(result["shadow_proposal"]["status"], "rejected")
+            self.assertEqual(result["routed"]["arm"], "alternative")
+            self.assertEqual(result["routed"]["policy"], BOUNDED_ROUTING_POLICY)
+            self.assertEqual(result["routed"]["reason"], "distinct_window_fallback")
+            self.assertFalse(result["routed"]["uses_reference"])
+            self.assertFalse(result["outcome"]["full_stream_completion"])
+            self.assertTrue(
+                all(not arm["publication_authority"] for arm in result["arms"].values())
+            )
+        self.assertEqual(asdict(current), before)
+
+    def test_bounded_fallback_does_not_select_an_identical_window(self):
+        current = _aligned(self.suffix)
+        result = _evaluate(
+            self.case,
+            current,
+            current,
+            PARAMETERS,
+            _difference,
+            routing_policy=BOUNDED_ROUTING_POLICY,
+        )
+        self.assertEqual(result["routed"]["arm"], "unresolved")
+        self.assertEqual(result["routed"]["reason"], "identical_window")
+        self.assertFalse(result["arms"]["unresolved"]["available"])
+        self.assertEqual(
+            result["arms"]["unresolved"]["text"], self.case["committed_text"]
+        )
+
+    def test_unknown_policy_rejected_before_reference_scoring(self):
+        def forbidden_score(*args):
+            self.fail("reference score evaluated for an unknown policy")
+
+        with self.assertRaises(ValueError):
+            _evaluate(
+                self.case,
+                self.current,
+                self.alternative,
+                PARAMETERS,
+                forbidden_score,
+                routing_policy="unknown",
+            )
+
+
+class BoundedResolutionPlanTests(unittest.TestCase):
+    def plan(self, **changes):
+        return plan_bounded_resolution(
+            **{
+                "baseline_available": False,
+                "reconciliation_eligible": False,
+                "current_window": (1000, 10000),
+                "alternative_window": (3000, 10000),
+                **changes,
+            }
+        )
+
+    def test_available_baseline_and_local_reconciliation_do_not_request_decode(self):
+        for inputs, expected in (
+            ({"baseline_available": True}, "baseline"),
+            ({"baseline_available": True, "reconciliation_eligible": True}, "baseline"),
+            ({"reconciliation_eligible": True}, "shadow"),
+        ):
+            with self.subTest(inputs=inputs):
+                route = self.plan(**inputs)
+                self.assertEqual(route.arm, expected)
+                self.assertIsNone(route.candidate_window)
+
+    def test_distinct_candidate_can_be_requested_only_once(self):
+        first = self.plan()
+        self.assertEqual(first.arm, "alternative")
+        self.assertEqual(first.candidate_window, (3000, 10000))
+        for _ in range(3):
+            later = self.plan(alternative_attempted=True)
+            self.assertEqual(later.arm, "unresolved")
+            self.assertEqual(later.reason, "alternative_attempt_exhausted")
+            self.assertIsNone(later.candidate_window)
+
+    def test_identical_interval_never_requests_a_retry(self):
+        for attempted in (False, True):
+            route = self.plan(
+                alternative_window=(1000, 10000), alternative_attempted=attempted
+            )
+            self.assertEqual(route.arm, "unresolved")
+            self.assertEqual(route.reason, "identical_window")
+            self.assertIsNone(route.candidate_window)
+
+    def test_alternative_cannot_request_evicted_or_unadmitted_pcm(self):
+        for bounds in ((999, 10000), (3000, 10001), (10000, 10000), (-1, 10000)):
+            with self.subTest(bounds=bounds), self.assertRaises(ValueError):
+                self.plan(alternative_window=bounds)
+
+    def test_plan_rejects_ambiguous_input_types(self):
+        for field, value in (
+            ("baseline_available", 1),
+            ("reconciliation_eligible", None),
+            ("alternative_attempted", 0),
+            ("current_window", [1000, 10000]),
+            ("alternative_window", (True, 10000)),
+            ("alternative_window", (3000.0, 10000)),
+        ):
+            with self.subTest(field=field), self.assertRaises(TypeError):
+                self.plan(**{field: value})
 
 
 class WordResolutionBootstrapTests(unittest.TestCase):

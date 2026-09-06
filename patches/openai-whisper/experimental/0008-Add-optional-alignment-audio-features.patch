@@ -1,0 +1,245 @@
+diff --git a/tests/test_alignment_audio_features.py b/tests/test_alignment_audio_features.py
+new file mode 100644
+index 0000000..3f213b1
+--- /dev/null
++++ b/tests/test_alignment_audio_features.py
+@@ -0,0 +1,168 @@
++"""CPU structural/parity tests; no pretrained model or network is required."""
++
++import unittest
++from unittest.mock import patch
++
++import torch
++from whisper.model import ModelDimensions, MultiHeadAttention, Whisper
++from whisper.timing import find_alignment
++
++
++class AlignmentTokenizer:
++    sot_sequence = (0,)
++    no_timestamps = 1
++    eot = 15
++
++    @staticmethod
++    def split_to_word_tokens(tokens):
++        return [" alpha", " beta", "<|endoftext|>"], [[2], [3], [15]]
++
++
++class LegacyWhisper(Whisper):
++    pass
++
++
++def make_model(model_class=Whisper):
++    torch.manual_seed(0)
++    model = model_class(
++        ModelDimensions(
++            n_mels=4,
++            n_audio_ctx=4,
++            n_audio_state=4,
++            n_audio_head=1,
++            n_audio_layer=1,
++            n_vocab=16,
++            n_text_ctx=8,
++            n_text_state=4,
++            n_text_head=1,
++            n_text_layer=2,
++        )
++    )
++    for parameter in model.parameters():
++        torch.nn.init.uniform_(parameter, -0.1, 0.1)
++    return model.eval()
++
++
++class AlignmentAudioFeaturesTests(unittest.TestCase):
++    def setUp(self):
++        self.model = make_model()
++        self.mel = torch.linspace(-1, 1, steps=32).reshape(4, 8)
++        with torch.no_grad():
++            # This explicit producer matches legacy alignment's encoder path.
++            # It does not establish parity with default SDPA decode features.
++            self.features = self.model.encoder(self.mel.unsqueeze(0), use_sdpa=False)[0]
++
++    def align(self, **kwargs):
++        return find_alignment(
++            self.model,
++            AlignmentTokenizer(),
++            text_tokens=[2, 3],
++            mel=self.mel,
++            num_frames=8,
++            medfilt_width=3,
++            **kwargs,
++        )
++
++    def test_default_encodes_with_legacy_sdpa_setting_and_model_hooks(self):
++        calls = []
++        hook = self.model.register_forward_hook(lambda *_: calls.append(True))
++        try:
++            with patch.object(
++                self.model.encoder, "forward", wraps=self.model.encoder.forward
++            ) as encoder:
++                actual = self.align()
++            self.assertEqual(len(actual), 2)
++            self.assertEqual(encoder.call_count, 1)
++            self.assertIs(encoder.call_args.kwargs["use_sdpa"], False)
++            self.assertEqual(calls, [True])
++        finally:
++            hook.remove()
++
++    def test_matching_producer_is_exact_and_borrowed_features_are_unchanged(self):
++        expected = self.align()
++        before = self.features.clone()
++        version = self.features._version
++        sdpa = MultiHeadAttention.use_sdpa
++        calls = []
++        hook = self.model.register_forward_hook(lambda *_: calls.append(True))
++        try:
++            with (
++                patch.object(
++                    self.model.encoder, "forward", side_effect=AssertionError("encode")
++                ),
++                patch.object(
++                    self.model.decoder, "forward", wraps=self.model.decoder.forward
++                ) as decoder,
++            ):
++                actual = self.align(audio_features=self.features)
++            self.assertEqual(actual, expected)
++            self.assertEqual(decoder.call_count, 1)
++            self.assertIs(decoder.call_args.kwargs["use_sdpa"], False)
++            self.assertEqual(calls, [])  # opt-in bypasses model/encoder forward hooks
++        finally:
++            hook.remove()
++        self.assertTrue(torch.equal(self.features, before))
++        self.assertEqual(self.features._version, version)
++        self.assertEqual(MultiHeadAttention.use_sdpa, sdpa)
++
++    def test_default_none_remains_identical(self):
++        self.assertEqual(self.align(), self.align(audio_features=None))
++
++    def test_malformed_features_fail_before_any_forward(self):
++        cases = [
++            ([], TypeError, "tensor"),
++            (torch.zeros(1, 4, 4), ValueError, "unbatched"),
++            (torch.zeros(3, 4), ValueError, "unbatched"),
++            (torch.zeros(4, 4, dtype=torch.int64), ValueError, "dtype"),
++            (torch.zeros(4, 4, dtype=torch.float64), ValueError, "dtype"),
++            (torch.zeros(4, 4, device="meta"), ValueError, "device"),
++        ]
++        with patch.object(
++            self.model.decoder, "forward", side_effect=AssertionError("decode")
++        ):
++            for features, error, message in cases:
++                with self.subTest(message=message, features=repr(features)):
++                    with self.assertRaisesRegex(error, message):
++                        self.align(audio_features=features)
++
++    def test_custom_model_is_rejected_only_on_feature_path(self):
++        self.model = make_model(LegacyWhisper)
++        self.assertEqual(len(self.align()), 2)
++        with self.assertRaisesRegex(ValueError, "built-in"):
++            self.align(audio_features=self.features)
++
++    def test_decoder_failure_leaves_features_hooks_and_sdpa_unchanged(self):
++        before = self.features.clone()
++        sdpa = MultiHeadAttention.use_sdpa
++        hooks = sum(len(module._forward_hooks) for module in self.model.modules())
++        with patch.object(
++            self.model.decoder, "forward", side_effect=RuntimeError("alignment failure")
++        ):
++            with self.assertRaisesRegex(RuntimeError, "alignment failure"):
++                self.align(audio_features=self.features)
++        self.assertTrue(torch.equal(self.features, before))
++        self.assertEqual(MultiHeadAttention.use_sdpa, sdpa)
++        self.assertEqual(
++            sum(len(module._forward_hooks) for module in self.model.modules()), hooks
++        )
++
++    def test_empty_text_borrows_nothing_and_performs_no_forward(self):
++        with (
++            patch.object(self.model.encoder, "forward", side_effect=AssertionError),
++            patch.object(self.model.decoder, "forward", side_effect=AssertionError),
++        ):
++            self.assertEqual(
++                find_alignment(
++                    self.model,
++                    AlignmentTokenizer(),
++                    [],
++                    self.mel,
++                    8,
++                    audio_features=self.features,
++                ),
++                [],
++            )
++
++
++if __name__ == "__main__":
++    unittest.main()
+diff --git a/whisper/timing.py b/whisper/timing.py
+index 0eed704..e517e20 100644
+--- a/whisper/timing.py
++++ b/whisper/timing.py
+@@ -2,7 +2,7 @@ import itertools
+ import subprocess
+ import warnings
+ from dataclasses import dataclass
+-from typing import TYPE_CHECKING, List
++from typing import TYPE_CHECKING, List, Optional
+ 
+ import numba
+ import numpy as np
+@@ -169,7 +169,30 @@ def find_alignment(
+     *,
+     medfilt_width: int = 7,
+     qk_scale: float = 1.0,
++    audio_features: Optional[torch.Tensor] = None,
+ ) -> List[WordTiming]:
++    """Align tokens, optionally borrowing one window's unbatched encoder output.
++
++    The experimental feature path does not encode mel or change shared SDPA
++    state. The caller must establish same-window/model provenance and keep the
++    features valid until completion. Features from the default decode encoder
++    are not guaranteed numerically equal to the legacy non-SDPA alignment
++    encoder. Omitting audio_features preserves that legacy path.
++    """
++    if audio_features is not None:
++        from .model import _uses_request_local_alignment
++
++        if not _uses_request_local_alignment(model):
++            raise ValueError("audio_features requires built-in request-local alignment")
++        if not isinstance(audio_features, torch.Tensor):
++            raise TypeError("audio_features must be a tensor")
++        if audio_features.shape != (model.dims.n_audio_ctx, model.dims.n_audio_state):
++            raise ValueError("audio_features must describe exactly one unbatched window")
++        if audio_features.device != model.device:
++            raise ValueError("audio_features must be on the model device")
++        if audio_features.dtype not in (torch.float16, torch.float32):
++            raise ValueError("audio_features must have float16 or float32 dtype")
++
+     if len(text_tokens) == 0:
+         return []
+ 
+@@ -190,12 +213,20 @@ def find_alignment(
+         # Native modules can return attention weights without shared hooks or flags.
+         QKs = []
+         with torch.no_grad():
+-            logits = model(
+-                mel.unsqueeze(0),
+-                tokens.unsqueeze(0),
+-                cross_attention_qks=QKs,
+-                use_sdpa=False,
+-            )[0]
++            if audio_features is None:
++                logits = model(
++                    mel.unsqueeze(0),
++                    tokens.unsqueeze(0),
++                    cross_attention_qks=QKs,
++                    use_sdpa=False,
++                )[0]
++            else:
++                logits = model.decoder(
++                    tokens.unsqueeze(0),
++                    audio_features.unsqueeze(0),
++                    cross_attention_qks=QKs,
++                    use_sdpa=False,
++                )[0]
+         QKs = [qk[0] for qk in QKs]
+     else:
+         # Preserve compatibility with custom modules that implement the old API.

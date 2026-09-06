@@ -181,6 +181,8 @@ class FakeCudaRuntime:
         self.fail_record = False
         self.fail_event_synchronize = False
         self.fail_event_creation = False
+        self.fail_device_synchronize = False
+        self.fail_stream_creation = False
         self.streams: list[object] = []
         self.cuda_events: list[FakeCudaEvent] = []
 
@@ -192,10 +194,14 @@ class FakeCudaRuntime:
 
     def synchronize(self, device: object | None = None) -> None:
         self.events.append(f"device:synchronize:{device}")
+        if self.fail_device_synchronize:
+            raise RuntimeError("device synchronize failed")
 
     def Stream(self, *, device: object | None = None) -> object:
         stream = object()
         self.events.append(f"stream:create:{device}")
+        if self.fail_stream_creation:
+            raise RuntimeError("stream creation failed")
         self.streams.append(stream)
         return stream
 
@@ -2831,6 +2837,185 @@ class NativeWhisperCudaAdapterTests(unittest.TestCase):
         self.assertEqual(worker.queue_depth, 0)
         self.assertEqual(budget.available, self.capacity)
 
+    def test_sequential_scopes_and_adapters_share_one_binding_lane(self) -> None:
+        events: list[str] = []
+        runtime = FakeCudaRuntime(events)
+        adapter, worker, budget, model = self.make_adapter()
+        peer = NativeWhisperAdapter(worker, model, probe, adapter.execution_profile)
+        runs = [FakeRun(complete_after=1), FakeRun(complete_after=1)]
+        harness = BackendHarness(list(runs), torch_module=FakeTorchModule(runtime))
+        scopes: list[native_whisper._CudaDecodeScope] = []
+        original_scope = native_whisper._CudaDecodeScope
+        original_synchronize = FakeCudaEvent.synchronize
+
+        class RecordingScope(original_scope):
+            def __init__(self, *args: object, **kwargs: object) -> None:
+                super().__init__(*args, **kwargs)
+                scopes.append(self)
+
+        def synchronize(event: FakeCudaEvent) -> None:
+            lane = cast(native_whisper._CudaLane, adapter._model_binding._cuda_lane)
+            self.assertIs(lane.owner, scopes[-1]._lease_token)
+            self.assertEqual(budget.lease_count, 1)
+            original_synchronize(event)
+
+        with (
+            patch.object(native_whisper, "_CudaDecodeScope", RecordingScope),
+            patch.object(FakeCudaEvent, "synchronize", new=synchronize),
+        ):
+            for index, target in enumerate((adapter, peer)):
+                self.decode(
+                    target,
+                    harness,
+                    FakeCudaMel(runtime, events),
+                    request=self.request(f"sequential-{index}"),
+                )
+                lane = cast(native_whisper._CudaLane, target._model_binding._cuda_lane)
+                self.assertIsNone(lane.owner)
+                self.assertEqual(budget.available, self.capacity)
+
+        self.assertIs(adapter._model_binding, peer._model_binding)
+        self.assertEqual(len(runtime.streams), 1)
+        self.assertEqual(events.count("device:synchronize:cuda:1"), 1)
+        self.assertEqual(len(runtime.cuda_events), 2)
+        self.assertTrue(
+            all(
+                event.recorded_stream is runtime.streams[0]
+                for event in runtime.cuda_events
+            )
+        )
+        self.assertEqual(len(scopes), 2)
+        self.assertIsNot(scopes[0], scopes[1])
+        self.assertIsNot(scopes[0]._lease_token, scopes[1]._lease_token)
+        self.assertIsNot(harness.generators[0], harness.generators[1])
+        self.assertTrue(all(run.cleanup_calls == 1 for run in runs))
+        self.assertTrue(all(scope._lane is None for scope in scopes))
+
+    def test_cuda_lane_rejects_another_borrower_and_changed_runtime(self) -> None:
+        events: list[str] = []
+        runtime = FakeCudaRuntime(events)
+        adapter, _, _, _ = self.make_adapter()
+        binding = adapter._model_binding
+        first = native_whisper._CudaDecodeScope(
+            binding, FakeTorchModule(runtime), "cuda:1"
+        )
+        second = native_whisper._CudaDecodeScope(
+            binding, FakeTorchModule(runtime), "cuda:1"
+        )
+        first.invoke(lambda: None)
+        lane = cast(native_whisper._CudaLane, binding._cuda_lane)
+        with self.assertRaisesRegex(NativeDecodeContractError, "already borrowed"):
+            second.invoke(lambda: self.fail("a second borrower submitted work"))
+        self.assertIs(lane.owner, first._lease_token)
+        self.assertEqual(len(runtime.streams), 1)
+        first.wait()
+        self.assertIsNone(lane.owner)
+
+        for changed_runtime, device in (
+            (FakeCudaRuntime([]), "cuda:1"),
+            (runtime, "cuda:0"),
+        ):
+            with self.subTest(device=device):
+                changed = native_whisper._CudaDecodeScope(
+                    binding, FakeTorchModule(changed_runtime), device
+                )
+                before = tuple(events)
+                with self.assertRaisesRegex(NativeDecodeContractError, "cannot change"):
+                    changed.invoke(lambda: self.fail("a changed lane submitted work"))
+                changed.wait()
+                self.assertEqual(tuple(events), before)
+                self.assertIsNone(lane.owner)
+
+        second.invoke(lambda: None)
+        self.assertIs(lane.owner, second._lease_token)
+        second.wait()
+        self.assertEqual(len(runtime.streams), 1)
+
+    def test_stale_cancellation_and_fence_cannot_touch_the_next_borrower(self) -> None:
+        events: list[str] = []
+        runtime = FakeCudaRuntime(events)
+        adapter, _, budget, _ = self.make_adapter()
+        harness = BackendHarness(
+            [FakeRun(complete_after=1), FakeRun(complete_after=1)],
+            torch_module=FakeTorchModule(runtime),
+        )
+        with patch.object(
+            native_whisper, "_load_native_components", return_value=harness.components()
+        ):
+            old = adapter.start_window(
+                session=Session("cuda-session"),
+                request=self.request("recycled-id"),
+                window_id="old-window",
+                mel=FakeCudaMel(runtime, events),
+                start_ms=0,
+                end_ms=30_000,
+            )
+            old_scope = cast(native_whisper._CudaDecodeScope, old._execution)
+            old.close()
+            current = adapter.start_window(
+                session=Session("cuda-session"),
+                request=self.request("recycled-id"),
+                window_id="new-window",
+                mel=FakeCudaMel(runtime, events),
+                start_ms=0,
+                end_ms=30_000,
+            )
+            current_scope = cast(native_whisper._CudaDecodeScope, current._execution)
+            lane = cast(native_whisper._CudaLane, adapter._model_binding._cuda_lane)
+            before = tuple(events)
+            self.assertFalse(old.cancel())
+            self.assertFalse(old.stop())
+            old_scope.request_stop()
+            old_scope.wait()
+            with self.assertRaisesRegex(NativeDecodeContractError, "closed execution"):
+                old_scope.invoke(lambda: self.fail("a stale scope submitted work"))
+            self.assertEqual(tuple(events), before)
+            self.assertFalse(current_scope._stop_requested)
+            self.assertIs(lane.owner, current_scope._lease_token)
+            self.assertTrue(current.step())
+            self.assertEqual(current.finish().version, 1)
+        self.assertEqual(len(runtime.streams), 1)
+        self.assertIsNone(lane.owner)
+        self.assertEqual(budget.available, self.capacity)
+
+    def test_distinct_model_bindings_do_not_share_cuda_lanes(self) -> None:
+        events: list[str] = []
+        runtime = FakeCudaRuntime(events)
+        adapters = (self.make_adapter()[0], self.make_adapter()[0])
+        harness = BackendHarness(
+            [FakeRun(complete_after=1), FakeRun(complete_after=1)],
+            torch_module=FakeTorchModule(runtime),
+        )
+        for adapter in adapters:
+            self.decode(adapter, harness, FakeCudaMel(runtime, events))
+        self.assertEqual(len(runtime.streams), 2)
+        self.assertIsNot(
+            adapters[0]._model_binding._cuda_lane, adapters[1]._model_binding._cuda_lane
+        )
+        self.assertEqual(events.count("device:synchronize:cuda:1"), 2)
+
+    def test_initialization_failure_does_not_publish_or_borrow_a_lane(self) -> None:
+        for failure in ("fail_device_synchronize", "fail_stream_creation"):
+            with self.subTest(failure=failure):
+                events: list[str] = []
+                runtime = FakeCudaRuntime(events)
+                setattr(runtime, failure, True)
+                adapter, worker, budget, _ = self.make_adapter()
+                harness = BackendHarness(
+                    [FakeRun(complete_after=1)], torch_module=FakeTorchModule(runtime)
+                )
+                with self.assertRaises(RuntimeError):
+                    self.decode(adapter, harness, FakeCudaMel(runtime, events))
+                self.assertIsNone(adapter._model_binding._cuda_lane)
+                self.assertEqual(runtime.streams, [])
+                self.assertEqual(runtime.cuda_events, [])
+                self.assertEqual(worker.queue_depth, 0)
+                self.assertEqual(budget.available, self.capacity)
+                setattr(runtime, failure, False)
+                self.decode(adapter, harness, FakeCudaMel(runtime, events))
+                self.assertEqual(len(runtime.streams), 1)
+                self.assertEqual(budget.available, self.capacity)
+
     def test_request_stop_never_calls_cuda(self) -> None:
         events: list[str] = []
         runtime = FakeCudaRuntime(events)
@@ -2841,8 +3026,10 @@ class NativeWhisperCudaAdapterTests(unittest.TestCase):
             "cuda:1",
         )
         scope.request_stop()
+        scope.wait()
         self.assertEqual(events, [])
         self.assertIsNone(scope._stream)
+        self.assertIsNone(adapter._model_binding._cuda_lane)
 
     def test_cuda_generator_must_use_the_profile_device(self) -> None:
         events: list[str] = []
@@ -2917,6 +3104,9 @@ class NativeWhisperCudaAdapterTests(unittest.TestCase):
                     TransactionStatus.QUARANTINED,
                 )
                 self.assertIs(scope._run, run)
+                lane = cast(native_whisper._CudaLane, adapter._model_binding._cuda_lane)
+                self.assertIs(lane.owner, scope._lease_token)
+                self.assertIs(lane.stream, runtime.streams[0])
                 self.assertEqual(session.snapshot().version, 0)
                 self.assertEqual(request.status, RequestStatus.RUNNING)
                 self.assertEqual(worker.queue_depth, 1)
@@ -2956,6 +3146,7 @@ class NativeWhisperCudaAdapterTests(unittest.TestCase):
                 self.assertIsNone(scope._run)
                 self.assertIsNone(scope._stream)
                 self.assertIsNone(scope._event)
+                self.assertIsNone(lane.owner)
                 self.assertEqual(request.status, RequestStatus.ABORTED)
                 self.assertEqual(session.snapshot().version, 0)
                 self.assertEqual(worker.queue_depth, 0)
@@ -2978,6 +3169,9 @@ class NativeWhisperCudaAdapterTests(unittest.TestCase):
                 self.assertEqual(state.version, 1)
                 self.assertEqual(state.windows[-1].result.text, f"reused-{failure}")
                 self.assertEqual(reuse_request.status, RequestStatus.COMMITTED)
+                self.assertEqual(len(runtime.streams), 1)
+                self.assertIs(adapter._model_binding._cuda_lane, lane)
+                self.assertIsNone(lane.owner)
                 self.assertEqual(worker.queue_depth, 0)
                 self.assertEqual(worker.quarantined_count, 0)
                 self.assertEqual(budget.lease_count, 0)

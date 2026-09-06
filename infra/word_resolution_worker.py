@@ -13,15 +13,31 @@ import json
 import time
 from dataclasses import asdict
 
-from tools.word_anchor_reconciliation import propose_terminal_end_reconciliation
+from tools.word_anchor_reconciliation import (
+    plan_bounded_resolution,
+    propose_terminal_end_reconciliation,
+)
 from whisper_runtime.adapters.word_policy import (
     compare_word_hypotheses,
     diagnose_word_anchor,
 )
 
+LEGACY_ROUTING_POLICY = "diagnostic-v1"
+BOUNDED_ROUTING_POLICY = "bounded-fallback-v2"
 
-def _evaluate(case, current, alternative, parameters, difference):
+
+def _evaluate(
+    case,
+    current,
+    alternative,
+    parameters,
+    difference,
+    *,
+    routing_policy=LEGACY_ROUTING_POLICY,
+):
     """Choose from observations first; human-reference metrics never route arms."""
+    if routing_policy not in (LEGACY_ROUTING_POLICY, BOUNDED_ROUTING_POLICY):
+        raise ValueError("unknown counterfactual routing policy")
     head, anchor = case["head_ms"], case["frozen_anchor"]
     matching = dict(
         committed_through_ms=head,
@@ -60,6 +76,17 @@ def _evaluate(case, current, alternative, parameters, difference):
         if diagnostic.status == "timing_mismatch" and shadow.status == "eligible"
         else "baseline"
     )
+    route = None
+    if routing_policy == BOUNDED_ROUTING_POLICY:
+        span = current.native.analyzed_span
+        alternative_span = alternative.native.analyzed_span
+        route = plan_bounded_resolution(
+            baseline_available=strict.publication is not None,
+            reconciliation_eligible=shadow.status == "eligible",
+            current_window=(span.start_ms, span.end_ms),
+            alternative_window=(alternative_span.start_ms, alternative_span.end_ms),
+        )
+        selected = route.arm
     routing_ns = time.perf_counter_ns() - routing_started
     arms = {}
     for name, suffix, available in (
@@ -77,6 +104,8 @@ def _evaluate(case, current, alternative, parameters, difference):
             "against_human_reference": difference(text, case["reference_text"]),
             "publication_authority": False,
         }
+    if selected == "unresolved":
+        arms["unresolved"] = dict(arms["baseline"])
     # Reproduction is evaluated only after the observation-based route is fixed.
     # Canonical JSON normalizes tuple/list tokens but preserves JSON scalar types.
     reproduced = (
@@ -103,8 +132,9 @@ def _evaluate(case, current, alternative, parameters, difference):
         "arms": arms,
         "routed": {
             "arm": selected,
-            "reason": diagnostic.status,
+            "reason": diagnostic.status if route is None else route.reason,
             "uses_reference": False,
+            **({} if route is None else {"policy": routing_policy}),
         },
         "outcome": {
             "strict_reason": strict.reason,

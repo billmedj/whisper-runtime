@@ -205,6 +205,18 @@ initial value.
 
 ## Next bounded changes
 
+The opt-in `bounded-fallback-v2` planner now addresses the first item below.
+It uses the strict result if available, then an eligible local proposal, then
+one different window within retained input. Identical windows and an exhausted
+alternative attempt return unresolved. The default `diagnostic-v1` route still
+reproduces the archived experiment exactly.
+
+An offline replay of speaker 2961 now selects the already recorded alternative:
+4 word edits instead of the incomplete baseline's 12. No additional inference
+was run. This is a correction on development evidence, not a new held-out result.
+The planner is in the experiment tools; live publication and PCM retention are
+unchanged.
+
 1. Evaluate one alternative window for unresolved timing failures when the local
    proposal is ineligible. Do not loosen publication or eviction rules. The new
    clean-speaker failure becomes development evidence; add unseen speakers for

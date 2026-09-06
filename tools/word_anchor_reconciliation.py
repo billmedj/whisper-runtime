@@ -22,6 +22,69 @@ from whisper_runtime.adapters.word_policy import NativeWordAlignment
 
 
 @dataclass(frozen=True, slots=True)
+class BoundedResolutionRoute:
+    """One counterfactual choice, with no execution or publication authority."""
+
+    arm: Literal["baseline", "shadow", "alternative", "unresolved"]
+    reason: str
+    candidate_window: tuple[int, int] | None = None
+
+
+def plan_bounded_resolution(
+    *,
+    baseline_available: bool,
+    reconciliation_eligible: bool,
+    current_window: tuple[int, int],
+    alternative_window: tuple[int, int],
+    alternative_attempted: bool = False,
+) -> BoundedResolutionRoute:
+    """Prefer existing evidence, then one different window, without a retry loop.
+
+    Window bounds identify intervals within the same retained PCM and fixed
+    native configuration. The caller must preserve that provenance. A different
+    interval is a different observation, not a guarantee of correct recognition.
+    Call before decoding the alternative; record the attempt even if it fails.
+    """
+    for name, value in (
+        ("baseline_available", baseline_available),
+        ("reconciliation_eligible", reconciliation_eligible),
+        ("alternative_attempted", alternative_attempted),
+    ):
+        if not isinstance(value, bool):
+            raise TypeError(f"{name} must be a boolean")
+    for window in (current_window, alternative_window):
+        if (
+            not isinstance(window, tuple)
+            or len(window) != 2
+            or any(
+                isinstance(value, bool) or not isinstance(value, int)
+                for value in window
+            )
+        ):
+            raise TypeError("windows must be pairs of integer milliseconds")
+        if not 0 <= window[0] < window[1]:
+            raise ValueError("window bounds must be nonnegative and ordered")
+    if (
+        not current_window[0]
+        <= alternative_window[0]
+        < alternative_window[1]
+        <= current_window[1]
+    ):
+        raise ValueError("alternative must stay inside the retained current window")
+    if baseline_available:
+        return BoundedResolutionRoute("baseline", "strict_publication_available")
+    if reconciliation_eligible:
+        return BoundedResolutionRoute("shadow", "local_reconciliation_eligible")
+    if alternative_window == current_window:
+        return BoundedResolutionRoute("unresolved", "identical_window")
+    if alternative_attempted:
+        return BoundedResolutionRoute("unresolved", "alternative_attempt_exhausted")
+    return BoundedResolutionRoute(
+        "alternative", "distinct_window_fallback", alternative_window
+    )
+
+
+@dataclass(frozen=True, slots=True)
 class TerminalEndReconciliationProposal:
     """Diagnostic anchor indices, never a selected publication or new watermark."""
 

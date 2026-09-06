@@ -8,13 +8,53 @@ from pathlib import Path
 from unittest.mock import patch
 
 from infra import modal_word_resolution as experiment
-from infra.word_resolution_worker import _bootstrap, _evaluate
+from infra.word_resolution_worker import BOUNDED_ROUTING_POLICY, _bootstrap, _evaluate
 from tools.analyze_word_resolution import _alignment
 from whisper_runtime import AudioSpan
 from whisper_runtime.adapters import NativeTimestampSegment
 
 
 class WordResolutionTests(unittest.TestCase):
+    def test_saved_clean_case_uses_one_distinct_fallback_under_new_policy(self):
+        path = (
+            experiment.ROOT
+            / "evidence/modal-t4-tiny-en-word-resolution-2026-09-06.json"
+        )
+        record = json.loads(path.read_bytes())
+        saved, item = record["cells"][2], record["inputs"][2]
+        self.assertEqual(item["split"], "heldout")
+        raw = saved["raw_alignments"]
+        case = _bootstrap(
+            dict(item), _alignment(raw["bootstrap"]), experiment.PARAMETERS
+        )
+        original = json.dumps(raw, sort_keys=True)
+        result = _evaluate(
+            case,
+            _alignment(raw["current"]),
+            _alignment(raw["alternative"]),
+            experiment.PARAMETERS,
+            experiment._corpus().b._word_difference,
+            routing_policy=BOUNDED_ROUTING_POLICY,
+        )
+        self.assertEqual(saved["routed"]["arm"], "baseline")
+        self.assertEqual(result["routed"]["arm"], "alternative")
+        self.assertEqual(result["routed"]["reason"], "distinct_window_fallback")
+        self.assertFalse(result["arms"]["baseline"]["available"])
+        self.assertNotEqual(result["shadow_proposal"]["status"], "eligible")
+        self.assertFalse(result["routed"]["uses_reference"])
+        self.assertFalse(result["outcome"]["full_stream_completion"])
+        self.assertEqual(
+            result["arms"]["baseline"]["against_human_reference"]["word_edit_distance"],
+            12,
+        )
+        self.assertEqual(
+            result["arms"]["alternative"]["against_human_reference"][
+                "word_edit_distance"
+            ],
+            4,
+        )
+        self.assertEqual(json.dumps(raw, sort_keys=True), original)
+
     def test_recorded_t4_choices_and_scores_replay_without_audio_or_model(self):
         path = (
             experiment.ROOT
