@@ -27,6 +27,7 @@ OLD_SHA = "6415da1704b84663780ddd1eda8e18b6daffaae72c5c2501207474ed81078b4f"
 PACED_ARCHIVE = "evidence/modal-t4-tiny-en-paced-features-2026-09-06.json"
 PACED_SHA = "ada0b2584f60edbb38bce9086d897a244694936d2704ee70c452ec1bd564a4b2"
 MAX_NATIVE_WINDOWS = 7
+EXPERIMENT_ID = "modal-resolution-handoff-v1"
 BACKEND_ARTIFACTS = {
     "whisper/tokenizer.py": "3b48e361a7e95b4ec0356ca6d72bba635778aa10269153136ee7bc34cae30b85",
     "whisper/assets/gpt2.tiktoken": "306cd27f03c1a714eca7108e03d66b7dc042abe8c258b44c199a7ed9838dd930",
@@ -642,6 +643,17 @@ def validate_record(record, expected):
         raise ValueError("native window bound differs")
     if record["status"] == "completed" and record["stop"] is not None:
         raise ValueError("completed record reports an early stop")
+
+
+def initial_alignments(case):
+    """Return recorded inputs separately from observations made by this worker."""
+    if case["archived_current"] is None:
+        return {}
+    return dict(current=case["archived_current"], candidate=case["archived_candidate"])
+
+
+def summary_is_comparable(summary):
+    return summary["control_native_reproduced"]
 
 
 def run_worker(expected_snapshot):

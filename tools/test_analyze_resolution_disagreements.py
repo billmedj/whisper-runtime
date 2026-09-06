@@ -3,7 +3,7 @@
 import copy
 import json
 import unittest
-from dataclasses import replace
+from dataclasses import asdict, replace
 from pathlib import Path
 
 from tools import analyze_resolution_disagreements as replay
@@ -127,6 +127,148 @@ class ResolutionDisagreementTests(unittest.TestCase):
             self.assertEqual(result["lexical_unit_count"], 0)
             self.assertIsNone(result["last_lexical_estimate_end_ms"])
             self.assertIsNone(result["trailing_nonlexical_estimate_ms"])
+
+
+class GuardCorrespondenceTests(unittest.TestCase):
+    def setUp(self):
+        self.anchor = (
+            NativeTimestampSegment(AudioSpan(1000, 1500), " old", (1,)),
+            NativeTimestampSegment(AudioSpan(1500, 2000), " words", (2,)),
+        )
+        self.suffix = (NativeTimestampSegment(AudioSpan(2100, 2400), " Next", (3,)),)
+        self.frozen = dict(
+            retained_ms=0,
+            head_ms=2000,
+            end_ms=6000,
+            anchor=[asdict(w) for w in self.anchor],
+        )
+
+    def raw(self, words, start):
+        return asdict(
+            NativeWordAlignment(
+                NativeWindowResult(
+                    window_id=f"synthetic:{start}",
+                    text="".join(w.text for w in words).strip(),
+                    start_ms=start,
+                    end_ms=6000,
+                ),
+                words,
+            )
+        )
+
+    def assess(self, words=None, candidate=None):
+        return replay.summarize_guard_correspondence(
+            self.frozen,
+            self.raw(self.anchor + self.suffix if words is None else words, 500),
+            self.raw(self.suffix if candidate is None else candidate, 2000),
+        )
+
+    def test_strict_complete_agreement_never_authorizes_publication(self):
+        result = self.assess()
+        self.assertEqual(result["status"], "structurally_eligible")
+        self.assertFalse(result["publication_authorized"])
+        # Both observations could omit the same intervening spoken word.
+        # There is no acoustic witness in these synthetic alignments.
+        self.assertNotIn("acoustic_coverage", result)
+
+    def test_guard_and_head_intervals_are_fixed(self):
+        observed, candidate = (
+            self.raw(self.anchor + self.suffix, 500),
+            self.raw(self.suffix, 2000),
+        )
+        for wrong_observed, wrong_candidate in (
+            (self.raw(self.anchor + self.suffix, 520), candidate),
+            (observed, self.raw(self.suffix, 2020)),
+        ):
+            with self.assertRaisesRegex(ValueError, "interval differs"):
+                replay.summarize_guard_correspondence(
+                    self.frozen, wrong_observed, wrong_candidate
+                )
+
+    def test_casefold_and_token_mismatch_still_reject_the_complete_suffix(self):
+        for changed in (
+            replace(self.suffix[0], text=" next"),
+            replace(self.suffix[0], tokens=(9,)),
+        ):
+            with self.subTest(changed=changed):
+                result = self.assess(candidate=(changed,))
+                self.assertEqual(result["reason"], "complete_suffix_disagrees")
+                self.assertFalse(result["publication_authorized"])
+
+    def test_repeated_raw_anchor_is_not_resolved_by_timing(self):
+        repeated = tuple(
+            replace(w, span=AudioSpan(w.span.start_ms + 2000, w.span.end_ms + 2000))
+            for w in self.anchor
+        )
+        result = self.assess(self.anchor + self.suffix + repeated)
+        self.assertEqual(result["reason"], "overlap_anchor_ambiguous")
+        self.assertIsNone(result["diagnostics"]["complete_suffix_comparison"])
+
+    def test_punctuation_and_empty_suffixes_cannot_pass_vacuously(self):
+        for suffix in ((), (replace(self.suffix[0], text="."),)):
+            with self.subTest(suffix=suffix):
+                result = self.assess(self.anchor + suffix, suffix)
+                self.assertEqual(
+                    result["reason"], "overlap_has_no_lexical_continuation"
+                )
+
+    def test_anchor_timing_and_both_boundary_crossings_stay_separate(self):
+        shifted = tuple(
+            replace(w, span=AudioSpan(w.span.start_ms + 201, w.span.end_ms + 201))
+            for w in self.anchor
+        )
+        late_suffix = (replace(self.suffix[0], span=AudioSpan(2400, 2600)),)
+        cases = (
+            (shifted + late_suffix, late_suffix, "overlap_anchor_timing_mismatch"),
+            (
+                self.anchor[:-1]
+                + (
+                    replace(self.anchor[-1], span=AudioSpan(1500, 1950)),
+                    replace(self.suffix[0], span=AudioSpan(1950, 2400)),
+                ),
+                self.suffix,
+                "overlap_continuation_crosses_boundary",
+            ),
+            (
+                self.anchor[:-1]
+                + (replace(self.anchor[-1], span=AudioSpan(1500, 2050)),)
+                + self.suffix,
+                (replace(self.suffix[0], span=AudioSpan(2000, 2400)),),
+                "head_continuation_crosses_observed_anchor",
+            ),
+        )
+        for observed, candidate, reason in cases:
+            with self.subTest(reason=reason):
+                self.assertEqual(self.assess(observed, candidate)["reason"], reason)
+
+    def test_suffix_timing_has_the_same_200_ms_limit(self):
+        for offset, reason in (
+            (200, "strict_overlap_and_suffix_agree"),
+            (201, "suffix_timing_mismatch"),
+        ):
+            candidate = (
+                replace(self.suffix[0], span=AudioSpan(2100 + offset, 2400 + offset)),
+            )
+            with self.subTest(offset=offset):
+                self.assertEqual(self.assess(candidate=candidate)["reason"], reason)
+
+    def test_frozen_bounds_and_anchor_cannot_be_rewritten(self):
+        for key, value in (
+            ("head_ms", True),
+            ("retained_ms", -1),
+            ("head_ms", 2001),
+            ("anchor", []),
+        ):
+            changed = {**self.frozen, key: value}
+            with (
+                self.subTest(key=key, value=value),
+                self.assertRaises((ValueError, TypeError)),
+            ):
+                replay.summarize_guard_correspondence(
+                    changed,
+                    self.raw(self.anchor + self.suffix, 500),
+                    self.raw(self.suffix, 2000),
+                )
 
 
 if __name__ == "__main__":

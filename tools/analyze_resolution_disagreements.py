@@ -122,6 +122,86 @@ def diagnose_cell(frozen, cell):
     )
 
 
+def summarize_guard_correspondence(frozen, observed_raw, candidate_raw):
+    """Assess the fixed earlier-start witness under unchanged output criteria.
+
+    This is not the old onset-cut assessment with an altered input record. It
+    requires the separately planned guarded span. PCM and effective execution
+    identities must be checked by the producer before interpreting the result.
+    Even structural agreement does not establish acoustic coverage or permit
+    publication. No reference transcript is an input.
+    """
+    retained, head, end = (frozen[k] for k in ("retained_ms", "head_ms", "end_ms"))
+    if any(type(value) is not int for value in (retained, head, end)):
+        raise TypeError("frozen bounds must be integer milliseconds")
+    if not 0 <= retained < head < end or end - retained > 30000:
+        raise ValueError("invalid retained interval")
+    anchor = tuple(
+        NativeTimestampSegment(AudioSpan(**w["span"]), w["text"], tuple(w["tokens"]))
+        for w in frozen["anchor"]
+    )
+    diagnose_word_sequence(anchor, anchor)  # Validate raw units and ordered estimates.
+
+    def lexical(word):
+        return any(c.isalnum() for c in word.text)
+
+    if (
+        not 2 <= len(anchor) <= 4
+        or sum(lexical(w) for w in anchor) < 2
+        or not lexical(anchor[0])
+        or not lexical(anchor[-1])
+        or anchor[0].span.start_ms < retained
+        or anchor[-1].span.end_ms != head
+    ):
+        raise ValueError("invalid frozen lexical anchor")
+    observed, candidate = _alignment(observed_raw), _alignment(candidate_raw)
+    start = max(retained, anchor[0].span.start_ms // 20 * 20 - GUARD_MS)
+    if observed.native.analyzed_span != AudioSpan(start, end):
+        raise ValueError("observed interval differs from the fixed context guard")
+    if candidate.native.analyzed_span != AudioSpan(head, end):
+        raise ValueError("candidate interval differs from the frozen head and EOF")
+    diagnostic = _correspondence(anchor, observed, candidate, head)
+    occurrences = diagnostic["exact_anchor_occurrences"]
+    reason = "strict_overlap_and_suffix_agree"
+    if not occurrences:
+        reason = "overlap_anchor_absent"
+    elif len(occurrences) != 1:
+        reason = "overlap_anchor_ambiguous"
+    else:
+        match, suffix = (
+            diagnostic["anchor_comparison"],
+            diagnostic["complete_suffix_comparison"],
+        )
+        boundaries = diagnostic["boundary_checks"]
+        suffix_words = observed.words[occurrences[0] + len(anchor) :]
+        if max(match["max_start_delta_ms"], match["max_end_delta_ms"]) > 200:
+            reason = "overlap_anchor_timing_mismatch"
+        elif not any(lexical(w) for w in suffix_words):
+            reason = "overlap_has_no_lexical_continuation"
+        elif boundaries["observed_suffix_starts_before_boundary"]:
+            reason = "overlap_continuation_crosses_boundary"
+        elif boundaries["head_candidate_starts_before_boundary"]:
+            reason = "head_continuation_crosses_observed_anchor"
+        elif (
+            suffix["text_relation"] != "exact_units" or not suffix["unit_tokens_equal"]
+        ):
+            reason = "complete_suffix_disagrees"
+        elif max(suffix["max_start_delta_ms"], suffix["max_end_delta_ms"]) > 200:
+            reason = "suffix_timing_mismatch"
+    return dict(
+        status="structurally_eligible"
+        if reason == "strict_overlap_and_suffix_agree"
+        else "rejected",
+        reason=reason,
+        diagnostics=diagnostic,
+        estimated_lexical_extents={
+            "guard": _lexical_extent(observed, head),
+            "candidate": _lexical_extent(candidate, head),
+        },
+        publication_authorized=False,
+    )
+
+
 def analyze_bytes(payload):
     digest = hashlib.sha256(payload).hexdigest()
     if digest != ARCHIVE_SHA:

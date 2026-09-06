@@ -1,4 +1,4 @@
-"""One cached-model, seven-window diagnostic. No stream publication authority."""
+"""One cached-model diagnostic with a producer-defined native-window bound."""
 
 from __future__ import annotations
 
@@ -8,8 +8,8 @@ import time
 from dataclasses import asdict
 
 
-def run_worker(expected_snapshot):
-    p = importlib.import_module("infra.modal_resolution_handoff")
+def run_worker(expected_snapshot, *, producer_module="infra.modal_resolution_handoff"):
+    p = importlib.import_module(producer_module)
     shared, features, paced = p.shared, p.features, p.paced
     corpus = p._corpus()
     b, c = corpus.b, corpus.c
@@ -134,15 +134,13 @@ def run_worker(expected_snapshot):
             if not cell["comparability"]["comparable"]:
                 cell["status"] = "blocked"
                 continue
-            if case["archived_current"] is not None:
-                cell["raw_alignments"].update(
-                    current=case["archived_current"],
-                    candidate=case["archived_candidate"],
-                )
+            cell["raw_alignments"].update(p.initial_alignments(case))
             try:
                 for window in case["windows"]:
-                    if adapter.count >= 7 or not available():
-                        raise RuntimeError("seven-window bound or capacity unavailable")
+                    if adapter.count >= p.MAX_NATIVE_WINDOWS or not available():
+                        raise RuntimeError(
+                            "native-window bound or capacity unavailable"
+                        )
                     if (time.perf_counter_ns() - started_all) / 1e9 >= 150:
                         raise TimeoutError(
                             "diagnostic reserve reached before native admission"
@@ -240,7 +238,7 @@ def run_worker(expected_snapshot):
                     cell["summary"] = p.summarize_cell(case, cell["raw_alignments"])
                     cell["status"] = (
                         "evaluated"
-                        if cell["summary"]["control_native_reproduced"]
+                        if p.summary_is_comparable(cell["summary"])
                         else "blocked"
                     )
                 except Exception as error:
@@ -257,8 +255,8 @@ def run_worker(expected_snapshot):
         hook.remove()
     final = q._model_fingerprint(model) if available() else None
     complete = (
-        len(cells) == 5
-        and adapter.count == 7
+        len(cells) == len(cases)
+        and adapter.count == p.MAX_NATIVE_WINDOWS
         and available()
         and final == initial
         and all(cell["status"] == "evaluated" for cell in cells)
@@ -269,7 +267,7 @@ def run_worker(expected_snapshot):
         raise RuntimeError("worker call identity unavailable")
     return dict(
         schema_version="1-diagnostic",
-        experiment_id="modal-resolution-handoff-v1",
+        experiment_id=p.EXPERIMENT_ID,
         status="completed" if complete else "failed",
         qualified=False,
         claim_boundary=p.CLAIMS,
