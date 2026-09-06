@@ -2,12 +2,26 @@
 
 from __future__ import annotations
 
+import hashlib
+import json
 import unittest
 from dataclasses import FrozenInstanceError, asdict, replace
+from pathlib import Path
 from typing import Any
 
-from tools.word_anchor_reconciliation import propose_terminal_end_reconciliation
+from tools.word_anchor_reconciliation import (
+    assess_resolution_handoff,
+    propose_terminal_end_reconciliation,
+)
 from whisper_runtime import AudioSpan
+from whisper_runtime.adapters.audio_evidence import (
+    AudioEvidenceDecision,
+    AudioObservation,
+)
+from whisper_runtime.adapters.continuous_stream import (
+    ContinuousDecodeTrace,
+    ContinuousResolutionObservation,
+)
 from whisper_runtime.adapters.native_result import (
     NativeDecodeMetadata,
     NativeTimestampSegment,
@@ -16,6 +30,7 @@ from whisper_runtime.adapters.native_result import (
 from whisper_runtime.adapters.word_policy import (
     NativeWordAlignment,
     compare_word_hypotheses,
+    diagnose_word_anchor,
 )
 
 
@@ -330,6 +345,328 @@ class TerminalEndReconciliationTests(unittest.TestCase):
             with self.subTest(anchor=anchor), self.assertRaises(ValueError):
                 self.propose(anchor=anchor)
         self.assertEqual(asdict(self.current), before)
+
+
+def _probe(current, candidate, anchor, head, *, version=2, pcm=None):
+    span = current.native.analyzed_span
+    source = ContinuousDecodeTrace(
+        1,
+        span.start_ms * 16,
+        span.end_ms * 16,
+        head * 16,
+        span.start_ms * 16,
+        True,
+        "anchor_missing",
+        None,
+        current.native,
+        "unresolved",
+        word_alignment=current,
+        audio_evidence=None
+        if pcm is None
+        else AudioEvidenceDecision(
+            AudioObservation.from_pcm(pcm), "uncertain", "missing_speech_score"
+        ),
+        anchor_diagnostic=diagnose_word_anchor(
+            current, committed_through_ms=head, anchor=anchor
+        ),
+    )
+    return ContinuousResolutionObservation(
+        source,
+        anchor,
+        version,
+        head * 16,
+        span.end_ms * 16,
+        "observed",
+        "no_publication_authority",
+        None
+        if pcm is None
+        else hashlib.sha256(pcm[(head - span.start_ms) * 32 :]).hexdigest(),
+        candidate,
+    )
+
+
+class ResolutionHandoffTests(unittest.TestCase):
+    def setUp(self):
+        self.anchor = (_word(1, 200, 600), _word(2, 600, 1000))
+        self.suffix = (_word(3, 1000, 1600), _word(4, 1600, 2200))
+        self.pcm = bytes(range(256)) * 625  # Exactly five seconds of s16le PCM.
+        self.probe = _probe(
+            _aligned((_word(99, 0, 1000),), end=5000),
+            _aligned(self.suffix, start=1000, end=5000),
+            self.anchor,
+            1000,
+            pcm=self.pcm,
+        )
+        self.overlap = replace(
+            self.probe,
+            analysis_start_sample=200 * 16,
+            pcm_sha256=hashlib.sha256(self.pcm[200 * 32 :]).hexdigest(),
+            candidate=_aligned(self.anchor + self.suffix, start=200, end=5000),
+        )
+
+    def assess(self, probe=None, **changes):
+        arguments = dict(
+            current_session_version=2,
+            committed_through_sample=1000 * 16,
+            retained_from_sample=0,
+            retained_pcm=self.pcm,
+        )
+        arguments.update(changes)
+        return assess_resolution_handoff(
+            self.probe if probe is None else probe, **arguments
+        )
+
+    def reject(self, reason, **changes):
+        result = self.assess(**changes)
+        self.assertEqual((result.status, result.reason), ("rejected", reason))
+        self.assertFalse(result.publication_authorized)
+        self.assertIsNone(result.overlap_anchor_start)
+        self.assertIsNone(result.overlap_anchor_end)
+
+    def test_head_only_needs_one_predetermined_overlap_without_execution_authority(
+        self,
+    ):
+        before = asdict(self.probe)
+        result = self.assess()
+        self.assertEqual(result.status, "needs_overlap")
+        self.assertEqual(result.candidate_window, (200, 5000))
+        self.assertIn("anchor_bearing_overlap_observation", result.missing_evidence)
+        self.assertFalse(result.publication_authorized)
+        self.assertEqual(result.original_reason, "anchor_missing")
+        self.assertIs(
+            result.original_anchor_diagnostic, self.probe.source.anchor_diagnostic
+        )
+        self.assertEqual(asdict(self.probe), before)
+        self.reject("overlap_attempt_exhausted", overlap_attempted=True)
+
+    def test_matching_overlap_is_structural_only_and_never_mutates_words(self):
+        before = asdict(self.overlap)
+        result = self.assess(overlap=self.overlap)
+        self.assertEqual(result.status, "structurally_eligible")
+        self.assertEqual(
+            (result.overlap_anchor_start, result.overlap_anchor_end), (0, 2)
+        )
+        self.assertEqual(
+            result.missing_evidence,
+            ("acoustic_boundary_coverage", "model_tokenizer_options_provenance"),
+        )
+        self.assertFalse(result.publication_authorized)
+        self.assertFalse(hasattr(result, "publication"))
+        self.assertEqual(asdict(self.overlap), before)
+        with self.assertRaises(FrozenInstanceError):
+            result.publication_authorized = True
+
+    def test_missing_and_mismatched_pcm_cannot_certify_correspondence(self):
+        self.assertIn(
+            "retained_pcm_correspondence",
+            self.assess(retained_pcm=None).missing_evidence,
+        )
+        self.reject(
+            "retained_pcm_correspondence", retained_pcm=None, overlap=self.overlap
+        )
+        self.reject("head_probe_pcm_mismatch", retained_pcm=self.pcm[:-2])
+        self.reject(
+            "head_probe_pcm_mismatch", probe=replace(self.probe, pcm_sha256="0" * 64)
+        )
+        self.reject(
+            "overlap_pcm_mismatch", overlap=replace(self.overlap, pcm_sha256="0" * 64)
+        )
+
+    def test_stale_versions_spans_and_prefixes_are_not_reused(self):
+        self.reject("stale_session_version", current_session_version=3)
+        self.reject("stale_frozen_boundary", committed_through_sample=1001 * 16)
+        self.reject("stale_frozen_boundary", retained_from_sample=16)
+        self.reject(
+            "overlap_stale_session_version",
+            overlap=replace(self.overlap, session_version=3),
+        )
+        self.reject(
+            "overlap_span_mismatch",
+            overlap=replace(self.overlap, analysis_end_sample=4999 * 16),
+        )
+        self.reject(
+            "head_probe_span_mismatch",
+            probe=replace(self.probe, analysis_start_sample=999 * 16),
+        )
+        self.reject(
+            "overlap_frozen_state_mismatch",
+            overlap=replace(self.overlap, anchor=self.anchor[-1:]),
+        )
+        self.reject(
+            "head_probe_not_observed", probe=replace(self.probe, status="failed")
+        )
+        self.reject(
+            "overlap_not_observed", overlap=replace(self.overlap, status="running")
+        )
+        self.reject(
+            "overlap_span_mismatch",
+            overlap=replace(self.overlap, analysis_start_sample=3200.0),
+        )
+
+    def test_original_source_pcm_is_verified_or_explicitly_unproven(self):
+        # This byte precedes BOTH candidate windows but belongs to the refusal.
+        self.reject(
+            "original_source_pcm_mismatch",
+            retained_pcm=b"x" + self.pcm[1:],
+            overlap=self.overlap,
+        )
+        source = replace(self.probe.source, audio_evidence=None)
+        result = self.assess(
+            replace(self.probe, source=source),
+            overlap=replace(self.overlap, source=source),
+        )
+        self.assertEqual(result.status, "structurally_eligible")
+        self.assertIn("original_source_pcm_correspondence", result.missing_evidence)
+        self.assertFalse(result.publication_authorized)
+
+    def test_repeated_anchor_is_rejected_before_choosing_a_timed_occurrence(self):
+        repeated = tuple(
+            replace(
+                word, span=AudioSpan(word.span.start_ms + 3000, word.span.end_ms + 3000)
+            )
+            for word in self.anchor
+        )
+        changed = replace(
+            self.overlap,
+            candidate=_aligned(
+                self.anchor + self.suffix + repeated, start=200, end=5000
+            ),
+        )
+        self.reject("overlap_anchor_ambiguous", overlap=changed)
+        relocated = replace(
+            self.overlap, candidate=_aligned(repeated, start=200, end=5000)
+        )
+        self.reject("overlap_anchor_timing_mismatch", overlap=relocated)
+
+    def test_omitted_boundary_word_is_detected_if_the_overlap_observes_it(self):
+        suffix = (
+            _word(9, 1000, 1200),
+            replace(self.suffix[0], span=AudioSpan(1200, 1600)),
+        ) + self.suffix[1:]
+        changed = replace(
+            self.overlap, candidate=_aligned(self.anchor + suffix, start=200, end=5000)
+        )
+        self.reject("complete_suffix_disagrees", overlap=changed)
+
+    def test_common_omission_can_still_evade_structural_checks(self):
+        # A spoken word in [1000,1200] omitted by BOTH observations cannot be
+        # inferred from their matching arrays. A gap is not acoustic silence.
+        suffix = (replace(self.suffix[0], span=AudioSpan(1200, 1600)),) + self.suffix[
+            1:
+        ]
+        probe = replace(self.probe, candidate=_aligned(suffix, start=1000, end=5000))
+        overlap = replace(
+            self.overlap, candidate=_aligned(self.anchor + suffix, start=200, end=5000)
+        )
+        result = self.assess(probe, overlap=overlap)
+        self.assertEqual(result.status, "structurally_eligible")
+        self.assertIn("acoustic_boundary_coverage", result.missing_evidence)
+        self.assertFalse(result.publication_authorized)
+
+    def test_full_suffix_comparison_does_not_drop_punctuation_tokens_or_repetitions(
+        self,
+    ):
+        for suffix in (
+            (replace(self.suffix[0], tokens=(99,)),) + self.suffix[1:],
+            (replace(self.suffix[0], text=" Word-3"),) + self.suffix[1:],
+            self.suffix + (_word(13, 2300, 2400, "."),),
+            self.suffix + (_word(4, 2300, 2400),),
+        ):
+            with self.subTest(suffix=suffix):
+                changed = replace(
+                    self.overlap,
+                    candidate=_aligned(self.anchor + suffix, start=200, end=5000),
+                )
+                self.reject("complete_suffix_disagrees", overlap=changed)
+
+    def test_timing_rules_do_not_stack_extensions_or_allow_boundary_crossing(self):
+        changed = replace(
+            self.overlap,
+            candidate=_aligned(
+                (replace(self.anchor[0], span=AudioSpan(200, 399)),)
+                + self.anchor[1:]
+                + self.suffix,
+                start=200,
+                end=5000,
+            ),
+        )
+        self.reject("overlap_anchor_timing_mismatch", overlap=changed)
+        suffix = (replace(self.suffix[0], span=AudioSpan(1201, 1600)),) + self.suffix[
+            1:
+        ]
+        changed = replace(
+            self.overlap, candidate=_aligned(self.anchor + suffix, start=200, end=5000)
+        )
+        self.reject("suffix_timing_mismatch", overlap=changed)
+        anchor = self.anchor[:-1] + (
+            replace(self.anchor[-1], span=AudioSpan(600, 1100)),
+        )
+        suffix = (replace(self.suffix[0], span=AudioSpan(1100, 1600)),) + self.suffix[
+            1:
+        ]
+        changed = replace(
+            self.overlap, candidate=_aligned(anchor + suffix, start=200, end=5000)
+        )
+        self.reject("head_continuation_crosses_observed_anchor", overlap=changed)
+
+    def test_malformed_arguments_are_not_coerced(self):
+        for name in (
+            "current_session_version",
+            "committed_through_sample",
+            "retained_from_sample",
+            "timestamp_tolerance_ms",
+        ):
+            for value in (True, 1.0, "2", None):
+                with self.subTest(name=name, value=value), self.assertRaises(TypeError):
+                    self.assess(**{name: value})
+        with self.assertRaises(TypeError):
+            self.assess(retained_pcm=bytearray(self.pcm))
+        with self.assertRaises(ValueError):
+            self.assess(retained_pcm=b"x")
+
+    def test_archived_head_only_candidates_all_lack_anchor_bearing_observations(self):
+        from tools.analyze_word_resolution import _alignment
+
+        path = (
+            Path(__file__).resolve().parents[1]
+            / "evidence/modal-t4-tiny-en-word-resolution-2026-09-06.json"
+        )
+        record = json.loads(path.read_text(encoding="utf-8"))
+        expected = ((20720, 33660), (32400, 43660), (1120, 8220), (1100, 7740))
+        self.assertEqual(len(record["cells"]), len(expected))
+        for cell, window in zip(record["cells"], expected):
+            with self.subTest(cell=cell["id"]):
+                frozen = cell["frozen_state"]
+                anchor = tuple(
+                    NativeTimestampSegment(
+                        AudioSpan(**word["span"]), word["text"], tuple(word["tokens"])
+                    )
+                    for word in frozen["anchor"]
+                )
+                probe = _probe(
+                    _alignment(cell["raw_alignments"]["current"]),
+                    _alignment(cell["raw_alignments"]["alternative"]),
+                    anchor,
+                    frozen["head_ms"],
+                )
+                # Version 2 here is a local replay tag, NOT an invented archived
+                # live-session version. Missing PCM/provenance stays explicit.
+                result = self.assess(
+                    probe,
+                    committed_through_sample=frozen["head_ms"] * 16,
+                    retained_from_sample=frozen["retained_ms"] * 16,
+                    retained_pcm=None,
+                )
+                self.assertEqual(result.status, "needs_overlap")
+                self.assertEqual(result.candidate_window, window)
+                self.assertEqual(
+                    result.original_reason, cell["outcome"]["strict_reason"]
+                )
+                self.assertEqual(
+                    result.original_anchor_diagnostic.status,
+                    cell["current_diagnostic"]["status"],
+                )
+                self.assertFalse(result.publication_authorized)
 
 
 if __name__ == "__main__":
