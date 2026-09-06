@@ -1,16 +1,24 @@
 """One connected EOF observation is not publication or acoustic coverage proof."""
 
 import hashlib
+import json
 import unittest
-from dataclasses import FrozenInstanceError, replace
-from unittest.mock import patch
+from dataclasses import FrozenInstanceError, asdict, replace
+from unittest.mock import Mock, patch
 
 import test_continuous_word_context as context_fixtures
 from test_continuous_endpoint_words import replace_words, word_result
 from test_continuous_stream import pcm_ms
 
 from whisper_runtime import RequestCancelledError, TransactionRetainedError
-from whisper_runtime.adapters import NativeStreamError, StreamEventKind
+from whisper_runtime.adapters import (
+    ContinuousAnalysisIdentity,
+    ContinuousResolutionObservation,
+    NativeExecutionProfile,
+    NativeStreamError,
+    NativeWhisperAdapter,
+    StreamEventKind,
+)
 from whisper_runtime.adapters.continuous_stream import (
     ContinuousStreamConfig,
     StreamNeedsResolutionError,
@@ -273,6 +281,83 @@ class ContinuousResolutionProbeTests(unittest.TestCase):
         self.assertEqual(bytes(stream._audio), source)
         self.assert_released(adapter)
 
+    def test_analysis_receipt_is_additive_and_keeps_unknown_provenance_explicit(self):
+        stream, adapter, _, _ = self.pending()
+        stream._seed = 73
+        stream._options = replace(
+            stream._options, language="en", temperature=0.25, best_of=2, prompt=(42, 43)
+        )
+        # An opaque facade may advertise attributes; they are not verified APIs.
+        adapter.execution_profile = NativeExecutionProfile("opaque", adapter.capacity)
+        adapter.tokenizer_artifact_identity = "unverified-tokenizer"
+        stream._mel_builder.identity = "unverified-preprocessing"
+        self.decode(stream)
+        observation = stream.resolution_observation
+        receipt = observation.analysis_identity
+        self.assertIsInstance(receipt, ContinuousAnalysisIdentity)
+        self.assertIs(receipt.declared_model, adapter.model_identity)
+        self.assertIs(receipt.requested_decode_options, adapter.options[-1])
+        self.assertEqual(receipt.request_rng_seed, 73)
+        self.assertIsNone(receipt.declared_execution_profile)
+        for field in (
+            "tokenizer_artifact_identity",
+            "preprocessing_identity",
+            "backend_artifact_identity",
+            "effective_alignment_mode",
+        ):
+            self.assertIsNone(getattr(receipt, field))
+        self.assertNotIn("session_version", asdict(receipt))
+        self.assertNotIn("committed_through_sample", asdict(receipt))
+        self.assertEqual(
+            json.loads(json.dumps(asdict(receipt)))["preprocessing_identity"], None
+        )
+        with self.assertRaises(FrozenInstanceError):
+            receipt.request_rng_seed = 42
+        old = ContinuousResolutionObservation(
+            observation.source,
+            observation.anchor,
+            observation.session_version,
+            observation.analysis_start_sample,
+            observation.analysis_end_sample,
+            observation.status,
+            observation.reason,
+            observation.pcm_sha256,
+            observation.candidate,
+        )
+        self.assertIsNone(old.analysis_identity)
+        with self.assertRaises(StreamNeedsResolutionError):
+            self.decode(stream)
+        self.assertIs(stream.resolution_observation.analysis_identity, receipt)
+        self.assertIs(adapter.options[-1], receipt.requested_decode_options)
+        self.assert_released(adapter)
+
+    def test_native_profile_is_a_declaration_not_an_effective_mode_or_fresh_hash(self):
+        stream, scripted, _, _ = self.pending()
+
+        class DeclaredModel:
+            pass
+
+        identity_probe = Mock(return_value=scripted.model_identity)
+        profile = NativeExecutionProfile(
+            "declared-native", scripted.capacity, reuse_alignment_features=True
+        )
+        native = NativeWhisperAdapter(
+            scripted.worker, DeclaredModel(), identity_probe, profile
+        )
+        stream._adapter = native
+        # Script execution only; the real native constructor supplies the receipt.
+        with patch.object(
+            NativeWhisperAdapter, "start_window", side_effect=scripted.start_window
+        ):
+            self.decode(stream)
+        receipt = stream.resolution_observation.analysis_identity
+        self.assertIs(receipt.declared_model, native.model_identity)
+        self.assertIs(receipt.declared_execution_profile, profile)
+        self.assertIsNone(receipt.effective_alignment_mode)
+        self.assertIsNone(receipt.backend_artifact_identity)
+        identity_probe.assert_called_once()  # Construction only; no inference hashing.
+        self.assert_released(scripted)
+
     def test_distinct_probe_retains_original_refusal_and_never_publishes(self):
         stream, adapter, source, events = self.pending()
         before = stream.metrics
@@ -460,6 +545,7 @@ class ContinuousResolutionProbeTests(unittest.TestCase):
             stream.step()
         count = len(adapter.calls)
         self.assertEqual(stream.resolution_observation.status, "scheduled")
+        receipt = stream.resolution_observation.analysis_identity
         with self.assertRaisesRegex(NativeStreamError, "retained"):
             stream.step()
         self.assertEqual(len(adapter.calls), count)
@@ -471,6 +557,7 @@ class ContinuousResolutionProbeTests(unittest.TestCase):
             self.decode(stream)
         self.assertEqual(len(adapter.calls), count + 1)
         self.assertEqual(stream.resolution_observation.status, "observed")
+        self.assertIs(stream.resolution_observation.analysis_identity, receipt)
         self.assert_released(adapter)
 
     def test_candidate_fence_failure_retains_capacity_without_publication(self):

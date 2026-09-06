@@ -370,6 +370,15 @@ with action `resolution_observation`, not a publication. Native cleanup can
 still fail after candidate preparation; inspect the observation status and
 resource-release state, not just the presence of words.
 
+`analysis_identity` records the adapter's declared model, the requested decode
+options and seed, and a native execution profile when available. It adds no
+model work. The current runtime cannot verify tokenizer artifacts, an arbitrary
+PCM-to-mel callback, backend code, or the effective per-run alignment mode;
+those fields remain `None`. A declared profile is not proof of the mode an
+adapter actually used. Receipt equality does not authorize replay or publication.
+The receipt contains no tensors and stays separate from session version and
+audio identity. Older observations may omit it.
+
 This is a connected probe, not recovered live continuation. A head-only result
 can miss speech at the estimated cut, even when its text appears correct.
 Publishing it needs a separately justified handoff rule. The probe does not

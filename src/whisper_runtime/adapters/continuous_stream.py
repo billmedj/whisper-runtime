@@ -14,6 +14,7 @@ from threading import RLock, current_thread
 from typing import Callable, Literal, NoReturn
 
 from ..errors import TransactionRetainedError
+from ..model import ModelSnapshot
 from ..state import AudioSpan, RequestState, Session, SessionState
 from .audio_endpoints import (
     QuietEndpointConfig,
@@ -38,7 +39,12 @@ from .native_stream import (
     StreamEventKind,
     TranscriptEvent,
 )
-from .native_whisper import NativeDecodeOptions, NativeWhisperAdapter, NativeWindowRun
+from .native_whisper import (
+    NativeDecodeOptions,
+    NativeExecutionProfile,
+    NativeWhisperAdapter,
+    NativeWindowRun,
+)
 from .stream_policy import compare_hypotheses
 from .word_policy import (
     AlignedPublication,
@@ -242,6 +248,34 @@ class ContinuousDecodeTrace:
 
 
 @dataclass(frozen=True, slots=True)
+class ContinuousAnalysisIdentity:
+    """Declared/requested provenance, not proof of effective computation.
+
+    The model snapshot is supplied by the bound adapter; no fresh model hash is
+    computed here. Options and the request seed are what this controller passes,
+    not a claim that an opaque adapter honors them. An execution profile declares
+    capabilities, not the alignment mode actually selected for a particular run.
+    The current APIs do not expose verified tokenizer, preprocessing or backend
+    artifact identities, or an effective alignment mode; these remain unknown.
+    No callback name, object identity or model name fills those missing proofs.
+
+    Session version, committed boundary and PCM/window identity belong to the
+    observation, not this configuration receipt. Equality is not replay authority.
+    """
+
+    declared_model: ModelSnapshot
+    requested_decode_options: NativeDecodeOptions
+    request_rng_seed: int
+    declared_execution_profile: NativeExecutionProfile | None = None
+    tokenizer_artifact_identity: str | None = None
+    preprocessing_identity: str | None = None
+    backend_artifact_identity: str | None = None
+    effective_alignment_mode: Literal["legacy_encoder", "borrowed_features"] | None = (
+        None
+    )
+
+
+@dataclass(frozen=True, slots=True)
 class ContinuousResolutionObservation:
     """One connected EOF probe, never authority to recover or publish a suffix.
 
@@ -260,6 +294,7 @@ class ContinuousResolutionObservation:
     reason: str
     pcm_sha256: str | None = None
     candidate: NativeWordAlignment | None = None
+    analysis_identity: ContinuousAnalysisIdentity | None = None
 
 
 class ContinuousTranscriptStream:
@@ -1043,6 +1078,16 @@ class ContinuousTranscriptStream:
                 status="scheduled" if distinct else "unavailable",
                 reason="distinct_retained_suffix" if distinct else "no_distinct_suffix",
                 pcm_sha256=sha256(pcm).hexdigest() if pcm is not None else None,
+                analysis_identity=ContinuousAnalysisIdentity(
+                    declared_model=self._model,
+                    requested_decode_options=self._options,
+                    request_rng_seed=self._seed,
+                    declared_execution_profile=(
+                        self._adapter.execution_profile
+                        if isinstance(self._adapter, NativeWhisperAdapter)
+                        else None
+                    ),
+                ),
             )
             self._resolution_pcm = pcm
         return distinct
