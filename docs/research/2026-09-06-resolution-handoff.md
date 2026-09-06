@@ -88,3 +88,9 @@ remain separate, unresolved authority boundaries.
 CPU reproduction: `PYTHONPATH=src python -B -m unittest tools.test_word_anchor_reconciliation`.
 No GPU, network execution, runtime publication change, or historical evidence
 rewrite is part of this assessment.
+
+Follow-up: the [seven T4 observations](2026-09-06-overlap-observations.md#recorded-result)
+have now run. All five structural handoffs reject. The report retains the
+separate fresh control and distinguishes representation-only disagreement from
+missing words and timing shifts. The assessment and publication rules above
+remain unchanged.

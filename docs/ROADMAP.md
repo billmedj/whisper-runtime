@@ -194,11 +194,22 @@ The [local handoff assessment](research/2026-09-06-resolution-handoff.md) now
 specifies one anchor-bearing overlap and checks full continuation agreement,
 frozen state and PCM correspondence. Adversarial tests cover repeated anchors,
 stale state and omitted boundary words. It cannot authorize publication; all
-four stored head-only cases still lack the required overlap observation.
+four stored head-only cases initially lacked the required overlap observation.
 The paced test also exposed a refusal path that omitted already computed word
 alignment. A local repair preserves this evidence and connects aligned EOF
 refusals to the same opt-in, single-attempt probe. Its scripted tests pass; the
-repair and proposed overlap windows still need a real-audio run.
+repaired live path still needs a real-audio run.
+
+The [fixed overlap experiment](research/2026-09-06-overlap-observations.md#recorded-result)
+now records seven T4 windows across these four cases and the paced noisy state.
+All five structural assessments reject. The new noisy head-only proposal reduces
+word edit distance from 18 to 1, but its overlap omits the continuation. One
+other refusal is a capitalization/token difference; four involve absent or
+changed anchor words. All runs release capacity. The next change must separate
+representation, lexical and timing diagnostics, then test boundary selection
+with retained acoustic context. No live recovery or relaxed publication rule
+follows from this result. Analysis receipts now retain declared model, options
+and seed; missing effective identities remain unknown.
 
 Deliver a separately named continuous profile. Keep the existing
 offline-compatible and bounded-preview paths.

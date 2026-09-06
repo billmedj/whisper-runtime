@@ -186,6 +186,13 @@ The smallest planned follow-up is seven native windows: re-observe the new
 noisy control `[1680,10890]` ms with its full alignment retained; compare
 `[3680,10890]` and the anchor-bearing `[2020,10890]`; then observe one fixed
 overlap for each of the four earlier states listed in the handoff report.
-These windows have not run. The new control must remain a separate observation,
+At this report's original cutoff, these windows had not run. The new control
+must remain a separate observation,
 not an edit to the historical trace. Reuse existing candidate evidence only
 after matching its PCM, model, tokenizer and decode configuration.
+
+Follow-up: the [fixed seven-window experiment](2026-09-06-overlap-observations.md#recorded-result)
+is now recorded. The noisy head-only proposal reduces word edit distance from
+18 to 1; all five structural handoff assessments reject. This leaves the paced
+failure in this report unresolved. Legacy alignment was used throughout the
+follow-up to keep window selection separate from encoder reuse.

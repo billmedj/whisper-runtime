@@ -83,3 +83,95 @@ Only then choose the smallest selector change supported by the observations.
 It must fit the existing attempt budget and preserve the default profile.
 Evaluate that selector on unseen speakers and complete paced streams before
 claiming improved live quality or compute efficiency.
+
+## Recorded result
+
+The [T4 record](../../evidence/modal-t4-tiny-en-resolution-handoff-2026-09-06.json)
+contains all seven observations from source commit
+`2dbf1dcb3c34cde109829f49d9697e33bf842788`. Its JSON SHA-256 is
+`545e6e8d0d420539b5e94333e5aeeba2095886577f9daca0382cc183344b9a6c`.
+The status `completed` means that the observations ran. **All five structural
+handoff assessments rejected. None authorizes publication.** No stream was
+resumed, no audio was evicted, and no selector rule changed in this experiment.
+
+| State | Recorded refusal | Inspection of the raw words |
+| --- | --- | --- |
+| Paced noisy prefix | Anchor absent | `place amidst the tents` becomes `and it's the tense`; the overlap omits the next utterance. |
+| Context, no added pauses | Complete suffix disagrees | The anchor matches. Only the first suffix unit differs: ` She` (token 1375) versus ` she` (673). |
+| Context, continuous noise | Anchor absent | The initial `and` disappears from `and bird and tree`; later timings also disagree. |
+| Speaker 2961, clean | Anchor absent | `danger` disappears from `danger of the modern`; the continuation also changes. |
+| Speaker 8455, noise | Anchor absent | `Eva's` becomes `Eve's`. This is a name substitution, not a case change. |
+
+On the new paced noisy case, the prefix plus head-only proposal has **1 word
+edit in 26 reference words**, compared with 18 for the previously incomplete
+transcript. The remaining substitution is `son` for `sun`. This is a scored
+proposal, not recovered live output. The other four proposals reuse the old
+head-only observations; their edit distances remain 6, 6, 4, and 0. A zero
+normalized word score is not an exact raw-text match or acoustic proof.
+
+The fresh noisy control reproduces every archived native field except its
+window identifier. Its newly recorded alignment remains separate from the
+old trace. The assessment joins these two observations explicitly; it is not
+an archived live transition. All input and compatibility checks pass under the
+declared comparison. Historical package identities remain unmeasured. The
+old four observations use a source-checked bridge to the backend with the
+unused optional feature-reuse patch; their backend trees are not identical.
+
+### What the failures separate
+
+In the no-added-pauses case, the overlap has one exact raw text/token anchor,
+with boundary differences of at most 20 ms. Both suffixes have 35 units. Their
+last 34 units match in raw text and tokens, including punctuation; all suffix
+boundary differences are at most 60 ms. The initial capitalization changes
+the token too. This is a specific representation disagreement. It does not
+justify case-folding every comparison or accepting the other four cases.
+
+The other failures involve missing or changed words. Even apparently matching
+fragments can disagree in time: the noisy context places the next `And`
+2,580 ms later. In the speaker-8455 case, the head-only candidate begins 100 ms
+before the observed end of `husband`, independently of the name substitution.
+Comparing these fragments is diagnostic only; they are not substitute anchors.
+
+The noisy overlap assigns its final period the interval 3,600–10,860 ms while
+its lexical content stops near 3,600 ms. A punctuation interval that reaches
+the end of an input cannot establish coverage of the speech in that interval.
+The head-only result supplies the missing utterance, but not the evidence
+needed to join it safely to the frozen prefix.
+
+### Work and resource lifetime
+
+All seven runs close and restore capacity. The model fingerprint is unchanged.
+There are 14 encoder forwards, each with 3,000 padded frames: legacy decode
+and alignment each encode every window. This represents 42,000 padded input
+frames, not GPU time or an energy measurement. The raw slices total 63.23 s.
+Peak PyTorch allocation is 290,098,176 bytes; allocation after each result
+handle is released is 160,720,896 bytes.
+
+The recorded loop duration is 12.88 s. It excludes initial case reconstruction,
+model setup, and initial identity checks. It is neither total remote invocation time
+nor billed GPU time. The Modal application stopped after the one bounded run.
+There were no automatic retries or further GPU experiments.
+
+### Architectural consequence
+
+The fixed hypothesis fails on these five states: starting an overlap at the
+first estimated anchor-word onset does not reliably supply a usable handoff.
+The record distinguishes a representation mismatch from absent lexical evidence
+and timing disagreement. Treating every refusal as a reason to widen tolerance
+would hide these different causes.
+
+The next small change should expose these diagnostic differences while keeping
+the original refusal. Then test an input-boundary choice with retained acoustic
+context, rather than treating an estimated word onset as an exact cut. Whether
+cutting context caused these omissions remains a hypothesis; these text outputs
+alone cannot establish that mechanism. Any new choice needs a fixed comparison,
+an attempt budget, and separate speech-coverage tests before live publication.
+
+This step also records declared model, decode options, and seed in runtime
+resolution observations. Unknown tokenizer, preprocessing, backend, and effective
+alignment identities remain unknown unless measured. This receipt identifies
+requested work; it is not replay authority or a cache across changed audio.
+
+CPU regression checks: `PYTHONPATH=src python -B -m unittest tools.test_modal_resolution_handoff`.
+The archive checks need no GPU. Full input reconstruction also needs the existing
+local PCM fixtures; it does not download them.

@@ -1,5 +1,15 @@
 # Integration evidence
 
+The [fixed overlap observations](modal-t4-tiny-en-resolution-handoff-2026-09-06.json)
+complete seven native windows on one T4 at source commit `2dbf1dc`. All five
+structural handoff assessments reject; none authorizes publication. The new
+noisy head-only proposal reduces whole-text edit distance from 18 to 1, but its
+overlap omits the continuation. One other refusal is only a `She`/`she` raw
+text and token difference; the remaining cases lose or replace words. All
+seven runs release capacity, with 14 legacy encoder forwards and an unchanged
+model. See the [results and limits](../docs/research/2026-09-06-overlap-observations.md#recorded-result).
+This is a completed diagnostic, not recovered live transcription.
+
 The [paced encoder comparison](modal-t4-tiny-en-paced-features-2026-09-06.json)
 runs all six registered cells at source commit `b1901c7`. The normal and
 attenuated inputs complete in both arms with identical committed text and spans.

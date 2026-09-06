@@ -14,6 +14,9 @@ from whisper_runtime.adapters import NativeDecodeOptions, NativeTimestampSegment
 from whisper_runtime.adapters.native_result import NativeWindowResult
 from whisper_runtime.adapters.word_policy import NativeWordAlignment
 
+ARCHIVE = "evidence/modal-t4-tiny-en-resolution-handoff-2026-09-06.json"
+ARCHIVE_SHA = "545e6e8d0d420539b5e94333e5aeeba2095886577f9daca0382cc183344b9a6c"
+
 
 def synthetic_record(cases, inputs):
     """Protocol fixture only: the generated words and timings are not measurements."""
@@ -189,6 +192,15 @@ class ResolutionHandoffInputsTests(unittest.TestCase):
                     len(case["pcm"][start * 32 : end * 32]), (end - start) * 32
                 )
 
+    def test_recorded_t4_observations_replay_under_the_frozen_rules(self):
+        record = json.loads((experiment.ROOT / ARCHIVE).read_bytes())
+        inputs = experiment.input_records()
+        with (
+            patch.object(experiment, "cases", return_value=self.cases),
+            patch.object(experiment, "input_records", return_value=inputs),
+        ):
+            experiment.validate_record(record, record["source"]["snapshot"])
+
     def test_archive_identity_and_old_candidate_pcm_reproduce_exactly(self):
         for case in self.cases:
             archive = case["archive"]
@@ -310,6 +322,65 @@ class ResolutionHandoffInputsTests(unittest.TestCase):
 
 
 class ResolutionHandoffGuardTests(unittest.TestCase):
+    def test_completed_observations_are_not_successful_recovery(self):
+        raw = (experiment.ROOT / ARCHIVE).read_bytes()
+        self.assertEqual(hashlib.sha256(raw).hexdigest(), ARCHIVE_SHA)
+        record = json.loads(raw)
+        self.assertEqual(record["status"], "completed")
+        self.assertFalse(record["qualified"])
+        self.assertTrue(record["model"]["unchanged"])
+        self.assertTrue(record["capacity_restored"])
+        self.assertEqual(record["native_window_count"], 7)
+        self.assertEqual(
+            [cell["summary"]["assessment"]["reason"] for cell in record["cells"]],
+            ["overlap_anchor_absent", "complete_suffix_disagrees"]
+            + ["overlap_anchor_absent"] * 3,
+        )
+        self.assertEqual(
+            record["cells"][0]["summary"]["against_human_reference"][
+                "word_edit_distance"
+            ],
+            1,
+        )
+        windows = []
+        for cell in record["cells"]:
+            self.assertEqual(cell["summary"]["assessment"]["status"], "rejected")
+            self.assertFalse(cell["publication_authorized"])
+            self.assertFalse(cell["summary"]["assessment"]["publication_authorized"])
+            windows.extend(cell["fresh_windows"])
+        self.assertEqual(len(windows), 7)
+        for window in windows:
+            self.assertTrue(window["completed"])
+            self.assertIsNone(window["error"])
+            self.assertTrue(window["measurement"]["closed"])
+            self.assertTrue(window["measurement"]["capacity_restored"])
+
+    def test_surface_disagreement_is_preserved_without_relaxing_the_assessor(self):
+        record = json.loads((experiment.ROOT / ARCHIVE).read_bytes())
+        cell = record["cells"][1]
+        raw = cell["raw_alignments"]
+        overlap = raw["overlap"]["words"][3:]
+        candidate = raw["candidate"]["words"]
+        self.assertEqual(len(overlap), 35)
+        self.assertEqual(len(candidate), 35)
+        self.assertEqual(overlap[0]["text"], " she")
+        self.assertEqual(candidate[0]["text"], " She")
+        self.assertEqual(overlap[0]["tokens"], [673])
+        self.assertEqual(candidate[0]["tokens"], [1375])
+        for observed, other in zip(overlap[1:], candidate[1:]):
+            self.assertEqual(observed["text"], other["text"])
+            self.assertEqual(observed["tokens"], other["tokens"])
+        self.assertEqual(
+            max(
+                abs(observed["span"][edge] - other["span"][edge])
+                for observed, other in zip(overlap, candidate)
+                for edge in ("start_ms", "end_ms")
+            ),
+            60,
+        )
+        self.assertEqual(cell["summary"]["assessment"]["status"], "rejected")
+        self.assertFalse(cell["summary"]["assessment"]["publication_authorized"])
+
     def test_archive_corruption_is_rejected_before_model_work(self):
         with patch.object(Path, "read_bytes", return_value=b"{}"):
             with self.assertRaisesRegex(ValueError, "digest"):
