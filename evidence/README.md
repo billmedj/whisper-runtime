@@ -1,5 +1,13 @@
 # Integration evidence
 
+The [group-boundary replay](group-correspondence-2026-09-06.json) is a CPU-only,
+post-hoc comparison on five saved states. Four still reject. Speaker 2961 has
+an exact group and continuation, but becomes structurally eligible only with
+the separate 200 ms boundary tolerance. The text is unchanged; this is not
+live recovery or improved recognition. The
+[source trace and limits](../docs/research/2026-09-06-group-correspondence.md)
+explain the raw first-word timing behavior and the remaining evidence gap.
+
 The [fixed context-guard observations](modal-t4-tiny-en-context-guard-2026-09-06.json)
 add three T4 windows and reuse two existing controls. Two missing anchors are
 restored, but all five comparisons still reject. One crop changes a word's

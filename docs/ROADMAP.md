@@ -222,10 +222,16 @@ completed those three intervals on one T4 and reused the controls. Two missing
 anchors return, but all five comparisons still reject. The no-pause crop retains
 every word token while moving the first word's estimated start by 500 ms.
 Speaker 2961 has exact suffix agreement but a 300 ms interior anchor shift and
-a 20 ms boundary crossing. All new calls close and restore capacity. Next,
-trace crop-relative alignment through the frozen-boundary path with these saved
-counterexamples, then define and test a boundary rule. Do not search more crops,
-relax tolerances, or enable live publication on this evidence.
+a 20 ms boundary crossing. All new calls close and restore capacity.
+
+The [group-boundary comparison](research/2026-09-06-group-correspondence.md)
+traces the first-word shift to the raw alignment path and compares complete
+anchor groups in a local, post-hoc replay. Four states still reject; speaker
+2961 becomes structurally eligible only when the group rule is combined with
+the live-sized 200 ms boundary tolerance. No text changes or live recovery
+follow. Next, test independent saved observations and define the acoustic
+evidence required before advancing audio retention. Keep the existing live
+policy and raw records unchanged.
 
 Deliver a separately named continuous profile. Keep the existing
 offline-compatible and bounded-preview paths.

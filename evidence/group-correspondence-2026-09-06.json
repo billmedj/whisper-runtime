@@ -1,0 +1,341 @@
+{
+  "schema_version": "group-correspondence/v1",
+  "input_sha256": "538ff91508b1ea2074a25fb6600860577a917b37d4826f324c2cce2ec8ef71f1",
+  "source_sha256": {
+    "tools/analyze_group_correspondence.py": "8664483c5216737e692353ca7e68629b230c44d866a823cd4622e807069211a6",
+    "tools/analyze_resolution_disagreements.py": "20a22c6776e1d96d4fff1c61e8ff51b892d3eaf2c8caab9ae9b1bfe9f8e4f055",
+    "tools/analyze_word_resolution.py": "6e04c5e4eff4513666fdcd30daa86a6004e2acc0551a8204759f8b990dc9f13b",
+    "tools/analyze_stream_text_agreement.py": "f5ff71ef3b0dec465d550cd3b218ffbb08a61640f7ee31cae6a0693d750ca13a",
+    "src/whisper_runtime/adapters/word_policy.py": "4613f263f0ca51a4a1d836cb5af7ea96bf1ea00c2c04b035e2272ca6d1b1a70d",
+    "src/whisper_runtime/adapters/native_result.py": "3198b3996e7445449d7c74092ecef79d5a3615c1ebb48951c9bc7bbba3c18d92"
+  },
+  "scope": "Post-hoc saved-output comparison; no acoustic or execution-identity revalidation",
+  "parameters": {
+    "anchor_outer_tolerance_ms": 200,
+    "continuation_tolerances_ms": [
+      0,
+      200
+    ],
+    "origin_start_rule": "Existing live first-word origin exception in both group variants",
+    "interior_anchor_times": "Reported, not matched in group variants"
+  },
+  "native_windows_executed": 0,
+  "cells": [
+    {
+      "id": "noisy-prefix",
+      "strict_assessment": {
+        "status": "rejected",
+        "reason": "overlap_has_no_lexical_continuation",
+        "diagnostics": {
+          "exact_anchor_occurrences": [
+            2
+          ],
+          "anchor_comparison": {
+            "left_unit_count": 4,
+            "right_unit_count": 4,
+            "text_relation": "exact_units",
+            "unit_tokens_equal": true,
+            "max_start_delta_ms": 40,
+            "max_end_delta_ms": 80
+          },
+          "complete_suffix_comparison": {
+            "left_unit_count": 1,
+            "right_unit_count": 19,
+            "text_relation": "different_units",
+            "unit_tokens_equal": false,
+            "max_start_delta_ms": null,
+            "max_end_delta_ms": null
+          },
+          "boundary_checks": {
+            "observed_suffix_starts_before_boundary": true,
+            "head_candidate_starts_before_boundary": false
+          }
+        },
+        "estimated_lexical_extents": {
+          "guard": {
+            "lexical_unit_count": 6,
+            "lexical_units_ending_after_head": 0,
+            "last_lexical_estimate_end_ms": 3600,
+            "last_unit_estimate_end_ms": 10860,
+            "trailing_nonlexical_estimate_ms": 7260
+          },
+          "candidate": {
+            "lexical_unit_count": 18,
+            "lexical_units_ending_after_head": 18,
+            "last_lexical_estimate_end_ms": 10620,
+            "last_unit_estimate_end_ms": 10760,
+            "trailing_nonlexical_estimate_ms": 140
+          }
+        },
+        "publication_authorized": false
+      },
+      "group_strict_boundary": {
+        "status": "rejected",
+        "reason": "overlap_has_no_lexical_continuation",
+        "publication_authorized": false
+      },
+      "group_live_boundary": {
+        "status": "rejected",
+        "reason": "overlap_has_no_lexical_continuation",
+        "publication_authorized": false
+      },
+      "diagnostics": {
+        "anchor_start_delta_ms": 0,
+        "anchor_end_delta_ms": -80,
+        "max_interior_delta_ms": 40,
+        "origin_start_exception": false,
+        "observed_overlap_ms": 80,
+        "candidate_overlap_ms": 0
+      },
+      "publication_authorized": false
+    },
+    {
+      "id": "context:concatenated-no-added-pauses",
+      "strict_assessment": {
+        "status": "rejected",
+        "reason": "overlap_anchor_timing_mismatch",
+        "diagnostics": {
+          "exact_anchor_occurrences": [
+            0
+          ],
+          "anchor_comparison": {
+            "left_unit_count": 3,
+            "right_unit_count": 3,
+            "text_relation": "exact_units",
+            "unit_tokens_equal": true,
+            "max_start_delta_ms": 500,
+            "max_end_delta_ms": 0
+          },
+          "complete_suffix_comparison": {
+            "left_unit_count": 35,
+            "right_unit_count": 35,
+            "text_relation": "casefold_equal_units",
+            "unit_tokens_equal": false,
+            "max_start_delta_ms": 60,
+            "max_end_delta_ms": 60
+          },
+          "boundary_checks": {
+            "observed_suffix_starts_before_boundary": false,
+            "head_candidate_starts_before_boundary": false
+          }
+        },
+        "estimated_lexical_extents": {
+          "guard": {
+            "lexical_unit_count": 35,
+            "lexical_units_ending_after_head": 32,
+            "last_lexical_estimate_end_ms": 33280,
+            "last_unit_estimate_end_ms": 33640,
+            "trailing_nonlexical_estimate_ms": 360
+          },
+          "candidate": {
+            "lexical_unit_count": 32,
+            "lexical_units_ending_after_head": 32,
+            "last_lexical_estimate_end_ms": 33280,
+            "last_unit_estimate_end_ms": 33640,
+            "trailing_nonlexical_estimate_ms": 360
+          }
+        },
+        "publication_authorized": false
+      },
+      "group_strict_boundary": {
+        "status": "rejected",
+        "reason": "complete_suffix_disagrees",
+        "publication_authorized": false
+      },
+      "group_live_boundary": {
+        "status": "rejected",
+        "reason": "complete_suffix_disagrees",
+        "publication_authorized": false
+      },
+      "diagnostics": {
+        "anchor_start_delta_ms": -500,
+        "anchor_end_delta_ms": 0,
+        "max_interior_delta_ms": 0,
+        "origin_start_exception": true,
+        "observed_overlap_ms": 0,
+        "candidate_overlap_ms": 0
+      },
+      "publication_authorized": false
+    },
+    {
+      "id": "context:mixed-continuous-noise64",
+      "strict_assessment": {
+        "status": "rejected",
+        "reason": "overlap_anchor_timing_mismatch",
+        "diagnostics": {
+          "exact_anchor_occurrences": [
+            1
+          ],
+          "anchor_comparison": {
+            "left_unit_count": 4,
+            "right_unit_count": 4,
+            "text_relation": "exact_units",
+            "unit_tokens_equal": true,
+            "max_start_delta_ms": 20,
+            "max_end_delta_ms": 340
+          },
+          "complete_suffix_comparison": {
+            "left_unit_count": 20,
+            "right_unit_count": 19,
+            "text_relation": "different_units",
+            "unit_tokens_equal": false,
+            "max_start_delta_ms": null,
+            "max_end_delta_ms": null
+          },
+          "boundary_checks": {
+            "observed_suffix_starts_before_boundary": false,
+            "head_candidate_starts_before_boundary": true
+          }
+        },
+        "estimated_lexical_extents": {
+          "guard": {
+            "lexical_unit_count": 22,
+            "lexical_units_ending_after_head": 18,
+            "last_lexical_estimate_end_ms": 43240,
+            "last_unit_estimate_end_ms": 43640,
+            "trailing_nonlexical_estimate_ms": 400
+          },
+          "candidate": {
+            "lexical_unit_count": 17,
+            "lexical_units_ending_after_head": 17,
+            "last_lexical_estimate_end_ms": 43260,
+            "last_unit_estimate_end_ms": 43640,
+            "trailing_nonlexical_estimate_ms": 380
+          }
+        },
+        "publication_authorized": false
+      },
+      "group_strict_boundary": {
+        "status": "rejected",
+        "reason": "group_anchor_end_mismatch",
+        "publication_authorized": false
+      },
+      "group_live_boundary": {
+        "status": "rejected",
+        "reason": "group_anchor_end_mismatch",
+        "publication_authorized": false
+      },
+      "diagnostics": {
+        "anchor_start_delta_ms": 0,
+        "anchor_end_delta_ms": 340,
+        "max_interior_delta_ms": 20,
+        "origin_start_exception": false,
+        "observed_overlap_ms": 0,
+        "candidate_overlap_ms": 340
+      },
+      "publication_authorized": false
+    },
+    {
+      "id": "heldout:2961-960-0004:clean",
+      "strict_assessment": {
+        "status": "rejected",
+        "reason": "overlap_anchor_timing_mismatch",
+        "diagnostics": {
+          "exact_anchor_occurrences": [
+            3
+          ],
+          "anchor_comparison": {
+            "left_unit_count": 4,
+            "right_unit_count": 4,
+            "text_relation": "exact_units",
+            "unit_tokens_equal": true,
+            "max_start_delta_ms": 300,
+            "max_end_delta_ms": 300
+          },
+          "complete_suffix_comparison": {
+            "left_unit_count": 15,
+            "right_unit_count": 15,
+            "text_relation": "exact_units",
+            "unit_tokens_equal": true,
+            "max_start_delta_ms": 100,
+            "max_end_delta_ms": 100
+          },
+          "boundary_checks": {
+            "observed_suffix_starts_before_boundary": true,
+            "head_candidate_starts_before_boundary": false
+          }
+        },
+        "estimated_lexical_extents": {
+          "guard": {
+            "lexical_unit_count": 20,
+            "lexical_units_ending_after_head": 13,
+            "last_lexical_estimate_end_ms": 7680,
+            "last_unit_estimate_end_ms": 7680,
+            "trailing_nonlexical_estimate_ms": 0
+          },
+          "candidate": {
+            "lexical_unit_count": 13,
+            "lexical_units_ending_after_head": 13,
+            "last_lexical_estimate_end_ms": 7680,
+            "last_unit_estimate_end_ms": 7680,
+            "trailing_nonlexical_estimate_ms": 0
+          }
+        },
+        "publication_authorized": false
+      },
+      "group_strict_boundary": {
+        "status": "rejected",
+        "reason": "overlap_continuation_crosses_boundary",
+        "publication_authorized": false
+      },
+      "group_live_boundary": {
+        "status": "structurally_eligible",
+        "reason": "group_and_suffix_agree",
+        "publication_authorized": false
+      },
+      "diagnostics": {
+        "anchor_start_delta_ms": 0,
+        "anchor_end_delta_ms": -20,
+        "max_interior_delta_ms": 300,
+        "origin_start_exception": false,
+        "observed_overlap_ms": 20,
+        "candidate_overlap_ms": 0
+      },
+      "publication_authorized": false
+    },
+    {
+      "id": "heldout:8455-210777-0028:noise64",
+      "strict_assessment": {
+        "status": "rejected",
+        "reason": "overlap_anchor_absent",
+        "diagnostics": {
+          "exact_anchor_occurrences": [],
+          "anchor_comparison": null,
+          "complete_suffix_comparison": null,
+          "boundary_checks": null
+        },
+        "estimated_lexical_extents": {
+          "guard": {
+            "lexical_unit_count": 18,
+            "lexical_units_ending_after_head": 12,
+            "last_lexical_estimate_end_ms": 7440,
+            "last_unit_estimate_end_ms": 7720,
+            "trailing_nonlexical_estimate_ms": 280
+          },
+          "candidate": {
+            "lexical_unit_count": 11,
+            "lexical_units_ending_after_head": 11,
+            "last_lexical_estimate_end_ms": 7440,
+            "last_unit_estimate_end_ms": 7580,
+            "trailing_nonlexical_estimate_ms": 140
+          }
+        },
+        "publication_authorized": false
+      },
+      "group_strict_boundary": {
+        "status": "rejected",
+        "reason": "overlap_anchor_absent",
+        "publication_authorized": false
+      },
+      "group_live_boundary": {
+        "status": "rejected",
+        "reason": "overlap_anchor_absent",
+        "publication_authorized": false
+      },
+      "diagnostics": null,
+      "publication_authorized": false
+    }
+  ],
+  "publication_authorized": false,
+  "full_stream_recovery": false
+}
