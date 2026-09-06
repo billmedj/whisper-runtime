@@ -1,5 +1,16 @@
 # Integration evidence
 
+The [paced encoder comparison](modal-t4-tiny-en-paced-features-2026-09-06.json)
+runs all six registered cells at source commit `b1901c7`. The normal and
+attenuated inputs complete in both arms with identical committed text and spans.
+The noisy prefix remains unresolved at 3.68 of 10.89 seconds in both arms, so
+the experiment is **failed** overall. On the full mixture, encoder forwards fall
+from 47 to 25. Peak PyTorch allocations fall from 290,098,176 to 190,260,736 bytes;
+reserved memory stays unchanged. All 76 native runs release capacity and the
+model is unchanged. See the [paired results and limits](../docs/research/2026-09-06-paced-feature-reuse.md#recorded-result).
+This is one-worker diagnostic evidence, not general performance qualification
+or recovered noisy live transcription.
+
 The [same-window feature comparison](modal-t4-tiny-en-alignment-features-2026-09-06.json)
 completes eight paired inputs on one T4 at source commit `27ee020`. Reuse removes
 one of two encoder forwards per analysis, with exact native and aligned-word

@@ -1,6 +1,7 @@
 """Offline checks for the paced diagnostic and its per-run alignment control."""
 
 import copy
+import hashlib
 import json
 import unittest
 from types import SimpleNamespace
@@ -79,6 +80,61 @@ class PacedEvidenceTests(unittest.TestCase):
             self.inputs[1]["reference_text"],
             " ".join(x["reference_text"] for x in reference[:2]),
         )
+
+    def test_archived_t4_comparison_keeps_noisy_failure(self):
+        path = (
+            experiment.ROOT / "evidence/modal-t4-tiny-en-paced-features-2026-09-06.json"
+        )
+        raw = path.read_bytes()
+        self.assertEqual(
+            hashlib.sha256(raw).hexdigest(),
+            "ada0b2584f60edbb38bce9086d897a244694936d2704ee70c452ec1bd564a4b2",
+        )
+        record = json.loads(raw)
+        with patch.object(experiment, "cases", return_value=self.inputs):
+            experiment.validate_record(record, record["source"]["snapshot"])
+        self.assertEqual(record["status"], "failed")
+        self.assertIsNone(record["stop"])
+        self.assertEqual(record["native_window_count"], 76)
+        pairs = experiment.comparison_summary(record)
+        self.assertEqual([x["both_completed"] for x in pairs], [True, True, False])
+        for pair in pairs:
+            self.assertTrue(pair["committed_text_equal"])
+            self.assertTrue(pair["commit_spans_and_text_equal"])
+            self.assertTrue(pair["common_word_outputs_equal"])
+            self.assertEqual(pair["unpaired_aligned_windows"], 0)
+        self.assertEqual(pairs[0]["arms"]["baseline"]["encoder_forwards"], 47)
+        self.assertEqual(pairs[0]["arms"]["reuse"]["encoder_forwards"], 25)
+        for cell in record["cells"]:
+            self.assertEqual(cell["memory_after_close"]["allocated_bytes"], 160720896)
+            self.assertEqual(
+                cell["memory_peak"]["allocated_bytes"],
+                190260736 if cell["arm"] == "reuse" else 290098176,
+            )
+        for cell in record["cells"][-2:]:
+            self.assertEqual(cell["metrics"]["committed_samples"], 58880)
+            self.assertEqual(cell["metrics"]["accepted_samples"], 174240)
+            self.assertEqual(cell["decision_traces"][-1]["reason"], "no_lexical_text")
+            self.assertFalse(any(x["kind"] == "final" for x in cell["events"]))
+
+        # The summary must not hide a changed commit or a mismatched word bound.
+        changed = copy.deepcopy(record)
+        candidate = changed["cells"][1]
+        commit = next(x for x in candidate["events"] if x["kind"] == "commit")
+        revision = next(
+            x
+            for x in candidate["events"]
+            if x["kind"] in {"provisional", "replace"}
+            and (x["segment_id"], x["revision"])
+            == (commit["segment_id"], commit["revision"])
+        )
+        revision["text"] += " extra"
+        trace = next(x for x in candidate["decision_traces"] if x.get("word_alignment"))
+        trace["word_alignment"]["words"][0]["span"]["end_ms"] += 20
+        pair = experiment.comparison_summary(changed)[0]
+        self.assertFalse(pair["committed_text_equal"])
+        self.assertFalse(pair["commit_spans_and_text_equal"])
+        self.assertFalse(pair["common_word_outputs_equal"])
 
     def fixture(self):
         # Reuse historical clocks/events as a validator fixture, not new GPU evidence.

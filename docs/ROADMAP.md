@@ -19,7 +19,7 @@ A gate closes only when its acceptance cases and results are committed.
 | D1 | Continuous transcription with progressive commits | Experimental rolling profile implemented; long-session gate open | D0 |
 | D2 | A usable local live-transcription entry point | Paced API and PC-to-Modal reference tested; microphone and CLI gate open | D1 |
 | D3 | Broader quality and failure coverage | Initial coverage; expand alongside D1-D2 | D0; release gate for D2 |
-| D4 | Measured compute and memory improvements | Short T4 memory plateau and same-window encoder reuse verified; live gate open | D1 and matched D3 baselines |
+| D4 | Measured compute and memory improvements | Encoder reuse tested on short paced input; broad quality and efficiency gates open | D1 and matched D3 baselines |
 | D5 | A reproducible developer release | Package builds; release gates remain open | D2 and D3; D4 for efficiency claims |
 | D6 | Durable recovery and finer resource scheduling | Later | D3 and a recovery contract |
 | D7 | Multiple channels, translation, and a second backend | Later | D1-D3 and per-output contracts |
@@ -190,6 +190,12 @@ publishes the candidate or evicts audio. Scripted tests cover unchanged prefix,
 attempt limits, cancellation and recovery. Full recovery still needs a justified
 publication boundary and real-stream validation.
 
+The [local handoff assessment](research/2026-09-06-resolution-handoff.md) now
+specifies one anchor-bearing overlap and checks full continuation agreement,
+frozen state and PCM correspondence. Adversarial tests cover repeated anchors,
+stale state and omitted boundary words. It cannot authorize publication; all
+four stored head-only cases still lack the required overlap observation.
+
 Deliver a separately named continuous profile. Keep the existing
 offline-compatible and bounded-preview paths.
 
@@ -308,12 +314,23 @@ The default path and active backend patch manifest remain unchanged. This is
 same-window reuse, not a cache across growing audio. No general latency or live
 cost advantage follows from the fixed-window comparison.
 
+The [paced comparison](research/2026-09-06-paced-feature-reuse.md) now completes
+the normal and attenuated inputs in both arms with identical published text
+and spans. The noisy prefix stops at the same boundary in both arms; the overall
+record remains failed. On the normal mixture, encoder forwards fall from 47 to
+25 at unchanged analysis count. Peak allocated memory falls by 34.4%; reserved
+memory does not fall. Host-call timing improves in this single comparison, but
+device-time, repeated-worker and long-session efficiency gates remain open.
+
 - [x] Add opt-in preview coalescing with bounded state and immutable retries.
 - [x] Reuse one CUDA lane under exact ownership and completion fences; verify
   short fixed-input allocation and output parity on T4.
 - [x] Borrow same-window decode features for alignment behind an opt-in profile;
   verify encoder counts and exact output parity on eight T4 inputs.
-- [ ] Measure avoided work and quality changes on matched paced input.
+- [x] Measure work, output parity and failures on three matched paced inputs;
+  retain the unresolved noisy pair and single-worker timing limits.
+- [ ] Replicate on unseen inputs and repeated workers before general live-cost
+  or latency claims.
 - [ ] Evaluate additional preprocessing reuse with explicit input identity and
   profile limits. New audio does not make Whisper's noncausal encoder cache
   append-only.

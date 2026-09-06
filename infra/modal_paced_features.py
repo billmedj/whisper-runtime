@@ -447,8 +447,17 @@ def comparison_summary(record):
             left, right = arms["baseline"], arms["reuse"]
 
             def commits(cell):
+                revisions = {
+                    (x["segment_id"], x["revision"]): x["text"]
+                    for x in cell["events"]
+                    if x["kind"] in {"provisional", "replace"}
+                }
                 return [
-                    (x["start_sample"], x["end_sample"], x["text"])
+                    (
+                        x["start_sample"],
+                        x["end_sample"],
+                        revisions[(x["segment_id"], x["revision"])],
+                    )
                     for x in cell["events"]
                     if x["kind"] == "commit"
                 ]
@@ -472,8 +481,10 @@ def comparison_summary(record):
                 both_completed=all(
                     x["stream_status"] == "completed" for x in arms.values()
                 ),
-                committed_text_equal=left["recognition"]["text"]
-                == right["recognition"]["text"],
+                committed_text_equal=_corpus().c._normalized_committed_text(
+                    left["events"]
+                )
+                == _corpus().c._normalized_committed_text(right["events"]),
                 commit_spans_and_text_equal=commits(left) == commits(right),
                 common_aligned_windows=len(unique),
                 ambiguous_common_windows=len(common) - len(unique),
