@@ -477,16 +477,55 @@ class ContinuousResolutionProbeTests(unittest.TestCase):
         self.assert_released(adapter)
 
     def test_closed_source_unit_is_not_an_eof_probe(self):
-        stream, adapter, source, _ = self.pending(finish=False)
-        extra = pcm_ms(100, 903) + pcm_ms(40, 1)
-        stream.push(1, extra)
-        with self.assertRaisesRegex(StreamNeedsResolutionError, "source unit"):
-            self.drain(stream)
-        self.assertIsNotNone(stream.last_trace.source_unit)
-        self.assertFalse(stream.last_trace.eof)
-        self.assertIsNone(stream.resolution_observation)
-        self.assertEqual(bytes(stream._audio), source + extra)
-        self.assert_released(adapter)
+        for enabled in (False, True):
+            with self.subTest(resolution_probe=enabled):
+                stream, adapter, source, _ = self.pending(enabled=enabled, finish=False)
+                state, anchor = stream.state, stream._word_anchor
+                emitted = stream.metrics.events_emitted
+                source += pcm_ms(100, 903) + pcm_ms(40, 1)
+                stream.push(1, source[300 * 32 :])
+                self.assertEqual(self.drain(stream), [])
+                trace = stream.last_trace
+                self.assertEqual(trace.source_unit.origin, "quiet_run")
+                self.assertEqual(trace.reason, "anchor_missing")
+                self.assertEqual(trace.action, "wait_for_input")
+                self.assertFalse(trace.eof)
+                self.assertIsNone(stream.resolution_observation)
+                self.assertFalse(stream._endpoints)
+                count = len(adapter.calls)
+                for _ in range(3):
+                    self.assertEqual(stream.step(), ())
+                self.assertEqual(len(adapter.calls), count)
+                self.assert_frozen(stream, state, anchor, source)
+                self.assert_released(adapter)
+
+                # Only actual EOF can use the existing opt-in observation.
+                # Neither skipping the hint nor observing a suffix publishes.
+                stream.finish_input()
+                if enabled:
+                    self.assertEqual(self.decode(stream), ())
+                    observation = stream.resolution_observation
+                    self.assertEqual(observation.status, "scheduled")
+                    self.assertTrue(observation.source.eof)
+                    self.assertEqual(observation.source.reason, "anchor_missing")
+                    self.assertEqual(observation.analysis_start_sample, 200 * 16)
+                    self.assertEqual(observation.analysis_end_sample, 440 * 16)
+                    with self.assertRaisesRegex(
+                        StreamNeedsResolutionError, "anchor_missing.*observed"
+                    ):
+                        self.decode(stream)
+                    self.assertEqual(stream.resolution_observation.status, "observed")
+                    self.assertEqual(len(adapter.calls), count + 2)
+                else:
+                    with self.assertRaisesRegex(
+                        StreamNeedsResolutionError, "anchor_missing"
+                    ):
+                        self.decode(stream)
+                    self.assertIsNone(stream.resolution_observation)
+                    self.assertEqual(len(adapter.calls), count + 1)
+                self.assertEqual(stream.metrics.events_emitted, emitted)
+                self.assert_frozen(stream, state, anchor, source)
+                self.assert_released(adapter)
 
     def test_preprocessing_or_start_failure_consumes_the_only_attempt(self):
         for stage in ("mel", "start"):

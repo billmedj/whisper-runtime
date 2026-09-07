@@ -7,6 +7,8 @@ import json
 from pathlib import Path
 
 from native_backend_setup import (
+    BACKEND_REUSE_TREE,
+    DEFAULT_REUSE_SETUP_ROOT,
     DEFAULT_SETUP_ROOT,
     NativeSetupError,
     SetupPaths,
@@ -33,18 +35,31 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--root",
         type=Path,
-        default=DEFAULT_SETUP_ROOT,
-        help="Setup directory (default: .tmp-native in the repository)",
+        help="Setup directory (default: .tmp-native, or .tmp-native-reuse with reuse)",
+    )
+    parser.add_argument(
+        "--alignment-feature-reuse",
+        action="store_true",
+        help="Apply the pinned optional alignment patch for low-latency/optimized profiles",
     )
     parser.add_argument(
         "--verify-only",
         action="store_true",
         help="Verify an existing setup without using the network or installing packages",
     )
-    return parser.parse_args()
+    args = parser.parse_args()
+    if args.root is None:
+        args.root = (
+            DEFAULT_REUSE_SETUP_ROOT
+            if args.alignment_feature_reuse
+            else DEFAULT_SETUP_ROOT
+        )
+    return args
 
 
-def run_setup(paths: SetupPaths) -> dict[str, object]:
+def run_setup(
+    paths: SetupPaths, *, alignment_feature_reuse: bool = False
+) -> dict[str, object]:
     require_safe_setup_root(paths.root)
     if paths.root.exists() and not paths.root.is_dir():
         raise NativeSetupError(f"setup root is not a directory: {paths.root}")
@@ -58,7 +73,9 @@ def run_setup(paths: SetupPaths) -> dict[str, object]:
     tools = require_prerequisites()
     runtime = require_runtime_identity()
     patches = verify_patch_manifest()
-    backend = ensure_backend(paths, patches)
+    backend = ensure_backend(
+        paths, patches, alignment_feature_reuse=alignment_feature_reuse
+    )
     python = ensure_environment(paths)
     environment = install_dependencies(python)
     manifest = build_manifest(
@@ -69,6 +86,7 @@ def run_setup(paths: SetupPaths) -> dict[str, object]:
         patches=patches,
         environment=environment,
         tools=tools,
+        alignment_feature_reuse=alignment_feature_reuse,
     )
     write_manifest(paths.manifest, manifest)
     load_validated_setup(paths.manifest)
@@ -92,6 +110,13 @@ def main() -> int:
     try:
         if args.verify_only:
             setup = load_validated_setup(paths.manifest)
+            if (
+                args.alignment_feature_reuse
+                and setup.backend.tree != BACKEND_REUSE_TREE
+            ):
+                raise NativeSetupError(
+                    "selected setup does not enable alignment feature reuse"
+                )
             result: dict[str, object] = {
                 "status": "verified",
                 "manifest": str(setup.paths.manifest),
@@ -102,7 +127,9 @@ def main() -> int:
                 "bootstrap_downloaded_models": False,
             }
         else:
-            manifest = run_setup(paths)
+            manifest = run_setup(
+                paths, alignment_feature_reuse=args.alignment_feature_reuse
+            )
             backend = manifest["backend"]
             result = {
                 "status": "ready",

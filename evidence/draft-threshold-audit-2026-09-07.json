@@ -1,0 +1,98 @@
+{
+  "active_score_gate": {
+    "avg_logprob_override": false,
+    "field": "no_speech_prob",
+    "reject_comparison": ">=",
+    "threshold": 0.6
+  },
+  "boundary_cases": [
+    {
+      "decision": {
+        "reason": "model_speech_candidate",
+        "state": "speech_candidate"
+      },
+      "no_speech_prob": 0.5999999999999999,
+      "position": "just_below"
+    },
+    {
+      "decision": {
+        "reason": "conflicting_speech_score",
+        "state": "uncertain"
+      },
+      "no_speech_prob": 0.6,
+      "position": "at"
+    },
+    {
+      "decision": {
+        "reason": "conflicting_speech_score",
+        "state": "uncertain"
+      },
+      "no_speech_prob": 0.6000000000000001,
+      "position": "just_above"
+    }
+  ],
+  "exact_decision_parity_guaranteed_for_all_inputs": false,
+  "input_sha256": "90a31e5cc9f85e4ac2e8bb39798f6e82e9b66011b67ad9ee15f7a98f1211a80b",
+  "limitation": "Observed deltas are not a proven error bound. Same-side scores and identical other inputs preserve this gate, but do not prove future token, timing, publication, or whole-event parity.",
+  "offline": true,
+  "pairs": [
+    {
+      "candidate": "b1",
+      "control": "a1",
+      "events_exact": true,
+      "gate_crossings": [],
+      "gate_decisions_exact": true,
+      "maximum_absolute_score_deltas": {
+        "avg_logprob": 9.5367431640625e-7,
+        "compression_ratio": 0,
+        "no_speech_prob": 0.0000014156103134155273
+      },
+      "minimum_active_no_speech_margin": 0.35662387907505033,
+      "paired_windows": 49,
+      "reconstructed_gate_replays": 98,
+      "text_exact": true,
+      "tokens_exact": true
+    },
+    {
+      "candidate": "b2",
+      "control": "a2",
+      "events_exact": true,
+      "gate_crossings": [],
+      "gate_decisions_exact": true,
+      "maximum_absolute_score_deltas": {
+        "avg_logprob": 9.5367431640625e-7,
+        "compression_ratio": 0,
+        "no_speech_prob": 0.0000014156103134155273
+      },
+      "minimum_active_no_speech_margin": 0.35662387907505033,
+      "paired_windows": 49,
+      "reconstructed_gate_replays": 98,
+      "text_exact": true,
+      "tokens_exact": true
+    }
+  ],
+  "reconstructed_not_new_inference": true,
+  "schema_version": 1,
+  "source_sha256": {
+    "src/whisper_runtime/adapters/_draft_inference.py": "e07795bb2601d06d458401e122072c7758d70ca513cad3481264370c278a0164",
+    "src/whisper_runtime/adapters/audio_evidence.py": "14db21a12f4c8ea3da76bede0814ac2cd1422162165fd65db1bcf951de176184",
+    "src/whisper_runtime/adapters/continuous_stream.py": "9720f9a4ae57f58a4a5303cde5c395c09442c02a62f0ceedc769212abefb7c62",
+    "tools/audit_draft_thresholds.py": "2290b9a74f921ff466c05647833e7dbf12e067d97ca4b43c3d283aa7e76adc34"
+  },
+  "synthetic_crossing": {
+    "candidate_decision": {
+      "reason": "conflicting_speech_score",
+      "state": "uncertain"
+    },
+    "candidate_score": 0.6000007078051567,
+    "control_decision": {
+      "reason": "model_speech_candidate",
+      "state": "speech_candidate"
+    },
+    "control_score": 0.5999992921948433,
+    "decision_parity": false,
+    "observed_max_delta_used_only_as_example": 0.0000014156103134155273,
+    "synthetic": true,
+    "tokens_exact": true
+  }
+}

@@ -40,6 +40,28 @@ def _event(sequence=1, kind="provisional", start=0, end=320):
     return {"type": "event", "event": event, "server_elapsed_ns": 10**15}
 
 
+class SourceClock:
+    """Advance only the client's source clock; keep asyncio deadlines real."""
+
+    def __init__(self, *, sleep_gate=None):
+        self.now_ns = 0
+        self.sleep_gate = sleep_gate
+
+    async def sleep(self, seconds):
+        if self.sleep_gate is not None:
+            await self.sleep_gate.wait()
+        self.now_ns += round(seconds * 1_000_000_000)
+        await asyncio.sleep(0)
+
+    def patch(self):
+        # Replace module references, not process-wide asyncio.sleep or time.
+        return mock.patch.multiple(
+            client,
+            time=SimpleNamespace(monotonic_ns=lambda: self.now_ns),
+            asyncio=SimpleNamespace(**{**vars(asyncio), "sleep": self.sleep}),
+        )
+
+
 class DuplexSocket:
     """Minimal socket whose server output does not depend on client receives."""
 
@@ -57,6 +79,7 @@ class DuplexSocket:
         self.receive_cancelled = False
         self.send_cancelled = False
         self.send_delay = 0
+        self.send_gate = None
         self.ready_delay = 0
         self.on_frame_message = None
         self.finish_response = True
@@ -121,6 +144,8 @@ class DuplexSocket:
                 await self.messages.put(message)
             if self.send_delay:
                 await asyncio.sleep(self.send_delay)
+            if self.send_gate is not None:
+                await self.send_gate.wait()
         except asyncio.CancelledError:
             self.send_cancelled = True
             raise
@@ -139,6 +164,28 @@ class DuplexSocket:
             raise
         finally:
             self.receiving -= 1
+
+
+def hold_first_send_until_response(socket):
+    """Order receipt of a terminal/error response before the next source frame."""
+    delivered = asyncio.Event()
+    original_send, original_receive = socket.send_bytes, socket.receive_json
+
+    async def receive():
+        message = await original_receive()
+        if socket.frames:
+            delivered.set()
+        return message
+
+    async def send(frame):
+        await original_send(frame)
+        if len(socket.frames) == 1:
+            # The receiver processes the response without another await before
+            # raising. Delivery, not a hoped-for 20 ms scheduler gap, is required.
+            await delivered.wait()
+
+    socket.receive_json, socket.send_bytes = receive, send
+    return delivered
 
 
 class ReplayWebSocketTests(unittest.IsolatedAsyncioTestCase):
@@ -245,12 +292,22 @@ class ReplayWebSocketTests(unittest.IsolatedAsyncioTestCase):
 
     async def test_send_completion_source_lateness_prevents_eof(self):
         socket = DuplexSocket(self.pcm)
-        socket.send_delay = 0.04
-        result = await self._run(
-            socket, config=replace(self.config, max_source_lateness_s=0.02)
-        )
+        clock = SourceClock()
+        original_send = socket.send_bytes
+
+        async def delayed_send(frame):
+            await original_send(frame)
+            clock.now_ns += 40_000_000
+
+        socket.send_bytes = delayed_send
+        with clock.patch():
+            result = await self._run(
+                socket, config=replace(self.config, max_source_lateness_s=0.02)
+            )
         self.assertEqual(result["error_code"], "source_late")
         self.assertEqual(result["client_metrics"]["sent_chunks"], 1)
+        self.assertEqual(result["send_records"][0]["offered_ns"], 20_000_000)
+        self.assertEqual(result["send_records"][0]["completed_ns"], 60_000_000)
         self.assertNotIn("eof", [m["type"] for m in socket.controls])
 
     async def test_malformed_control_disconnected_and_oversize_messages(self):
@@ -281,7 +338,9 @@ class ReplayWebSocketTests(unittest.IsolatedAsyncioTestCase):
                         await socket.messages.put(message)
 
                 socket.send_bytes = send
-                result = await self._run(socket)
+                hold_first_send_until_response(socket)
+                with SourceClock().patch():
+                    result = await self._run(socket)
                 self.assertEqual(result["error_code"], expected, result)
                 self.assertNotIn("secret", json.dumps(result))
                 self.assertNotIn("private.invalid", json.dumps(result))
@@ -330,8 +389,11 @@ class ReplayWebSocketTests(unittest.IsolatedAsyncioTestCase):
     async def test_premature_done_stops_producer(self):
         socket = DuplexSocket(self.pcm)
         socket.on_frame_message = {"type": "done", "status": "completed"}
-        result = await self._run(socket)
+        delivered = hold_first_send_until_response(socket)
+        with SourceClock().patch():
+            result = await self._run(socket)
         self.assertEqual(result["error_code"], "premature_done")
+        self.assertTrue(delivered.is_set())
         self.assertEqual(len(socket.frames), 1)
 
     async def test_timeout_paths(self):
@@ -342,9 +404,12 @@ class ReplayWebSocketTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(result["error_code"], "ready_timeout")
         self.assertEqual(socket.frames, [])
         socket = DuplexSocket(self.pcm)
-        result = await self._run(
-            socket, config=replace(self.config, total_timeout_s=0.01)
-        )
+        # Hold source pacing until cancellation instead of racing the 10 ms
+        # total timeout against the first 20 ms source deadline.
+        with SourceClock(sleep_gate=asyncio.Event()).patch():
+            result = await self._run(
+                socket, config=replace(self.config, total_timeout_s=0.01)
+            )
         self.assertEqual(result["error_code"], "total_timeout")
         self.assertEqual(socket.frames, [])
         socket = DuplexSocket(self.pcm)
@@ -393,15 +458,21 @@ class ReplayWebSocketTests(unittest.IsolatedAsyncioTestCase):
 
     async def test_external_cancellation_joins_both_tasks_and_sends_cancel(self):
         socket = DuplexSocket(self.pcm)
-        task = asyncio.create_task(
-            client._replay_socket(socket, self.pcm, config=self.config)
-        )
-        await socket.first_frame.wait()
-        task.cancel()
-        result = await task
+        # Block inside the first send: observing its event does not otherwise
+        # prevent the producer from reaching EOF before cancellation is delivered.
+        socket.send_gate = asyncio.Event()
+        with SourceClock().patch():
+            task = asyncio.create_task(
+                client._replay_socket(socket, self.pcm, config=self.config)
+            )
+            await asyncio.wait_for(socket.first_frame.wait(), timeout=1)
+            task.cancel()
+            result = await task
         self.assertEqual(result["status"], "cancelled")
         self.assertEqual(socket.receiving, 0)
         self.assertEqual(socket.sending, 0)
+        self.assertTrue(socket.send_cancelled)
+        self.assertEqual(len(socket.frames), 1)
         self.assertEqual(socket.controls[-1], {"type": "cancel"})
         self.assertNotIn("eof", [m["type"] for m in socket.controls])
 
@@ -581,6 +652,202 @@ class ReplayWebSocketTests(unittest.IsolatedAsyncioTestCase):
             await trace.on_request_redirect[0](None, None, None)
 
 
+class LiveDuplexSocket(DuplexSocket):
+    def __init__(self, pcm, *, max_samples=client.MAX_LIVE_SAMPLES, transform=None):
+        self.max_samples = max_samples
+
+        def live_done(response):
+            done = response[-1]
+            done.update(protocol=client.LIVE_PROTOCOL, source_eof_received=True)
+            done["metrics"].update(accepted_chunks=len(self.frames), event_count=4)
+            done.pop("admissions")
+            return transform(response) if transform else response
+
+        super().__init__(pcm, response_transform=live_done)
+
+    async def send_json(self, payload):
+        if payload["type"] == "start":
+            self.controls.append(copy.deepcopy(payload))
+            await self.messages.put(
+                dict(
+                    type="ready",
+                    protocol=client.LIVE_PROTOCOL,
+                    sample_rate_hz=16000,
+                    chunk_samples=320,
+                    limits={"max_samples": self.max_samples},
+                )
+            )
+        else:
+            await super().send_json(payload)
+
+
+class LiveReplayTests(unittest.IsolatedAsyncioTestCase):
+    def source(self, chunks, *, fail=False):
+        self.source_closed = False
+
+        async def generate():
+            try:
+                for chunk in chunks:
+                    yield chunk
+                if fail:
+                    raise RuntimeError("secret source failure")
+            finally:
+                self.source_closed = True
+
+        return generate()
+
+    async def test_invalid_live_source_or_replay_config_fails_before_start(self):
+        for source, config in (
+            (None, client.LiveConfig()),
+            ([bytes(640)], client.LiveConfig()),
+            (self.source([bytes(640)]), client.ReplayConfig()),
+        ):
+            sock = LiveDuplexSocket(bytes(640))
+            result = await client._stream_live_socket(sock, source, config=config)
+            self.assertEqual(result["protocol"], client.LIVE_PROTOCOL)
+            self.assertEqual(result["error_code"], "invalid_source")
+            self.assertNotIn("start", [item["type"] for item in sock.controls])
+
+    async def test_start_needs_no_future_length_or_hash_and_eof_binds_observed_source(
+        self,
+    ):
+        pcm = b"\x01\x00" * 777
+        sock, received = LiveDuplexSocket(pcm), []
+
+        async def event(value, elapsed):
+            received.append(value)
+
+        result = await client._stream_live_socket(
+            sock, self.source([pcm[:640], pcm[640:1280], pcm[1280:]]), on_event=event
+        )
+        self.assertEqual(result["status"], "completed", result)
+        self.assertEqual(
+            sock.controls[0], {"type": "start", "protocol": client.LIVE_PROTOCOL}
+        )
+        self.assertEqual(
+            sock.controls[-1],
+            dict(
+                type="eof",
+                samples=777,
+                chunks=3,
+                sha256=hashlib.sha256(pcm).hexdigest(),
+            ),
+        )
+        self.assertEqual(result["events"], [])
+        self.assertEqual(result["send_records"], [])
+        self.assertEqual(result["client_metrics"]["received_events"], 4)
+        self.assertEqual(received[-1]["kind"], "final")
+        self.assertTrue(self.source_closed)
+
+    async def test_invalid_source_frames_never_manufacture_eof(self):
+        for chunks in ([], [b""], [bytes(3)], [bytes(642)], [bytes(2), bytes(640)]):
+            with self.subTest(lengths=list(map(len, chunks))):
+                sock = LiveDuplexSocket(bytes(640))
+                result = await client._stream_live_socket(sock, self.source(chunks))
+                self.assertEqual(result["status"], "failed")
+                self.assertNotIn("eof", [item["type"] for item in sock.controls])
+                self.assertTrue(self.source_closed)
+
+    async def test_negotiated_input_cap_stops_before_over_limit_frame(self):
+        sock = LiveDuplexSocket(bytes(1280), max_samples=320)
+        result = await client._stream_live_socket(
+            sock, self.source([bytes(640), bytes(640)])
+        )
+        self.assertEqual(result["error_code"], "input_limit")
+        self.assertEqual(len(sock.frames), 1)
+        self.assertNotIn("eof", [item["type"] for item in sock.controls])
+
+    async def test_live_source_crosses_v1_duration_without_replay_sleep_or_history_growth(
+        self,
+    ):
+        pcm = bytes((client.MAX_SAMPLES + 320) * 2)
+        sock = LiveDuplexSocket(pcm)
+
+        async def source():
+            for offset in range(0, len(pcm), 640):
+                yield pcm[offset : offset + 640]
+
+        result = await client._stream_live_socket(sock, source())
+        self.assertEqual(result["status"], "completed", result)
+        self.assertGreater(result["sample_count"], client.MAX_SAMPLES)
+        self.assertEqual(result["client_metrics"]["sent_chunks"], 6001)
+        self.assertEqual(result["send_records"], [])
+        self.assertEqual(result["events"], [])
+
+    async def test_source_exception_is_redacted_and_iterator_closed(self):
+        sock = LiveDuplexSocket(bytes(640))
+        result = await client._stream_live_socket(
+            sock, self.source([bytes(640)], fail=True)
+        )
+        self.assertEqual(result["error_code"], "source_failed")
+        self.assertNotIn("secret", json.dumps(result))
+        self.assertNotIn("eof", [item["type"] for item in sock.controls])
+        self.assertTrue(self.source_closed)
+
+    async def test_idle_source_and_blocked_send_are_bounded_and_cancelled(self):
+        closed = asyncio.Event()
+
+        async def idle():
+            try:
+                await asyncio.Event().wait()
+                yield bytes(640)
+            finally:
+                closed.set()
+
+        sock = LiveDuplexSocket(bytes(640))
+        result = await client._stream_live_socket(
+            sock, idle(), config=replace(client.LiveConfig(), source_timeout_s=0.01)
+        )
+        self.assertEqual(result["error_code"], "source_timeout")
+        self.assertTrue(closed.is_set())
+        sock = LiveDuplexSocket(bytes(640))
+        sock.send_delay = 0.05
+        result = await client._stream_live_socket(
+            sock,
+            self.source([bytes(640)]),
+            config=replace(client.LiveConfig(), send_timeout_s=0.01),
+        )
+        self.assertEqual(result["error_code"], "send_timeout")
+        self.assertTrue(sock.send_cancelled)
+        self.assertTrue(self.source_closed)
+        self.assertNotIn("eof", [item["type"] for item in sock.controls])
+
+    async def test_cancellation_joins_receiver_and_closes_live_source(self):
+        entered, closed = asyncio.Event(), asyncio.Event()
+
+        async def source():
+            try:
+                entered.set()
+                await asyncio.Event().wait()
+                yield bytes(640)
+            finally:
+                closed.set()
+
+        sock = LiveDuplexSocket(bytes(640))
+        task = asyncio.create_task(client._stream_live_socket(sock, source()))
+        await entered.wait()
+        task.cancel()
+        result = await task
+        self.assertEqual(result["status"], "cancelled")
+        self.assertTrue(closed.is_set())
+        self.assertEqual(sock.receiving, 0)
+        self.assertEqual(sock.controls[-1], {"type": "cancel"})
+
+    async def test_done_digest_and_chunk_counters_are_not_trusted(self):
+        for key, value, expected in (
+            ("accepted_sha256", "0" * 64, "accepted_hash_mismatch"),
+            ("accepted_chunks", 5, "invalid_done"),
+        ):
+
+            def change(response):
+                response[-1]["metrics"][key] = value
+                return response
+
+            sock = LiveDuplexSocket(bytes(640), transform=change)
+            result = await client._stream_live_socket(sock, self.source([bytes(640)]))
+            self.assertEqual(result["error_code"], expected, result)
+
+
 class ReplayConfigTests(unittest.TestCase):
     def test_limits_cannot_disable_bounds(self):
         for kwargs in (
@@ -594,6 +861,20 @@ class ReplayConfigTests(unittest.TestCase):
         ):
             with self.subTest(kwargs=kwargs), self.assertRaises(ValueError):
                 client.ReplayConfig(**kwargs)
+
+    def test_live_limits_are_separate_finite_and_longer_than_prerecorded_v1(self):
+        self.assertEqual(client.LiveConfig().max_samples, 3600 * 16000)
+        self.assertEqual(client.ReplayConfig().total_timeout_s, 160)
+        for kwargs in (
+            {"total_timeout_s": 3701},
+            {"max_samples": True},
+            {"max_samples": 3600 * 16000 + 1},
+            {"source_timeout_s": 0},
+            {"source_timeout_s": float("inf")},
+            {"max_server_events": 100001},
+        ):
+            with self.subTest(kwargs=kwargs), self.assertRaises(ValueError):
+                client.LiveConfig(**kwargs)
 
 
 if __name__ == "__main__":

@@ -2,8 +2,9 @@
 
 ## Supported versions
 
-This project is pre-alpha. Only the current `main` branch receives security
-fixes. No release is approved for production use.
+This project is alpha. Only the current `main` branch receives security fixes;
+released alpha versions do not have separate maintenance branches. No release
+is approved for production use.
 
 ## Report a vulnerability
 

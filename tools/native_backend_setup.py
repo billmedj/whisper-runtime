@@ -20,12 +20,18 @@ RUNTIME_ROOT = Path(__file__).resolve().parents[1]
 PATCH_DIRECTORY = RUNTIME_ROOT / "patches" / "openai-whisper"
 CONSTRAINTS_FILE = RUNTIME_ROOT / "constraints" / "native-integration.txt"
 DEFAULT_SETUP_ROOT = RUNTIME_ROOT / ".tmp-native"
+DEFAULT_REUSE_SETUP_ROOT = RUNTIME_ROOT / ".tmp-native-reuse"
 
 SCHEMA_VERSION = "2"
 BACKEND_URL = "https://github.com/openai/whisper.git"
 BACKEND_BASE_COMMIT = "86098128c0b4f24f0e2aa2994de830614b474227"
 BACKEND_BASE_TREE = "f7b3cb8e12a2e84dccacc4c858c33d5a9c114688"
 BACKEND_PATCHED_TREE = "c011d2563c26763b5f147026e6b18ef85bccd4fb"
+BACKEND_REUSE_TREE = "32163d5cdb87babc1cd415a86cc5a58116c86a16"
+ALIGNMENT_REUSE_PATCH = "patches/openai-whisper/experimental/0008-Add-optional-alignment-audio-features.patch"
+ALIGNMENT_REUSE_SHA256 = (
+    "e665bca7abea5ab273c34ecf4d63c050f8c7120c7fdd9c411038b4f7511cd169"
+)
 TORCH_VERSION = "2.6.0"
 TORCH_CPU_INDEX = "https://download.pytorch.org/whl/cpu"
 PYPI_INDEX = "https://pypi.org/simple"
@@ -106,12 +112,15 @@ def require_safe_setup_root(
 
     resolved = root.expanduser().resolve()
     repository = runtime_root.resolve()
-    default = repository / DEFAULT_SETUP_ROOT.name
+    defaults = {
+        repository / DEFAULT_SETUP_ROOT.name,
+        repository / DEFAULT_REUSE_SETUP_ROOT.name,
+    }
     if resolved == repository or resolved in repository.parents:
         raise NativeSetupError("--root cannot be the repository or its parent")
-    if repository in resolved.parents and resolved != default:
+    if repository in resolved.parents and resolved not in defaults:
         raise NativeSetupError(
-            "--root inside the repository must be .tmp-native; "
+            "--root inside the repository must be .tmp-native or .tmp-native-reuse; "
             "use a path outside the repository for another setup"
         )
     return resolved
@@ -178,6 +187,13 @@ def verify_patch_manifest(patch_directory: Path = PATCH_DIRECTORY) -> dict[str, 
                 f"patch checksum mismatch for {name}: expected {expected}, observed {observed}"
             )
     return entries
+
+
+def verify_alignment_reuse_patch() -> dict[str, str]:
+    """Verify the one opt-in patch independently of the seven-patch manifest."""
+    if sha256_file(RUNTIME_ROOT / ALIGNMENT_REUSE_PATCH) != ALIGNMENT_REUSE_SHA256:
+        raise NativeSetupError("alignment feature reuse patch checksum mismatch")
+    return {"path": ALIGNMENT_REUSE_PATCH, "sha256": ALIGNMENT_REUSE_SHA256}
 
 
 def environment_python(environment: Path, *, os_name: str | None = None) -> Path:
@@ -494,7 +510,9 @@ def require_runtime_identity(*, allow_dirty: bool = False) -> GitIdentity:
     return identity
 
 
-def _backend_state(repository: Path) -> tuple[str, GitIdentity]:
+def _backend_state(
+    repository: Path, *, alignment_feature_reuse: bool = False
+) -> tuple[str, GitIdentity]:
     identity = git_identity(repository)
     if not identity.clean:
         raise NativeSetupError("the backend worktree has source changes")
@@ -502,7 +520,8 @@ def _backend_state(repository: Path) -> tuple[str, GitIdentity]:
         raise NativeSetupError("the backend origin does not match the pinned source")
     if identity.commit == BACKEND_BASE_COMMIT and identity.tree == BACKEND_BASE_TREE:
         return "base", identity
-    if identity.tree != BACKEND_PATCHED_TREE:
+    reuse = alignment_feature_reuse and identity.tree == BACKEND_REUSE_TREE
+    if identity.tree != BACKEND_PATCHED_TREE and not reuse:
         raise NativeSetupError(
             "the backend tree does not match the pinned base or patched tree"
         )
@@ -525,14 +544,24 @@ def _backend_state(repository: Path) -> tuple[str, GitIdentity]:
     count = _git_output(
         repository, "rev-list", "--count", f"{BACKEND_BASE_COMMIT}..HEAD"
     )
-    if ancestor.returncode != 0 or count != "7":
+    expected_count = "8" if reuse else "7"
+    if ancestor.returncode != 0 or count != expected_count:
         raise NativeSetupError(
-            "the patched backend does not contain the expected seven-commit series"
+            f"the patched backend does not contain the expected {expected_count}-commit series"
         )
-    return "patched", identity
+    return ("reuse" if reuse else "patched"), identity
 
 
-def ensure_backend(paths: SetupPaths, patches: dict[str, str]) -> GitIdentity:
+def ensure_backend(
+    paths: SetupPaths,
+    patches: dict[str, str],
+    *,
+    alignment_feature_reuse: bool = False,
+) -> GitIdentity:
+    if type(alignment_feature_reuse) is not bool:
+        raise TypeError("alignment_feature_reuse must be a boolean")
+    if alignment_feature_reuse:
+        verify_alignment_reuse_patch()
     if not paths.backend.exists():
         _run(
             (
@@ -561,36 +590,68 @@ def ensure_backend(paths: SetupPaths, patches: dict[str, str]) -> GitIdentity:
     elif not paths.backend.is_dir():
         raise NativeSetupError(f"backend path is not a directory: {paths.backend}")
 
-    state, identity = _backend_state(paths.backend)
-    if state == "patched":
+    state, identity = _backend_state(
+        paths.backend, alignment_feature_reuse=alignment_feature_reuse
+    )
+    if state == "reuse" or (state == "patched" and not alignment_feature_reuse):
         return identity
 
-    patch_files = tuple(str(PATCH_DIRECTORY / name) for name in sorted(patches))
-    _run(
-        (
-            "git",
-            "-C",
-            str(paths.backend),
-            "-c",
-            "user.name=Whisper Runtime Bootstrap",
-            "-c",
-            "user.email=whisper-runtime@example.invalid",
-            "-c",
-            "commit.gpgSign=false",
-            "-c",
-            "core.hooksPath=",
-            "am",
-            "--committer-date-is-author-date",
-            "--no-gpg-sign",
-            "--no-verify",
-            *patch_files,
+    if state == "base":
+        patch_files = tuple(str(PATCH_DIRECTORY / name) for name in sorted(patches))
+        _run(
+            (
+                "git",
+                "-C",
+                str(paths.backend),
+                "-c",
+                "user.name=Whisper Runtime Bootstrap",
+                "-c",
+                "user.email=whisper-runtime@example.invalid",
+                "-c",
+                "commit.gpgSign=false",
+                "-c",
+                "core.hooksPath=",
+                "am",
+                "--committer-date-is-author-date",
+                "--no-gpg-sign",
+                "--no-verify",
+                *patch_files,
+            )
         )
-    )
-    state, identity = _backend_state(paths.backend)
-    if state != "patched":
-        raise NativeSetupError(
-            "the backend patch series did not produce the expected tree"
+        state, identity = _backend_state(paths.backend)
+        if state != "patched":
+            raise NativeSetupError(
+                "the backend patch series did not produce the expected tree"
+            )
+    if alignment_feature_reuse:
+        optional = str(RUNTIME_ROOT / ALIGNMENT_REUSE_PATCH)
+        _run(("git", "-C", str(paths.backend), "apply", "--check", optional))
+        _run(("git", "-C", str(paths.backend), "apply", "--index", optional))
+        _run(
+            (
+                "git",
+                "-C",
+                str(paths.backend),
+                "-c",
+                "user.name=Whisper Runtime Bootstrap",
+                "-c",
+                "user.email=whisper-runtime@example.invalid",
+                "-c",
+                "commit.gpgSign=false",
+                "-c",
+                "core.hooksPath=",
+                "commit",
+                "--no-gpg-sign",
+                "--no-verify",
+                "-m",
+                "Add optional alignment audio feature reuse",
+            )
         )
+        state, identity = _backend_state(paths.backend, alignment_feature_reuse=True)
+        if state != "reuse":
+            raise NativeSetupError(
+                "alignment feature reuse did not produce the pinned tree"
+            )
     return identity
 
 
@@ -662,8 +723,9 @@ def build_manifest(
     patches: dict[str, str],
     environment: EnvironmentIdentity,
     tools: dict[str, str],
+    alignment_feature_reuse: bool = False,
 ) -> dict[str, object]:
-    return {
+    manifest: dict[str, object] = {
         "schema_version": SCHEMA_VERSION,
         "created_at": dt.datetime.now(dt.timezone.utc)
         .isoformat()
@@ -695,6 +757,9 @@ def build_manifest(
         "tools": tools,
         "bootstrap_downloaded_models": False,
     }
+    if alignment_feature_reuse:
+        manifest["optional_patch"] = verify_alignment_reuse_patch()
+    return manifest
 
 
 def write_manifest(path: Path, manifest: dict[str, object]) -> None:
@@ -777,6 +842,7 @@ def load_validated_setup(manifest_path: Path) -> ValidatedSetup:
     document = _require_object(manifest, "manifest")
     if document.get("schema_version") != SCHEMA_VERSION:
         raise NativeSetupError("unsupported setup manifest schema")
+    alignment_feature_reuse = "optional_patch" in document
     _require_exact_keys(
         document,
         {
@@ -788,7 +854,8 @@ def load_validated_setup(manifest_path: Path) -> ValidatedSetup:
             "environment",
             "tools",
             "bootstrap_downloaded_models",
-        },
+        }
+        | ({"optional_patch"} if alignment_feature_reuse else set()),
         "manifest",
     )
     _validate_created_at(document.get("created_at"))
@@ -865,8 +932,20 @@ def load_validated_setup(manifest_path: Path) -> ValidatedSetup:
         raise NativeSetupError("manifest backend base commit does not match")
     if backend_record.get("base_tree") != BACKEND_BASE_TREE:
         raise NativeSetupError("manifest backend base tree does not match")
-    if backend_record.get("tree") != BACKEND_PATCHED_TREE:
+    expected_tree = (
+        BACKEND_REUSE_TREE if alignment_feature_reuse else BACKEND_PATCHED_TREE
+    )
+    if backend_record.get("tree") != expected_tree:
         raise NativeSetupError("manifest backend patched tree does not match")
+    if alignment_feature_reuse:
+        optional = _require_object(
+            document["optional_patch"], "manifest.optional_patch"
+        )
+        _require_exact_keys(optional, {"path", "sha256"}, "manifest.optional_patch")
+        if optional != verify_alignment_reuse_patch():
+            raise NativeSetupError(
+                "manifest alignment feature reuse patch does not match"
+            )
 
     patches = verify_patch_manifest()
     if patch_record.get("manifest") != PATCH_MANIFEST_PATH:
@@ -896,8 +975,10 @@ def load_validated_setup(manifest_path: Path) -> ValidatedSetup:
     ):
         raise NativeSetupError("runtime source no longer matches the setup manifest")
 
-    state, backend = _backend_state(paths.backend)
-    if state != "patched":
+    state, backend = _backend_state(
+        paths.backend, alignment_feature_reuse=alignment_feature_reuse
+    )
+    if state != ("reuse" if alignment_feature_reuse else "patched"):
         raise NativeSetupError("backend source is not in the patched state")
     if (
         backend_record.get("applied_commit") != backend.commit

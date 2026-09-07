@@ -1,5 +1,147 @@
 # Integration evidence
 
+The [low-latency v2 T4 check](../docs/research/2026-09-07-low-latency-v2-gpu-results.md)
+passes two full source-paced sessions. First confirmed text arrives at
+7.358/6.186 seconds, with identical exports and 7/114 word edits. The
+[verified archive](modal-low-latency-v2-2026-09-07.zip) includes exact source,
+input, timing records, startup receipts, independent audit and stopped-app
+observation. This is a short check, not endurance or a stable release.
+
+The [two-observation CPU replay](../docs/research/2026-09-07-two-observation-holdback.md)
+completes the full 46.55-second input with first confirmation after 6 seconds of
+admitted audio and 7/114 word edits. Its
+[event audit](two-observation-cpu-2026-09-07.json) checks final coverage, exports,
+source identity and cleanup receipts. This is accelerated CPU evidence, not
+source-paced GPU latency or endurance.
+
+The [verified-startup replay](../docs/research/2026-09-07-verified-startup-results.md)
+passes two short T4 sessions with the guarded backend importer and SourceClock
+v2. Full coverage, identical exports and CUDA capacity return pass. The initial
+maximum wake delay is 206.387 ms against the unchanged 250 ms bound; its interval
+overlaps the first DTW operation, without establishing causality. The
+[exact-byte archive](modal-verified-startup-2026-09-07.zip) includes frozen source,
+raw timing/input/result records, an independent audit and a stopped/zero-task
+receipt. This is not endurance, clean-install or physical-microphone qualification.
+
+The [instrumented source-clock replay](../docs/research/2026-09-07-source-clock-replay-results.md)
+passes two short T4 sessions under the submitted 4 GiB limit. Coverage and
+exports match, and terminal CUDA allocation is unchanged. Initial maximum
+source lateness is 222.77 ms against a 250 ms bound. The
+[verified archive](modal-source-clock-replay-2026-09-07.zip) retains source,
+input, raw timing records, audit and stopped-app observation. This does not
+qualify endurance or repair the preceding failure.
+
+The [4 GiB provider-capacity smoke](../docs/research/2026-09-07-capacity-smoke-results.md)
+stopped on a source-clock delay during its first session. Cleanup passed; no
+session completed and no endurance stage started. The
+[failure archive](modal-capacity-smoke-2026-09-07.zip) preserves the exact source,
+input, raw observations, independent audit and stopped-app observation. It is
+not a passing capacity result or an observed out-of-memory termination.
+
+The [native release endurance attempt](../docs/research/2026-09-07-release-soak-results.md)
+stopped at its smoke-stage RAM check. Its 46.55-second source completed with
+verified coverage, 7/114 word edits and released runtime capacity, but process
+RSS exceeded the preregistered ceiling. No hourly stage ran. The
+[independent audit](release-soak-smoke-audit-2026-09-07.json) and
+[attempt archive](modal-release-soak-attempt-2026-09-07.zip) retain the failure,
+events and exact executed source. This is not a passing endurance result.
+
+The [new-audio and restart checks](../docs/research/2026-09-07-draft-qualification-results.md)
+extend native draft testing to two new speakers and an actual CPU process
+restart. On the 15.485-second T4 input, decoder forwards fall from 133 to 72
+per stream and pooled decode-phase wall falls by 23.5%, with exact events and
+tokens. The separate restart retains full logical output while dropping the
+old draft hint. Threshold counterexamples remain: equal tokens do not prove
+identical decisions for scores straddling 0.6. Drafts remain opt-in. See the
+[GPU archive](modal-draft-holdout-2026-09-07.zip),
+[independent GPU audit](draft-holdout-audit-2026-09-07.json),
+[CPU restart audit](native-draft-fresh-process-cpu-audit-2026-09-07.json) and
+[threshold audit](draft-threshold-audit-2026-09-07.json).
+The [CPU restart archive](native-draft-fresh-process-cpu-2026-09-07.zip) is a
+documented privacy derivative, not the original raw report bytes: 19 metadata
+paths were replaced while executed source, audio, savepoint and numerical
+evidence remain unchanged. Its original/public hashes and derivation manifest
+are linked from the audit. Verify it with
+`python -B tools/verify_public_cpu_archive.py evidence/native-draft-fresh-process-cpu-2026-09-07.zip`.
+
+The [integrated draft T4 comparison](../docs/research/2026-09-07-integrated-draft-gpu-results.md)
+tests the native opt-in in ABBA order on four 93.1-second source-paced streams.
+Decoder forwards fall from 2,382 to 1,692 per stream, and pooled decode-phase
+native wall time falls by 18.2%, with improvement in both orders. All 77 events,
+27 commits and current-audio tokens match. The first control has extra alignment
+wall time that is not credited to drafts. Known repeated audio, unchanged word
+errors and small score differences limit the result. See the
+[record archive](modal-integrated-draft-2026-09-07.zip) and
+[offline audit](integrated-draft-gpu-audit-2026-09-07.json). Defaults are unchanged.
+
+The [native draft integration](../docs/research/2026-09-07-native-draft-integration.md)
+replaces diagnostic method patches with an opt-in request-local path. On a
+33.66-second CPU fixture, decoder forwards fall from 1,009 to 810; a logical
+checkpoint/restore arm uses 820. All 29 events, 17 token traces and 11 commits
+match. A real cancellation probe releases native state and capacity. The
+[archive](native-draft-integration-2026-09-07.zip) includes the executed source
+and raw result. These are CPU correctness/count checks, not new GPU timings.
+
+The [verified-draft T4 comparison](../docs/research/2026-09-07-draft-gpu-results.md)
+reduces decoder forwards from 1,214 to 917 on the original 46.55-second mixed
+input. The CUDA forward-interval sum falls by 21.1%; decode-phase native wall
+time falls by 16.9%. All 25 raw token sequences and 14 commit texts and source
+spans match, with unchanged peak memory. Submitted token positions increase
+by 15.3%, and small score differences remain. Control-only alignment stalls
+prevent attributing the full total-wall reduction to drafts. This is one
+fixed-order test, not a general speed or production claim. See the
+[exact archive](modal-draft-features-2026-09-07.zip) and
+[offline audit](draft-gpu-audit-2026-09-07.json). Defaults are unchanged.
+
+The [decoder-work investigation](../docs/research/2026-09-07-decoder-work.md)
+accounts for the 216 extra T4 decoder forwards and tests two remedies locally.
+The [verified-draft CPU stream](stream-draft-cpu-2026-09-07.json) reduces decoder
+forwards from 1009 to 810 while preserving the archived text, commit boundaries,
+admission cadence and policy trace summaries. Encoder calls stay at 17; decoder
+input tokens increase. This does not establish lower GPU time or bit-identical
+scores. The same report retains the short-context candidate's longer commit
+gaps. Production defaults are unchanged.
+
+The [composed T4 result](../docs/research/2026-09-07-composed-gpu-results.md)
+completes three matched source-paced arms. Reuse removes 18 encoder forwards
+with exact fast-arm commit parity. The combined profile publishes earlier and
+uses less peak allocated memory than the conservative control, but retains a
+10.92% higher forward interval sum. See the
+[exact archive](modal-composed-features-2026-09-07.zip) and
+[offline cross-arm audit](composed-gpu-audit-2026-09-07.json).
+
+The [composed CPU comparison](composed-cpu-2026-09-07.json) connects earlier
+commits with same-window alignment reuse. Encoder forwards fall from 11 to 7
+and from 31 to 17 on two fixed inputs, with exact text, commit-boundary, trace
+and metric parity. The initial CPU timeout is retained. The
+[result and limits](../docs/research/2026-09-07-composed-inference-results.md)
+distinguish these CPU counts from the subsequent matched T4 measurements above.
+
+The [retained-context comparison](../docs/research/2026-09-06-retained-context-commits.md)
+publishes its first commit at 13.220 seconds in a short T4 run, compared with
+31.156 seconds in the earlier smoke test on the same input. Full-sequence word
+edits remain 7/114; summed source-window duration increases, not a measured GPU
+work total. The
+[receipt archive](modal-early-commit-2026-09-06.zip) and
+[offline event audit](retained-context-live-audit-2026-09-06.json) preserve this
+short-only result. CLI defaults and the earlier long-run claims are unchanged.
+
+The [single-stream live result](../docs/research/2026-09-06-live-v01.md) completes
+46.55 seconds, then 30 source-paced minutes on one T4 with one loaded model.
+Input hashes, full sample coverage, FINAL and cleanup pass. The long source
+repeats a short licensed cycle; its 6.14% word-edit rate is not held-out accuracy.
+The [exact record archive](modal-live-v01-2026-09-06.zip) includes both event logs
+for offline verification. General release qualification remains open.
+
+The [noisy crop/prompt diagnostic](modal-t4-tiny-en-noisy-context-prompt-2026-09-06.json)
+records four observations in two native windows on T4. Published decoder history
+restores a missing continuation on unchanged audio; the result loses the old
+anchor, so no text is published. Six encoder forwards are measured. A known
+tuple/list comparison error affects one control flag, not the observations;
+the original receipt is preserved with a
+[separate offline validation](noisy-context-prompt-offline-validation-2026-09-06.json).
+See the [results and next local boundary test](../docs/research/2026-09-06-noisy-context-prompt.md).
+
 The [additional group-anchor replay](group-validation-2026-09-06.json) validates
 24 recorded traces before scoring 14 observations from eight anchor states.
 Both the strict and group rules match all 14. No regression or additional gain

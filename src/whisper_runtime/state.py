@@ -124,6 +124,61 @@ class Session:
         with self._lock:
             return self._state
 
+    @classmethod
+    def from_snapshot(
+        cls, snapshot: SessionState, *, history_limit: int = 1_024
+    ) -> Session:
+        """Restore complete logical history into a fresh compare-and-swap holder.
+
+        This imports immutable publications, not requests, locks, leases or
+        decoder state. A truncated rolling history cannot prove its committed
+        prefix and is refused. Records keep their concrete result types and
+        nested provenance; replay validates the ordinary publication contract.
+        """
+        if not isinstance(snapshot, SessionState):
+            raise TypeError("snapshot must be a SessionState")
+        if not isinstance(snapshot.session_id, str) or not snapshot.session_id.strip():
+            raise ValueError("snapshot session_id must be a non-empty string")
+        if isinstance(snapshot.version, bool) or not isinstance(snapshot.version, int):
+            raise TypeError("snapshot version must be an integer")
+        if snapshot.version < 0:
+            raise ValueError("snapshot version must not be negative")
+        if not isinstance(snapshot.windows, tuple):
+            raise TypeError("snapshot windows must be a tuple")
+        _validate_committed_through(snapshot.committed_through_ms)
+        if snapshot.version != len(snapshot.windows):
+            raise ValueError("snapshot must contain its complete publication history")
+        restored = cls(snapshot.session_id, history_limit=history_limit)
+        if len(snapshot.windows) > history_limit:
+            raise ValueError("snapshot history exceeds history_limit")
+        for version, record in enumerate(snapshot.windows):
+            if not isinstance(record, WindowRecord):
+                raise TypeError("snapshot windows must contain WindowRecord values")
+            if not isinstance(record.request_id, str) or not record.request_id.strip():
+                raise ValueError("snapshot request_id must be a non-empty string")
+            if not isinstance(record.model, ModelSnapshot):
+                raise TypeError("snapshot record model must be a ModelSnapshot")
+            for name in ("model_id", "revision", "backend", "fingerprint"):
+                value = getattr(record.model, name)
+                if not isinstance(value, str) or not value.strip():
+                    raise ValueError(
+                        f"snapshot model {name} must be a non-empty string"
+                    )
+            if not isinstance(record.result, WindowResult):
+                raise TypeError("snapshot record result must be a WindowResult")
+            if not isinstance(record.result.window_id, str):
+                raise TypeError("snapshot window_id must be a string")
+            if not isinstance(record.result.text, str):
+                raise TypeError("snapshot result text must be a string")
+            record.result.__post_init__()
+            if record.result.analysis_span is not None:
+                record.result.analysis_span.__post_init__()
+            _validate_committed_through(record.committed_through_ms)
+            restored._commit(version, record)
+        if restored.snapshot() != snapshot:
+            raise ValueError("snapshot does not match its replayed publication history")
+        return restored
+
     def _commit(self, expected_version: int, record: WindowRecord) -> SessionState:
         with self._lock:
             current = self._state

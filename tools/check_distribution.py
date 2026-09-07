@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import configparser
 import tarfile
 import zipfile
 from email.parser import Parser
@@ -22,9 +23,36 @@ SDIST_REQUIRED_SUFFIXES = {
     "constraints/modal-client.txt",
     "docs/CUDA_QUALIFICATION_CONTRACT.md",
     "docs/EXPERIMENT_PROTOCOL.md",
+    "docs/CLI.md",
+    "docs/assets/transcription-flow.svg",
+    "docs/assets/execution-lifecycle.svg",
+    "docs/releases/0.1.0a1.md",
     "docs/MODAL_GPU_VALIDATION.md",
     "docs/rfcs/0001-state-resource-execution.md",
+    "docs/research/2026-09-07-release-candidate-checks.md",
+    "docs/research/2026-09-07-release-soak-results.md",
+    "docs/research/2026-09-07-verified-startup-results.md",
     "evidence/README.md",
+    "evidence/modal-composed-features-2026-09-07.zip",
+    "evidence/modal-draft-features-2026-09-07.zip",
+    "evidence/modal-draft-holdout-2026-09-07.zip",
+    "evidence/modal-early-commit-2026-09-06.zip",
+    "evidence/modal-integrated-draft-2026-09-07.zip",
+    "evidence/modal-live-v01-2026-09-06.zip",
+    "evidence/modal-memory-diagnostic-2026-09-07.zip",
+    "evidence/modal-capacity-smoke-2026-09-07.zip",
+    "evidence/modal-source-clock-replay-2026-09-07.zip",
+    "evidence/modal-verified-startup-2026-09-07.zip",
+    "evidence/modal-low-latency-v2-2026-09-07.zip",
+    "evidence/cpu-source-clock-probe-2026-09-07.zip",
+    "evidence/modal-release-soak-attempt-2026-09-07.zip",
+    "evidence/native-draft-fresh-process-cpu-2026-09-07.zip",
+    "evidence/native-draft-integration-2026-09-07.zip",
+    "evidence/pre-release-format-20260907.json",
+    "evidence/pre-release-format-20260907.zip",
+    "evidence/release-candidate-local-2026-09-07.json",
+    "evidence/release-soak-smoke-audit-2026-09-07.json",
+    "evidence/memory-attribution-audit-2026-09-07.json",
     "evidence/native-cpu-tiny-en-jfk-2026-09-03.json",
     "evidence/native-cpu-tiny-en-jfk-interleaving-2026-09-03.json",
     "evidence/native-cpu-tiny-en-jfk-runtime-concurrency-2026-09-04.json",
@@ -82,8 +110,14 @@ SDIST_REQUIRED_SUFFIXES = {
     "tools/verify_native_threaded.py",
 }
 FORBIDDEN_PARTS = {
+    ".git",
     ".lake",
+    ".mypy_cache",
+    ".pytest_cache",
+    ".ruff_cache",
+    ".venv",
     "__pycache__",
+    "artifacts",
     "build",
     "conformance/cache",
     "dist",
@@ -111,7 +145,9 @@ def _check_forbidden(names: set[str], label: str) -> list[str]:
     failures: list[str] = []
     for name in names:
         normalized = f"/{name.strip('/')}"
-        if any(f"/{part}/" in f"{normalized}/" for part in FORBIDDEN_PARTS):
+        if any(f"/{part}/" in f"{normalized}/" for part in FORBIDDEN_PARTS) or any(
+            part.startswith(".tmp-") for part in name.split("/")
+        ):
             failures.append(f"{label} contains excluded path: {name}")
     return failures
 
@@ -120,9 +156,36 @@ def check_wheel(path: Path) -> list[str]:
     failures: list[str] = []
     with zipfile.ZipFile(path) as archive:
         names = set(archive.namelist())
-        for required in ("whisper_runtime/__init__.py", "whisper_runtime/py.typed"):
+        for required in (
+            "whisper_runtime/__init__.py",
+            "whisper_runtime/py.typed",
+            "whisper_runtime/cli.py",
+            "whisper_runtime/captions.py",
+            "whisper_runtime/audio_source.py",
+            "whisper_runtime/native_setup.py",
+            "whisper_runtime/profiles.py",
+            "whisper_runtime/remote.py",
+            "whisper_runtime/remote_transport.py",
+            "whisper_runtime/pcm_live.py",
+        ):
             if required not in names:
                 failures.append(f"wheel is missing {required}")
+        entrypoints = [
+            name for name in names if name.endswith(".dist-info/entry_points.txt")
+        ]
+        if len(entrypoints) != 1:
+            failures.append("wheel must include one installed command declaration")
+        else:
+            parser = configparser.ConfigParser(interpolation=None)
+            try:
+                parser.read_string(archive.read(entrypoints[0]).decode("utf-8"))
+                command = parser.get("console_scripts", "whisper-runtime", fallback="")
+                if command.strip() != "whisper_runtime.cli:main":
+                    failures.append(
+                        "wheel command does not load whisper_runtime.cli:main"
+                    )
+            except (UnicodeError, configparser.Error):
+                failures.append("wheel installed command declaration is invalid")
         metadata_names = [
             name for name in names if name.endswith(".dist-info/METADATA")
         ]

@@ -1,0 +1,215 @@
+{
+  "schema_version": "1",
+  "created_on": "2026-09-07",
+  "kind": "actual_gpu_smoke_failure_audit",
+  "result": "failed_at_registered_smoke_memory_gate_before_hour_1",
+  "qualified": false,
+  "completed_hour_phases": 0,
+  "package_version": "0.1.0.dev0",
+  "historical_candidate_checks_unchanged": true,
+  "evidence_bundle": {
+    "path": "evidence/modal-release-soak-attempt-2026-09-07.zip",
+    "sha256": "7b299b14268f7d736c468ae0c359523489422438fe2533d3e0c405b360fb3ef3",
+    "size_bytes": 320659,
+    "payloads": {
+      "initial-local-failure/release-soak-preflight.json": {
+        "size_bytes": 15222,
+        "sha256": "a2b62691f4d8bf5a39a945f571a8e2ab1662f9224d4be28f58a427575815f645"
+      },
+      "initial-local-failure/release-soak.attempt.jsonl": {
+        "size_bytes": 333,
+        "sha256": "7e502126138268ae87675021d819b09e8318c492a578ea47ab019f2f4201bb9a"
+      },
+      "initial-local-failure/release-soak.json": {
+        "size_bytes": 16302,
+        "sha256": "b7c3f1d6c2b550bca772e4930f182504b5ca35f2f8c604c215fa257e30e815f5"
+      },
+      "local-audit/HANDOFF_LOCAL.md": {
+        "size_bytes": 5873,
+        "sha256": "251d0ace71760467d12c0fd5112362a18c361d49a01e628e1b5b8ce4faeed057"
+      },
+      "local-audit/approved-source-local-audit.json": {
+        "size_bytes": 1358,
+        "sha256": "aeb0c7133f960a60ee531b5a8e5a2c5f3fd923d5355ee7bbb0d6a3809f5b45c3"
+      },
+      "local-audit/audit_approved_source.py": {
+        "size_bytes": 5987,
+        "sha256": "088367a9c6e0961c52d4e65c07fd8d8fa7aae38a1ab086f64fc4ff48ee08f5ae"
+      },
+      "local-audit/audit_smoke_failure.py": {
+        "size_bytes": 8439,
+        "sha256": "c30570585b212f1ca54764e65fa385a4d33169cf7eb327bfe6423ce316894d6d"
+      },
+      "local-audit/harness-sdkfix.diff": {
+        "size_bytes": 805,
+        "sha256": "7821318ab1849437f8a1d3230db8db09b7607e02fc4172576c21e4e095783b68"
+      },
+      "local-audit/smoke-failure-local-audit.json": {
+        "size_bytes": 2632,
+        "sha256": "c957b901a5f3fb3fa73605a2e434426ba98209f9470c0e6d54a4260ad3e9dd02"
+      },
+      "sdkfix-attempt/approved-source.zip": {
+        "size_bytes": 284442,
+        "sha256": "6e483b402ef8bc63e48d819a4f110f2e77bc2e5bf20d614b5fffb30214db0fad"
+      },
+      "sdkfix-attempt/release-soak-preflight.json": {
+        "size_bytes": 15294,
+        "sha256": "d158f29c1bb96e625f2b1d96cff7c7baa11374dd46098533e72f0dca7473edae"
+      },
+      "sdkfix-attempt/release-soak.attempt.jsonl": {
+        "size_bytes": 439,
+        "sha256": "0b04ab3f8e25f736b50da8410dde7b228c8612cce8ae4cebd029a835e6193097"
+      },
+      "sdkfix-attempt/release-soak.json": {
+        "size_bytes": 26601,
+        "sha256": "04851296e333202a6e06883cb8f9b08e64aa9d1d26b3f10b812721db1545b1fb"
+      },
+      "sdkfix-attempt/smoke.events.jsonl": {
+        "size_bytes": 13968,
+        "sha256": "fd72348837988e1ff7d8e8d9585a3bb14cbec99a0061ccb750c56e88eb432968"
+      },
+      "sdkfix-attempt/smoke.terminal.json": {
+        "size_bytes": 9437,
+        "sha256": "c3bdebf262260df99439dda2bd7ad6b2bd2ee3cf35fb85e3b56bad89a124cef6"
+      }
+    },
+    "all_payload_hashes_verified": true
+  },
+  "initial_local_failure": {
+    "error_type": "InvalidError",
+    "elapsed_ms": 81.864,
+    "journal_has_app_started": false,
+    "qualified": false,
+    "cause": "Modal 1.5.5 rejects retries=0 for a generator during resource definition, before app.run"
+  },
+  "minimal_sdk_correction": {
+    "uploaded_file_changed": "infra/modal_release_soak.py",
+    "change": "Omit unsupported retries keyword; disclose SDK retry policy null and generator retry capability false; intended application retry count remains zero",
+    "review_only_files_changed": [
+      "docs/research/2026-09-07-release-soak-plan.md",
+      "tools/test_modal_release_soak.py"
+    ],
+    "focused_real_sdk_regression": {
+      "modal_version": "1.5.5",
+      "tests_run": 15,
+      "status": "passed",
+      "basis": "implementation-agent result plus independent inspection of fail-on-remote regression",
+      "remote_operations_forbidden": [
+        "App.run",
+        "App.deploy",
+        "Volume.hydrate",
+        "Function.hydrate",
+        "Function.remote_gen",
+        "socket.connect",
+        "socket.connect_ex"
+      ]
+    }
+  },
+  "source_proof": {
+    "archive_sha256": "6e483b402ef8bc63e48d819a4f110f2e77bc2e5bf20d614b5fffb30214db0fad",
+    "preflight_sha256": "d158f29c1bb96e625f2b1d96cff7c7baa11374dd46098533e72f0dca7473edae",
+    "uploaded_files_verified": 50,
+    "uploaded_bytes": 1035453,
+    "review_only_files_verified": 3,
+    "source_digest": "f7bd54cbec2c5c1ed4374fae576c55b75e2b911d87c12753e2d9d308f9175629",
+    "review_digest": "8906d416c9ed6591d2c21fb8a26153ae8ba9675b4b3be520054b1250a97ae5a3",
+    "candidate_runtime_hashes_unchanged": 32,
+    "registered_input_profile_and_phases_unchanged": true,
+    "budget_unchanged_except_sdk_capability_disclosure": true
+  },
+  "smoke_observation": {
+    "event_receipt": {
+      "bytes": 13968,
+      "sha256": "fd72348837988e1ff7d8e8d9585a3bb14cbec99a0061ccb750c56e88eb432968",
+      "events": 30,
+      "partial": true
+    },
+    "committed_projection": {
+      "all_revisions_valid": true,
+      "coverage_samples": 744800,
+      "duration_seconds": 46.55,
+      "event_counts": {
+        "provisional": 4,
+        "replace": 21,
+        "commit": 4,
+        "final": 1
+      },
+      "text_sha256": "59bc0955b3f3f8069b5786982e729469a3937087448fed5b80eb0322dfdae29c",
+      "nonempty_captions": 3
+    },
+    "terminal_counters": {
+      "elapsed_seconds": 47.103489543,
+      "elapsed_clock_scope": "Starts after owner.factory; excludes model initialization and build, not startup-inclusive end-to-end latency",
+      "chunks": 2328,
+      "decode_count": 25,
+      "reported_input_hash_matches_preflight": true,
+      "cleanup_and_capacity_restored_reported": true
+    },
+    "word_score": {
+      "word_edits": 7,
+      "reference_words": 114,
+      "rate": 0.06140350877192982,
+      "registered_smoke_quality_threshold": 0.1
+    },
+    "memory_gate": {
+      "process_rss_bytes": 5292425216,
+      "registered_rss_ceiling_bytes": 3758096384,
+      "rss_excess_bytes": 1534328832,
+      "gpu_allocated_bytes": 160720896,
+      "gpu_peak_allocated_bytes": 290099200,
+      "gpu_reserved_bytes": 358612992,
+      "gpu_reserved_ceiling_bytes": 2147483648,
+      "post_smoke_baseline_established": false,
+      "leak_or_mapping_origin_inferred": false,
+      "rss_gib": 4.928955078125,
+      "registered_ceiling_gib": 3.5
+    },
+    "overall_failure_preserved_despite_valid_final": true,
+    "result_sha256": "04851296e333202a6e06883cb8f9b08e64aa9d1d26b3f10b812721db1545b1fb",
+    "terminal_sha256": "c3bdebf262260df99439dda2bd7ad6b2bd2ee3cf35fb85e3b56bad89a124cef6",
+    "attempt_finish_digest_verified": true
+  },
+  "app_lifecycle": {
+    "app_id": "ap-pABNi973B2Un3GiEhrHvNB",
+    "client_exec_session_id": 24278,
+    "ephemeral_context_exit_completed": true,
+    "stopped_and_zero_tasks": {
+      "reported_stopped_at_utc": "2026-09-07T02:52:50Z",
+      "reported_stopped_at_local": "2026-09-07T10:52:50+08:00",
+      "zero_tasks_verified": true,
+      "observation_time": null,
+      "basis": "root agent later verified Modal app-list stopped_at and zero active tasks; the timestamp is not the query time and was not rechecked by this local audit"
+    }
+  },
+  "memory_interpretation": {
+    "modal_memory_4096_mib": "minimum reservation, not an enforced usage cap; actual higher usage may be billed",
+    "statm": "fast process RSS estimate with documented inaccuracies; does not separate allocation or mapping categories",
+    "not_captured": [
+      "pre-model baseline",
+      "smaps or smaps_rollup",
+      "cgroup memory.current and memory.stat"
+    ],
+    "cause_unresolved": true,
+    "measurement_error_proven_to_explain_excess": false,
+    "baseline_for_growth_established": false,
+    "registered_failure_not_dismissed": true,
+    "sources": [
+      "https://modal.com/docs/guide/resources",
+      "https://man7.org/linux/man-pages/man5/proc_pid_statm.5.html",
+      "https://man7.org/linux/man-pages/man5/proc_pid_smaps.5.html",
+      "https://docs.kernel.org/admin-guide/cgroup-v2.html"
+    ]
+  },
+  "authority": {
+    "registered_gates_changed": false,
+    "another_gpu_attempt_authorized": false,
+    "new_paid_job_launched_by_auditor": false
+  },
+  "claims": {
+    "four_hour_endurance_passed": false,
+    "stable_release": false,
+    "production_readiness": false,
+    "memory_leak_proven": false,
+    "general_accuracy_or_speedup": false
+  }
+}

@@ -599,8 +599,14 @@ def run_worker(expected_snapshot):
 
 
 def resources(
-    expected_snapshot, root=ROOT, *, worker_module="infra.modal_acoustic_diagnostic"
+    expected_snapshot,
+    root=ROOT,
+    *,
+    worker_module="infra.modal_acoustic_diagnostic",
+    timeout_seconds=180,
 ):
+    if type(timeout_seconds) is not int or not 1 <= timeout_seconds <= 180:
+        raise ValueError("GPU timeout must be an integer from 1 to 180 seconds")
     corpus = _corpus()
     modal = importlib.import_module("modal")
     if str(modal.__version__) != "1.5.5":
@@ -666,7 +672,7 @@ def resources(
         gpu="T4",
         cloud="aws",
         region="us-west",
-        timeout=180,
+        timeout=timeout_seconds,
         volumes={corpus.b.MODEL_CACHE_MOUNT: volume.with_mount_options(read_only=True)},
     )
     def execute() -> bytes:

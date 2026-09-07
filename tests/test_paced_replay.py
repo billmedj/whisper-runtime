@@ -5,6 +5,7 @@ import unittest
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import ExitStack
 from dataclasses import FrozenInstanceError, replace
+from types import SimpleNamespace
 from unittest.mock import Mock, PropertyMock, patch
 
 from test_continuous_evidence import EvidenceNativeAdapter, speech_result
@@ -333,13 +334,32 @@ class PacedReplayTests(unittest.TestCase):
         stream, _ = self.stream()
         metrics = ContinuousTranscriptStream.metrics
         owner = threading.current_thread()
+        clock_lock = threading.Lock()
+        clock_ns = 0
+
+        def now():
+            nonlocal clock_ns
+            with clock_lock:
+                value = clock_ns
+                # Set the epoch first, then let the first chunk arrive on time.
+                if clock_ns == 0:
+                    clock_ns = 5_000_000
+                return value
 
         def delayed_record():
+            nonlocal clock_ns
             if threading.current_thread() is not owner:
-                threading.Event().wait(0.15)
+                # Advance only after the first push and its admission timestamp.
+                # Host thread scheduling must not reject that first chunk.
+                with clock_lock:
+                    clock_ns += 150_000_000
             return metrics.fget(stream)
 
         with (
+            patch(
+                "whisper_runtime.adapters.paced_replay.time",
+                SimpleNamespace(monotonic_ns=now),
+            ),
             patch.object(stream, "push", wraps=stream.push) as push,
             patch.object(
                 ContinuousTranscriptStream,
@@ -355,8 +375,10 @@ class PacedReplayTests(unittest.TestCase):
             )
         self.assertEqual(result.status, "source_lag")
         self.assertEqual(push.call_count, 1)
+        self.assertEqual(len(result.admissions), 1)
+        self.assertEqual(result.offered_samples, 160)
         self.assertEqual(result.accepted_samples, 80)
-        self.assertGreater(result.max_source_lag_ns, 50_000_000)
+        self.assertEqual(result.max_source_lag_ns, 145_000_000)
         self.assertFalse(stream.input_finished)
         self.assertIsNone(result.input_finished_ns)
 

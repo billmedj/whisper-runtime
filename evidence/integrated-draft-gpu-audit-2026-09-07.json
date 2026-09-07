@@ -1,0 +1,845 @@
+{
+  "all_current_audio_tokens_exact": true,
+  "all_full_events_exact": true,
+  "audit_date": "2026-09-07",
+  "caveats": [
+    "One fixed ABBA sequence on one worker and repeated known audio; no randomization, independent replicas, held-out accuracy, CI or production qualification.",
+    "Two warmup windows per arm precede measurement; order is A,A,B(no hint),B(with hint), then cancellation. This does not establish steady-state thermal, clocks, allocator or kernel behavior for every later shape.",
+    "ABBA balances a linear order trend but cannot remove nonlinear drift or middle-versus-edge effects. Report both adjacent contrasts and pooled equal-count totals.",
+    "decode phase wall includes native start/encoder/setup and token stepping; decode:decoder CUDA intervals are decoder-specific. Alignment has its own decoder forwards.",
+    "CUDA-event intervals are stream elapsed forward intervals, not occupancy, energy, FLOPs or kernel-only busy time. Host timings include measurement hooks.",
+    "Peak memory is allocator-reported device allocation/reservation per cell, not total process GPU/host memory. Reserved allocator growth is not by itself a live-tensor leak.",
+    "Publication source endpoints and token parity are exact requirements; score differences and admission-clock changes are reported separately, with no new numeric tolerance."
+  ],
+  "cells": [
+    {
+      "admission_elapsed_ns": 12278996178,
+      "arm": "fast-reuse",
+      "commit_count": 27,
+      "decoder_input_positions": {
+        "alignment:decoder": 1992,
+        "decode:decoder": 2346
+      },
+      "draft_stats": {},
+      "event_count": 77,
+      "event_sha256": "9b1671ee1490098de161fff0d1bdee9833ee34286e87fea9599d355b3bfdf8a6",
+      "forward_interval_ms": {
+        "alignment:decoder": 201.0431365966797,
+        "decode:decoder": 8560.95126914978,
+        "decode:encoder": 787.788610458374
+      },
+      "gpu_peak_increment_bytes": 69590016,
+      "largest_alignment_operations": [
+        {
+          "call_index": 13,
+          "end_ms": 16000,
+          "forward_cuda_ms": 5.682015895843506,
+          "start_ms": 0,
+          "wall_ns": 381757724
+        },
+        {
+          "call_index": 46,
+          "end_ms": 80160,
+          "forward_cuda_ms": 5.750912189483643,
+          "start_ms": 55320,
+          "wall_ns": 347097042
+        },
+        {
+          "call_index": 17,
+          "end_ms": 24000,
+          "forward_cuda_ms": 5.3903679847717285,
+          "start_ms": 0,
+          "wall_ns": 322758282
+        },
+        {
+          "call_index": 10,
+          "end_ms": 10000,
+          "forward_cuda_ms": 5.795743942260742,
+          "start_ms": 0,
+          "wall_ns": 321357482
+        }
+      ],
+      "lifecycle": {
+        "all_reported_checks": true,
+        "capacity_restored": true,
+        "done": true,
+        "final_once": true,
+        "full_coverage": true,
+        "full_input": true,
+        "hint_cleared": true,
+        "no_error": true
+      },
+      "memory": {
+        "memory_after_close": {
+          "allocated_bytes": 160720896,
+          "reserved_bytes": 325058560
+        },
+        "memory_before": {
+          "allocated_bytes": 160720896,
+          "reserved_bytes": 245366784
+        },
+        "peak_allocated_bytes": 230310912,
+        "peak_reserved_bytes": 325058560
+      },
+      "native_summary_matches": true,
+      "operation_wall_ns": {
+        "alignment": 2612533388,
+        "close": 3742675,
+        "decode": 11680983321,
+        "finish": 12824890,
+        "result": 43611104
+      },
+      "pacing": {
+        "accepted_samples": 1489600,
+        "elapsed_ns": 93142558961,
+        "input_finished_ns": 93100842911,
+        "max_admission_lag_ns": 46946349,
+        "max_source_lag_ns": 46854944,
+        "offered_samples": 1489600,
+        "status": "completed"
+      },
+      "position": "a1",
+      "raw_forwards": {
+        "alignment:decoder": 36,
+        "decode:decoder": 2346,
+        "decode:encoder": 49
+      },
+      "source_clock_audit": {
+        "admission_contract": true,
+        "admission_count": 4655,
+        "all_events_delivered": true,
+        "full_admitted": true,
+        "max_admission_lag_ns": 46946349,
+        "max_source_lag_ns": 46854944,
+        "output_clocks_valid": true,
+        "source_lags_within_bound": true,
+        "source_not_early": true,
+        "stored_lag_values_exact": true
+      },
+      "total_forward_interval_ms": 9549.783016204834,
+      "total_operation_wall_ns": 14353695378,
+      "windows": 49
+    },
+    {
+      "admission_elapsed_ns": 105784735356,
+      "arm": "fast-draft32",
+      "commit_count": 27,
+      "decoder_input_positions": {
+        "alignment:decoder": 1992,
+        "decode:decoder": 2902
+      },
+      "draft_stats": {
+        "cleanup_calls": 48,
+        "context_cropped_tokens": 0,
+        "effective_draft_tokens": 1246,
+        "matched_tokens": 690,
+        "ordinary_suffix_forwards": 1598,
+        "parallel_prefills": 48,
+        "proposed_tokens": 1246,
+        "saved_row_calls": 690
+      },
+      "event_count": 77,
+      "event_sha256": "9b1671ee1490098de161fff0d1bdee9833ee34286e87fea9599d355b3bfdf8a6",
+      "forward_interval_ms": {
+        "alignment:decoder": 205.40611124038696,
+        "decode:decoder": 6319.811554908752,
+        "decode:encoder": 885.1075201034546
+      },
+      "gpu_peak_increment_bytes": 70622720,
+      "largest_alignment_operations": [
+        {
+          "call_index": 90,
+          "end_ms": 70160,
+          "forward_cuda_ms": 6.09881591796875,
+          "start_ms": 46160,
+          "wall_ns": 11484003
+        },
+        {
+          "call_index": 64,
+          "end_ms": 20000,
+          "forward_cuda_ms": 6.369279861450195,
+          "start_ms": 0,
+          "wall_ns": 11469954
+        },
+        {
+          "call_index": 87,
+          "end_ms": 64160,
+          "forward_cuda_ms": 7.086304187774658,
+          "start_ms": 46160,
+          "wall_ns": 11452519
+        },
+        {
+          "call_index": 78,
+          "end_ms": 46160,
+          "forward_cuda_ms": 6.604063987731934,
+          "start_ms": 34260,
+          "wall_ns": 11420743
+        }
+      ],
+      "lifecycle": {
+        "all_reported_checks": true,
+        "capacity_restored": true,
+        "done": true,
+        "final_once": true,
+        "full_coverage": true,
+        "full_input": true,
+        "hint_cleared": true,
+        "no_error": true
+      },
+      "memory": {
+        "memory_after_close": {
+          "allocated_bytes": 160720896,
+          "reserved_bytes": 325058560
+        },
+        "memory_before": {
+          "allocated_bytes": 160720896,
+          "reserved_bytes": 325058560
+        },
+        "peak_allocated_bytes": 231343616,
+        "peak_reserved_bytes": 325058560
+      },
+      "native_summary_matches": true,
+      "operation_wall_ns": {
+        "alignment": 370670197,
+        "close": 3873803,
+        "decode": 9634445734,
+        "finish": 11957394,
+        "result": 42182428
+      },
+      "pacing": {
+        "accepted_samples": 1489600,
+        "elapsed_ns": 93164424665,
+        "input_finished_ns": 93101194397,
+        "max_admission_lag_ns": 1463461,
+        "max_source_lag_ns": 1363099,
+        "offered_samples": 1489600,
+        "status": "completed"
+      },
+      "position": "b1",
+      "raw_forwards": {
+        "alignment:decoder": 36,
+        "decode:decoder": 1656,
+        "decode:encoder": 49
+      },
+      "source_clock_audit": {
+        "admission_contract": true,
+        "admission_count": 4655,
+        "all_events_delivered": true,
+        "full_admitted": true,
+        "max_admission_lag_ns": 1463461,
+        "max_source_lag_ns": 1363099,
+        "output_clocks_valid": true,
+        "source_lags_within_bound": true,
+        "source_not_early": true,
+        "stored_lag_values_exact": true
+      },
+      "total_forward_interval_ms": 7410.325186252594,
+      "total_operation_wall_ns": 10063129556,
+      "windows": 49
+    },
+    {
+      "admission_elapsed_ns": 199264974992,
+      "arm": "fast-draft32",
+      "commit_count": 27,
+      "decoder_input_positions": {
+        "alignment:decoder": 1992,
+        "decode:decoder": 2902
+      },
+      "draft_stats": {
+        "cleanup_calls": 48,
+        "context_cropped_tokens": 0,
+        "effective_draft_tokens": 1246,
+        "matched_tokens": 690,
+        "ordinary_suffix_forwards": 1598,
+        "parallel_prefills": 48,
+        "proposed_tokens": 1246,
+        "saved_row_calls": 690
+      },
+      "event_count": 77,
+      "event_sha256": "9b1671ee1490098de161fff0d1bdee9833ee34286e87fea9599d355b3bfdf8a6",
+      "forward_interval_ms": {
+        "alignment:decoder": 204.706880569458,
+        "decode:decoder": 6249.869861602783,
+        "decode:encoder": 866.5286417007446
+      },
+      "gpu_peak_increment_bytes": 70622720,
+      "largest_alignment_operations": [
+        {
+          "call_index": 136,
+          "end_ms": 64160,
+          "forward_cuda_ms": 7.112703800201416,
+          "start_ms": 46160,
+          "wall_ns": 12143894
+        },
+        {
+          "call_index": 140,
+          "end_ms": 72160,
+          "forward_cuda_ms": 5.555136203765869,
+          "start_ms": 47620,
+          "wall_ns": 11636539
+        },
+        {
+          "call_index": 138,
+          "end_ms": 68160,
+          "forward_cuda_ms": 5.635551929473877,
+          "start_ms": 46160,
+          "wall_ns": 11293458
+        },
+        {
+          "call_index": 151,
+          "end_ms": 92700,
+          "forward_cuda_ms": 6.425216197967529,
+          "start_ms": 80820,
+          "wall_ns": 11159170
+        }
+      ],
+      "lifecycle": {
+        "all_reported_checks": true,
+        "capacity_restored": true,
+        "done": true,
+        "final_once": true,
+        "full_coverage": true,
+        "full_input": true,
+        "hint_cleared": true,
+        "no_error": true
+      },
+      "memory": {
+        "memory_after_close": {
+          "allocated_bytes": 160720896,
+          "reserved_bytes": 325058560
+        },
+        "memory_before": {
+          "allocated_bytes": 160720896,
+          "reserved_bytes": 325058560
+        },
+        "peak_allocated_bytes": 231343616,
+        "peak_reserved_bytes": 325058560
+      },
+      "native_summary_matches": true,
+      "operation_wall_ns": {
+        "alignment": 365942432,
+        "close": 3479791,
+        "decode": 9526898125,
+        "finish": 11205364,
+        "result": 38077661
+      },
+      "pacing": {
+        "accepted_samples": 1489600,
+        "elapsed_ns": 93163519085,
+        "input_finished_ns": 93100709070,
+        "max_admission_lag_ns": 2273019,
+        "max_source_lag_ns": 2177440,
+        "offered_samples": 1489600,
+        "status": "completed"
+      },
+      "position": "b2",
+      "raw_forwards": {
+        "alignment:decoder": 36,
+        "decode:decoder": 1656,
+        "decode:encoder": 49
+      },
+      "source_clock_audit": {
+        "admission_contract": true,
+        "admission_count": 4655,
+        "all_events_delivered": true,
+        "full_admitted": true,
+        "max_admission_lag_ns": 2273019,
+        "max_source_lag_ns": 2177440,
+        "output_clocks_valid": true,
+        "source_lags_within_bound": true,
+        "source_not_early": true,
+        "stored_lag_values_exact": true
+      },
+      "total_forward_interval_ms": 7321.105383872986,
+      "total_operation_wall_ns": 9945603373,
+      "windows": 49
+    },
+    {
+      "admission_elapsed_ns": 292739830903,
+      "arm": "fast-reuse",
+      "commit_count": 27,
+      "decoder_input_positions": {
+        "alignment:decoder": 1992,
+        "decode:decoder": 2346
+      },
+      "draft_stats": {},
+      "event_count": 77,
+      "event_sha256": "9b1671ee1490098de161fff0d1bdee9833ee34286e87fea9599d355b3bfdf8a6",
+      "forward_interval_ms": {
+        "alignment:decoder": 196.92966604232788,
+        "decode:decoder": 8621.588539361954,
+        "decode:encoder": 771.0318422317505
+      },
+      "gpu_peak_increment_bytes": 70622720,
+      "largest_alignment_operations": [
+        {
+          "call_index": 189,
+          "end_ms": 72160,
+          "forward_cuda_ms": 5.320223808288574,
+          "start_ms": 47620,
+          "wall_ns": 11184901
+        },
+        {
+          "call_index": 162,
+          "end_ms": 20000,
+          "forward_cuda_ms": 6.232480049133301,
+          "start_ms": 0,
+          "wall_ns": 11074121
+        },
+        {
+          "call_index": 187,
+          "end_ms": 68160,
+          "forward_cuda_ms": 5.3552961349487305,
+          "start_ms": 46160,
+          "wall_ns": 10763435
+        },
+        {
+          "call_index": 156,
+          "end_ms": 8000,
+          "forward_cuda_ms": 6.415775775909424,
+          "start_ms": 0,
+          "wall_ns": 10744138
+        }
+      ],
+      "lifecycle": {
+        "all_reported_checks": true,
+        "capacity_restored": true,
+        "done": true,
+        "final_once": true,
+        "full_coverage": true,
+        "full_input": true,
+        "hint_cleared": true,
+        "no_error": true
+      },
+      "memory": {
+        "memory_after_close": {
+          "allocated_bytes": 160720896,
+          "reserved_bytes": 325058560
+        },
+        "memory_before": {
+          "allocated_bytes": 160720896,
+          "reserved_bytes": 325058560
+        },
+        "peak_allocated_bytes": 231343616,
+        "peak_reserved_bytes": 325058560
+      },
+      "native_summary_matches": true,
+      "operation_wall_ns": {
+        "alignment": 352371154,
+        "close": 3473863,
+        "decode": 11745093665,
+        "finish": 11185375,
+        "result": 38609558
+      },
+      "pacing": {
+        "accepted_samples": 1489600,
+        "elapsed_ns": 93150546782,
+        "input_finished_ns": 93101186908,
+        "max_admission_lag_ns": 1939016,
+        "max_source_lag_ns": 1844093,
+        "offered_samples": 1489600,
+        "status": "completed"
+      },
+      "position": "a2",
+      "raw_forwards": {
+        "alignment:decoder": 36,
+        "decode:decoder": 2346,
+        "decode:encoder": 49
+      },
+      "source_clock_audit": {
+        "admission_contract": true,
+        "admission_count": 4655,
+        "all_events_delivered": true,
+        "full_admitted": true,
+        "max_admission_lag_ns": 1939016,
+        "max_source_lag_ns": 1844093,
+        "output_clocks_valid": true,
+        "source_lags_within_bound": true,
+        "source_not_early": true,
+        "stored_lag_values_exact": true
+      },
+      "total_forward_interval_ms": 9589.550047636032,
+      "total_operation_wall_ns": 12150733615,
+      "windows": 49
+    }
+  ],
+  "elapsed_ns": 386594675250,
+  "expected_abba_exact": true,
+  "input": {
+    "cycle_samples": 744800,
+    "cycle_sha256": "b8902a2cfd5c45b8a17d6b489f6ddc752cf76d7b620efa27ec6e173ea6e2f826",
+    "cycles": 2,
+    "duration_seconds": 93.1,
+    "pcm_sha256": "ccdf47836c9027ad4be305f3484a45c1a8c49c4a432eed6cfa4ad484ed6c8883",
+    "recipe": "Repeat the registered speech/silence/noise/silence cycle twice",
+    "reference_text": "CONCORD RETURNED TO ITS PLACE AMIDST THE TENTS FOR A WHILE SHE LAY IN HER CHAIR IN HAPPY DREAMY PLEASURE AT SUN AND BIRD AND TREE AND THE GARDENER'S BOY CHOPPED THE TREE INTO SMALL PIECES THERE WAS A WHOLE HEAP LYING THERE CONCORD RETURNED TO ITS PLACE AMIDST THE TENTS FOR A WHILE SHE LAY IN HER CHAIR IN HAPPY DREAMY PLEASURE AT SUN AND BIRD AND TREE AND THE GARDENER'S BOY CHOPPED THE TREE INTO SMALL PIECES THERE WAS A WHOLE HEAP LYING THERE CONCORD RETURNED TO ITS PLACE AMIDST THE TENTS FOR A WHILE SHE LAY IN HER CHAIR IN HAPPY DREAMY PLEASURE AT SUN AND BIRD AND TREE CONCORD RETURNED TO ITS PLACE AMIDST THE TENTS FOR A WHILE SHE LAY IN HER CHAIR IN HAPPY DREAMY PLEASURE AT SUN AND BIRD AND TREE AND THE GARDENER'S BOY CHOPPED THE TREE INTO SMALL PIECES THERE WAS A WHOLE HEAP LYING THERE CONCORD RETURNED TO ITS PLACE AMIDST THE TENTS FOR A WHILE SHE LAY IN HER CHAIR IN HAPPY DREAMY PLEASURE AT SUN AND BIRD AND TREE AND THE GARDENER'S BOY CHOPPED THE TREE INTO SMALL PIECES THERE WAS A WHOLE HEAP LYING THERE CONCORD RETURNED TO ITS PLACE AMIDST THE TENTS FOR A WHILE SHE LAY IN HER CHAIR IN HAPPY DREAMY PLEASURE AT SUN AND BIRD AND TREE",
+    "sample_count": 1489600,
+    "spans": [
+      {
+        "cycle": 0,
+        "end_sample": 538560,
+        "kind": "main",
+        "reference": "CONCORD RETURNED TO ITS PLACE AMIDST THE TENTS FOR A WHILE SHE LAY IN HER CHAIR IN HAPPY DREAMY PLEASURE AT SUN AND BIRD AND TREE AND THE GARDENER'S BOY CHOPPED THE TREE INTO SMALL PIECES THERE WAS A WHOLE HEAP LYING THERE CONCORD RETURNED TO ITS PLACE AMIDST THE TENTS FOR A WHILE SHE LAY IN HER CHAIR IN HAPPY DREAMY PLEASURE AT SUN AND BIRD AND TREE AND THE GARDENER'S BOY CHOPPED THE TREE INTO SMALL PIECES THERE WAS A WHOLE HEAP LYING THERE",
+        "start_sample": 0
+      },
+      {
+        "cycle": 0,
+        "end_sample": 728800,
+        "kind": "noisy",
+        "reference": "CONCORD RETURNED TO ITS PLACE AMIDST THE TENTS FOR A WHILE SHE LAY IN HER CHAIR IN HAPPY DREAMY PLEASURE AT SUN AND BIRD AND TREE",
+        "start_sample": 554560
+      },
+      {
+        "cycle": 1,
+        "end_sample": 1283360,
+        "kind": "main",
+        "reference": "CONCORD RETURNED TO ITS PLACE AMIDST THE TENTS FOR A WHILE SHE LAY IN HER CHAIR IN HAPPY DREAMY PLEASURE AT SUN AND BIRD AND TREE AND THE GARDENER'S BOY CHOPPED THE TREE INTO SMALL PIECES THERE WAS A WHOLE HEAP LYING THERE CONCORD RETURNED TO ITS PLACE AMIDST THE TENTS FOR A WHILE SHE LAY IN HER CHAIR IN HAPPY DREAMY PLEASURE AT SUN AND BIRD AND TREE AND THE GARDENER'S BOY CHOPPED THE TREE INTO SMALL PIECES THERE WAS A WHOLE HEAP LYING THERE",
+        "start_sample": 744800
+      },
+      {
+        "cycle": 1,
+        "end_sample": 1473600,
+        "kind": "noisy",
+        "reference": "CONCORD RETURNED TO ITS PLACE AMIDST THE TENTS FOR A WHILE SHE LAY IN HER CHAIR IN HAPPY DREAMY PLEASURE AT SUN AND BIRD AND TREE",
+        "start_sample": 1299360
+      }
+    ]
+  },
+  "input_directory": "artifacts/modal/integrated-draft-t4-20260907-v1",
+  "lifecycle": {
+    "all_cuda_events_resolved": true,
+    "all_native_cleanup": true,
+    "all_windows_closed": true,
+    "cancellation_probe": {
+      "audio_cleared": true,
+      "cache_empty": true,
+      "capacity_restored": true,
+      "hint_cleared": true,
+      "observed": true,
+      "requested": true,
+      "rows_cleared": true,
+      "session_unchanged": true
+    },
+    "count_and_indices_exact": true,
+    "hooks_unchanged": true,
+    "model_unchanged": true,
+    "total_windows": 201,
+    "warmup_capacity_restored": true,
+    "worker_capacity_restored": true
+  },
+  "observed_order_diagnostics": {
+    "all_cell_allocated_baselines_and_post_close_equal": true,
+    "candidate_and_later_control_peaks_equal": true,
+    "explanation": "The first measured control has much larger alignment host wall time despite similar alignment forward CUDA intervals. This is an order-associated timing asymmetry, consistent with unmeasured shape-dependent initialization or compilation, but the exact cause was not instrumented. It cannot be credited to drafts. Later control alignment is slightly faster than both candidate cells.",
+    "first_control_peak_below_later_control": true,
+    "same_control_a1_to_a2_alignment_wall_ns": {
+      "candidate": 352371154,
+      "control": 2612533388,
+      "delta": -2260162234,
+      "reduction_percent": 86.51228131213456
+    },
+    "same_control_a1_to_a2_decode_wall_ns": {
+      "candidate": 11745093665,
+      "control": 11680983321,
+      "delta": 64110344,
+      "reduction_percent": -0.5488437252088428
+    }
+  },
+  "pairs": [
+    {
+      "all_forward_cuda_ms": {
+        "candidate": 7410.325186252594,
+        "control": 9549.783016204834,
+        "delta": -2139.45782995224,
+        "reduction_percent": 22.403208809266527
+      },
+      "all_native_wall_ns": {
+        "candidate": 10063129556,
+        "control": 14353695378,
+        "delta": -4290565822,
+        "reduction_percent": 29.89171574991188
+      },
+      "candidate": "b1",
+      "control": "a1",
+      "decode_decoder_cuda_ms": {
+        "candidate": 6319.811554908752,
+        "control": 8560.95126914978,
+        "delta": -2241.139714241028,
+        "reduction_percent": 26.178629497836212
+      },
+      "decode_phase_wall_ns": {
+        "candidate": 9634445734,
+        "control": 11680983321,
+        "delta": -2046537587,
+        "reduction_percent": 17.520250913471877
+      },
+      "exact": {
+        "commit_source_endpoints": true,
+        "commit_spans_text": true,
+        "current_audio_tokens": true,
+        "events": true,
+        "native_text": true,
+        "native_window_spans": true,
+        "selected_decisions": true
+      },
+      "maximum_absolute_score_deltas": {
+        "avg_logprob": 9.5367431640625e-7,
+        "compression_ratio": 0,
+        "no_speech_prob": 0.0000014156103134155273
+      },
+      "publication_admission_positions_exact": false
+    },
+    {
+      "all_forward_cuda_ms": {
+        "candidate": 7321.105383872986,
+        "control": 9589.550047636032,
+        "delta": -2268.4446637630463,
+        "reduction_percent": 23.655381665402036
+      },
+      "all_native_wall_ns": {
+        "candidate": 9945603373,
+        "control": 12150733615,
+        "delta": -2205130242,
+        "reduction_percent": 18.148124318006456
+      },
+      "candidate": "b2",
+      "control": "a2",
+      "decode_decoder_cuda_ms": {
+        "candidate": 6249.869861602783,
+        "control": 8621.588539361954,
+        "delta": -2371.7186777591705,
+        "reduction_percent": 27.509068275887486
+      },
+      "decode_phase_wall_ns": {
+        "candidate": 9526898125,
+        "control": 11745093665,
+        "delta": -2218195540,
+        "reduction_percent": 18.886146022063247
+      },
+      "exact": {
+        "commit_source_endpoints": true,
+        "commit_spans_text": true,
+        "current_audio_tokens": true,
+        "events": true,
+        "native_text": true,
+        "native_window_spans": true,
+        "selected_decisions": true
+      },
+      "maximum_absolute_score_deltas": {
+        "avg_logprob": 9.5367431640625e-7,
+        "compression_ratio": 0,
+        "no_speech_prob": 0.0000014156103134155273
+      },
+      "publication_admission_positions_exact": false
+    }
+  ],
+  "pooled": {
+    "fast-draft32": {
+      "cells": 2,
+      "decoder_input_positions": {
+        "alignment:decoder": 3984,
+        "decode:decoder": 5804
+      },
+      "forward_interval_ms": {
+        "alignment:decoder": 410.11299180984497,
+        "decode:decoder": 12569.681416511536,
+        "decode:encoder": 1751.6361618041992
+      },
+      "operation_wall_ns": {
+        "alignment": 736612629,
+        "close": 7353594,
+        "decode": 19161343859,
+        "finish": 23162758,
+        "result": 80260089
+      },
+      "raw_forwards": {
+        "alignment:decoder": 72,
+        "decode:decoder": 3312,
+        "decode:encoder": 98
+      },
+      "total_forward_interval_ms": 14731.43057012558,
+      "total_operation_wall_ns": 20008732929
+    },
+    "fast-reuse": {
+      "cells": 2,
+      "decoder_input_positions": {
+        "alignment:decoder": 3984,
+        "decode:decoder": 4692
+      },
+      "forward_interval_ms": {
+        "alignment:decoder": 397.97280263900757,
+        "decode:decoder": 17182.539808511734,
+        "decode:encoder": 1558.8204526901245
+      },
+      "operation_wall_ns": {
+        "alignment": 2964904542,
+        "close": 7216538,
+        "decode": 23426076986,
+        "finish": 24010265,
+        "result": 82220662
+      },
+      "raw_forwards": {
+        "alignment:decoder": 72,
+        "decode:decoder": 4692,
+        "decode:encoder": 98
+      },
+      "total_forward_interval_ms": 19139.333063840866,
+      "total_operation_wall_ns": 26504428993
+    }
+  },
+  "pooled_comparison": {
+    "alignment_wall_ns": {
+      "candidate": 736612629,
+      "control": 2964904542,
+      "delta": -2228291913,
+      "reduction_percent": 75.15560387980949
+    },
+    "decode_decoder_cuda_ms": {
+      "candidate": 12569.681416511536,
+      "control": 17182.539808511734,
+      "delta": -4612.858392000198,
+      "reduction_percent": 26.846196449462735
+    },
+    "decode_decoder_forwards": {
+      "candidate": 3312,
+      "control": 4692,
+      "delta": -1380,
+      "reduction_percent": 29.41176470588235
+    },
+    "decode_wall_ns": {
+      "candidate": 19161343859,
+      "control": 23426076986,
+      "delta": -4264733127,
+      "reduction_percent": 18.20506749614419
+    },
+    "total_forward_interval_ms": {
+      "candidate": 14731.43057012558,
+      "control": 19139.333063840866,
+      "delta": -4407.902493715286,
+      "reduction_percent": 23.030596097640153
+    },
+    "total_operation_wall_ns": {
+      "candidate": 20008732929,
+      "control": 26504428993,
+      "delta": -6495696064,
+      "reduction_percent": 24.5079645583595
+    }
+  },
+  "producer_verdict": {
+    "accepted": true,
+    "complete": true,
+    "efficiency_gate": true,
+    "full_events_exact": true,
+    "pooled_faster": {
+      "decode_wall_ns": true,
+      "forward_interval_ms": true,
+      "total_wall_ns": true
+    }
+  },
+  "provenance": {
+    "app_id": "ap-2Vne3EccdVZEVwEHj5qe9P",
+    "compressed_payload_exact": true,
+    "ephemeral_app_exit_completed": true,
+    "frozen_file_mismatches": [],
+    "frozen_files_count": 63,
+    "frozen_files_match": true,
+    "frozen_sha256": "7d83db840c5dcff1e241aeaa723c5953ccc07be2964ecccdf0dec56431206b63",
+    "frozen_source_digest_recomputed": true,
+    "function_call_id": "fc-01M1WNJ2R86QYHNHHRTWPG0WM0",
+    "function_call_id_hash_exact": true,
+    "input_and_scope_exact": true,
+    "producer_hash_exact": true,
+    "raw_sha256": "3fab7f9f757bf3c4d15c55880b9e5294c8c3716fcee7f240ce404523a86ecffd",
+    "result_sha256": "90a31e5cc9f85e4ac2e8bb39798f6e82e9b66011b67ad9ee15f7a98f1211a80b",
+    "source_digest": "c83c9202da80bf7bbf6a7eff2d387861a651a6538b287db3c7496f3ffa17713f",
+    "source_snapshot_exact": true
+  },
+  "qualified": false,
+  "read_only_offline": true,
+  "schedule": [
+    [
+      "a1",
+      "fast-reuse"
+    ],
+    [
+      "b1",
+      "fast-draft32"
+    ],
+    [
+      "b2",
+      "fast-draft32"
+    ],
+    [
+      "a2",
+      "fast-reuse"
+    ]
+  ],
+  "schema_version": 1,
+  "status": "completed",
+  "stop": null,
+  "warmup": [
+    {
+      "arm": "fast-reuse",
+      "decoder_input_positions": {
+        "alignment:decoder": 64,
+        "decode:decoder": 68
+      },
+      "draft_stats": {},
+      "forward_interval_ms": {
+        "alignment:decoder": 25.09196710586548,
+        "decode:decoder": 470.1291470527649,
+        "decode:encoder": 519.7560806274414
+      },
+      "operation_wall_ns": {
+        "alignment": 3351941334,
+        "close": 480254,
+        "decode": 1648564767,
+        "result": 2198270
+      },
+      "raw_forwards": {
+        "alignment:decoder": 2,
+        "decode:decoder": 68,
+        "decode:encoder": 2
+      },
+      "total_forward_interval_ms": 1014.9771947860718,
+      "total_operation_wall_ns": 5003184625,
+      "windows": 2
+    },
+    {
+      "arm": "fast-draft32",
+      "decoder_input_positions": {
+        "alignment:decoder": 64,
+        "decode:decoder": 68
+      },
+      "draft_stats": {
+        "cleanup_calls": 1,
+        "context_cropped_tokens": 0,
+        "effective_draft_tokens": 32,
+        "matched_tokens": 32,
+        "ordinary_suffix_forwards": 1,
+        "parallel_prefills": 1,
+        "proposed_tokens": 32,
+        "saved_row_calls": 32
+      },
+      "forward_interval_ms": {
+        "alignment:decoder": 9.820863723754883,
+        "decode:decoder": 120.04371213912964,
+        "decode:encoder": 22.264991760253906
+      },
+      "operation_wall_ns": {
+        "alignment": 16294210,
+        "close": 305895,
+        "decode": 212958939,
+        "result": 1530603
+      },
+      "raw_forwards": {
+        "alignment:decoder": 2,
+        "decode:decoder": 36,
+        "decode:encoder": 2
+      },
+      "total_forward_interval_ms": 152.12956762313843,
+      "total_operation_wall_ns": 231089647,
+      "windows": 2
+    }
+  ]
+}

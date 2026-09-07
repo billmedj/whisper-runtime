@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1040" height="550" viewBox="0 0 1040 550" role="img" aria-labelledby="title desc">
+  <title id="title">A request owns its work until completion is established</title>
+  <desc id="desc">Reserve declared capacity, run backend work, then close submissions and wait for a completion fence. If completion is established, validate publication and release the lease. If completion cannot be established, quarantine the lease instead of reporting free capacity.</desc>
+  <defs>
+    <marker id="arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M1 1L7 4L1 7" fill="none" stroke="#2459D3" stroke-width="1.6"/></marker>
+    <style>
+      text{font-family:'Segoe UI',Arial,sans-serif;fill:#172A3A}
+      .heading{font-family:Bahnschrift,'Segoe UI',Arial,sans-serif;font-size:28px;font-weight:600}
+      .label{font-size:21px;font-weight:600}.body{font-size:18px}.note{font-size:16px;fill:#536879}
+      .link{fill:none;stroke:#2459D3;stroke-width:2;marker-end:url(#arrow)}
+    </style>
+  </defs>
+  <rect x="1" y="1" width="1038" height="548" rx="16" fill="#F5F8FC" stroke="#CED9E5"/>
+  <text class="heading" x="32" y="46">A request owns its work until completion is established</text>
+  <text class="note" x="32" y="74">Cancellation asks work to stop. A completion fence establishes when registered work is finished.</text>
+
+  <rect x="32" y="112" width="266" height="118" rx="10" fill="white" stroke="#CED9E5"/>
+  <text class="label" x="54" y="148">Reserve capacity</text>
+  <text class="body" x="54" y="181">Admit the request.</text>
+  <text class="note" x="54" y="210">One declared lease and owner.</text>
+  <path class="link" d="M300 171H334"/>
+
+  <rect x="348" y="112" width="284" height="118" rx="10" fill="white" stroke="#CED9E5"/>
+  <text class="label" x="370" y="148">Run backend work</text>
+  <text class="body" x="370" y="181">Step through decoding.</text>
+  <text class="note" x="370" y="210">Check cancellation and deadlines.</text>
+  <path class="link" d="M634 171H668"/>
+
+  <rect x="682" y="112" width="326" height="118" rx="10" fill="white" stroke="#2459D3"/>
+  <text class="label" x="704" y="148">Close and fence</text>
+  <text class="body" x="704" y="181">Stop further submissions.</text>
+  <text class="note" x="704" y="210">Clean up and wait for registered work.</text>
+
+  <path class="link" d="M796 232V269H280V324"/>
+  <rect x="328" y="255" width="258" height="28" rx="4" fill="#F5F8FC"/>
+  <text class="note" x="340" y="275">Completion established</text>
+  <path class="link" d="M900 232V324"/>
+  <rect x="772" y="282" width="235" height="27" rx="4" fill="#F5F8FC"/>
+  <text class="note" x="781" y="301">Completion unproven</text>
+
+  <rect x="32" y="338" width="566" height="140" rx="10" fill="white" stroke="#087F75"/>
+  <text class="label" x="54" y="375">Validate the result. Return the lease.</text>
+  <text class="body" x="54" y="409">Commit only if the transaction checks pass.</text>
+  <text class="note" x="54" y="444">An invalid or cancelled result is discarded before release.</text>
+
+  <rect x="682" y="338" width="326" height="140" rx="10" fill="white" stroke="#536879"/>
+  <text class="label" x="704" y="375">Keep the lease quarantined</text>
+  <text class="body" x="704" y="409">Do not claim free capacity.</text>
+  <text class="note" x="704" y="444">Recovery needs proof of completion.</text>
+
+  <text class="note" x="32" y="519">The ledger controls admission. It does not enforce a hardware memory limit.</text>
+</svg>

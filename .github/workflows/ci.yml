@@ -65,7 +65,9 @@ jobs:
           python-version: "3.13"
 
       - name: Install validation, quality, and build tools
-        run: python -m pip install ".[validation,quality]" "build>=1.2,<2"
+        # Exercise actual pinned-SDK resource definitions locally. The tests
+        # forbid hydration/remote execution; this does not launch a GPU job.
+        run: python -m pip install ".[validation,quality,modal-validation]" "build>=1.2,<2"
 
       - name: Check formatting and imports
         run: |
@@ -92,6 +94,18 @@ jobs:
 
       - name: Check distribution contents and metadata
         run: python -B tools/check_distribution.py dist
+
+      - name: Smoke installed wheel without optional dependencies
+        shell: bash
+        run: |
+          wheel_venv="$RUNNER_TEMP/whisper-runtime-wheel-smoke"
+          python -m venv "$wheel_venv"
+          "$wheel_venv/bin/python" -m pip install --no-index --no-deps dist/*.whl
+          "$wheel_venv/bin/python" -m pip check
+          "$wheel_venv/bin/python" -I -c "import importlib.util; assert all(importlib.util.find_spec(name) is None for name in ('torch', 'numpy', 'whisper', 'aiohttp', 'sounddevice', 'modal'))"
+          cd "$RUNNER_TEMP"
+          "$wheel_venv/bin/whisper-runtime" --help
+          "$wheel_venv/bin/python" -I -m whisper_runtime.cli --help
 
   lean:
     name: Lean model

@@ -10,6 +10,7 @@ from __future__ import annotations
 from collections import deque
 from dataclasses import dataclass, replace
 from hashlib import sha256
+from pathlib import Path
 from threading import RLock, current_thread
 from typing import Callable, Literal, NoReturn
 
@@ -91,6 +92,11 @@ class ContinuousStreamConfig:
     word_boundary_fallback: bool = False
     word_context_limit_ms: int = 0
     resolution_probe: bool = False
+    eof_context_retry: bool = False
+    defer_word_commits: bool = False
+    max_draft_tokens: int = 0
+    # Opt-in maturity of the earlier nonfinal word-agreement observation.
+    previous_holdback_ms: int = 0
 
     def __post_init__(self) -> None:
         flags = (
@@ -100,6 +106,8 @@ class ContinuousStreamConfig:
             "source_units",
             "word_boundary_fallback",
             "resolution_probe",
+            "eof_context_retry",
+            "defer_word_commits",
         )
         for name in flags:
             if not isinstance(getattr(self, name), bool):
@@ -114,10 +122,18 @@ class ContinuousStreamConfig:
                 raise ValueError(f"{name} must not be negative")
         if not 0 < self.preview_interval_ms < self.max_window_ms <= 30_000:
             raise ValueError("require 0 < preview_interval_ms < max_window_ms <= 30000")
+        if self.max_draft_tokens > 32:
+            raise ValueError("max_draft_tokens must be between 0 and 32")
         if not self.max_window_ms <= self.max_buffer_ms <= 120_000:
             raise ValueError("max_buffer_ms must be between max_window_ms and 120000")
         if self.holdback_ms >= self.max_window_ms:
             raise ValueError("holdback_ms must be less than max_window_ms")
+        if self.previous_holdback_ms >= self.max_window_ms:
+            raise ValueError("previous_holdback_ms must be less than max_window_ms")
+        if self.previous_holdback_ms and not (
+            self.word_alignment or self.word_boundary_fallback
+        ):
+            raise ValueError("previous_holdback_ms requires a word-aligned profile")
         if self.left_context_ms + self.preview_interval_ms >= self.max_window_ms:
             raise ValueError("left context must leave room for growing analyses")
         if self.left_context_ms % 20:
@@ -157,10 +173,29 @@ class ContinuousStreamConfig:
                 raise ValueError(
                     "word context must leave room for two growing analyses"
                 )
+        if self.defer_word_commits and not self.word_boundary_fallback:
+            raise ValueError("defer_word_commits requires word_boundary_fallback")
+        if self.defer_word_commits and (
+            max(self.left_context_ms, self.preview_interval_ms)
+            + self.preview_interval_ms
+            >= self.max_window_ms
+        ):
+            raise ValueError(
+                "deferred word commits require a fallback pair before the window reserve"
+            )
         if self.resolution_probe and not (
             self.word_alignment or self.word_boundary_fallback
         ):
             raise ValueError("resolution_probe requires a word-aligned profile")
+        if self.eof_context_retry and (
+            self.resolution_probe
+            or not self.input_evidence
+            or not (self.word_alignment or self.word_boundary_fallback)
+        ):
+            raise ValueError(
+                "eof_context_retry requires word alignment and input_evidence, "
+                "and excludes resolution_probe"
+            )
         if self.endpointing is not None:
             if not isinstance(self.endpointing, QuietEndpointConfig):
                 raise TypeError("endpointing must be QuietEndpointConfig or None")
@@ -297,6 +332,30 @@ class ContinuousResolutionObservation:
     analysis_identity: ContinuousAnalysisIdentity | None = None
 
 
+@dataclass(frozen=True, slots=True)
+class ContinuousContextRetry:
+    """One EOF retry receipt; only the ordinary commit path publishes output.
+
+    The source refusal and published anchor remain unchanged. A shifted window
+    supplies another observation, not a weaker acceptance rule. This record is
+    diagnostic; it is not a transferable permit or a durable execution journal.
+    """
+
+    source: ContinuousDecodeTrace
+    anchor: tuple[NativeTimestampSegment, ...]
+    session_version: int
+    analysis_start_sample: int
+    analysis_end_sample: int
+    status: Literal[
+        "scheduled", "running", "recovered", "refused", "failed", "unavailable"
+    ]
+    reason: str
+    pcm_sha256: str | None = None
+    candidate: NativeWordAlignment | None = None
+    committed_version: int | None = None
+    analysis_identity: ContinuousAnalysisIdentity | None = None
+
+
 class ContinuousTranscriptStream:
     """Experimental mono 16 kHz s16le stream; no hidden threads or event queue.
 
@@ -311,6 +370,8 @@ class ContinuousTranscriptStream:
     processed coverage. Both options preserve admitted input across retries.
     ``resolution_probe`` observes at most one different retained window after an
     EOF word refusal. It never publishes or turns that refusal into completion.
+    ``eof_context_retry`` instead tries one retained-context window at EOF through
+    the unchanged publication checks. It is off by default and may still refuse.
     """
 
     def __init__(
@@ -322,6 +383,7 @@ class ContinuousTranscriptStream:
         options: NativeDecodeOptions | None = None,
         rng_seed: int = 0,
         config: ContinuousStreamConfig | None = None,
+        history_limit: int = 4,
     ) -> None:
         if not isinstance(stream_id, str) or not stream_id.strip():
             raise ValueError("stream_id must not be empty")
@@ -335,6 +397,12 @@ class ContinuousTranscriptStream:
             raise TypeError("options must be NativeDecodeOptions or None")
         self._config = config or ContinuousStreamConfig()
         self._options = options or NativeDecodeOptions(without_timestamps=False)
+        if self._config.max_draft_tokens and (
+            self._options.temperature != 0
+            or self._options.beam_size is not None
+            or self._options.best_of is not None
+        ):
+            raise ValueError("draft tokens require greedy decoding")
         if self._options.without_timestamps:
             raise ValueError("continuous transcription requires timestamp tokens")
         if (
@@ -350,15 +418,21 @@ class ContinuousTranscriptStream:
         self._id = stream_id
         self._owner = current_thread()
         self._lock = RLock()
-        self._session = Session(f"{stream_id}:session", history_limit=4)
+        if type(history_limit) is not int or not 1 <= history_limit <= 4096:
+            raise ValueError("history_limit must be an integer between 1 and 4096")
+        self._session = Session(f"{stream_id}:session", history_limit=history_limit)
         self._audio = bytearray()
         self._accepted = self._head = self._chunk = self._peak = 0
         self._retained = 0
         self._eof = self._done = False
+        self._closed = False
         self._unresolved_eof = False
         self._next_endpoint = self.config.preview_interval_ms * _SAMPLES_PER_MS
         self._last_endpoint = 0
         self._previous: NativeWindowResult | None = None
+        # A disposable proposal, never a continuity witness or committed state.
+        # Savepoints omit it; restored streams start with ordinary decoding.
+        self._draft_tokens: tuple[int, ...] = ()
         self._previous_eligible = True
         self._run_observation: AudioObservation | None = None
         self._audio_decision: AudioEvidenceDecision | None = None
@@ -393,6 +467,8 @@ class ContinuousTranscriptStream:
         self._resolution_pcm: bytes | None = None
         self._resolution_active = False
         self._resolution_retained: TransactionRetainedError | None = None
+        self._context_retry: ContinuousContextRetry | None = None
+        self._context_retry_active = False
 
     @property
     def config(self) -> ContinuousStreamConfig:
@@ -403,6 +479,14 @@ class ContinuousTranscriptStream:
         base = self._base_profile_id()
         if self.config.resolution_probe:
             base += "+resolution_probe/v1"
+        if self.config.eof_context_retry:
+            base += "+eof_context_retry/v1"
+        if self.config.defer_word_commits:
+            base += "+deferred_word_commit/v1"
+        if self.config.previous_holdback_ms:
+            base += f"+previous_holdback{self.config.previous_holdback_ms}/v1"
+        if self.config.max_draft_tokens:
+            base += f"+verified_draft{self.config.max_draft_tokens}/v1"
         return f"{base}+input_evidence/v1" if self.config.input_evidence else base
 
     def _base_profile_id(self) -> str:
@@ -458,6 +542,12 @@ class ContinuousTranscriptStream:
         """Inspect the bounded probe separately from authoritative stream state."""
         self._require_owner()
         return self._resolution
+
+    @property
+    def context_retry_observation(self) -> ContinuousContextRetry | None:
+        """Inspect the original refusal and the single retry's outcome."""
+        self._require_owner()
+        return self._context_retry
 
     @property
     def expected_chunk(self) -> int:
@@ -611,6 +701,7 @@ class ContinuousTranscriptStream:
         run = self._run
         if run is not None:
             if run.closed:
+                self._draft_tokens = ()
                 if not run.capacity_released:
                     raise NativeStreamError(
                         "native capacity is retained; recover before retry"
@@ -628,30 +719,59 @@ class ContinuousTranscriptStream:
                 ):
                     self._fail_resolution("closed_without_observation")
                 self._resolution_active = False
+                self._fail_context_retry("closed_without_publication")
+                self._context_retry_active = False
                 return ()
+            if (
+                self._context_retry_active
+                and self._context_retry is not None
+                and self._context_retry.status != "running"
+                and self._pending_state is None
+            ):
+                run.close()
+                if not run.capacity_released:
+                    raise NativeStreamError(
+                        "native capacity is retained; recover before closing"
+                    )
+                self._run = None
+                self._context_retry_active = False
+                self._raise_unresolved()
             try:
                 if not run.complete:
                     run.step()
                     return ()
                 return self._resolve(run)
             except TransactionRetainedError as error:
+                self._draft_tokens = ()
                 if self._resolution_active:
                     self._fail_resolution("native_capacity_retained")
                 self._pending_state = error.committed_state
+                if self._context_retry_active and error.committed_state is None:
+                    self._fail_context_retry("native_capacity_retained")
                 raise
             except BaseException:
+                self._draft_tokens = ()
                 if self._resolution_active:
                     self._fail_resolution("native_operation_failed")
+                if self._context_retry_active:
+                    self._fail_context_retry("native_operation_failed")
                 if run.capacity_released:
                     self._run = None
                     self._resolution_active = False
+                    self._context_retry_active = False
                 raise
+        if (
+            self._context_retry is not None
+            and self._context_retry.status == "scheduled"
+        ):
+            return self._start_context_retry()
         if self._resolution is not None and self._resolution.status == "scheduled":
             return self._start_resolution_probe()
         if self._unresolved_eof:
             self._raise_unresolved()
         with self._lock:
             if self._eof and self._head == self._accepted:
+                self._draft_tokens = ()
                 self._audio.clear()
                 self._retained = self._head
                 self._done = True
@@ -696,6 +816,14 @@ class ContinuousTranscriptStream:
                         bound - self.config.preview_interval_ms * _SAMPLES_PER_MS,
                     )
                 endpoint = min(self._accepted, ceiling)
+            if self.config.defer_word_commits and not final and unit is None:
+                first = self._word_fallback_start(self._retained)
+                for fallback in (first, first + self.config.preview_interval_ms * 16):
+                    if self._last_endpoint < fallback:
+                        # Coalescing and non-divisible preview intervals must
+                        # not skip either observation before the hard bound.
+                        endpoint = min(endpoint, fallback)
+                        break
             start = self._retained
             if self._retry_analysis is not None:
                 start, endpoint, final = self._retry_analysis
@@ -720,20 +848,25 @@ class ContinuousTranscriptStream:
         window_id = f"{self._id}:window:{start}:{endpoint}"
         if self.config.source_units:
             window_id += ":unit" if unit is not None else ":preview"
-        self._run = self._adapter.start_window(
-            session=self._session,
-            request=RequestState(
-                f"{window_id}:request",
-                self._session.session_id,
-                self._model,
-                rng_seed=self._seed,
-            ),
-            window_id=window_id,
-            mel=self._mel_builder(pcm),
-            start_ms=start // _SAMPLES_PER_MS,
-            end_ms=endpoint // _SAMPLES_PER_MS,
-            options=self._options,
-        )
+        try:
+            self._run = self._adapter.start_window(
+                session=self._session,
+                request=RequestState(
+                    f"{window_id}:request",
+                    self._session.session_id,
+                    self._model,
+                    rng_seed=self._seed,
+                ),
+                window_id=window_id,
+                mel=self._mel_builder(pcm),
+                start_ms=start // _SAMPLES_PER_MS,
+                end_ms=endpoint // _SAMPLES_PER_MS,
+                options=self._options,
+                **({"draft_tokens": self._draft_tokens} if self._draft_tokens else {}),
+            )
+        except BaseException:
+            self._draft_tokens = ()
+            raise
         self._run_start, self._run_end, self._run_final = start, endpoint, final
         self._run_unit = unit
         self._run_window_id = window_id
@@ -742,6 +875,8 @@ class ContinuousTranscriptStream:
         return ()
 
     def _resolve(self, run: NativeWindowRun) -> tuple[TranscriptEvent, ...]:
+        if self._context_retry_active:
+            self._context_retry_input()
         result = run.prepare_result()
         if (
             result.window_id != self._run_window_id
@@ -752,6 +887,12 @@ class ContinuousTranscriptStream:
             raise NativeStreamError("native result does not match the admitted audio")
         if self._resolution_active:
             return self._resolve_resolution_probe(run, result)
+        if self.config.max_draft_tokens:
+            self._draft_tokens = (
+                result.metadata.tokens[: self.config.max_draft_tokens]
+                if result.metadata is not None
+                else ()
+            )
         if self.config.input_evidence:
             observation = self._run_observation
             if observation is None or observation.sample_count != (
@@ -928,7 +1069,8 @@ class ContinuousTranscriptStream:
         if closed:
             self._unresolved_eof = True
             if word_alignment is not None:
-                scheduled = self._schedule_resolution_probe()
+                scheduled = self._schedule_eof_retry()
+            self._refuse_context_retry(self._audio_decision.reason)
         run.close()
         self._previous = result
         self._previous_eligible = False
@@ -946,6 +1088,14 @@ class ContinuousTranscriptStream:
             )
         return self._publish_preview("")
 
+    def _word_fallback_start(self, origin: int) -> int:
+        reserve = max(self.config.left_context_ms, self.config.preview_interval_ms)
+        return (
+            origin
+            + (self.config.max_window_ms - reserve - self.config.preview_interval_ms)
+            * 16
+        )
+
     def _resolve_words(
         self, run: NativeWindowRun, result: NativeWindowResult
     ) -> tuple[TranscriptEvent, ...]:
@@ -962,10 +1112,47 @@ class ContinuousTranscriptStream:
         ):
             run.close()
             raise NativeStreamError("source unit does not match admitted analysis")
+        deferred = (
+            self.config.defer_word_commits
+            and not closed
+            and self._run_end < self._word_fallback_start(self._run_start)
+        )
+        if deferred and self._run_start == self._head:
+            # No published context to remove: native text is a provisional full
+            # source-unit view. Save alignment work until the fallback pair.
+            self._trace(result, None, "word_commit_deferred", "preview")
+            run.close()
+            self._word_previous = None
+            self._previous = result
+            self._previous_eligible = True
+            return self._publish_preview(result.text)
         alignment = run.prepare_word_alignment()
         if alignment.native != result:
             run.close()
             raise NativeStreamError("word alignment does not match the native result")
+        if deferred:
+            # After rebasing, alignment is still needed to avoid repeating
+            # published context in previews. It cannot authorize an early cut.
+            self._trace(
+                result,
+                None,
+                "word_commit_deferred",
+                "preview",
+                word_alignment=alignment,
+            )
+            run.close()
+            self._word_previous = None
+            self._previous = result
+            self._previous_eligible = True
+            return self._publish_preview(
+                "".join(
+                    word.text
+                    for word in alignment.words
+                    if word.span.start_ms >= self._head // 16
+                ).strip()
+            )
+        if self._context_retry_active and self._context_retry is not None:
+            self._context_retry = replace(self._context_retry, candidate=alignment)
         decision = compare_word_hypotheses(
             self._word_previous,
             alignment,
@@ -974,6 +1161,7 @@ class ContinuousTranscriptStream:
             holdback_ms=self.config.holdback_ms,
             timestamp_tolerance_ms=self.config.timestamp_tolerance_ms,
             final=closed,
+            previous_holdback_ms=self.config.previous_holdback_ms,
         )
         publication = decision.publication
         if publication is not None and not self._publication_supported(
@@ -1027,9 +1215,47 @@ class ContinuousTranscriptStream:
             )
             self._run = None
             return self._publish_commit()
+        if (
+            decision.reason in {"anchor_missing", "anchor_ambiguous"}
+            and self.config.word_boundary_fallback
+            and unit is not None
+            and unit.origin == "quiet_run"
+            and not self._run_final
+            and self._run_end < self._retained + self.config.max_window_ms * 16
+        ):
+            # A quiet observation is a hint, not EOF authority. Reject only the
+            # hint after native cleanup; keep all PCM and the frozen prefix so
+            # a later growing observation still faces the ordinary word gates.
+            run.close()
+            if not run.capacity_released:
+                raise NativeStreamError(
+                    "native capacity is retained; recover before retry"
+                )
+            with self._lock:
+                if not self._endpoints or self._endpoints[0] != unit.endpoint:
+                    raise NativeStreamError(
+                        "rejected quiet hint does not match the queued endpoint"
+                    )
+                self._endpoints.popleft()
+                self._unit = self._run_unit = self._retry_unit = None
+                self._run = None
+                self._retry_analysis = None
+                self._previous = None
+                self._previous_eligible = False
+                self._word_previous = None
+                self._draft_tokens = ()
+                self._record_decode()
+                self._last_endpoint = self._run_end
+                self._next_endpoint = (
+                    self._run_end + self.config.preview_interval_ms * 16
+                )
+                assert self._last_trace is not None
+                self._last_trace = replace(self._last_trace, action="wait_for_input")
+            return ()
         if closed:
             self._unresolved_eof = True
-            scheduled = self._schedule_resolution_probe()
+            scheduled = self._schedule_eof_retry()
+            self._refuse_context_retry(decision.reason)
             run.close()
             self._run = None
             self._retry_analysis = None
@@ -1051,6 +1277,145 @@ class ContinuousTranscriptStream:
             if word.span.start_ms >= self._head // _SAMPLES_PER_MS
         ).strip()
         return self._publish_preview(text)
+
+    def _schedule_eof_retry(self) -> bool:
+        if not self.config.eof_context_retry:
+            return self._schedule_resolution_probe()
+        if not self._run_final or self._context_retry is not None:
+            return False
+        source = self._last_trace
+        assert source is not None and source.word_publication is None
+        with self._lock:
+            anchor = self._word_anchor
+            start = max(
+                self._retained,
+                ((anchor[0].span.start_ms // 20) * 20 - 500) * 16
+                if anchor
+                else self._retained,
+            )
+            eligible = (
+                self._eof
+                and self._run_end == self._accepted
+                and sum(any(c.isalnum() for c in word.text) for word in anchor) >= 2
+                and self._retained <= start < self._head < self._run_end
+                and start != self._run_start
+                and self._run_end - start <= self.config.max_window_ms * 16
+                and all(
+                    start
+                    <= word.span.start_ms * 16
+                    <= word.span.end_ms * 16
+                    <= self._head
+                    for word in anchor
+                )
+            )
+            pcm = bytes(
+                self._audio[
+                    (start - self._retained) * 2 : (self._run_end - self._retained) * 2
+                ]
+            )
+            self._context_retry = ContinuousContextRetry(
+                source=source,
+                anchor=anchor,
+                session_version=self.state.version,
+                analysis_start_sample=start,
+                analysis_end_sample=self._run_end,
+                status="scheduled" if eligible else "unavailable",
+                reason="retained_anchor_context"
+                if eligible
+                else "no_distinct_anchor_window",
+                pcm_sha256=sha256(pcm).hexdigest() if eligible else None,
+                analysis_identity=self._analysis_identity(),
+            )
+        return eligible
+
+    def _analysis_identity(self) -> ContinuousAnalysisIdentity:
+        return ContinuousAnalysisIdentity(
+            declared_model=self._adapter.model_identity,
+            requested_decode_options=self._options,
+            request_rng_seed=self._seed,
+            declared_execution_profile=(
+                self._adapter.execution_profile
+                if isinstance(self._adapter, NativeWhisperAdapter)
+                else None
+            ),
+        )
+
+    def _context_retry_input(self) -> bytes:
+        """Revalidate frozen EOF input before admission and before resolution."""
+        observation = self._context_retry
+        assert observation is not None
+        with self._lock:
+            start, end = (
+                observation.analysis_start_sample,
+                observation.analysis_end_sample,
+            )
+            pcm = bytes(
+                self._audio[(start - self._retained) * 2 : (end - self._retained) * 2]
+            )
+            if (
+                not self._eof
+                or end != self._accepted
+                or self._head != observation.source.committed_before_sample
+                or self._retained != observation.source.retained_from_sample
+                or self._word_anchor != observation.anchor
+                or self.state.version != observation.session_version
+                or self._analysis_identity() != observation.analysis_identity
+                or len(pcm) != (end - start) * 2
+                or sha256(pcm).hexdigest() != observation.pcm_sha256
+            ):
+                raise NativeStreamError("frozen context retry input or prefix changed")
+        return pcm
+
+    def _start_context_retry(self) -> tuple[TranscriptEvent, ...]:
+        self._draft_tokens = ()
+        observation = self._context_retry
+        assert observation is not None and observation.status == "scheduled"
+        self._context_retry = replace(observation, status="running")
+        try:
+            pcm = self._context_retry_input()
+            start, end = (
+                observation.analysis_start_sample,
+                observation.analysis_end_sample,
+            )
+            window_id = f"{self._id}:context-retry:{start}:{end}"
+            self._run_start, self._run_end, self._run_final = start, end, True
+            self._run_unit = observation.source.source_unit
+            self._run_window_id = window_id
+            self._run_observation = AudioObservation.from_pcm(pcm)
+            self._audio_decision = None
+            self._run = self._adapter.start_window(
+                session=self._session,
+                request=RequestState(
+                    f"{window_id}:request",
+                    self._session.session_id,
+                    self._model,
+                    rng_seed=self._seed,
+                ),
+                window_id=window_id,
+                mel=self._mel_builder(pcm),
+                start_ms=start // 16,
+                end_ms=end // 16,
+                options=self._options,
+            )
+            self._context_retry_active = True
+        except BaseException as error:
+            self._fail_context_retry("native_start_failed")
+            if isinstance(error, TransactionRetainedError):
+                self._resolution_retained = error
+            raise
+        return ()
+
+    def _fail_context_retry(self, reason: str) -> None:
+        if self._context_retry is not None and self._context_retry.status == "running":
+            self._context_retry = replace(
+                self._context_retry, status="failed", reason=reason
+            )
+
+    def _refuse_context_retry(self, reason: str) -> None:
+        if self._context_retry_active and self._context_retry is not None:
+            self._context_retry = replace(
+                self._context_retry, status="refused", reason=reason
+            )
 
     def _schedule_resolution_probe(self) -> bool:
         """Freeze one distinct EOF suffix; admission still waits for the fence."""
@@ -1094,6 +1459,7 @@ class ContinuousTranscriptStream:
 
     def _start_resolution_probe(self) -> tuple[TranscriptEvent, ...]:
         """Consume the single attempt, including startup/cancellation failures."""
+        self._draft_tokens = ()
         observation = self._resolution
         pcm = self._resolution_pcm
         assert observation is not None and observation.status == "scheduled"
@@ -1180,6 +1546,12 @@ class ContinuousTranscriptStream:
         self._resolution = replace(self._resolution, status="failed", reason=reason)
 
     def _raise_unresolved(self) -> NoReturn:
+        if self._context_retry is not None:
+            raise StreamNeedsResolutionError(
+                f"EOF remains unresolved ({self._context_retry.source.reason}); "
+                f"context retry {self._context_retry.status} "
+                f"({self._context_retry.reason}); input retained"
+            )
         if self._resolution is not None:
             raise StreamNeedsResolutionError(
                 f"EOF word alignment remains unresolved ({self._resolution.source.reason}); "
@@ -1365,21 +1737,36 @@ class ContinuousTranscriptStream:
                 self._unit = None
                 if self._run_unit.origin == "quiet_run":
                     self._endpoints.popleft()
-        # Establish a fresh growing pair after rebasing. Starting immediately at
-        # the old endpoint can exhaust a full window before a second observation.
-        self._last_endpoint = end
+        same_origin_alignment = (
+            result.alignment
+            if self.config.defer_word_commits
+            and isinstance(result, AlignedPublication)
+            and not result.final
+            and retained == self._run_start
+            and not self._pending_final
+            and self._run_unit is None
+            and self._silence_pending is None
+            else None
+        )
+        # Publication need not rebase PCM. After verified commit/release, the
+        # accepted alignment remains an immutable same-origin witness; the next
+        # word comparison still validates its newly published, frozen anchor.
+        # Only an actual rebase needs room for an entirely fresh growing pair.
+        self._last_endpoint = self._run_end if same_origin_alignment else end
         interval = self.config.preview_interval_ms * 16
         self._next_endpoint = min(
             self._run_end + interval,
-            self._retained + self.config.max_window_ms * 16 - interval,
+            self._retained
+            + self.config.max_window_ms * 16
+            - (0 if same_origin_alignment else interval),
         )
         if self.config.source_units and (
             not self.config.word_boundary_fallback or self._run_unit is not None
         ):
             self._next_endpoint = end + interval
-        self._previous = None
+        self._previous = same_origin_alignment.native if same_origin_alignment else None
         self._previous_eligible = True
-        self._word_previous = None
+        self._word_previous = same_origin_alignment
         if self._silence_pending is not None:
             self._word_anchor = ()
             self._silence_pending = None
@@ -1395,6 +1782,15 @@ class ContinuousTranscriptStream:
         self._retry_analysis = None
         self._segment += 1
         self._revision = 0
+        if self._context_retry_active and self._context_retry is not None:
+            self._context_retry = replace(
+                self._context_retry,
+                status="recovered",
+                reason="strict_eof_commit",
+                committed_version=state.version,
+            )
+            self._context_retry_active = False
+            self._unresolved_eof = False
         return (text, commit, self._final_event()) if self._done else (text, commit)
 
     def _record_decode(self) -> None:
@@ -1419,6 +1815,7 @@ class ContinuousTranscriptStream:
         )
 
     def _final_event(self) -> TranscriptEvent:
+        self._draft_tokens = ()
         self._sequence += 1
         return TranscriptEvent(
             self._sequence,
@@ -1428,6 +1825,7 @@ class ContinuousTranscriptStream:
 
     def close(self) -> bool:
         self._require_owner()
+        self._draft_tokens = ()
         if self.done:
             return False
         if (
@@ -1448,7 +1846,51 @@ class ContinuousTranscriptStream:
             self._resolution_pcm = None
             self._retry_analysis = None
             self._eof = self._done = True
+            self._closed = True
+            self._fail_context_retry("stream_closed")
+            self._context_retry_active = False
         return True
+
+    def save_checkpoint(self, path: str | Path, *, pipeline_identity: str) -> str:
+        """Save at a publication boundary; return the new file's SHA-256.
+
+        No active decode or provisional hypothesis can be saved. Complete
+        committed history must still be retained. Saving does not stop input,
+        close this stream, or acknowledge a source chunk on the caller's behalf.
+        Keep the returned digest outside the file and close this owner before
+        resuming. The snapshot contains retained PCM and text, not GPU caches.
+        """
+        from .stream_checkpoint import save_checkpoint
+
+        return save_checkpoint(self, path, pipeline_identity=pipeline_identity)
+
+    @classmethod
+    def from_checkpoint(
+        cls,
+        adapter: NativeWhisperAdapter,
+        *,
+        path: str | Path,
+        expected_sha256: str,
+        pipeline_identity: str,
+        mel_builder: Callable[[bytes], object],
+    ) -> ContinuousTranscriptStream:
+        """Restore a saved boundary with fresh execution resources.
+
+        The caller binds tokenizer, preprocessing and backend artifacts through
+        pipeline_identity and supplies the saved digest. Retained audio is
+        decoded again; this is not exact mid-token or GPU-state continuation.
+        """
+        from .stream_checkpoint import load_checkpoint
+
+        if cls is not ContinuousTranscriptStream:
+            raise TypeError("checkpoint restore does not support stream subclasses")
+        return load_checkpoint(
+            adapter,
+            path=path,
+            expected_sha256=expected_sha256,
+            pipeline_identity=pipeline_identity,
+            mel_builder=mel_builder,
+        )
 
     def __enter__(self) -> ContinuousTranscriptStream:
         return self

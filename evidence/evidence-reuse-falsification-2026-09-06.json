@@ -1,0 +1,132 @@
+{
+  "archive_mutation_claim": "preserved_refusals_not_individual_gate_causality",
+  "audio_retirement_authorized": false,
+  "cache_implemented": false,
+  "clean_synthetic_controls": {
+    "baseline": {
+      "input_sha256": "2332a38f01b5da04e3444333b40d518a72d19adaa62e782d16749efd473a5e04",
+      "reasons": []
+    },
+    "correspondence_only": true,
+    "mutations": {
+      "changed_decode_options": {
+        "input_sha256": "9d9f6825325772062f2d2f8d86f04513bfcdec6105316d48e805049f43a9435c",
+        "newly_present_reasons": [
+          "analysis_identity_mismatch"
+        ]
+      },
+      "changed_model_identity": {
+        "input_sha256": "2a0019287e27f38c93ec5bae0b2f76185707534947cb1789f82fa56cd837d892",
+        "newly_present_reasons": [
+          "analysis_identity_mismatch",
+          "published_model_mismatch"
+        ]
+      },
+      "changed_pcm": {
+        "input_sha256": "eeaa776d1c298bcdeaef42898fc7078c79f90b8b6af9a48e1bc60f5c0ba9756a",
+        "newly_present_reasons": [
+          "joint_pcm_mismatch",
+          "candidate_pcm_mismatch"
+        ]
+      },
+      "changed_window_origin": {
+        "input_sha256": "e2a41b423d224d8105c3713685745da17f786ef20869c131fac30e1f838d1e75",
+        "newly_present_reasons": [
+          "incompatible_observation_windows"
+        ]
+      }
+    }
+  },
+  "counterfactual_mutations": {
+    "changed_decode_options": {
+      "input_sha256": "d3e51d7e29ea2196f71ef7ede58ca943827288272731cc04489a9311bf62341e",
+      "reasons": [
+        "analysis_identity_mismatch",
+        "published_model_mismatch",
+        "representation_mismatch",
+        "lexical_timing_mismatch",
+        "overlap_cuts_candidate_word"
+      ]
+    },
+    "changed_model_identity": {
+      "input_sha256": "cbe87a63ec7c65205f52b698ce48dfebd5db925d96719f80b6562eef74718033",
+      "reasons": [
+        "analysis_identity_mismatch",
+        "published_model_mismatch",
+        "representation_mismatch",
+        "lexical_timing_mismatch",
+        "overlap_cuts_candidate_word"
+      ]
+    },
+    "changed_pcm": {
+      "input_sha256": "7c70a0be11e1cede026ab73bf81ec4a53d9e04ec2d9b8d2fd9350f050578e1d3",
+      "reasons": [
+        "joint_pcm_mismatch",
+        "candidate_pcm_mismatch",
+        "analysis_identity_mismatch",
+        "published_model_mismatch",
+        "representation_mismatch",
+        "lexical_timing_mismatch",
+        "overlap_cuts_candidate_word"
+      ]
+    },
+    "changed_window_origin": {
+      "input_sha256": "fe180d01fd0b7ea965b6c843024eb77c5d668526009273721e3a8b071411cd14",
+      "reasons": [
+        "incompatible_observation_windows"
+      ]
+    },
+    "extended_window_without_fresh_observation": {
+      "input_sha256": "e0ed7cc6b87b4707fd03c6ebfe4785d8a3a986c8827ddc61914f981889528855",
+      "reasons": [
+        "candidate_pcm_mismatch",
+        "analysis_identity_mismatch",
+        "published_model_mismatch",
+        "representation_mismatch",
+        "lexical_timing_mismatch",
+        "overlap_cuts_candidate_word"
+      ]
+    },
+    "partial_word_still_crosses_overlap": {
+      "input_sha256": "cc27218e71d43359c56d96b6c8b6c0bcb181894ab02ea43209c8c28bca5247d1",
+      "reasons": [
+        "analysis_identity_mismatch",
+        "published_model_mismatch",
+        "representation_mismatch",
+        "lexical_timing_mismatch",
+        "overlap_cuts_candidate_word"
+      ]
+    }
+  },
+  "duplicate": {
+    "additional_acoustic_observations": 0,
+    "evaluations": 2,
+    "identical_result": true,
+    "input_sha256": "2adbebc271d59accaa5d9edabf607a6bd5b77dd16ffe7b189f45e6bb89a72322",
+    "interpretation": "pure_function_diagnostic_idempotence_only",
+    "production_deduplication_demonstrated": false,
+    "reasons": [
+      "analysis_identity_mismatch",
+      "published_model_mismatch",
+      "representation_mismatch",
+      "lexical_timing_mismatch",
+      "overlap_cuts_candidate_word"
+    ]
+  },
+  "existing_scripted_fixture_checks": {
+    "checkpoint_reuse_without_redecode": "passed",
+    "rebase_requires_fresh_pair": "passed",
+    "same_origin_reuse_and_fresh_growth": "passed"
+  },
+  "native_inference_run": false,
+  "next_work_selection_validated": false,
+  "publication_authorized": false,
+  "recognition_quality_claim": false,
+  "schema_version": "1-offline-evidence-reuse-falsification",
+  "shadow_planner_implemented": false,
+  "source_sha256": {
+    "full_pcm_sha256": "5276e641f14eaae484a8da6f916e44f9373239fbe70c70ba41a3f1a36f747108",
+    "paced_archive_sha256": "fa856cb4f0028109e7524b6e563fd008600d6fe84043d86c8f433784bdc2e3bf",
+    "prompt_archive_sha256": "ac48e91c068d5d57ee746a04cb3cecbdf9cea2ecc493775048aba430992e9832"
+  }
+}

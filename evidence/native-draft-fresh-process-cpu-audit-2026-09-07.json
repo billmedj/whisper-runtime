@@ -1,0 +1,132 @@
+{
+  "schema": "native-draft-fresh-process-cpu-audit/v1",
+  "status": "passed",
+  "archive": {
+    "path": "evidence/native-draft-fresh-process-cpu-2026-09-07.zip",
+    "sha256": "b92826a7adfed5c7af227a808c280ec69f9857ff3f44bccfc435acca639d1c3a",
+    "size_bytes": 1162498,
+    "report_sha256": "3c38c7ee09e1d4df0e7f48195a32975a4de33b15d2f59714f3a614bd7dff0d8d",
+    "public_derivative": true,
+    "original_archive_sha256": "34334f9ec91904f5ad230c6937cb78485e2d65d0f86c6c72a3a4158d17a6600a",
+    "original_archive_size_bytes": 1148108,
+    "original_report_sha256": "248b03810db17e244141d6296fd08d1effdac1cd3a856ca51b7cd4c0568d24c4",
+    "raw_report_byte_identity_preserved": false,
+    "public_derivative_scope": "19 private path strings replaced in report/setup metadata; JSON formatting and supplementary packaging hashes updated. Executed source, PCM, savepoint, numerical results, traces and events are unchanged. The original archive is retained privately, not published.",
+    "public_payload_manifest": "PUBLIC_MANIFEST.json",
+    "derivation_record": "PUBLIC_DERIVATION.json",
+    "payload_files": 79,
+    "checkpoint_sha256": "39ffd1ff32136843770864a12325744e4e29f5b2ec5c2a1a363d31b8fd118e87",
+    "raw_source_files_checked_during_each_phase": 65,
+    "frozen_prior_preflight_files_preserved": 63,
+    "supplemental_file_hash_scope": "Public derivative packaging-time only, explicitly separate from during-phase source checks; process manifest_sha256 fields retain the original private execution manifest hash",
+    "crc_source_hashes_checkpoint_digest_and_full_report_recomputation_verified": true
+  },
+  "configuration": {
+    "model": "cached tiny.en",
+    "device": "cpu",
+    "precision": "float32",
+    "cpu_threads": 1,
+    "max_draft_tokens": 32,
+    "left_context_ms": 20000,
+    "word_context_limit_ms": 24000,
+    "reuse_alignment_features": true,
+    "phase_hard_timeout_seconds": 120,
+    "phase_driver_timeout_seconds": 90,
+    "phase_driver_maximum_steps": 10000,
+    "pcm_chunk_samples": 32000
+  },
+  "input": {
+    "recipe": "One untrimmed occurrence of each of three registered local LibriSpeech utterances, without added pauses",
+    "sample_count": 269280,
+    "sample_rate_hz": 16000,
+    "duration_seconds": 16.83,
+    "pcm_sha256": "967e6f732a54e173b7ee79b82ba1bba1864bb7033501880d768da9212393fe3f"
+  },
+  "processes": {
+    "control_pid": 151888,
+    "producer_pid": 152496,
+    "consumer_pid": 151852,
+    "producer_exited_before_consumer_started": true
+  },
+  "checkpoint_boundary": {
+    "accepted_samples": 160000,
+    "committed_samples": 71040,
+    "retained_from_sample": 0,
+    "old_hint_tokens": 32,
+    "old_hint_absent_after_restore": true,
+    "restored_state_and_metrics_exact": true,
+    "first_restored_native_analysis_ms": [0, 12000],
+    "first_restored_inference": "PyTorchInference",
+    "first_restored_draft_tokens": [],
+    "checkpoint_has_no_draft_tokens_field": true
+  },
+  "parity": {
+    "required_checks_passed": 20,
+    "events_exact": true,
+    "event_count": 15,
+    "native_window_count": 9,
+    "tokens_decisions_and_provenance_except_scores_exact": true,
+    "source_coverage_exact": true,
+    "contiguous_all_input_committed": true,
+    "final_event_count": 1,
+    "final_state_except_scores_exact": true,
+    "metrics_exact": true,
+    "input_admission_exact": true,
+    "native_admission_spans_and_options_exact": true,
+    "source_commit_intervals": [[0, 71040], [71040, 157760], [157760, 187200], [187200, 215360], [215360, 269280]]
+  },
+  "differences": {
+    "exact_bitwise_scores": false,
+    "affected_native_window_index_one_based": 6,
+    "avg_logprob_absolute_delta": 0.00000016954210069197728,
+    "no_speech_prob_absolute_delta": 0.0000012293457984924316,
+    "raw_trace_differing_paths_including_provenance_copies": 7,
+    "raw_final_state_differing_paths": 2,
+    "admission_change": "Only first resumed native window loses the previous 32-token hint, uses ordinary inference, and has zero parallel draft prefills",
+    "control_decoder_forwards": 246,
+    "producer_plus_consumer_decoder_forwards": 256,
+    "control_encoder_forwards": 9,
+    "producer_plus_consumer_encoder_forwards": 9
+  },
+  "cleanup": {
+    "all_native_owners_closed": true,
+    "all_admission_capacity_restored": true,
+    "lease_counts_zero": true,
+    "queues_empty": true,
+    "draft_rows_audio_hints_and_kv_caches_cleared": true,
+    "hooks_unchanged": true,
+    "loaded_model_fingerprints_unchanged": true
+  },
+  "verification": {
+    "unit_tests_passed": 7,
+    "fail_closed_mutations_exercised": 12,
+    "ruff_check_passed": true,
+    "ruff_format_check_passed": true,
+    "tool": "tools/verify_draft_restore_process.py",
+    "tests": "tools/test_verify_draft_restore_process.py",
+    "raw_report": "artifacts/native-draft-restore-20260907-v2/report.json",
+    "prior_successful_v1_preserved": "artifacts/native-draft-restore-20260907-v1/frozen-run.zip"
+  },
+  "public_archive_verification": {
+    "tool": "tools/verify_public_cpu_archive.py",
+    "status": "passed",
+    "original_retained_under_ignored_artifacts": true,
+    "all_65_during_phase_source_hashes_match": true,
+    "public_payload_and_supplementary_hashes_match": true,
+    "checkpoint_bytes_and_payload_digest_unchanged": true,
+    "full_cpu_report_recomputed": true,
+    "personal_absolute_paths_absent": true
+  },
+  "limitations": {
+    "gpu_used": false,
+    "network_or_model_download_used": false,
+    "runtime_sources_modified": false,
+    "gpu_release_qualified": false,
+    "exact_token_state_migration_qualified": false,
+    "durable_input_or_output_delivery_qualified": false,
+    "abrupt_process_crash_tested": false,
+    "source_paced_latency_benchmark": false,
+    "generalization_beyond_fixed_cpu_input": false,
+    "claim": "Bounded publication-boundary restart after a graceful source-process exit; no tensors, native task, KV cache, or prior draft hint is restored. Retained PCM is reanalyzed with the same context policy. This is not bitwise score identity."
+  }
+}

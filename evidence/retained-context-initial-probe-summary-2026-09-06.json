@@ -1,0 +1,45 @@
+{
+  "record_type": "extracted-summary",
+  "scope": "Two CPU stdout records from the initial configuration-only probe; not raw traces or a qualified latency profile.",
+  "runtime_change_during_probe": false,
+  "configuration": {
+    "left_context_ms": 24000,
+    "word_context_limit_ms": 25000,
+    "preview_interval_ms": 2000,
+    "max_window_ms": 30000,
+    "defer_word_commits": true
+  },
+  "cases": [
+    {
+      "case": "noisy-prefix",
+      "pcm_sha256": "5276e641f14eaae484a8da6f916e44f9373239fbe70c70ba41a3f1a36f747108",
+      "input_samples": 174240,
+      "committed_samples": 174240,
+      "first_commit_input_samples": 96000,
+      "word_edits": 1,
+      "reference_word_count": 26,
+      "decode_count": 9,
+      "final_count": 1,
+      "capacity_restored": true
+    },
+    {
+      "case": "concatenated-no-added-pauses",
+      "pcm_sha256": "f170f383aaefea4057c1d9a8ee2b105f6192b9aaa5b2995a9f0c01fac86f21aa",
+      "input_samples": 538560,
+      "accepted_samples": 512000,
+      "committed_samples": 409280,
+      "first_commit_input_samples": 96000,
+      "word_edits": 22,
+      "reference_word_count": 88,
+      "decode_count": 21,
+      "final_count": 0,
+      "capacity_restored": true,
+      "error": "No stable contiguous prefix within the audio window; input retained.",
+      "last_reason": "conflicting_speech_score"
+    }
+  ],
+  "source_paced": false,
+  "gpu_used": false,
+  "accepted_as_default": false,
+  "conclusion": "Keeping the initial context permits earlier commits on the short input, but this configuration fails after the first rebase on the long input. Post-commit scheduling also repeats previously decoded prefixes when the origin stays fixed."
+}

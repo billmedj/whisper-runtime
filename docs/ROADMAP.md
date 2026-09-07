@@ -1,6 +1,6 @@
 # Delivery milestones
 
-Updated: 2026-09-06.
+Updated: 2026-09-07.
 
 The project has two goals: control inference execution, and make continuous
 Whisper transcription practical. Same-window encoder reuse now avoids measured
@@ -13,16 +13,166 @@ A gate closes only when its acceptance cases and results are committed.
 
 ## Status at a glance
 
+The first [four-hour native endurance attempt](research/2026-09-07-release-soak-results.md)
+stopped after the short smoke stage: transcription and cleanup passed, but
+process RSS exceeded its registered limit. No hourly stage ran. The next release
+check must first distinguish startup/framework memory from session growth; the
+recorded failure cannot be changed by adjusting a threshold after the run.
+
+The [two-session attribution diagnostic](research/2026-09-07-memory-attribution-results.md)
+now completes both transcripts with identical exports and terminal CUDA allocation,
+but its detailed accounting fails because smaps_rollup is unavailable. Most guest
+RSS growth appears at imports/initial execution; the second session adds 4.55 MiB.
+This is not verified host RAM or endurance. A separately registered short capacity
+test with an enforced limit or suitable host telemetry must precede a longer run.
+
+The [separate capped smoke](research/2026-09-07-capacity-smoke-results.md) then
+stopped during its first session on source-clock lateness. It did not complete
+capacity qualification. Cleanup passed and the app is stopped. The next local
+step isolates source scheduling and cold alignment before another GPU attempt.
+
+The subsequent [instrumented T4 replay](research/2026-09-07-source-clock-replay-results.md)
+passes two short sessions under the same submitted 4 GiB limit. Coverage, exports
+and terminal CUDA memory match. Source lateness is 222.77 ms in session 1 and
+2.13 ms in session 2. The narrow initial margin and the earlier failure still
+need attention; four-hour endurance and release-platform gates remain open.
+
+The latest [local hardening](research/2026-09-07-completion-and-startup-hardening.md)
+fixes completion races, preserves the final microphone frame during concurrent
+shutdown, and aligns harness imports with the CLI's verified startup path.
+Local suites and the installed CPU command pass. The separate
+[verified-startup T4 replay](research/2026-09-07-verified-startup-results.md)
+now passes two complete sessions; four-hour endurance is still open.
+
+The [low-latency candidate](research/2026-09-07-low-latency-cpu-results.md)
+confirms the first speech at 4/6 seconds of admitted audio on two CPU fixtures,
+without token drafts or relaxed publication checks. Same-window reuse preserves
+candidate text and halves encoder forwards. Its first T4 check confirms text at
+7.746 seconds but fails at a final source boundary. The
+[two-observation correction](research/2026-09-07-two-observation-holdback.md)
+completes the same input on CPU with first confirmation after 6 seconds of
+admitted audio and the standard control's word-edit count. The subsequent
+[source-paced v2 T4 check](research/2026-09-07-low-latency-v2-gpu-results.md)
+passes both sessions: first confirmation at 7.358/6.186 seconds, full coverage,
+identical exports and unchanged terminal CUDA allocation. This closes the
+short check, not endurance or default-profile promotion.
+
+The installed SDK and CLI now share named execution profiles. `conservative-v1`
+preserves the standard settings. `experimental-optimized-v1` exposes retained
+context, same-window alignment reuse and verified token drafts; it requires the
+matching patched backend. Remote servers configure their own profile.
+
+The latest [native draft checks](research/2026-09-07-draft-qualification-results.md)
+record 45.9% fewer decoder calls and 23.5% less decode-phase wall time on two
+project-new short recordings on T4. Text and commit spans match. A separate
+CPU test restores logical state in a fresh process, then recomputes decoder
+state. Neither result qualifies durable GPU-state migration or general speed.
+Drafts remain experimental because token parity does not guarantee score parity
+at publication thresholds.
+
+The earlier [matched T4 comparison](research/2026-09-07-composed-gpu-results.md)
+connects earlier publication and same-window encoder reuse. First COMMIT arrives
+at 10.245 seconds versus 28.439 seconds; peak allocated memory falls 22.77%.
+Reuse preserves exact fast-arm commits and removes 18 encoder forwards. Its
+combined forward interval sum falls 5.97% versus fast legacy alignment but
+remains 10.92% above the conservative control. The longer combined-profile
+qualification remains open; defaults are unchanged.
+
+The earlier [short T4 candidate](research/2026-09-06-retained-context-commits.md)
+separates text publication from audio-window movement. First commit arrives at
+13.220 seconds versus 31.156 seconds in the earlier smoke run, with unchanged
+word-edit count. Same-origin alignment reuse and checkpoint continuation are
+implemented. The candidate context settings need a longer matched replay before
+they replace the CLI defaults; this latency gain is not a compute-saving claim.
+
+The [single-stream CLI](CLI.md) now accepts WAV/PCM or optional microphone input
+and exports committed TXT, SRT and VTT. The same command connects to an
+authenticated live-v2 server without installing PyTorch on the client. A clean
+Windows Python environment, a separate backend checkout and the cached model
+complete the 11-second JFK file outside the source checkout. This is not a clean
+operating-system installation. Microphone tests use scripted capture.
+
+The [deferred-commit candidate](research/2026-09-06-deferred-word-commits.md)
+completes both the 33.66-second continuous clip and a 10.89-second noisy prefix
+on CPU. A four-hour accelerated controller soak completes with bounded history
+and buffers; recognition is scripted in that test. The separate
+[30-minute source-paced T4 run now passes](research/2026-09-06-live-v01.md), with
+90,000 chunks, 118 commits and verified terminal input coverage and cleanup.
+The source repeats a short cycle; broader acoustic and release-platform checks
+remain open. See [V0.1 status](V01_STATUS.md) for the current release checklist.
+
+Earlier GPU work: the opt-in EOF context retry completes the previously
+blocked stream [at source speed on T4](research/2026-09-06-paced-context-retry.md):
+21.26 to 33.66 seconds committed, with one additional native window and unchanged
+strict publication checks. Matched native observations and the published prefix
+stay fixed. The final event arrives 326.527 ms after input EOF. The noisy-prefix
+case still refuses and retains audio without a redundant decode. A subsequent
+[fixed-audio prompt comparison](research/2026-09-06-noisy-context-prompt.md)
+recovers its missing next utterance but not its publication boundary. Both
+decoder-history and crop effects are now observed; a saved earlier joint
+observation supplies the next local continuity test. That
+[read-only replay](research/2026-09-06-continuity-witness.md) now finds the exact
+published anchor and matching lexical tokens, but still refuses differences in
+declared identity, punctuation, timing, and a word cut by the overlap boundary.
+It does not authorize publication or audio retirement. These earlier diagnostics
+remain historical evidence for their named profiles; the newer deferred-commit
+result above does not change their outcomes.
+
 | Gate | Deliverable | Status | Depends on |
 | --- | --- | --- | --- |
 | D0 | Governed decoding and timed publication | Validated within the recorded pre-alpha scope | None |
-| D1 | Continuous transcription with progressive commits | Experimental rolling profile implemented; long-session gate open | D0 |
-| D2 | A usable local live-transcription entry point | Paced API and PC-to-Modal reference tested; microphone and CLI gate open | D1 |
+| D1 | Continuous transcription with progressive commits | Registered 30-minute T4 run passes; broader acceptance coverage remains open | D0 |
+| D2 | A usable local live-transcription entry point | CLI and optional capture implemented; short CPU file run passes; physical microphone gate open | D1 |
 | D3 | Broader quality and failure coverage | Initial coverage; expand alongside D1-D2 | D0; release gate for D2 |
-| D4 | Measured compute and memory improvements | Encoder reuse tested on short paced input; broad quality and efficiency gates open | D1 and matched D3 baselines |
-| D5 | A reproducible developer release | Package builds; release gates remain open | D2 and D3; D4 for efficiency claims |
-| D6 | Durable recovery and finer resource scheduling | Later | D3 and a recovery contract |
+| D4 | Measured compute and memory improvements | Encoder reuse and token drafts measured on short paced inputs; broad quality and efficiency gates open | D1 and matched D3 baselines |
+| D5 | A reproducible developer release | Clean Windows Python native file run passes; platform and release gates remain open | D2 and D3; D4 for efficiency claims |
+| D6 | Durable recovery, GPU-free suspension, and compatible migration | Logical savepoint restored in a fresh CPU process; durable delivery, crash recovery and token-state migration remain open | D0, a recovery contract, and D3 failure tests; stream recovery integrates with D1 |
 | D7 | Multiple channels, translation, and a second backend | Later | D1-D3 and per-output contracts |
+
+## Execution order
+
+Keep the existing gate identifiers. Their numbers do not specify execution order.
+Durable recovery is now a core requirement, not an optional follow-up. This
+revision changes priorities; it does not qualify new runtime capabilities.
+
+For **V0.1**, prioritize the installed single-stream path and its D1-D3/D5
+qualification before extending durable token state. V0.2 targets independent
+channels; V0.3 targets translation. Those version targets do not close the
+broader D6 recovery requirements or imply untested language support.
+
+GUI delivery uses the proposed [application boundary](rfcs/0002-application-boundary.md):
+one engine, a versioned local application API, and a browser interface. It follows
+engine qualification and does not require moving decoder logic into the frontend.
+
+1. **Complete a bounded live recovery path and define durable session state
+   (D1, D3, D6a).** Preserve the successful strict path. Test one alternative
+   decode only for the retained unresolved span. Separate lexical failures from
+   timing and representation differences. Use the same input identities,
+   committed-prefix boundary, and retained audio in the session checkpoint.
+   Develop CPU persistence and crash tests while the audio repair is validated.
+   A saved session preserves unresolved work; it does not fix recognition.
+2. **Resume saved computation in a new process (D6b, D6c).** First qualify CPU
+   greedy decoding after prefill and after a token step. Then cover sampling
+   and beam state. Follow with a short, registered T4 shutdown-and-restore test.
+   Keep durable replay as a separate recovery path when exact-state restore is
+   unavailable. Do not label replay as continuation without recomputation.
+3. **Measure useful work per resource budget (D4, D3).** Reuse the recovery
+   corpus for matched quality, delay, memory, and compute measurements. Measure
+   checkpoint size and save/restore overhead before adding an offload policy.
+   Compare a fixed policy with a bounded adaptive candidate on held-out inputs.
+   Add no general scheduler until the measured workload justifies one.
+4. **Qualify and package continuous use (D1-D3, D5).** Preserve the passing
+   30-minute paced result and extend coverage. Include disconnects and backpressure;
+   qualify pause/resume separately from uninterrupted caption latency. Deliver
+   a small API and CLI before a GUI. Keep the broader four-hour soak gate.
+5. **Extend the qualified contract (D7).** Add independent channels, translation,
+   and a second backend through separate conformance cases. Do not put these
+   features on the critical path for the first single-stream release.
+
+Use licensed, fixed inputs and explicit baselines. Reuse recorded controls only
+when their input and execution identities match; use new speakers or recordings
+for held-out checks. A second observation from a tuning case is not a new test
+case. Planned work here does not start GPU jobs or change the spending budget.
 
 ## D0. Governed decoding and timed publication
 
@@ -57,7 +207,11 @@ Limits:
 
 ## D1. Continuous transcription with progressive commits
 
-**Status: experimental profile implemented; acceptance gate remains open.**
+**Status: registered 30-minute profile passes; broader acceptance gate remains open.**
+
+Current evidence is in the [V0.1 live result](research/2026-09-06-live-v01.md).
+The following diagnostics describe earlier profiles and their recorded limits;
+they are not instructions to rerun already completed work.
 
 The [timestamp agreement stream](CONTINUOUS_STREAMING.md) implements growing
 native hypotheses, prefix publication, bounded rolling PCM, thread-safe input
@@ -257,14 +411,15 @@ Implementation order:
 
 Acceptance gate:
 
-- [ ] Replay at least 30 minutes at wall-clock audio speed, including speech,
-  pauses, and boundaries that cut through words.
+- [x] Replay 30 minutes at wall-clock audio speed on the registered repeated
+  speech/noise/pause sequence. Full coverage and cleanup pass on one T4.
 - [ ] Commit text before EOF. Previously committed text and segment identities
   remain unchanged after window shifts, retries, and cancellation.
 - [ ] Account for accepted samples in the input timeline, with no gaps caused by
   silent loss. Rejected chunks leave sequence state unchanged and can be retried.
-- [ ] Record configured buffer limits and observed high-water marks. Application
-  buffers stay within their limits; measure process memory separately.
+- [x] Record configured buffer limits and observed high-water marks. The long
+  T4 stage peaks at 28.80 seconds of PCM within its 40-second cap. This is not
+  a process-memory or VRAM bound.
 - [ ] Exercise slow decoders and consumers. Report delay or backpressure without
   unbounded queues, silent loss, or deadlock.
 - [ ] Repeat deterministic replays with different chunk partitions and test the
@@ -275,22 +430,34 @@ another streaming system.
 
 ## D2. A usable local live-transcription entry point
 
-**Status: paced API and network reference tested; microphone and CLI gate open.**
+**Status: CLI implemented and short file run tested; physical microphone and live qualification remain open.**
 
 Deliver a small Python API and one local command, with microphone input and paced
 file replay. Do not require a server deployment or a desktop application.
 
 The [paced PCM API](PACED_REPLAY.md) is implemented and tested locally and on one
-T4. It accepts recorded bytes and emits timed events through callbacks. It does
-not yet provide microphone capture or a user-facing caption command. The
+T4. It accepts recorded bytes and emits timed events through callbacks. The
+[installed CLI](CLI.md) now wraps the existing controller for one local stream,
+with WAV/PCM input, optional bounded microphone capture and final text/subtitle
+exports. A short real CPU file run completes; capture lifecycle and failure tests
+use scripted devices. Subtitle times denote committed source coverage, not
+word-accurate caption alignment. The
 [network reference](NETWORK_REPLAY.md) connects a Windows file-replay client to
 one Modal T4 and has a recorded successful short run. Its diagnostic command
-is not an installed microphone transcription application.
+is not an installed microphone transcription application. Its opt-in
+`pcm-websocket/live-v2` protocol now accepts an initially unknown duration, checks
+observed input at EOF, and enforces finite session and buffer limits. Local tests
+include an actual WebSocket exchange and an accelerated input longer than 120
+seconds. This is not a long-session or remote GPU qualification. The installed
+CLI now connects both paced file input and optional microphone capture to that
+remote example. Real localhost tests cover the installed command path through
+the controller and final exports. The new Modal profile now passes its registered
+short and 30-minute tests. Physical capture remains unqualified.
 
-- [ ] Document input format, model selection, provisional and committed results,
+- [x] Document input format, model selection, provisional and committed results,
   cancellation, and failure behavior.
-- [ ] Show readable partial captions with explicit corrections and finality.
-- [ ] Export committed subtitles with source times. Distinguish a final subtitle
+- [x] Show readable partial captions with explicit corrections and finality.
+- [x] Export committed subtitles with source times. Distinguish a final subtitle
   file from a provisional event stream.
 - [ ] Handle microphone disconnection, EOF, cancellation, and device errors without
   claiming success or losing the committed transcript.
@@ -370,6 +537,20 @@ device-time, repeated-worker and long-session efficiency gates remain open.
   verify encoder counts and exact output parity on eight T4 inputs.
 - [x] Measure work, output parity and failures on three matched paced inputs;
   retain the unresolved noisy pair and single-worker timing limits.
+- [x] Add one opt-in prompt re-decode within the existing transaction. Reuse
+  exact-window encoder features with a fresh decoder, cache and generator.
+  Local contract tests cover cancellation, stale publication and fence recovery.
+- [x] Verify prompt re-decode with the real CPU backend on the JFK fixture.
+  Greedy, beam-size-2 and sampled decoding match their independent controls
+  exactly, with one encoder forward instead of two. See the
+  [comparison and limits](research/2026-09-06-prompt-feature-reuse.md).
+- [x] Verify the same-window prompt path on T4 for the JFK fixture, three decode
+  profiles and cancellation after replacement. Exact results and scores match;
+  three matched pairs use three encoder forwards instead of six. All leases
+  and the CUDA lane are released. This does not qualify a general live policy.
+- [ ] Connect an opt-in same-window context observation to recovery diagnostics.
+  Keep its provenance separate and preserve the acoustic publication checks.
+  Different audio windows cannot share this encoding.
 - [ ] Replicate on unseen inputs and repeated workers before general live-cost
   or latency claims.
 - [ ] Evaluate additional preprocessing reuse with explicit input identity and
@@ -390,6 +571,21 @@ resource reservations are not measurements of actual hardware use.
 
 **Status: source and wheel builds pass; release gates remain open.**
 
+Local checks on 2026-09-06: the wheel installs into a new Windows CPython 3.13
+environment. After installing the pinned native dependencies from the official
+indexes, its installed command completes the 11-second JFK file outside the
+source checkout, using a separate pinned backend copy and cached `tiny.en`
+weights. Real FINAL and TXT/SRT/VTT exports are verified. Help also works without
+PyTorch. This is not a virgin Windows machine or cross-platform qualification.
+Local-path loading restores the named model's alignment-head mask;
+the weight-state fingerprint alone does not cover that nonpersistent buffer.
+
+The runtime suite runs 790 tests with one skip. The repository-tool suite runs
+702 tests with three skips in the native environment. The 42 client/new-server
+tests also pass in the host environment, including the real localhost WebSocket
+test skipped where its optional dependencies are absent. Ruff and strict mypy
+pass. These checks run locally; they are not CI results for a published release.
+
 - [ ] Publish a documented Python API and CLI with a small configuration surface.
 - [ ] Verify clean installation on the supported platform matrix, including the
   pinned backend setup and an explicit model-download step.
@@ -403,23 +599,99 @@ resource reservations are not measurements of actual hardware use.
 D4 is required for efficiency claims, not for an honestly labeled functional
 release. A tag or package upload alone does not close this gate.
 
-## D6. Durable recovery and finer resource scheduling
+## D6. Durable recovery, GPU-free suspension, and compatible migration
 
-**Status: later research and engineering work.**
+**Status: local publication-boundary savepoints implemented; broader recovery gates remain open.**
 
-- [ ] Define what survives a process failure: accepted audio, committed output,
-  provisional state, and decoder state need different recovery contracts.
-- [ ] Add a durable input/event journal and reject publication from an obsolete
-  worker after recovery.
-- [ ] Kill and restart workers around commit boundaries. Verify the declared
-  no-loss and no-duplicate guarantees against input and event identities.
-- [ ] Distinguish resident pause, reconstruction by replay, and portable
-  checkpoints. Test each capability before advertising it.
-- [ ] Evaluate finer resource leases and cache quotas. Do not free ownership
-  while backend work can still access the resources.
+The current resident pause and transaction `checkpoint()` do not save state to
+storage. Implement explicit capabilities below without changing their meaning.
+Use one versioned checkpoint contract with optional backend-state payloads, not
+a new execution framework. Do not serialize Python object graphs or device
+handles as the portable format.
 
-Acceptance requires crash tests for the declared recovery profile. Cross-device
-bitwise equivalence is not assumed. This gate is separate from local live use.
+### D6a. Durable session recovery with bounded replay
+
+- [x] Add an explicit local publication-boundary savepoint with complete bounded
+  committed history, retained PCM, event cursors, word anchors and exact endpoint
+  detector counters. Restore into a fresh session and worker; do not deserialize
+  native execution handles. Scripted base and hybrid profiles pass separate-process
+  comparison with uninterrupted output. A real CPU `tiny.en` test also passes:
+  save after 11 seconds of 22 admitted seconds, exit, restore in a second process,
+  and decode the remaining 11 seconds with exact final state and event parity.
+  See [contract, evidence and use](CHECKPOINTS.md).
+  This savepoint refuses unresolved or in-flight work. It does not make `push()`
+  acknowledgements durable, fence a second owner, or redeliver a historical event
+  journal. The remaining items below retain their broader acceptance conditions.
+- [ ] Define the failure model, storage durability, and input acknowledgement
+  boundary. Persist audio before acknowledging it under the durable profile.
+- [ ] Save model/tokenizer/profile identities, options, required audio and its
+  sample offsets, committed output, context, pending policy state, and sequence
+  numbers. A session snapshot alone does not contain all controller state.
+- [ ] Commit journal/checkpoint updates atomically. Validate format, sizes,
+  identities, and integrity before restore. Bound storage and apply backpressure
+  while paused; never silently discard acknowledged input.
+- [ ] Restore through a fresh worker and admission. Fence obsolete owners with
+  a durable generation check. Preserve committed event identities; support
+  consumer deduplication instead of promising exactly-once network delivery.
+- [ ] Recompute only the declared unfinished range and required retained context.
+  Preserve committed text and unresolved status. Record the recomputation bound.
+- [ ] Kill the source process around input acknowledgement, storage updates, and
+  publication. Verify recovery, stale-owner rejection, corrupt-record refusal,
+  and bounded storage using local CPU tests.
+
+Acceptance: a new process restores the acknowledged input timeline and committed
+output under the declared failure model. Recognition accuracy is a separate
+gate. Replay is not an exact mid-token checkpoint.
+
+### D6b. Durable token-state checkpoint and GPU release
+
+- [ ] Add a non-destructive quiesce/export path at an owner-controlled token
+  boundary. Close admission, drain submissions, and wait for outstanding device
+  work before copying state. The existing completion path cleans up the decoder
+  and cannot serve as this export fence unchanged.
+- [ ] Save decoder phase, position, every hypothesis, scores, pending logits,
+  language state, encoder features, and attention caches. Include actual sampling
+  generator and beam state, not just an initial seed. Retain inputs needed for
+  later alignment. Encode cache entries by stable identifiers, with explicit
+  position metadata rather than incidental dictionary order.
+- [ ] Complete device-to-host copies and commit the durable record before
+  destroying the source state. Handle copy, storage, cleanup, and fence failures
+  without releasing uncertain ownership or publishing an incomplete checkpoint.
+- [ ] Restore immutable model identity and fresh execution handles separately.
+  Do not restore locks, leases, threads, CUDA streams, or events from a file.
+- [ ] Qualify CPU greedy restore after prefill and after step N, in a fresh
+  process, against uninterrupted tokens, scores, and final output. Extend to
+  sampling, beam search, timestamps, and alignment as separate cases.
+- [ ] Verify job-state release separately from full worker shutdown. Returning a
+  transaction lease does not unload model weights or the retained CUDA lane.
+  Measure live allocations, allocator reservations, and process/device use.
+- [ ] Run a short registered T4 comparison: save, stop the source worker, verify
+  resource release, restore in another process, and finish. Record checkpoint
+  bytes, save/restore time, output parity, and work avoided or repeated.
+
+Acceptance: the source process is absent during suspension; a compatible new
+process continues from saved token state. The tested GPU-free profile specifies
+whether it releases only job state or the whole worker. An in-process pause,
+CPU-only copy, or successful cache-flush call is not this result.
+
+### D6c. Compatible migration and scheduling policy
+
+- [ ] Declare a compatibility matrix for model weights, tokenizer, backend patch,
+  runtime versions, precision, kernels, and hardware. Refuse unsupported exact
+  restores before execution; offer explicit replay only where qualified.
+- [ ] Enforce a single current owner when two workers try to restore the same
+  session. Reject stale publication after a replacement worker starts.
+- [ ] Test another worker first, then another hardware profile. Distinguish
+  state portability, committed-output preservation, and identical future tokens.
+  Cross-device bitwise equivalence is not assumed.
+- [ ] Measure whether offload pays for the tested pause duration and workload.
+  Compare resident pause, durable replay, and exact-state restore before selecting
+  a policy. Preserve resource limits and fresh admission on every resume.
+
+Close D6 only for a published recovery profile and its failure tests. Durable
+recovery is required for the full product, but a single-stream release can ship
+earlier with its actual resident-pause limits stated. D4 is required for savings
+claims; persistence alone does not make inference faster or cheaper.
 
 ## D7. Multiple channels, translation, and backend coverage
 

@@ -1,0 +1,127 @@
+{
+  "schema_version": "1",
+  "id": "draft-holdout-20260907",
+  "source_directory": "artifacts/draft-holdout-20260907",
+  "dataset": {
+    "id": "openslr/librispeech_asr",
+    "configuration": "clean",
+    "split": "test",
+    "source_split_name": "test-clean",
+    "revision": "71cacbfb7e2354c4226d01e70d77d5fca3d04ba1",
+    "revision_url": "https://huggingface.co/datasets/openslr/librispeech_asr/tree/71cacbfb7e2354c4226d01e70d77d5fca3d04ba1/clean/test",
+    "canonical_source_url": "https://www.openslr.org/12",
+    "dataset_card_url": "https://huggingface.co/datasets/openslr/librispeech_asr/blob/71cacbfb7e2354c4226d01e70d77d5fca3d04ba1/README.md",
+    "language": "en",
+    "license": "CC BY 4.0",
+    "license_url": "https://creativecommons.org/licenses/by/4.0/",
+    "citation": "Vassil Panayotov, Guoguo Chen, Daniel Povey, and Sanjeev Khudanpur. LibriSpeech: An ASR Corpus Based on Public Domain Audio Books. ICASSP 2015.",
+    "attribution": "LibriSpeech, prepared by Vassil Panayotov with assistance from Daniel Povey; corpus authors Panayotov, Chen, Povey, and Khudanpur (2015). Derived from LibriVox public-domain audiobook recordings. Distributed by OpenSLR under CC BY 4.0; mirrored on Hugging Face. Local adaptation: lossless FLAC decoding to full, untrimmed 16 kHz mono signed 16-bit little-endian PCM. No gain, normalization, denoising or noise was applied."
+  },
+  "audio_format": {"sample_rate_hz": 16000, "channels": 1, "encoding": "pcm_s16le"},
+  "selection": {
+    "date": "2026-09-07",
+    "fixed_row_offsets": [200, 1200],
+    "excluded_previously_used_speaker_ids": [61, 121, 672, 1272, 1320, 1995, 2961, 6930, 8455],
+    "distinct_selected_speakers": true,
+    "rule": "Use the two initially probed fixed rows, provided both are unused speakers and each is at least four seconds. Selection and references were frozen before any recognition-model call on these clips.",
+    "model_calls_during_selection": 0,
+    "novelty_check": "Read existing conformance/corpus/resolution manifests and searched experiments, evidence, conformance, artifacts, docs, tools and infra including ignored files for speaker 260/chapter 123286 and speaker 4446/chapter 2275; no prior matching use was found before acquisition.",
+    "heldout_scope": "New relative to this project's previous fixtures and model observations, not claimed excluded from Whisper training. Two short clean read-speech clips are a smoke check, not a broad accuracy/generalization study.",
+    "reference_origin": "Independent LibriSpeech reference text from the selected source rows, not model output.",
+    "acquisition_note": "Before the final instruction to keep initial clips arrived, a duration-only probe fetched rows 200 through 209 seeking a 10-16-second utterance. All were shorter than ten seconds; it stopped without saving candidates or running models. The final choice returned to the original rows 200 and 1200, not recognition outcomes.",
+    "earlier_duration_probe_rows": [
+      {"row_offset": 200, "id": "260-123286-0000", "duration_seconds": 7.04},
+      {"row_offset": 201, "id": "260-123286-0001", "duration_seconds": 3.07},
+      {"row_offset": 202, "id": "260-123286-0002", "duration_seconds": 9.985},
+      {"row_offset": 203, "id": "260-123286-0003", "duration_seconds": 7.37},
+      {"row_offset": 204, "id": "260-123286-0004", "duration_seconds": 3.465},
+      {"row_offset": 205, "id": "260-123286-0005", "duration_seconds": 4.81},
+      {"row_offset": 206, "id": "260-123286-0006", "duration_seconds": 7.405},
+      {"row_offset": 207, "id": "260-123286-0007", "duration_seconds": 4.55},
+      {"row_offset": 208, "id": "260-123286-0008", "duration_seconds": 3.735},
+      {"row_offset": 209, "id": "260-123286-0009", "duration_seconds": 5.795}
+    ],
+    "final_acquisition_source_bytes": 205807,
+    "final_acquisition_metadata_bytes": 2981,
+    "max_source_bytes_per_request": 1048576,
+    "max_metadata_bytes_per_request": 262144,
+    "earlier_source_probe_bytes_upper_bound": 10485760,
+    "earlier_source_probe_exact_bytes": null,
+    "transfer_accounting": "Final selected-source transfer is exact. The earlier ten transient FLAC probes were not retained or individually byte-count logged; 10 MiB is a conservative bound, not measured transfer. Including all 12 FLAC requests and 14 metadata requests, conservative total bound is 14,361,583 bytes, below 15 MB."
+  },
+  "recipe": {
+    "operation": "full-source-flac-to-pcm-s16le/v1",
+    "trimmed_samples": 0,
+    "source_padding_samples": 0,
+    "normalization": false,
+    "noise": false,
+    "ffmpeg_version": "ffmpeg version 2025-09-28-git-0fdb5829e3-essentials_build-www.gyan.dev Copyright (c) 2000-2025 the FFmpeg developers",
+    "ffmpeg_args": ["-nostdin", "-hide_banner", "-loglevel", "error", "-i", "pipe:0", "-map", "0:a:0", "-map_metadata", "-1", "-vn", "-sn", "-dn", "-ac", "1", "-ar", "16000", "-c:a", "pcm_s16le", "-f", "s16le", "pipe:1"]
+  },
+  "stream_layout": {
+    "operation": "fixture-0 + two-seconds-zero-PCM + fixture-1 + two-seconds-zero-PCM",
+    "separator_samples": 32000,
+    "final_silence_samples": 32000,
+    "total_samples": 247760,
+    "total_duration_seconds": 15.485,
+    "intervals": [
+      {"id": "260-123286-0000", "start_sample": 0, "end_sample_exclusive": 112640},
+      {"id": "separator-silence", "start_sample": 112640, "end_sample_exclusive": 144640},
+      {"id": "4446-2275-0005", "start_sample": 144640, "end_sample_exclusive": 215760},
+      {"id": "final-silence", "start_sample": 215760, "end_sample_exclusive": 247760}
+    ],
+    "reference_text": "SATURDAY AUGUST FIFTEENTH THE SEA UNBROKEN ALL ROUND NO LAND IN SIGHT I FELT IT IN MY BONES WHEN I WOKE THIS MORNING THAT SOMETHING SPLENDID WAS GOING TO TURN UP"
+  },
+  "fixtures": [
+    {
+      "id": "260-123286-0000",
+      "speaker_id": 260,
+      "filename": "260-123286-0000.pcm",
+      "pcm_path": "artifacts/draft-holdout-20260907/260-123286-0000.pcm",
+      "sample_count": 112640,
+      "duration_seconds": 7.04,
+      "pcm_sha256": "1a6720fd3cf848baa6eea26d14d837f1c2678dbec1119bf8e6f7d045711e68dd",
+      "reference_text": "SATURDAY AUGUST FIFTEENTH THE SEA UNBROKEN ALL ROUND NO LAND IN SIGHT",
+      "source": {
+        "speaker_id": 260,
+        "chapter_id": 123286,
+        "row_offset": 200,
+        "metadata_url": "https://datasets-server.huggingface.co/rows?dataset=openslr%2Flibrispeech_asr&config=clean&split=test&offset=200&length=1",
+        "raw_metadata_path": "artifacts/draft-holdout-20260907/row-200.json",
+        "asset_url_without_temporary_signature": "https://datasets-server.huggingface.co/cached-assets/openslr/librispeech_asr/--/71cacbfb7e2354c4226d01e70d77d5fca3d04ba1/--/clean/test/200/audio/audio.flac",
+        "filename": "260-123286-0000.flac",
+        "sha256": "d654a43d06f0e8b586b525e8ec83d6e3c0dc83c3f4742f8e25fd291db77248b3",
+        "size_bytes": 105445,
+        "format": "flac",
+        "sample_rate_hz": 16000,
+        "channels": 1,
+        "bits_per_sample": 16
+      }
+    },
+    {
+      "id": "4446-2275-0005",
+      "speaker_id": 4446,
+      "filename": "4446-2275-0005.pcm",
+      "pcm_path": "artifacts/draft-holdout-20260907/4446-2275-0005.pcm",
+      "sample_count": 71120,
+      "duration_seconds": 4.445,
+      "pcm_sha256": "6c2576e0fc904f2be5573cd022af6e7e45e2bc6252dfbf288c9db533fd3d9d68",
+      "reference_text": "I FELT IT IN MY BONES WHEN I WOKE THIS MORNING THAT SOMETHING SPLENDID WAS GOING TO TURN UP",
+      "source": {
+        "speaker_id": 4446,
+        "chapter_id": 2275,
+        "row_offset": 1200,
+        "metadata_url": "https://datasets-server.huggingface.co/rows?dataset=openslr%2Flibrispeech_asr&config=clean&split=test&offset=1200&length=1",
+        "raw_metadata_path": "artifacts/draft-holdout-20260907/row-1200.json",
+        "asset_url_without_temporary_signature": "https://datasets-server.huggingface.co/cached-assets/openslr/librispeech_asr/--/71cacbfb7e2354c4226d01e70d77d5fca3d04ba1/--/clean/test/1200/audio/audio.flac",
+        "filename": "4446-2275-0005.flac",
+        "sha256": "1a42e9752f8df18ed25054c64be970067491284131a2238a3e8c2682ef932620",
+        "size_bytes": 100362,
+        "format": "flac",
+        "sample_rate_hz": 16000,
+        "channels": 1,
+        "bits_per_sample": 16
+      }
+    }
+  ]
+}

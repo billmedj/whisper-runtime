@@ -497,7 +497,7 @@ class ContinuousEndpointWordTests(unittest.TestCase):
         self.assertEqual(stream.last_trace.action, "preview")
         self.assert_inputs(adapter, source)
 
-    def test_missing_closed_unit_anchor_latches_without_duplicate_or_eviction(self):
+    def test_missing_quiet_anchor_waits_but_actual_eof_still_refuses(self):
         stream, adapter = self.stream()
         stream.push(0, pcm_ms(200, 900))
         self.drain(stream)
@@ -511,12 +511,18 @@ class ContinuousEndpointWordTests(unittest.TestCase):
 
         adapter.result_factory = changed
         stream.push(1, pcm_ms(40, 1))
+        self.assertEqual(self.drain(stream), [])
+        self.assertEqual(stream.last_trace.reason, "anchor_missing")
+        self.assertEqual(stream.last_trace.action, "wait_for_input")
+        self.assertFalse(stream._endpoints)
+        self.assertEqual(stream.metrics.committed_samples, before.committed_samples)
+        stream.finish_input()
         with self.assertRaisesRegex(StreamNeedsResolutionError, "anchor_missing"):
             self.drain(stream)
         self.assertEqual(stream.metrics.committed_samples, before.committed_samples)
         self.assertEqual(stream.metrics.events_emitted, before.events_emitted)
         self.assertEqual(stream.metrics.buffered_samples, 240 * 16)
-        self.assertEqual(len(stream._endpoints), 1)
+        self.assertEqual(len(stream._endpoints), 0)
         calls = len(adapter.calls)
         with self.assertRaisesRegex(StreamNeedsResolutionError, "input boundary"):
             stream.step()

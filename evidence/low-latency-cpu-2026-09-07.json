@@ -1,0 +1,119 @@
+{
+  "schema_version": "1-low-latency-cpu-checked-summary",
+  "date": "2026-09-07",
+  "scope": "Six bounded CPU cells on two existing cached short fixtures; accelerated admission, not source-paced latency, installed-profile routing or release qualification.",
+  "model": "tiny.en",
+  "precision": "float32",
+  "seed": 7,
+  "model_fingerprint": "sha256:8041a80119a588f542472da35e97d0372fce1d9709ed9874475e9c03deac5de6",
+  "backend_trees": {
+    "legacy": "c011d2563c26763b5f147026e6b18ef85bccd4fb",
+    "same_window_reuse": "32163d5cdb87babc1cd415a86cc5a58116c86a16"
+  },
+  "shared_config": {
+    "left_context_ms": 20000,
+    "word_context_limit_ms": 24000,
+    "preview_interval_ms": 2000,
+    "max_window_ms": 30000,
+    "max_buffer_ms": 40000,
+    "holdback_ms": 2000,
+    "timestamp_tolerance_ms": 200,
+    "max_draft_tokens": 0
+  },
+  "arms": {
+    "deferred": {"defer_word_commits": true, "reuse_alignment_features": false},
+    "no_deferral": {"defer_word_commits": false, "reuse_alignment_features": false},
+    "no_deferral_reuse": {"defer_word_commits": false, "reuse_alignment_features": true}
+  },
+  "catalog_settings_match": {"no_deferral_reuse": "low-latency-v1"},
+  "checks": {
+    "runtime_hashes_unchanged_across_all_cells": true,
+    "all_six_cells_completed": true,
+    "all_six_cells_full_committed_sample_coverage": true,
+    "all_six_cells_one_final_empty_buffer": true,
+    "all_native_windows_closed_and_capacity_restored": true,
+    "all_post_close_queues_and_budget_leases_empty": true,
+    "all_forward_hooks_removed": true,
+    "word_error_counts_equal_across_arms": true,
+    "deferred_vs_no_deferral_exact_joined_text_equal": false,
+    "reuse_vs_no_deferral_exact_fields": [
+      "text", "commit_source_ends", "commit_input_samples", "traces",
+      "final_trace", "metrics", "word_edits", "reference_word_count", "final_count"
+    ],
+    "reuse_vs_no_deferral_decoder_inputs_exact": true,
+    "source_paced": false,
+    "gpu_used": false,
+    "quality_thresholds_changed": false,
+    "release_qualified": false
+  },
+  "cases": [
+    {
+      "case": "noisy-prefix",
+      "pcm_sha256": "5276e641f14eaae484a8da6f916e44f9373239fbe70c70ba41a3f1a36f747108",
+      "input_samples": 174240,
+      "duration_seconds": 10.89,
+      "word_edits_all_arms": 1,
+      "reference_word_count": 26,
+      "measurements": {
+        "deferred": {
+          "commit_admitted_source_seconds": [10.0, 10.89],
+          "decode_count": 7, "decoded_source_seconds": 48.1,
+          "encoder_forwards": 11, "decoder_forwards": 153
+        },
+        "no_deferral": {
+          "commit_admitted_source_seconds": [4.0, 8.0, 10.89],
+          "decode_count": 6, "decoded_source_seconds": 40.89,
+          "encoder_forwards": 12, "decoder_forwards": 132
+        },
+        "no_deferral_reuse": {
+          "commit_admitted_source_seconds": [4.0, 8.0, 10.89],
+          "decode_count": 6, "decoded_source_seconds": 40.89,
+          "encoder_forwards": 6, "decoder_forwards": 132
+        }
+      }
+    },
+    {
+      "case": "concatenated-no-added-pauses",
+      "pcm_sha256": "f170f383aaefea4057c1d9a8ee2b105f6192b9aaa5b2995a9f0c01fac86f21aa",
+      "input_samples": 538560,
+      "duration_seconds": 33.66,
+      "word_edits_all_arms": 6,
+      "reference_word_count": 88,
+      "measurements": {
+        "deferred": {
+          "commit_admitted_source_seconds": [10.0, 12.0, 14.0, 16.0, 18.0, 20.0, 22.0, 24.0, 28.0, 32.0, 33.66],
+          "decode_count": 17, "decoded_source_seconds": 281.8,
+          "encoder_forwards": 31, "decoder_forwards": 1009
+        },
+        "no_deferral": {
+          "commit_admitted_source_seconds": [6.0, 10.0, 14.0, 18.0, 22.0, 26.0, 30.0, 33.66],
+          "decode_count": 17, "decoded_source_seconds": 283.1,
+          "encoder_forwards": 34, "decoder_forwards": 1023
+        },
+        "no_deferral_reuse": {
+          "commit_admitted_source_seconds": [6.0, 10.0, 14.0, 18.0, 22.0, 26.0, 30.0, 33.66],
+          "decode_count": 17, "decoded_source_seconds": 283.1,
+          "encoder_forwards": 17, "decoder_forwards": 1023
+        }
+      }
+    }
+  ],
+  "runtime_sha256": {
+    "src/whisper_runtime/adapters/continuous_stream.py": "9720f9a4ae57f58a4a5303cde5c395c09442c02a62f0ceedc769212abefb7c62",
+    "src/whisper_runtime/adapters/word_policy.py": "4613f263f0ca51a4a1d836cb5af7ea96bf1ea00c2c04b035e2272ca6d1b1a70d",
+    "src/whisper_runtime/native_setup.py": "265f4d70a3859ccc3edea622276069ca8d77499eebc3373f343260af99043214",
+    "tools/verify_deferred_word_commits.py": "ab462f30dd8eeafd1776688c5424e7be19583088d1e93cc1e08d73e5b5df27e9"
+  },
+  "local_artifact_directory": "artifacts/confirmed-latency-20260907",
+  "source_receipts_sha256": {
+    "deferred-20s24s.json": "441d2f9a51de77d8fa73b456c369540ed7ab2aaf0d5b0249f539290446a5e445",
+    "no-deferral-20s24s.json": "1de5f63c9565c34e75a89f7419c9fec194e2eb176128eaded52becb901d1a97d",
+    "no-deferral-20s24s-reuse.json": "ab5e7eb5bf8f1fbac9ce87149a6460a6feb66c30810a04d7f19861c390f70c3d"
+  },
+  "checked_comparisons_sha256": {
+    "comparison.json": "d6efc5c253d978ecbceb729c980561467016e74bbe3b606d658fc36e9d5262d1",
+    "reuse-comparison.json": "06b6d3c56a591c57d4a1f4fce15d6414f8cb2e554e86ff25779c8d5324cc16d3"
+  },
+  "sanitization": "Checked numerical/identity projection only; absolute local paths, command arguments and raw stderr excluded. Source receipt hashes refer to the untouched local originals.",
+  "validation": {"deterministic_artifact_tests_passed": 5, "ruff_passed": true}
+}

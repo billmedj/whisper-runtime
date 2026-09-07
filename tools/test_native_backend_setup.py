@@ -7,6 +7,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
+from contextlib import ExitStack, contextmanager
 from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import patch
@@ -88,6 +89,274 @@ class NativeBackendSetupTests(unittest.TestCase):
         self.assertEqual(len(entries), 7)
         self.assertEqual(sorted(entries)[0][:5], "0001-")
         self.assertEqual(sorted(entries)[-1][:5], "0007-")
+
+    def test_optional_patch_pin_matches_the_installed_source_contract(self) -> None:
+        from whisper_runtime import native_setup
+
+        self.assertEqual(setup.BACKEND_REUSE_TREE, native_setup.BACKEND_REUSE_TREE)
+        record = setup.verify_alignment_reuse_patch()
+        self.assertEqual(record["path"], setup.ALIGNMENT_REUSE_PATCH)
+        self.assertEqual(record["sha256"], setup.ALIGNMENT_REUSE_SHA256)
+        self.assertEqual(len(verify_patch_manifest()), 7)
+
+    def test_reuse_flag_selects_a_separate_default_root(self) -> None:
+        for flags, expected in (
+            ([], setup.DEFAULT_SETUP_ROOT),
+            (["--alignment-feature-reuse"], setup.DEFAULT_REUSE_SETUP_ROOT),
+            (["--alignment-feature-reuse", "--root", "custom"], Path("custom")),
+        ):
+            with (
+                self.subTest(flags=flags),
+                patch.object(sys, "argv", ["bootstrap", *flags]),
+            ):
+                args = bootstrap_native_backend.parse_args()
+                self.assertEqual(args.root, expected)
+                self.assertEqual(args.alignment_feature_reuse, bool(flags))
+        self.assertEqual(
+            require_safe_setup_root(setup.DEFAULT_REUSE_SETUP_ROOT),
+            setup.DEFAULT_REUSE_SETUP_ROOT.resolve(),
+        )
+
+    def test_verify_only_reuse_selection_rejects_a_standard_setup(self) -> None:
+        paths = SetupPaths.from_root(Path("existing-standard"))
+        validated = SimpleNamespace(
+            backend=GitIdentity("c" * 40, BACKEND_PATCHED_TREE, True)
+        )
+        with (
+            patch.object(
+                sys,
+                "argv",
+                [
+                    "bootstrap",
+                    "--verify-only",
+                    "--alignment-feature-reuse",
+                    "--root",
+                    str(paths.root),
+                ],
+            ),
+            patch.object(
+                bootstrap_native_backend, "load_validated_setup", return_value=validated
+            ),
+            patch.object(bootstrap_native_backend, "run_setup") as run_setup,
+            self.assertRaisesRegex(SystemExit, "does not enable alignment"),
+        ):
+            bootstrap_native_backend.main()
+        run_setup.assert_not_called()
+
+    @contextmanager
+    def local_backend_fixture(self, *, checkout_base=False):
+        """Exercise actual Git application/validation without cloning or network."""
+        from whisper_runtime import native_setup
+
+        with tempfile.TemporaryDirectory(prefix="whisper-bootstrap-test-") as temporary:
+            root = Path(temporary)
+            paths = SetupPaths.from_root(root / "install")
+            paths.backend.mkdir(parents=True)
+            runtime = root / "runtime"
+            patch_directory = runtime / "patches/openai-whisper"
+            patch_directory.mkdir(parents=True)
+
+            def git(*args):
+                self.assertNotIn("clone", args)
+                self.assertNotIn("fetch", args)
+                return setup._git_output(paths.backend, *args)
+
+            git("init", "--quiet")
+            git("config", "user.name", "Fixture")
+            git("config", "user.email", "fixture@example.invalid")
+            git("config", "commit.gpgSign", "false")
+            git("config", "core.hooksPath", "")
+            git("config", "core.autocrlf", "false")
+            git("remote", "add", "origin", BACKEND_URL)
+            package = paths.backend / "whisper"
+            package.mkdir()
+            (package / "__init__.py").write_bytes(b"")
+            content = package / "fixture.txt"
+            content.write_bytes(b"0\n")
+            git("add", ".")
+            git("commit", "--quiet", "--no-gpg-sign", "-m", "base")
+            base = setup.git_identity(paths.backend)
+            for number in range(1, 8):
+                content.write_bytes(f"{number}\n".encode())
+                git("add", ".")
+                git("commit", "--quiet", "--no-gpg-sign", "-m", f"patch {number}")
+            standard = setup.git_identity(paths.backend)
+            git(
+                "format-patch",
+                "--output-directory",
+                str(patch_directory),
+                f"{base.commit}..HEAD",
+            )
+            content.write_bytes(b"8\n")
+            git("add", ".")
+            git("commit", "--quiet", "--no-gpg-sign", "-m", "optional reuse")
+            reused = setup.git_identity(paths.backend)
+            optional = runtime / setup.ALIGNMENT_REUSE_PATCH
+            optional.parent.mkdir(parents=True)
+            optional.write_text(
+                git("diff", standard.commit, reused.commit) + "\n",
+                encoding="utf-8",
+                newline="\n",
+            )
+            patch_files = {
+                path.name: setup.sha256_file(path)
+                for path in sorted(patch_directory.glob("*.patch"))
+            }
+            (patch_directory / "SHA256SUMS").write_text(
+                "".join(f"{digest}  {name}\n" for name, digest in patch_files.items()),
+                encoding="utf-8",
+            )
+            git(
+                "checkout",
+                "--detach",
+                base.commit if checkout_base else standard.commit,
+            )
+            with ExitStack() as stack:
+                for target, values in (
+                    (
+                        setup,
+                        {
+                            "RUNTIME_ROOT": runtime,
+                            "PATCH_DIRECTORY": patch_directory,
+                            "BACKEND_BASE_COMMIT": base.commit,
+                            "BACKEND_BASE_TREE": base.tree,
+                            "BACKEND_PATCHED_TREE": standard.tree,
+                            "BACKEND_REUSE_TREE": reused.tree,
+                            "ALIGNMENT_REUSE_SHA256": setup.sha256_file(optional),
+                        },
+                    ),
+                    (
+                        native_setup,
+                        {
+                            "BACKEND_BASE": base.commit,
+                            "BACKEND_TREE": standard.tree,
+                            "BACKEND_REUSE_TREE": reused.tree,
+                        },
+                    ),
+                ):
+                    for name, value in values.items():
+                        stack.enter_context(patch.object(target, name, value))
+                yield SimpleNamespace(
+                    paths=paths,
+                    patches=patch_files,
+                    optional=optional,
+                    standard=standard,
+                    reuse=reused,
+                    content=content,
+                    git=git,
+                )
+
+    def test_local_git_keeps_seven_patch_default_then_applies_reuse_once(self) -> None:
+        with self.local_backend_fixture(checkout_base=True) as fixture:
+            standard = setup.ensure_backend(fixture.paths, fixture.patches)
+            self.assertTrue(standard.clean)
+            self.assertEqual(standard.tree, fixture.standard.tree)
+            self.assertEqual(
+                fixture.git(
+                    "rev-list", "--count", f"{setup.BACKEND_BASE_COMMIT}..HEAD"
+                ),
+                "7",
+            )
+            reused = setup.ensure_backend(
+                fixture.paths, fixture.patches, alignment_feature_reuse=True
+            )
+            self.assertTrue(reused.clean)
+            self.assertEqual(reused.tree, fixture.reuse.tree)
+            self.assertEqual(
+                fixture.git(
+                    "rev-list", "--count", f"{setup.BACKEND_BASE_COMMIT}..HEAD"
+                ),
+                "8",
+            )
+            with patch.object(setup, "_run", wraps=setup._run) as runner:
+                self.assertEqual(
+                    setup.ensure_backend(
+                        fixture.paths, fixture.patches, alignment_feature_reuse=True
+                    ),
+                    reused,
+                )
+            for call in runner.call_args_list:
+                self.assertFalse(
+                    {"clone", "am", "apply", "commit"}.intersection(call.args[0])
+                )
+            with self.assertRaisesRegex(
+                NativeSetupError, "pinned base or patched tree"
+            ):
+                setup.ensure_backend(fixture.paths, fixture.patches)
+            self.assertEqual(fixture.git("rev-parse", "HEAD"), reused.commit)
+            with patch.object(setup, "BACKEND_REUSE_TREE", "0" * 40):
+                with self.assertRaisesRegex(
+                    NativeSetupError, "pinned base or patched tree"
+                ):
+                    setup.ensure_backend(
+                        fixture.paths, fixture.patches, alignment_feature_reuse=True
+                    )
+            fixture.content.write_bytes(b"dirty\n")
+            with self.assertRaisesRegex(NativeSetupError, "source changes"):
+                setup.ensure_backend(
+                    fixture.paths, fixture.patches, alignment_feature_reuse=True
+                )
+            fixture.optional.write_bytes(b"tampered")
+            with patch.object(
+                setup, "_run", side_effect=AssertionError("must validate before Git")
+            ):
+                with self.assertRaisesRegex(NativeSetupError, "checksum mismatch"):
+                    setup.ensure_backend(
+                        fixture.paths, fixture.patches, alignment_feature_reuse=True
+                    )
+
+    def test_local_reuse_manifest_is_accepted_by_tool_and_sdk_validators(self) -> None:
+        from whisper_runtime import native_setup
+
+        with self.local_backend_fixture() as fixture:
+            backend = setup.ensure_backend(
+                fixture.paths, fixture.patches, alignment_feature_reuse=True
+            )
+            python = environment_python(fixture.paths.environment)
+            python.parent.mkdir(parents=True)
+            python.write_bytes(b"placeholder; environment probe mocked")
+            runtime = GitIdentity("a" * 40, "b" * 40, True)
+            environment = self.environment_identity()
+            tools = {"git": "fixture Git", "ffmpeg": "fixture ffmpeg"}
+            manifest = build_manifest(
+                paths=fixture.paths,
+                runtime=runtime,
+                backend=backend,
+                python=python,
+                patches=fixture.patches,
+                environment=environment,
+                tools=tools,
+                alignment_feature_reuse=True,
+            )
+            write_manifest(fixture.paths.manifest, manifest)
+            with (
+                patch.object(setup, "require_runtime_identity", return_value=runtime),
+                patch.object(setup, "current_tool_versions", return_value=tools),
+                patch.object(setup, "inspect_environment", return_value=environment),
+                patch.object(
+                    setup, "verify_patch_manifest", return_value=fixture.patches
+                ),
+            ):
+                validated = setup.load_validated_setup(fixture.paths.manifest)
+            self.assertEqual(validated.backend, backend)
+            self.assertIs(manifest["bootstrap_downloaded_models"], False)
+            actual = native_setup.validate_backend(
+                fixture.paths.manifest, reuse_alignment_features=True
+            )
+            self.assertEqual(actual.path, fixture.paths.backend)
+            self.assertEqual(actual.revision, backend.commit)
+            with self.assertRaises(native_setup.NativeSetupError):
+                native_setup.validate_backend(fixture.paths.manifest)
+            manifest["optional_patch"]["sha256"] = "0" * 64
+            write_manifest(fixture.paths.manifest, manifest)
+            with self.assertRaisesRegex(NativeSetupError, "reuse patch does not match"):
+                setup.load_validated_setup(fixture.paths.manifest)
+            del manifest["optional_patch"]
+            write_manifest(fixture.paths.manifest, manifest)
+            with self.assertRaisesRegex(
+                NativeSetupError, "patched tree does not match"
+            ):
+                setup.load_validated_setup(fixture.paths.manifest)
 
     def test_checksum_manifest_is_strict_and_rejects_duplicates(self) -> None:
         digest = "a" * 64

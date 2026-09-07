@@ -1,0 +1,455 @@
+{
+  "accounting_reference_verified_by_parent": "https://gvisor.dev/docs/architecture_guide/resources/",
+  "app_lifecycle": {
+    "app_id": "ap-G629ZxMxWkpe3mCZTA3Hxt",
+    "client_exit_code_reported_by_parent": 1,
+    "provider_active_tasks_reported_by_parent": 0,
+    "provider_reported_stopped_at_local": "2026-09-07T12:27:09+08:00",
+    "provider_reported_stopped_at_utc": "2026-09-07T04:27:09Z",
+    "provider_state_reported_by_parent": "stopped",
+    "read_only_query_observation_end_utc": "2026-09-07T04:27:47.2390229Z",
+    "verification_source": "Parent agent read-only Modal app-list result; not independently queried by this local audit and not a raw provider receipt in this bundle."
+  },
+  "approval_scope": "One T4 diagnostic, two identical source-paced 46.55-second sessions, 300-second function timeout; no retry or further paid run authorized by this audit.",
+  "date": "2026-09-07",
+  "diagnostic_only": true,
+  "elapsed_time_scope": "Session clocks start after owner.factory; model initialization, image construction and provider startup are excluded.",
+  "evidence_bundle": "evidence/modal-memory-diagnostic-2026-09-07.zip",
+  "failure_reason": "memory_sampling_incomplete",
+  "input": {
+    "profile": "conservative-v1",
+    "sample_rate_hz": 16000,
+    "samples_per_session": 744800,
+    "sha256": "b8902a2cfd5c45b8a17d6b489f6ddc752cf76d7b620efa27ec6e173ea6e2f826"
+  },
+  "interpretation_limits": [
+    "The large statm increase is already present after Torch import, before model loading or transcription; this locates an observed stage, not an allocation cause.",
+    "Another increase precedes the first dtw_cuda call; the measured first call itself adds 23,646,208 statm bytes. No dtw_cpu calls were observed.",
+    "Closed-session statm grows by 4,767,744 bytes across the second short session, with unchanged terminal CUDA allocated/reserved counters; two sessions cannot prove absence of leaks.",
+    "smaps_rollup/PSS/private/shared accounting is unavailable. No per-mapping data, allocation stacks, cgroup memory.current, provider host-memory measurement or billed usage was captured.",
+    "Modal/gVisor proc counters are documented approximations. That limitation does not establish that the observed excess is spurious or invalidate the earlier failed RSS gate.",
+    "This failed diagnostic does not qualify four-hour endurance, clean installation, physical capture or a stable release. No memory gate, allocator setting, runtime source or weights were changed."
+  ],
+  "memory": {
+    "affected_snapshots": 10,
+    "dtw_calls": {
+      "dtw_cpu": 0,
+      "dtw_cuda": 14
+    },
+    "first_dtw_cuda_wall_ns": 1187880052,
+    "measurements_complete": false,
+    "missing_component": "smaps_rollup",
+    "registered_release_rss_ceiling_bytes_unchanged": 3758096384,
+    "sampling_error": "FileNotFoundError",
+    "stages": [
+      {
+        "anonymous_bytes": null,
+        "cuda": {
+          "initialized": false
+        },
+        "environment": {
+          "CUDA_MODULE_LOADING": null,
+          "MKL_NUM_THREADS": "2",
+          "NUMBA_NUM_THREADS": null,
+          "OMP_NUM_THREADS": "2"
+        },
+        "numba_config": null,
+        "phase": "before_native_imports",
+        "private_bytes": null,
+        "pss_bytes": null,
+        "sequence": 1,
+        "shared_bytes": null,
+        "smaps_rss_bytes": null,
+        "statm_rss_bytes": 64372736,
+        "statm_rss_delta_from_previous_snapshot_bytes": null,
+        "threads": 3
+      },
+      {
+        "anonymous_bytes": null,
+        "cuda": {
+          "initialized": false
+        },
+        "environment": {
+          "CUDA_MODULE_LOADING": null,
+          "MKL_NUM_THREADS": "2",
+          "NUMBA_NUM_THREADS": null,
+          "OMP_NUM_THREADS": "2"
+        },
+        "numba_config": null,
+        "phase": "after_torch_import",
+        "private_bytes": null,
+        "pss_bytes": null,
+        "sequence": 3,
+        "shared_bytes": null,
+        "smaps_rss_bytes": null,
+        "statm_rss_bytes": 3389759488,
+        "statm_rss_delta_from_previous_snapshot_bytes": 3325386752,
+        "threads": 4
+      },
+      {
+        "anonymous_bytes": null,
+        "cuda": {
+          "initialized": false
+        },
+        "environment": {
+          "CUDA_MODULE_LOADING": null,
+          "MKL_NUM_THREADS": "2",
+          "NUMBA_NUM_THREADS": null,
+          "OMP_NUM_THREADS": "2"
+        },
+        "numba_config": {
+          "NUMBA_DEFAULT_NUM_THREADS": 18,
+          "NUMBA_NUM_THREADS": 18,
+          "THREADING_LAYER": "default"
+        },
+        "phase": "after_native_imports",
+        "private_bytes": null,
+        "pss_bytes": null,
+        "sequence": 4,
+        "shared_bytes": null,
+        "smaps_rss_bytes": null,
+        "statm_rss_bytes": 3573563392,
+        "statm_rss_delta_from_previous_snapshot_bytes": 183803904,
+        "threads": 4
+      },
+      {
+        "anonymous_bytes": null,
+        "cuda": {
+          "allocated_bytes": 152201216,
+          "initialized": true,
+          "peak_allocated_bytes": 152201216,
+          "peak_reserved_bytes": 178257920,
+          "reserved_bytes": 178257920
+        },
+        "environment": {
+          "CUDA_MODULE_LOADING": "LAZY",
+          "MKL_NUM_THREADS": "2",
+          "NUMBA_NUM_THREADS": null,
+          "OMP_NUM_THREADS": "2"
+        },
+        "numba_config": {
+          "NUMBA_DEFAULT_NUM_THREADS": 18,
+          "NUMBA_NUM_THREADS": 18,
+          "THREADING_LAYER": "default"
+        },
+        "phase": "after_model_load",
+        "private_bytes": null,
+        "pss_bytes": null,
+        "sequence": 5,
+        "shared_bytes": null,
+        "smaps_rss_bytes": null,
+        "statm_rss_bytes": 3826253824,
+        "statm_rss_delta_from_previous_snapshot_bytes": 252690432,
+        "threads": 6
+      },
+      {
+        "anonymous_bytes": null,
+        "cuda": {
+          "allocated_bytes": 152201216,
+          "initialized": true,
+          "peak_allocated_bytes": 152201216,
+          "peak_reserved_bytes": 178257920,
+          "reserved_bytes": 178257920
+        },
+        "environment": {
+          "CUDA_MODULE_LOADING": "LAZY",
+          "MKL_NUM_THREADS": "2",
+          "NUMBA_NUM_THREADS": null,
+          "OMP_NUM_THREADS": "2"
+        },
+        "numba_config": {
+          "NUMBA_DEFAULT_NUM_THREADS": 18,
+          "NUMBA_NUM_THREADS": 18,
+          "THREADING_LAYER": "default"
+        },
+        "phase": "after_model_fingerprint",
+        "private_bytes": null,
+        "pss_bytes": null,
+        "sequence": 6,
+        "shared_bytes": null,
+        "smaps_rss_bytes": null,
+        "statm_rss_bytes": 3826253824,
+        "statm_rss_delta_from_previous_snapshot_bytes": 0,
+        "threads": 6
+      },
+      {
+        "anonymous_bytes": null,
+        "cuda": {
+          "allocated_bytes": 213914112,
+          "initialized": true,
+          "peak_allocated_bytes": 290099200,
+          "peak_reserved_bytes": 354418688,
+          "reserved_bytes": 354418688
+        },
+        "environment": {
+          "CUDA_MODULE_LOADING": "LAZY",
+          "MKL_NUM_THREADS": "2",
+          "NUMBA_NUM_THREADS": null,
+          "OMP_NUM_THREADS": "2"
+        },
+        "numba_config": {
+          "NUMBA_DEFAULT_NUM_THREADS": 18,
+          "NUMBA_NUM_THREADS": 18,
+          "THREADING_LAYER": "default"
+        },
+        "phase": "first_dtw_cuda_before",
+        "private_bytes": null,
+        "pss_bytes": null,
+        "sequence": 19,
+        "shared_bytes": null,
+        "smaps_rss_bytes": null,
+        "statm_rss_bytes": 5266440192,
+        "statm_rss_delta_from_previous_snapshot_bytes": 1440186368,
+        "threads": 7
+      },
+      {
+        "anonymous_bytes": null,
+        "cuda": {
+          "allocated_bytes": 213914112,
+          "initialized": true,
+          "peak_allocated_bytes": 290099200,
+          "peak_reserved_bytes": 356515840,
+          "reserved_bytes": 356515840
+        },
+        "environment": {
+          "CUDA_MODULE_LOADING": "LAZY",
+          "MKL_NUM_THREADS": "2",
+          "NUMBA_NUM_THREADS": null,
+          "OMP_NUM_THREADS": "2"
+        },
+        "numba_config": {
+          "NUMBA_DEFAULT_NUM_THREADS": 18,
+          "NUMBA_NUM_THREADS": 18,
+          "THREADING_LAYER": "default"
+        },
+        "phase": "first_dtw_cuda_after",
+        "private_bytes": null,
+        "pss_bytes": null,
+        "sequence": 21,
+        "shared_bytes": null,
+        "smaps_rss_bytes": null,
+        "statm_rss_bytes": 5290086400,
+        "statm_rss_delta_from_previous_snapshot_bytes": 23646208,
+        "threads": 7
+      },
+      {
+        "anonymous_bytes": null,
+        "cuda": {
+          "allocated_bytes": 160720896,
+          "initialized": true,
+          "peak_allocated_bytes": 290099200,
+          "peak_reserved_bytes": 358612992,
+          "reserved_bytes": 358612992
+        },
+        "environment": {
+          "CUDA_MODULE_LOADING": "LAZY",
+          "MKL_NUM_THREADS": "2",
+          "NUMBA_NUM_THREADS": null,
+          "OMP_NUM_THREADS": "2"
+        },
+        "numba_config": {
+          "NUMBA_DEFAULT_NUM_THREADS": 18,
+          "NUMBA_NUM_THREADS": 18,
+          "THREADING_LAYER": "default"
+        },
+        "phase": "session-1_closed_gc",
+        "private_bytes": null,
+        "pss_bytes": null,
+        "sequence": 40,
+        "shared_bytes": null,
+        "smaps_rss_bytes": null,
+        "statm_rss_bytes": 5308788736,
+        "statm_rss_delta_from_previous_snapshot_bytes": 18702336,
+        "threads": 6
+      },
+      {
+        "anonymous_bytes": null,
+        "cuda": {
+          "allocated_bytes": 160720896,
+          "initialized": true,
+          "peak_allocated_bytes": 290099200,
+          "peak_reserved_bytes": 358612992,
+          "reserved_bytes": 358612992
+        },
+        "environment": {
+          "CUDA_MODULE_LOADING": "LAZY",
+          "MKL_NUM_THREADS": "2",
+          "NUMBA_NUM_THREADS": null,
+          "OMP_NUM_THREADS": "2"
+        },
+        "numba_config": {
+          "NUMBA_DEFAULT_NUM_THREADS": 18,
+          "NUMBA_NUM_THREADS": 18,
+          "THREADING_LAYER": "default"
+        },
+        "phase": "session-2_closed_gc",
+        "private_bytes": null,
+        "pss_bytes": null,
+        "sequence": 73,
+        "shared_bytes": null,
+        "smaps_rss_bytes": null,
+        "statm_rss_bytes": 5313556480,
+        "statm_rss_delta_from_previous_snapshot_bytes": 4767744,
+        "threads": 6
+      },
+      {
+        "anonymous_bytes": null,
+        "cuda": {
+          "allocated_bytes": 160720896,
+          "initialized": true,
+          "peak_allocated_bytes": 290099200,
+          "peak_reserved_bytes": 358612992,
+          "reserved_bytes": 358612992
+        },
+        "environment": {
+          "CUDA_MODULE_LOADING": "LAZY",
+          "MKL_NUM_THREADS": "2",
+          "NUMBA_NUM_THREADS": null,
+          "OMP_NUM_THREADS": "2"
+        },
+        "numba_config": {
+          "NUMBA_DEFAULT_NUM_THREADS": 18,
+          "NUMBA_NUM_THREADS": 18,
+          "THREADING_LAYER": "default"
+        },
+        "phase": "failure_closed_gc",
+        "private_bytes": null,
+        "pss_bytes": null,
+        "sequence": 75,
+        "shared_bytes": null,
+        "smaps_rss_bytes": null,
+        "statm_rss_bytes": 5313556480,
+        "statm_rss_delta_from_previous_snapshot_bytes": 0,
+        "threads": 6
+      }
+    ]
+  },
+  "native_identity_and_cleanup": {
+    "ephemeral_context_exit_completed": true,
+    "failure_handler_cleanup_verified": false,
+    "failure_handler_limit": "False describes the later failure handler, entered after both streams had already been closed and released; it does not replace the successful per-session capacity-restored receipts.",
+    "model_fingerprints_unchanged": true,
+    "model_loads": 1,
+    "per_session_capacity_restored": true,
+    "same_worker_both_sessions": true
+  },
+  "observations": {
+    "count": 76,
+    "sequence_worker_and_source_identity_verified": true,
+    "sha256": "71de664649c4df94366fe2b3cd6ed6c73da67b00bfc9d2b76b57ce4fed05ea22",
+    "size_bytes": 58041,
+    "types": {
+      "diagnostic_done": 1,
+      "event": 60,
+      "memory": 10,
+      "operation": 1,
+      "session_done": 2,
+      "session_started": 2
+    }
+  },
+  "raw_receipts": {
+    "raw/attempt.jsonl": {
+      "sha256": "aad4ea4a68a3eb5b7845396bff807204da11b628d5acb9d38383a04b5c903ad1",
+      "size_bytes": 439
+    },
+    "raw/diagnostic.json": {
+      "sha256": "5fc1ab004c2eddcbae63c59c7e4938a0de8b20f1ceb26576925ed96250af5a7f",
+      "size_bytes": 51751
+    },
+    "raw/observations.jsonl": {
+      "sha256": "71de664649c4df94366fe2b3cd6ed6c73da67b00bfc9d2b76b57ce4fed05ea22",
+      "size_bytes": 58041
+    },
+    "raw/preflight.json": {
+      "sha256": "b6f9b4bf4d7435e8933b93abbe6a14b61c276bea53776fdfeed682ee360a6049",
+      "size_bytes": 15191
+    },
+    "raw/seed.pcm": {
+      "sha256": "b8902a2cfd5c45b8a17d6b489f6ddc752cf76d7b620efa27ec6e173ea6e2f826",
+      "size_bytes": 1489600
+    }
+  },
+  "receipt_source_and_transcript_audit": "passed",
+  "release_qualified": false,
+  "schema_version": "local-memory-attribution-audit-v1",
+  "sessions": [
+    {
+      "chunks": 2328,
+      "cuda_allocated_after_bytes": 160720896,
+      "cuda_allocated_before_bytes": 152201216,
+      "elapsed_seconds": 47.195702608000005,
+      "events": {
+        "commit": 4,
+        "final": 1,
+        "provisional": 4,
+        "replace": 21
+      },
+      "export_sha256": {
+        "srt": "afe9a3c9829bdfbf443080660564d7b74a462cebe488bcf3ed695d6a9dd091dd",
+        "txt": "59bc0955b3f3f8069b5786982e729469a3937087448fed5b80eb0322dfdae29c",
+        "vtt": "59e27d00a5436ab95da03e1f231a47fb91df3a75b4051eea50eec88f1100006f"
+      },
+      "metrics": {
+        "accepted_chunks": 2328,
+        "accepted_samples": 744800,
+        "accepted_sha256": "b8902a2cfd5c45b8a17d6b489f6ddc752cf76d7b620efa27ec6e173ea6e2f826",
+        "buffered_samples": 0,
+        "committed_samples": 744800,
+        "decode_count": 25,
+        "decoded_source_samples": 4612960,
+        "events_emitted": 30,
+        "peak_buffered_samples": 490560
+      },
+      "phase": "session-1",
+      "reference_words": 114,
+      "samples": 744800,
+      "text_sha256": "59bc0955b3f3f8069b5786982e729469a3937087448fed5b80eb0322dfdae29c",
+      "word_edits": 7
+    },
+    {
+      "chunks": 2328,
+      "cuda_allocated_after_bytes": 160720896,
+      "cuda_allocated_before_bytes": 160720896,
+      "elapsed_seconds": 47.083621849,
+      "events": {
+        "commit": 4,
+        "final": 1,
+        "provisional": 4,
+        "replace": 21
+      },
+      "export_sha256": {
+        "srt": "afe9a3c9829bdfbf443080660564d7b74a462cebe488bcf3ed695d6a9dd091dd",
+        "txt": "59bc0955b3f3f8069b5786982e729469a3937087448fed5b80eb0322dfdae29c",
+        "vtt": "59e27d00a5436ab95da03e1f231a47fb91df3a75b4051eea50eec88f1100006f"
+      },
+      "metrics": {
+        "accepted_chunks": 2328,
+        "accepted_samples": 744800,
+        "accepted_sha256": "b8902a2cfd5c45b8a17d6b489f6ddc752cf76d7b620efa27ec6e173ea6e2f826",
+        "buffered_samples": 0,
+        "committed_samples": 744800,
+        "decode_count": 25,
+        "decoded_source_samples": 4612960,
+        "events_emitted": 30,
+        "peak_buffered_samples": 455040
+      },
+      "phase": "session-2",
+      "reference_words": 114,
+      "samples": 744800,
+      "text_sha256": "59bc0955b3f3f8069b5786982e729469a3937087448fed5b80eb0322dfdae29c",
+      "word_edits": 7
+    }
+  ],
+  "source": {
+    "all_frozen_upload_and_current_review_hashes_verified": true,
+    "digest": "abebed8d9084175fac95577e0bb8770fe04421f92985020070afdfc7fe8c1135",
+    "policy": "exact reviewed working-byte overlay; not a clean-tree claim",
+    "review_digest": "300f66071d769dee6e0e276c804e12f20e8102e2f1d8a73fcca83c673dce152c",
+    "review_files": 4,
+    "runtime_modules": 32,
+    "upload_bytes": 1070724,
+    "upload_files": 51
+  },
+  "status": "failed",
+  "text_and_caption_exports_identical_across_sessions": true
+}

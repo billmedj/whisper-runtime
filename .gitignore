@@ -12,9 +12,8 @@ dist/
 formal/lean/.lake/
 
 benchmarks/results/
-artifacts/modal/
-artifacts/corpus/
-artifacts/speech-corpus-v1/
-artifacts/resolution-inputs-v1/
+# Generated runs can contain local paths, raw audio and temporary service receipts.
+# Publish reviewed, self-contained records through evidence/ instead.
+/artifacts/
 conformance/fixtures/generated/
 conformance/cache/

@@ -1,0 +1,34 @@
+{
+  "schema_version": "1",
+  "purpose": "Source preservation for a targeted, formatting-only migration",
+  "archive": "evidence/pre-release-format-20260907.zip",
+  "archive_sha256": "3b77111df24d699138224bbfed8aee517c191b3682ce907bc8270362d09e8d5d",
+  "archive_verified": true,
+  "ast_equivalent": true,
+  "before_sha256": {
+    "infra/modal_composed_features.py": "0bd9ab209b0dc2adc7db137b4cdf73f6f3c138f9fb7ef7f4d9441afe25b2a241",
+    "infra/modal_draft_features.py": "d09ca93d33b9c3fb30cda05ad0b758a00178c29ab384995bd74f65eecb7ce8cb",
+    "tools/audit_integrated_draft.py": "9b9d30d6daaa4916ad77fc8d2f1e33d4a4725706dbfffaf2b26bd0b3e183b294",
+    "tools/test_modal_composed_features.py": "f8cd9016ffe43a14af4329283afa3fccc3fd91751c6bc7ac589d40afe5e69270",
+    "tools/test_modal_draft_features.py": "83560caa165e176270f424ed4e9baa424f957f20465ea8fea90d9cabc3bdb30d",
+    "tools/test_verify_decoder_draft.py": "6c671fa56f3869d6dba72a558d8f435a45197225a80bfd767152740e31c1709f",
+    "tools/test_verify_word_schedule.py": "833006151389e2f98e595ec96b408612104ad5a0ef3560dd7f531bd0349f370c",
+    "tools/verify_decoder_draft.py": "a938a6e9696e9b5a3875d38d7c33adeec20ee5b9bc27444781dd9a926145d6ed",
+    "tools/verify_word_schedule.py": "392bbc0c195726a50e138fc308f956130df0bd0109d0c7621a4c6c0a8a8e4bee"
+  },
+  "current_sha256": {
+    "infra/modal_composed_features.py": "7a7ab8f2c1bf25a60372fcbf3ff102e268ce88ee1ff9349c18fc8affcc1a98b9",
+    "infra/modal_draft_features.py": "d570201fae3b66251ac84ce25785cc88d596331cade62d4b4de31a6fc37fc109",
+    "tools/audit_integrated_draft.py": "b49cbaca98643b5ef63e90ef40a9e351761e7badd444c563d47f416642459374",
+    "tools/test_modal_composed_features.py": "caf0cd79e02ed59e728f56dd8850ecdbee0c96ab15aae35d63c007372512acc0",
+    "tools/test_modal_draft_features.py": "6485318e41746cb96f5419ca627c8a6c614c8bec7634b4ef3187c14584d99d7b",
+    "tools/test_verify_decoder_draft.py": "a0bb1afa5c75642a999a80d07772df6945e6dae066aac0f9c82ad5dcc9ace20f",
+    "tools/test_verify_word_schedule.py": "3254a69a0d2a74a606ef20c997cd7eb5fce0ad2f53d44cf8957fd81e221b8261",
+    "tools/verify_decoder_draft.py": "aaf18cf84bfef4a8ccbc107446f8f51916dfa8333b6cd30c26320fe723b6811e",
+    "tools/verify_word_schedule.py": "8ccde474ef300bb1f929906b5f7f74a0ca1722d5bbe68da3817dac346eb74a2b"
+  },
+  "claims": {
+    "qualification": false,
+    "production_readiness": false
+  }
+}

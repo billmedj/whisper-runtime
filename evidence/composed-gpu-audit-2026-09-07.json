@@ -1,0 +1,286 @@
+{
+  "arms": {
+    "cli-legacy": {
+      "cleanup": true,
+      "commits": [
+        [
+          0,
+          409280,
+          "Concord returned to its place amidst the tents. For a while she lay in her chair in happy dreamy pleasure at son and bird and tree. And the gardeners boy chopped the tree into small pieces. There was a whole heap lying there. Concord returned to its place amidst the tents. For a while she lay in her chair in happy dreamy pleasure at son and bird and tree"
+        ],
+        [
+          409280,
+          548160,
+          ". And the gardeners boy chopped the tree into small pieces. There was a whole heap lying there."
+        ],
+        [
+          548160,
+          738560,
+          "Concord returned to its place amidst the tents. For a while she lay in her chair in happy dreamy pleasure at son and bird and tree."
+        ],
+        [
+          738560,
+          744800,
+          ""
+        ]
+      ],
+      "completed": true,
+      "context_ms": [
+        2000,
+        6000
+      ],
+      "cuda_forward_ms": {
+        "decoder": 3658.048702955246,
+        "encoder": 575.5335025787354
+      },
+      "cuda_forward_sum_ms": 4233.582205533981,
+      "elapsed_ns": 46869019512,
+      "encoder_phases": {
+        "alignment": 7,
+        "decode": 25
+      },
+      "final_once_last": true,
+      "first_commit_ns": 28439270535,
+      "forwards": {
+        "decoder": 998,
+        "encoder": 32
+      },
+      "full_samples": true,
+      "native_windows": 25,
+      "peak_allocated_bytes": 290099200,
+      "peak_reserved_bytes": 358612992,
+      "text": "Concord returned to its place amidst the tents. For a while she lay in her chair in happy dreamy pleasure at son and bird and tree. And the gardeners boy chopped the tree into small pieces. There was a whole heap lying there. Concord returned to its place amidst the tents. For a while she lay in her chair in happy dreamy pleasure at son and bird and tree . And the gardeners boy chopped the tree into small pieces. There was a whole heap lying there. Concord returned to its place amidst the tents. For a while she lay in her chair in happy dreamy pleasure at son and bird and tree. "
+    },
+    "fast-legacy": {
+      "cleanup": true,
+      "commits": [
+        [
+          0,
+          71040,
+          "Concord returned to its place amidst the tents. For a while"
+        ],
+        [
+          71040,
+          157760,
+          "she lay in her chair in happy dreamy pleasure at son and bird and tree. And the"
+        ],
+        [
+          157760,
+          187200,
+          "gardeners boy chopped the"
+        ],
+        [
+          187200,
+          215360,
+          "tree into small pieces"
+        ],
+        [
+          215360,
+          255360,
+          ". There was a whole heap lying"
+        ],
+        [
+          255360,
+          288000,
+          "there. Concord"
+        ],
+        [
+          288000,
+          317440,
+          "returned to its place amidst the"
+        ],
+        [
+          317440,
+          349760,
+          "tents. For a while she lay in"
+        ],
+        [
+          349760,
+          409600,
+          "her chair in happy dreamy pleasure at son and bird and tree"
+        ],
+        [
+          409600,
+          474560,
+          ". And the gardeners boy chopped the tree into small"
+        ],
+        [
+          474560,
+          548160,
+          "pieces. There was a whole heap lying there."
+        ],
+        [
+          548160,
+          618560,
+          "Concord returned to its place amidst the tents"
+        ],
+        [
+          618560,
+          738560,
+          ". For a while she lay in her chair in happy dreamy pleasure at son and bird and tree."
+        ],
+        [
+          738560,
+          744800,
+          ""
+        ]
+      ],
+      "completed": true,
+      "context_ms": [
+        20000,
+        24000
+      ],
+      "cuda_forward_ms": {
+        "decoder": 4359.043581962585,
+        "encoder": 635.1014699935913
+      },
+      "cuda_forward_sum_ms": 4994.145051956177,
+      "elapsed_ns": 46757323294,
+      "encoder_phases": {
+        "alignment": 18,
+        "decode": 25
+      },
+      "final_once_last": true,
+      "first_commit_ns": 10266434979,
+      "forwards": {
+        "decoder": 1214,
+        "encoder": 43
+      },
+      "full_samples": true,
+      "native_windows": 25,
+      "peak_allocated_bytes": 290099200,
+      "peak_reserved_bytes": 358612992,
+      "text": "Concord returned to its place amidst the tents. For a while she lay in her chair in happy dreamy pleasure at son and bird and tree. And the gardeners boy chopped the tree into small pieces . There was a whole heap lying there. Concord returned to its place amidst the tents. For a while she lay in her chair in happy dreamy pleasure at son and bird and tree . And the gardeners boy chopped the tree into small pieces. There was a whole heap lying there. Concord returned to its place amidst the tents . For a while she lay in her chair in happy dreamy pleasure at son and bird and tree. "
+    },
+    "fast-reuse": {
+      "cleanup": true,
+      "commits": [
+        [
+          0,
+          71040,
+          "Concord returned to its place amidst the tents. For a while"
+        ],
+        [
+          71040,
+          157760,
+          "she lay in her chair in happy dreamy pleasure at son and bird and tree. And the"
+        ],
+        [
+          157760,
+          187200,
+          "gardeners boy chopped the"
+        ],
+        [
+          187200,
+          215360,
+          "tree into small pieces"
+        ],
+        [
+          215360,
+          255360,
+          ". There was a whole heap lying"
+        ],
+        [
+          255360,
+          288000,
+          "there. Concord"
+        ],
+        [
+          288000,
+          317440,
+          "returned to its place amidst the"
+        ],
+        [
+          317440,
+          349760,
+          "tents. For a while she lay in"
+        ],
+        [
+          349760,
+          409600,
+          "her chair in happy dreamy pleasure at son and bird and tree"
+        ],
+        [
+          409600,
+          474560,
+          ". And the gardeners boy chopped the tree into small"
+        ],
+        [
+          474560,
+          548160,
+          "pieces. There was a whole heap lying there."
+        ],
+        [
+          548160,
+          618560,
+          "Concord returned to its place amidst the tents"
+        ],
+        [
+          618560,
+          738560,
+          ". For a while she lay in her chair in happy dreamy pleasure at son and bird and tree."
+        ],
+        [
+          738560,
+          744800,
+          ""
+        ]
+      ],
+      "completed": true,
+      "context_ms": [
+        20000,
+        24000
+      ],
+      "cuda_forward_ms": {
+        "decoder": 4319.332315206528,
+        "encoder": 376.7304048538208
+      },
+      "cuda_forward_sum_ms": 4696.0627200603485,
+      "elapsed_ns": 46749772614,
+      "encoder_phases": {
+        "alignment": 0,
+        "decode": 25
+      },
+      "final_once_last": true,
+      "first_commit_ns": 10245050851,
+      "forwards": {
+        "decoder": 1214,
+        "encoder": 25
+      },
+      "full_samples": true,
+      "native_windows": 25,
+      "peak_allocated_bytes": 224045056,
+      "peak_reserved_bytes": 358612992,
+      "text": "Concord returned to its place amidst the tents. For a while she lay in her chair in happy dreamy pleasure at son and bird and tree. And the gardeners boy chopped the tree into small pieces . There was a whole heap lying there. Concord returned to its place amidst the tents. For a while she lay in her chair in happy dreamy pleasure at son and bird and tree . And the gardeners boy chopped the tree into small pieces. There was a whole heap lying there. Concord returned to its place amidst the tents . For a while she lay in her chair in happy dreamy pleasure at son and bird and tree. "
+    }
+  },
+  "checks": {
+    "alignment_encoders_removed": true,
+    "both_fast_commits_earlier": true,
+    "exact_fast_commit_parity": true,
+    "exact_fast_text_parity": true,
+    "fewer_encoder_forwards": true,
+    "no_added_decoder_forwards": true,
+    "receipt_completed": true,
+    "same_fast_context": true,
+    "three_completed_arms": true
+  },
+  "comparisons": {
+    "reuse_vs_cli_legacy": {
+      "cuda_forward_sum_ratio": 1.1092409435021315,
+      "decoder_call_delta": 216,
+      "encoder_call_delta": -7
+    },
+    "reuse_vs_fast_legacy": {
+      "cuda_forward_sum_ratio": 0.9403136415152638,
+      "decoder_call_delta": 0,
+      "encoder_call_delta": -18
+    }
+  },
+  "cpu_elapsed_comparison_applicable": false,
+  "general_speed_or_energy_claim": false,
+  "preflight_sha256": "06dc9856bc9d09e2cafad7b1c6fbe1192063a2ec9954a1117b970c3fac45f3b4",
+  "preregistered_cross_arm_expectations_met": true,
+  "result_sha256": "d712cc9232491b5a77feb0e7411f88783ee658d6401dd61e57e474e0b6e6946d",
+  "timing_scope": "Per-forward CUDA-event sums; warmup excluded, not occupancy or word latency."
+}

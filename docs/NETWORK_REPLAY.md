@@ -1,9 +1,14 @@
 # PC-to-Modal PCM replay
 
-This reference integration sends recorded audio from a PC and returns transcript
-events over one authenticated WebSocket. It uses the existing continuous
-controller. It does not capture a microphone, reconnect a failed session or
-provide a production service.
+This reference integration sends recorded or live PCM from a PC and returns
+transcript events over one authenticated WebSocket. Both paths use the existing
+continuous controller. The transport itself does not capture a microphone,
+reconnect a failed session or provide a production service.
+
+The [installed CLI](CLI.md) now connects file input and optional microphone
+capture to this protocol. The [registered T4 result](research/2026-09-06-live-v01.md)
+completes a short test followed by 30 minutes of source-paced, repeated audio.
+Physical capture and broader acoustic/platform qualification remain open.
 
 ## Data flow
 
@@ -18,7 +23,7 @@ No network handler can authorize publication independently of the controller.
 
 The implementation has two reference modules:
 
-- `examples/replay_websocket.py`: paced client, optional `aiohttp` dependency.
+- `examples/replay_websocket.py`: paced replay and live clients, optional `aiohttp` dependency.
 - `examples/pcm_websocket.py`: ASGI handler, standard library only beyond the
   runtime. Authentication must be enforced by the hosting ingress.
 
@@ -48,10 +53,10 @@ Redirects are rejected before authentication headers can be forwarded.
 
 ## Wire format
 
-Protocol identifier: `pcm-websocket/v1`. This is an experimental local contract,
+Prerecorded protocol identifier: `pcm-websocket/v1`. This is an experimental local contract,
 not an interoperability standard. Input is mono 16 kHz signed 16-bit
 little-endian PCM. The current replay contract requires the final input length
-and SHA-256 in advance. An open-ended microphone API needs a separate contract.
+and SHA-256 in advance. Its length, framing and timing semantics are unchanged.
 
 1. The client sends JSON with exactly `type: "start"`, `protocol`, `sample_count`
    and `sha256`. The sample count must be between 1 and 1,920,000 (120 seconds).
@@ -72,6 +77,95 @@ output mailbox holds 64 messages. Event and trace histories stop at 1,000 entrie
 an event-limit failure retains the last native batch as well. Each serialized
 output is limited to 1 MiB. The controller's PCM bound is separate from socket,
 framework and diagnostic-history memory.
+
+## Unknown-length live PCM: `pcm-websocket/live-v2`
+
+The explicit live protocol does not require future audio metadata. It is an
+open-length **bounded session**, not an unlimited connection. Authentication,
+the native owner, controller publication rules, frame-size limits, output
+mailbox, cancellation and cleanup are shared with v1.
+
+1. START contains exactly `{"type":"start","protocol":"pcm-websocket/live-v2"}`.
+   Supplying v1's length/hash fields is rejected, not silently ignored.
+2. READY echoes the live protocol and includes sample rate, chunk size and
+   server `limits`. Source iteration begins only after READY.
+3. Binary headers and sequence/span rules are unchanged. Supply full 640-byte
+   PCM frames, optionally one short final frame with a whole number of samples.
+   A short frame closes the audio-frame sequence: only EOF or CANCEL may follow.
+4. On normal source exhaustion, EOF supplies the final `chunks`, `samples` and
+   `sha256`. The server compares all three with bytes actually accepted. Empty
+   input, mismatch, duplicate EOF or audio after EOF fails without authorizing
+   completion. The client independently verifies the returned cumulative
+   counts/hash, full committed coverage and exactly one final event.
+
+Use the same header-only authentication as replay:
+
+```python
+from examples.replay_websocket import LiveConfig, stream_live
+
+
+# source is an AsyncIterable[bytes], e.g. an application-owned capture adapter.
+# It supplies paced mono 16 kHz signed-16-bit little-endian frames.
+async def receive_event(event, client_elapsed_ns):
+    await application.publish(event)  # Must stay within callback_timeout_s.
+
+
+record = await stream_live(
+    url,
+    source,
+    headers=authentication_headers,
+    config=LiveConfig(max_samples=30 * 60 * 16_000, total_timeout_s=1_900),
+    on_event=receive_event,
+)
+```
+
+`LiveConfig` defaults to at most 57,600,000 samples (one hour), a 3,700-second
+connection-inclusive deadline, 10 seconds awaiting the next source frame,
+250 ms per send/callback, 30 seconds draining after EOF, and 100,000 events.
+Bounds may be lowered, not disabled or increased beyond those caps. The live
+client uses the smaller of its sample cap and the server's advertised cap.
+The source supplies capture pacing: live input is not replayed against a
+synthetic clock. A blocked send, exhausted limit or stalled source fails; audio
+is not silently discarded or automatically retried. The source iterator's
+`aclose()` is called when available after consumption begins, including failure
+and cancellation. A capture adapter must separately bound its own queue and
+surface device overflow; this transport cannot detect audio lost before yield.
+
+Server operators can lower limits with
+`make_app(factory, live_limits=LiveLimits(...))`, importing `LiveLimits` from
+`examples.pcm_live`. The default sample/session caps match the client, with a
+10-second input-idle deadline, 15-second EOF drain and 100,000 native driver
+steps. Idle polling does not consume the live native-step budget. The
+controller's existing audio-buffer bound remains independent. Source-pinned
+servers configured with `expected_samples` or `expected_sha256` reject live
+START before native setup; the existing Modal diagnostic remains v1.
+
+Live events are delivered through `on_event`; their history and per-frame send,
+admission and native-trace histories are intentionally **not retained** in the
+returned diagnostic (`diagnostic_history: "not_retained"`). Live DONE contains
+compact cumulative sample/chunk/event/trace counters and the accepted PCM
+digest. Output queue/event limits still fail explicitly. This avoids building
+an hour-long diagnostic blob; it does not provide durable acknowledgements,
+reconnect, resume, resend or exactly-once delivery after disconnect.
+
+Live client timing starts after READY and reports transport observations only;
+it has no capture timestamp or word/subtitle latency claim. A one-hour safety
+cap is not acoustic or long-session quality qualification.
+
+### CPU and local transport verification
+
+With the checkout's `src` directory on `PYTHONPATH`:
+
+```sh
+python -m unittest tools.test_replay_websocket tools.test_pcm_websocket
+python -m unittest discover -s tests -p test_pcm_websocket.py
+```
+
+These exercise framing, EOF verification, source/session bounds, cancellation,
+cleanup and the real controller using a scripted native adapter. When installed,
+`aiohttp` and `uvicorn` also exercise an actual loopback-only WebSocket; otherwise
+that optional test is skipped. No model, GPU, credentials or external service is
+needed. Local protocol success does not qualify a remote deployment.
 
 ## Timing
 

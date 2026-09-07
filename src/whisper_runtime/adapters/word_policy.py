@@ -266,6 +266,7 @@ def compare_word_hypotheses(
     holdback_ms: int = 1_000,
     timestamp_tolerance_ms: int = 200,
     final: bool = False,
+    previous_holdback_ms: int = 0,
 ) -> WordAgreementDecision:
     """Agree on exact words, binding committed anchors to frozen source times.
 
@@ -276,6 +277,9 @@ def compare_word_hypotheses(
     to be silence. Empty or punctuation-only text cannot advance a nonfinal
     publication. Trailing standalone nonlexical units wait for a stable lexical
     word or explicit EOF; internal punctuation and all raw estimates stay intact.
+    Optional ``previous_holdback_ms`` also keeps the earlier witness away from
+    its right edge. Zero preserves legacy agreement; final closure ignores both
+    holdbacks without weakening the frozen-anchor test.
 
     An anchor contains at most four actually published words. Only whole source
     word spans still available after the retained origin are used. A missing or
@@ -297,6 +301,7 @@ def compare_word_hypotheses(
         ("committed_through_ms", committed_through_ms),
         ("holdback_ms", holdback_ms),
         ("timestamp_tolerance_ms", timestamp_tolerance_ms),
+        ("previous_holdback_ms", previous_holdback_ms),
     ):
         _index(value, name)
         if value < 0:
@@ -405,7 +410,10 @@ def compare_word_hypotheses(
             ):
                 stop_reason = "unstable"
                 break
-            if after.span.end_ms > span.end_ms - holdback_ms:
+            if (
+                after.span.end_ms > span.end_ms - holdback_ms
+                or before.span.end_ms > before_span.end_ms - previous_holdback_ms
+            ):
                 break
             selected_end += 1
         while selected_end > after_start and not _has_lexical_text(

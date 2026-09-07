@@ -1,6 +1,9 @@
 * text=auto
 
 .gitattributes text eol=lf
+.gitignore text eol=lf
+CITATION.cff text eol=lf
+MANIFEST.in text eol=lf
 
 *.json text eol=lf
 *.jsonl text eol=lf
@@ -12,6 +15,7 @@
 *.py text eol=lf
 *.toml text eol=lf
 *.txt text eol=lf
+*.svg text eol=lf
 *.yml text eol=lf
 *.yaml text eol=lf
 
@@ -20,3 +24,4 @@ patches/openai-whisper/experimental/SHA256SUMS text eol=lf
 
 *.flac binary
 *.pt binary
+*.zip binary

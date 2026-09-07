@@ -1,0 +1,3553 @@
+{
+  "backend": {
+    "commit": "a0b9695ae1cc52bad4b8626fe9fb6ea4ac0ee650",
+    "tree": "c011d2563c26763b5f147026e6b18ef85bccd4fb"
+  },
+  "capacity_restored": true,
+  "cells": [
+    {
+      "attempts": [
+        {
+          "alignment": {
+            "native": {
+              "analysis_span": {
+                "end_ms": 10890,
+                "start_ms": 1680
+              },
+              "end_ms": 10890,
+              "metadata": {
+                "avg_logprob": -0.6660538673400879,
+                "compression_ratio": 0.7894736842105263,
+                "language": "en",
+                "no_speech_prob": 0.06749986857175827,
+                "segments": [
+                  {
+                    "span": {
+                      "end_ms": 4680,
+                      "start_ms": 1680
+                    },
+                    "text": " to its place amidst the tents.",
+                    "tokens": [
+                      284,
+                      663,
+                      1295,
+                      31095,
+                      262,
+                      29804,
+                      13
+                    ]
+                  }
+                ],
+                "temperature": 0.0,
+                "timestamps_complete": true,
+                "tokens": [
+                  50363,
+                  284,
+                  663,
+                  1295,
+                  31095,
+                  262,
+                  29804,
+                  13,
+                  50513
+                ]
+              },
+              "publication_segment_indices": null,
+              "start_ms": 1680,
+              "text": "to its place amidst the tents.",
+              "window_id": "noisy-retained"
+            },
+            "words": [
+              {
+                "span": {
+                  "end_ms": 1860,
+                  "start_ms": 1680
+                },
+                "text": " to",
+                "tokens": [
+                  284
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 2020,
+                  "start_ms": 1860
+                },
+                "text": " its",
+                "tokens": [
+                  663
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 2360,
+                  "start_ms": 2020
+                },
+                "text": " place",
+                "tokens": [
+                  1295
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 2680,
+                  "start_ms": 2360
+                },
+                "text": " amidst",
+                "tokens": [
+                  31095
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 3000,
+                  "start_ms": 2680
+                },
+                "text": " the",
+                "tokens": [
+                  262
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 3600,
+                  "start_ms": 3000
+                },
+                "text": " tents",
+                "tokens": [
+                  29804
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 10860,
+                  "start_ms": 3600
+                },
+                "text": ".",
+                "tokens": [
+                  13
+                ]
+              }
+            ]
+          },
+          "audio_evidence": {
+            "no_speech_prob": 0.06749986857175827,
+            "observation": {
+              "digital_silence": false,
+              "pcm_sha256": "dd383988af4dda18b46f0fc6d1035b1debd6b51a9c7ecb9e8eb54be0ff201283",
+              "sample_count": 147360
+            },
+            "reason": "no_lexical_text",
+            "state": "uncertain"
+          },
+          "decode_attempt": 1,
+          "decode_options": {
+            "beam_size": null,
+            "best_of": null,
+            "language": "en",
+            "length_penalty": null,
+            "max_initial_timestamp": 1.0,
+            "patience": null,
+            "prefix": null,
+            "prompt": null,
+            "sample_len": null,
+            "suppress_blank": true,
+            "suppress_tokens": "-1",
+            "task": "transcribe",
+            "temperature": 0,
+            "without_timestamps": false
+          },
+          "driver_steps": 10,
+          "encoder_forwards_so_far": 2,
+          "id": "null",
+          "prompt": null,
+          "publication_authorized": false,
+          "recognition": {
+            "against_human_reference": {
+              "exact_text_match": false,
+              "reference_word_count": 26,
+              "word_edit_distance": 18,
+              "word_edit_rate": 0.6923076923076923
+            },
+            "hypothetical_full_text": "Concord returned to its place amidst the tents ."
+          },
+          "result": {
+            "analysis_span": {
+              "end_ms": 10890,
+              "start_ms": 1680
+            },
+            "end_ms": 10890,
+            "metadata": {
+              "avg_logprob": -0.6660538673400879,
+              "compression_ratio": 0.7894736842105263,
+              "language": "en",
+              "no_speech_prob": 0.06749986857175827,
+              "segments": [
+                {
+                  "span": {
+                    "end_ms": 4680,
+                    "start_ms": 1680
+                  },
+                  "text": " to its place amidst the tents.",
+                  "tokens": [
+                    284,
+                    663,
+                    1295,
+                    31095,
+                    262,
+                    29804,
+                    13
+                  ]
+                }
+              ],
+              "temperature": 0.0,
+              "timestamps_complete": true,
+              "tokens": [
+                50363,
+                284,
+                663,
+                1295,
+                31095,
+                262,
+                29804,
+                13,
+                50513
+              ]
+            },
+            "publication_segment_indices": null,
+            "start_ms": 1680,
+            "text": "to its place amidst the tents.",
+            "window_id": "noisy-retained"
+          },
+          "session_version": 0,
+          "strict_candidate": false,
+          "word_decision": {
+            "anchor_diagnostic": {
+              "end_deltas_ms": [
+                0,
+                -40,
+                0,
+                -80
+              ],
+              "lexical_match_count": 1,
+              "observation": "current",
+              "start_deltas_ms": [
+                0,
+                0,
+                -40,
+                0
+              ],
+              "status": "matched",
+              "text_match_count": 1,
+              "timed_match_count": 1,
+              "word_end": 6,
+              "word_start": 2
+            },
+            "next_anchor": [
+              {
+                "span": {
+                  "end_ms": 10860,
+                  "start_ms": 3600
+                },
+                "text": ".",
+                "tokens": [
+                  13
+                ]
+              }
+            ],
+            "publication": {
+              "alignment": {
+                "native": {
+                  "analysis_span": {
+                    "end_ms": 10890,
+                    "start_ms": 1680
+                  },
+                  "end_ms": 10890,
+                  "metadata": {
+                    "avg_logprob": -0.6660538673400879,
+                    "compression_ratio": 0.7894736842105263,
+                    "language": "en",
+                    "no_speech_prob": 0.06749986857175827,
+                    "segments": [
+                      {
+                        "span": {
+                          "end_ms": 4680,
+                          "start_ms": 1680
+                        },
+                        "text": " to its place amidst the tents.",
+                        "tokens": [
+                          284,
+                          663,
+                          1295,
+                          31095,
+                          262,
+                          29804,
+                          13
+                        ]
+                      }
+                    ],
+                    "temperature": 0.0,
+                    "timestamps_complete": true,
+                    "tokens": [
+                      50363,
+                      284,
+                      663,
+                      1295,
+                      31095,
+                      262,
+                      29804,
+                      13,
+                      50513
+                    ]
+                  },
+                  "publication_segment_indices": null,
+                  "start_ms": 1680,
+                  "text": "to its place amidst the tents.",
+                  "window_id": "noisy-retained"
+                },
+                "words": [
+                  {
+                    "span": {
+                      "end_ms": 1860,
+                      "start_ms": 1680
+                    },
+                    "text": " to",
+                    "tokens": [
+                      284
+                    ]
+                  },
+                  {
+                    "span": {
+                      "end_ms": 2020,
+                      "start_ms": 1860
+                    },
+                    "text": " its",
+                    "tokens": [
+                      663
+                    ]
+                  },
+                  {
+                    "span": {
+                      "end_ms": 2360,
+                      "start_ms": 2020
+                    },
+                    "text": " place",
+                    "tokens": [
+                      1295
+                    ]
+                  },
+                  {
+                    "span": {
+                      "end_ms": 2680,
+                      "start_ms": 2360
+                    },
+                    "text": " amidst",
+                    "tokens": [
+                      31095
+                    ]
+                  },
+                  {
+                    "span": {
+                      "end_ms": 3000,
+                      "start_ms": 2680
+                    },
+                    "text": " the",
+                    "tokens": [
+                      262
+                    ]
+                  },
+                  {
+                    "span": {
+                      "end_ms": 3600,
+                      "start_ms": 3000
+                    },
+                    "text": " tents",
+                    "tokens": [
+                      29804
+                    ]
+                  },
+                  {
+                    "span": {
+                      "end_ms": 10860,
+                      "start_ms": 3600
+                    },
+                    "text": ".",
+                    "tokens": [
+                      13
+                    ]
+                  }
+                ]
+              },
+              "analysis_span": {
+                "end_ms": 10890,
+                "start_ms": 1680
+              },
+              "boundary_tolerance_ms": 200,
+              "end_ms": 10890,
+              "final": true,
+              "start_ms": 3680,
+              "text": ".",
+              "window_id": "noisy-retained",
+              "word_end": 7,
+              "word_start": 6
+            },
+            "reason": "eof"
+          }
+        },
+        {
+          "alignment": {
+            "native": {
+              "analysis_span": {
+                "end_ms": 10890,
+                "start_ms": 1680
+              },
+              "end_ms": 10890,
+              "metadata": {
+                "avg_logprob": -0.2390028563412753,
+                "compression_ratio": 1.1216216216216217,
+                "language": "en",
+                "no_speech_prob": 0.0006645930698141456,
+                "segments": [],
+                "temperature": 0.0,
+                "timestamps_complete": false,
+                "tokens": [
+                  50363,
+                  1114,
+                  257,
+                  981,
+                  673,
+                  3830,
+                  287,
+                  607,
+                  5118,
+                  287,
+                  3772,
+                  4320,
+                  88,
+                  9476,
+                  379,
+                  3367,
+                  290,
+                  6512,
+                  290,
+                  5509,
+                  13
+                ]
+              },
+              "publication_segment_indices": null,
+              "start_ms": 1680,
+              "text": "For a while she lay in her chair in happy dreamy pleasure at son and bird and tree.",
+              "window_id": "noisy-retained"
+            },
+            "words": [
+              {
+                "span": {
+                  "end_ms": 4000,
+                  "start_ms": 1680
+                },
+                "text": " For",
+                "tokens": [
+                  1114
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 4000,
+                  "start_ms": 4000
+                },
+                "text": " a",
+                "tokens": [
+                  257
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 6420,
+                  "start_ms": 4000
+                },
+                "text": " while",
+                "tokens": [
+                  981
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 6700,
+                  "start_ms": 6420
+                },
+                "text": " she",
+                "tokens": [
+                  673
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 6920,
+                  "start_ms": 6700
+                },
+                "text": " lay",
+                "tokens": [
+                  3830
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 7040,
+                  "start_ms": 6920
+                },
+                "text": " in",
+                "tokens": [
+                  287
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 7240,
+                  "start_ms": 7040
+                },
+                "text": " her",
+                "tokens": [
+                  607
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 7620,
+                  "start_ms": 7240
+                },
+                "text": " chair",
+                "tokens": [
+                  5118
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 7880,
+                  "start_ms": 7620
+                },
+                "text": " in",
+                "tokens": [
+                  287
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 8240,
+                  "start_ms": 7880
+                },
+                "text": " happy",
+                "tokens": [
+                  3772
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 8740,
+                  "start_ms": 8240
+                },
+                "text": " dreamy",
+                "tokens": [
+                  4320,
+                  88
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 9040,
+                  "start_ms": 8740
+                },
+                "text": " pleasure",
+                "tokens": [
+                  9476
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 9380,
+                  "start_ms": 9040
+                },
+                "text": " at",
+                "tokens": [
+                  379
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 9580,
+                  "start_ms": 9380
+                },
+                "text": " son",
+                "tokens": [
+                  3367
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 9820,
+                  "start_ms": 9580
+                },
+                "text": " and",
+                "tokens": [
+                  290
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 10040,
+                  "start_ms": 9820
+                },
+                "text": " bird",
+                "tokens": [
+                  6512
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 10340,
+                  "start_ms": 10040
+                },
+                "text": " and",
+                "tokens": [
+                  290
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 10600,
+                  "start_ms": 10340
+                },
+                "text": " tree",
+                "tokens": [
+                  5509
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 10860,
+                  "start_ms": 10600
+                },
+                "text": ".",
+                "tokens": [
+                  13
+                ]
+              }
+            ]
+          },
+          "audio_evidence": {
+            "no_speech_prob": 0.0006645930698141456,
+            "observation": {
+              "digital_silence": false,
+              "pcm_sha256": "dd383988af4dda18b46f0fc6d1035b1debd6b51a9c7ecb9e8eb54be0ff201283",
+              "sample_count": 147360
+            },
+            "reason": "model_speech_candidate",
+            "state": "speech_candidate"
+          },
+          "decode_attempt": 2,
+          "decode_options": {
+            "beam_size": null,
+            "best_of": null,
+            "language": "en",
+            "length_penalty": null,
+            "max_initial_timestamp": 1.0,
+            "patience": null,
+            "prefix": null,
+            "prompt": "Concord returned to its place amidst the tents",
+            "sample_len": null,
+            "suppress_blank": true,
+            "suppress_tokens": "-1",
+            "task": "transcribe",
+            "temperature": 0,
+            "without_timestamps": false
+          },
+          "driver_steps": 22,
+          "encoder_forwards_so_far": 3,
+          "id": "published-prefix",
+          "prompt": "Concord returned to its place amidst the tents",
+          "publication_authorized": false,
+          "recognition": {
+            "against_human_reference": null,
+            "hypothetical_full_text": null
+          },
+          "result": {
+            "analysis_span": {
+              "end_ms": 10890,
+              "start_ms": 1680
+            },
+            "end_ms": 10890,
+            "metadata": {
+              "avg_logprob": -0.2390028563412753,
+              "compression_ratio": 1.1216216216216217,
+              "language": "en",
+              "no_speech_prob": 0.0006645930698141456,
+              "segments": [],
+              "temperature": 0.0,
+              "timestamps_complete": false,
+              "tokens": [
+                50363,
+                1114,
+                257,
+                981,
+                673,
+                3830,
+                287,
+                607,
+                5118,
+                287,
+                3772,
+                4320,
+                88,
+                9476,
+                379,
+                3367,
+                290,
+                6512,
+                290,
+                5509,
+                13
+              ]
+            },
+            "publication_segment_indices": null,
+            "start_ms": 1680,
+            "text": "For a while she lay in her chair in happy dreamy pleasure at son and bird and tree.",
+            "window_id": "noisy-retained"
+          },
+          "session_version": 0,
+          "strict_candidate": false,
+          "word_decision": {
+            "anchor_diagnostic": {
+              "end_deltas_ms": [],
+              "lexical_match_count": 0,
+              "observation": "current",
+              "start_deltas_ms": [],
+              "status": "lexical_missing",
+              "text_match_count": 0,
+              "timed_match_count": 0,
+              "word_end": null,
+              "word_start": null
+            },
+            "next_anchor": [
+              {
+                "span": {
+                  "end_ms": 2360,
+                  "start_ms": 2020
+                },
+                "text": " place",
+                "tokens": [
+                  1295
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 2720,
+                  "start_ms": 2360
+                },
+                "text": " amidst",
+                "tokens": [
+                  31095
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 3000,
+                  "start_ms": 2720
+                },
+                "text": " the",
+                "tokens": [
+                  262
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 3680,
+                  "start_ms": 3000
+                },
+                "text": " tents",
+                "tokens": [
+                  29804
+                ]
+              }
+            ],
+            "publication": null,
+            "reason": "anchor_missing"
+          }
+        }
+      ],
+      "capacity_restored": true,
+      "closed": true,
+      "decode_attempt_count": 2,
+      "end_ms": 10890,
+      "end_sample": 174240,
+      "error": null,
+      "first_snapshot_unchanged": true,
+      "id": "retained",
+      "pcm_sha256": "dd383988af4dda18b46f0fc6d1035b1debd6b51a9c7ecb9e8eb54be0ff201283",
+      "same_lease": true,
+      "sample_count": 147360,
+      "session_version": 0,
+      "start_ms": 1680,
+      "start_sample": 26880,
+      "window": {
+        "admitted_elapsed_ns": 8195208596,
+        "call_index": 1,
+        "capacity_restored": true,
+        "closed": true,
+        "decoder_forwards": [
+          {
+            "phase": "decode",
+            "token_count": 1
+          },
+          {
+            "phase": "decode",
+            "token_count": 1
+          },
+          {
+            "phase": "decode",
+            "token_count": 1
+          },
+          {
+            "phase": "decode",
+            "token_count": 1
+          },
+          {
+            "phase": "decode",
+            "token_count": 1
+          },
+          {
+            "phase": "decode",
+            "token_count": 1
+          },
+          {
+            "phase": "decode",
+            "token_count": 1
+          },
+          {
+            "phase": "decode",
+            "token_count": 1
+          },
+          {
+            "phase": "decode",
+            "token_count": 1
+          },
+          {
+            "phase": "decode",
+            "token_count": 1
+          },
+          {
+            "phase": "alignment",
+            "token_count": 10
+          },
+          {
+            "phase": "redecode",
+            "token_count": 10
+          },
+          {
+            "phase": "decode",
+            "token_count": 1
+          },
+          {
+            "phase": "decode",
+            "token_count": 1
+          },
+          {
+            "phase": "decode",
+            "token_count": 1
+          },
+          {
+            "phase": "decode",
+            "token_count": 1
+          },
+          {
+            "phase": "decode",
+            "token_count": 1
+          },
+          {
+            "phase": "decode",
+            "token_count": 1
+          },
+          {
+            "phase": "decode",
+            "token_count": 1
+          },
+          {
+            "phase": "decode",
+            "token_count": 1
+          },
+          {
+            "phase": "decode",
+            "token_count": 1
+          },
+          {
+            "phase": "decode",
+            "token_count": 1
+          },
+          {
+            "phase": "decode",
+            "token_count": 1
+          },
+          {
+            "phase": "decode",
+            "token_count": 1
+          },
+          {
+            "phase": "decode",
+            "token_count": 1
+          },
+          {
+            "phase": "decode",
+            "token_count": 1
+          },
+          {
+            "phase": "decode",
+            "token_count": 1
+          },
+          {
+            "phase": "decode",
+            "token_count": 1
+          },
+          {
+            "phase": "decode",
+            "token_count": 1
+          },
+          {
+            "phase": "decode",
+            "token_count": 1
+          },
+          {
+            "phase": "decode",
+            "token_count": 1
+          },
+          {
+            "phase": "decode",
+            "token_count": 1
+          },
+          {
+            "phase": "decode",
+            "token_count": 1
+          },
+          {
+            "phase": "alignment",
+            "token_count": 23
+          }
+        ],
+        "driver_steps": 32,
+        "encoder_calls": [
+          {
+            "input_frames": 3000,
+            "phase": "decode",
+            "use_sdpa": null
+          },
+          {
+            "input_frames": 3000,
+            "phase": "alignment",
+            "use_sdpa": false
+          },
+          {
+            "input_frames": 3000,
+            "phase": "alignment",
+            "use_sdpa": false
+          }
+        ],
+        "end_ms": 10890,
+        "mel_shape": [
+          80,
+          3000
+        ],
+        "mel_wall_ns": 17430633,
+        "operation_wall_ns": {
+          "alignment": 3221544627,
+          "close": 317819,
+          "decode": 1143322636,
+          "redecode": 8802475,
+          "result": 2136818
+        },
+        "pcm_sha256": "dd383988af4dda18b46f0fc6d1035b1debd6b51a9c7ecb9e8eb54be0ff201283",
+        "start_ms": 1680,
+        "window_id": "noisy-retained"
+      }
+    },
+    {
+      "attempts": [
+        {
+          "alignment": {
+            "native": {
+              "analysis_span": {
+                "end_ms": 10890,
+                "start_ms": 3680
+              },
+              "end_ms": 10890,
+              "metadata": {
+                "avg_logprob": -0.23406070211659308,
+                "compression_ratio": 1.1216216216216217,
+                "language": "en",
+                "no_speech_prob": 0.05577161908149719,
+                "segments": [
+                  {
+                    "span": {
+                      "end_ms": 10680,
+                      "start_ms": 3680
+                    },
+                    "text": " For a while she lay in her chair in happy dreamy pleasure at son and bird and tree.",
+                    "tokens": [
+                      1114,
+                      257,
+                      981,
+                      673,
+                      3830,
+                      287,
+                      607,
+                      5118,
+                      287,
+                      3772,
+                      4320,
+                      88,
+                      9476,
+                      379,
+                      3367,
+                      290,
+                      6512,
+                      290,
+                      5509,
+                      13
+                    ]
+                  }
+                ],
+                "temperature": 0.0,
+                "timestamps_complete": true,
+                "tokens": [
+                  50363,
+                  1114,
+                  257,
+                  981,
+                  673,
+                  3830,
+                  287,
+                  607,
+                  5118,
+                  287,
+                  3772,
+                  4320,
+                  88,
+                  9476,
+                  379,
+                  3367,
+                  290,
+                  6512,
+                  290,
+                  5509,
+                  13,
+                  50713
+                ]
+              },
+              "publication_segment_indices": null,
+              "start_ms": 3680,
+              "text": "For a while she lay in her chair in happy dreamy pleasure at son and bird and tree.",
+              "window_id": "noisy-head-only"
+            },
+            "words": [
+              {
+                "span": {
+                  "end_ms": 6100,
+                  "start_ms": 3680
+                },
+                "text": " For",
+                "tokens": [
+                  1114
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 6200,
+                  "start_ms": 6100
+                },
+                "text": " a",
+                "tokens": [
+                  257
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 6440,
+                  "start_ms": 6200
+                },
+                "text": " while",
+                "tokens": [
+                  981
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 6700,
+                  "start_ms": 6440
+                },
+                "text": " she",
+                "tokens": [
+                  673
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 6920,
+                  "start_ms": 6700
+                },
+                "text": " lay",
+                "tokens": [
+                  3830
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 7040,
+                  "start_ms": 6920
+                },
+                "text": " in",
+                "tokens": [
+                  287
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 7260,
+                  "start_ms": 7040
+                },
+                "text": " her",
+                "tokens": [
+                  607
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 7620,
+                  "start_ms": 7260
+                },
+                "text": " chair",
+                "tokens": [
+                  5118
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 7880,
+                  "start_ms": 7620
+                },
+                "text": " in",
+                "tokens": [
+                  287
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 8240,
+                  "start_ms": 7880
+                },
+                "text": " happy",
+                "tokens": [
+                  3772
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 8740,
+                  "start_ms": 8240
+                },
+                "text": " dreamy",
+                "tokens": [
+                  4320,
+                  88
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 9040,
+                  "start_ms": 8740
+                },
+                "text": " pleasure",
+                "tokens": [
+                  9476
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 9380,
+                  "start_ms": 9040
+                },
+                "text": " at",
+                "tokens": [
+                  379
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 9580,
+                  "start_ms": 9380
+                },
+                "text": " son",
+                "tokens": [
+                  3367
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 9820,
+                  "start_ms": 9580
+                },
+                "text": " and",
+                "tokens": [
+                  290
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 10040,
+                  "start_ms": 9820
+                },
+                "text": " bird",
+                "tokens": [
+                  6512
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 10340,
+                  "start_ms": 10040
+                },
+                "text": " and",
+                "tokens": [
+                  290
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 10620,
+                  "start_ms": 10340
+                },
+                "text": " tree",
+                "tokens": [
+                  5509
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 10760,
+                  "start_ms": 10620
+                },
+                "text": ".",
+                "tokens": [
+                  13
+                ]
+              }
+            ]
+          },
+          "audio_evidence": {
+            "no_speech_prob": 0.05577161908149719,
+            "observation": {
+              "digital_silence": false,
+              "pcm_sha256": "cc9317e38baca23065fe325b32d4c095532fc29ca4b60763c7ed9b6e9f2e39c9",
+              "sample_count": 115360
+            },
+            "reason": "model_speech_candidate",
+            "state": "speech_candidate"
+          },
+          "decode_attempt": 1,
+          "decode_options": {
+            "beam_size": null,
+            "best_of": null,
+            "language": "en",
+            "length_penalty": null,
+            "max_initial_timestamp": 1.0,
+            "patience": null,
+            "prefix": null,
+            "prompt": null,
+            "sample_len": null,
+            "suppress_blank": true,
+            "suppress_tokens": "-1",
+            "task": "transcribe",
+            "temperature": 0,
+            "without_timestamps": false
+          },
+          "driver_steps": 23,
+          "encoder_forwards_so_far": 2,
+          "id": "null",
+          "prompt": null,
+          "publication_authorized": false,
+          "recognition": {
+            "against_human_reference": {
+              "exact_text_match": false,
+              "reference_word_count": 26,
+              "word_edit_distance": 1,
+              "word_edit_rate": 0.038461538461538464
+            },
+            "hypothetical_full_text": "Concord returned to its place amidst the tents For a while she lay in her chair in happy dreamy pleasure at son and bird and tree."
+          },
+          "result": {
+            "analysis_span": {
+              "end_ms": 10890,
+              "start_ms": 3680
+            },
+            "end_ms": 10890,
+            "metadata": {
+              "avg_logprob": -0.23406070211659308,
+              "compression_ratio": 1.1216216216216217,
+              "language": "en",
+              "no_speech_prob": 0.05577161908149719,
+              "segments": [
+                {
+                  "span": {
+                    "end_ms": 10680,
+                    "start_ms": 3680
+                  },
+                  "text": " For a while she lay in her chair in happy dreamy pleasure at son and bird and tree.",
+                  "tokens": [
+                    1114,
+                    257,
+                    981,
+                    673,
+                    3830,
+                    287,
+                    607,
+                    5118,
+                    287,
+                    3772,
+                    4320,
+                    88,
+                    9476,
+                    379,
+                    3367,
+                    290,
+                    6512,
+                    290,
+                    5509,
+                    13
+                  ]
+                }
+              ],
+              "temperature": 0.0,
+              "timestamps_complete": true,
+              "tokens": [
+                50363,
+                1114,
+                257,
+                981,
+                673,
+                3830,
+                287,
+                607,
+                5118,
+                287,
+                3772,
+                4320,
+                88,
+                9476,
+                379,
+                3367,
+                290,
+                6512,
+                290,
+                5509,
+                13,
+                50713
+              ]
+            },
+            "publication_segment_indices": null,
+            "start_ms": 3680,
+            "text": "For a while she lay in her chair in happy dreamy pleasure at son and bird and tree.",
+            "window_id": "noisy-head-only"
+          },
+          "session_version": 0,
+          "strict_candidate": false,
+          "word_decision": {
+            "anchor_diagnostic": null,
+            "next_anchor": [
+              {
+                "span": {
+                  "end_ms": 10040,
+                  "start_ms": 9820
+                },
+                "text": " bird",
+                "tokens": [
+                  6512
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 10340,
+                  "start_ms": 10040
+                },
+                "text": " and",
+                "tokens": [
+                  290
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 10620,
+                  "start_ms": 10340
+                },
+                "text": " tree",
+                "tokens": [
+                  5509
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 10760,
+                  "start_ms": 10620
+                },
+                "text": ".",
+                "tokens": [
+                  13
+                ]
+              }
+            ],
+            "publication": {
+              "alignment": {
+                "native": {
+                  "analysis_span": {
+                    "end_ms": 10890,
+                    "start_ms": 3680
+                  },
+                  "end_ms": 10890,
+                  "metadata": {
+                    "avg_logprob": -0.23406070211659308,
+                    "compression_ratio": 1.1216216216216217,
+                    "language": "en",
+                    "no_speech_prob": 0.05577161908149719,
+                    "segments": [
+                      {
+                        "span": {
+                          "end_ms": 10680,
+                          "start_ms": 3680
+                        },
+                        "text": " For a while she lay in her chair in happy dreamy pleasure at son and bird and tree.",
+                        "tokens": [
+                          1114,
+                          257,
+                          981,
+                          673,
+                          3830,
+                          287,
+                          607,
+                          5118,
+                          287,
+                          3772,
+                          4320,
+                          88,
+                          9476,
+                          379,
+                          3367,
+                          290,
+                          6512,
+                          290,
+                          5509,
+                          13
+                        ]
+                      }
+                    ],
+                    "temperature": 0.0,
+                    "timestamps_complete": true,
+                    "tokens": [
+                      50363,
+                      1114,
+                      257,
+                      981,
+                      673,
+                      3830,
+                      287,
+                      607,
+                      5118,
+                      287,
+                      3772,
+                      4320,
+                      88,
+                      9476,
+                      379,
+                      3367,
+                      290,
+                      6512,
+                      290,
+                      5509,
+                      13,
+                      50713
+                    ]
+                  },
+                  "publication_segment_indices": null,
+                  "start_ms": 3680,
+                  "text": "For a while she lay in her chair in happy dreamy pleasure at son and bird and tree.",
+                  "window_id": "noisy-head-only"
+                },
+                "words": [
+                  {
+                    "span": {
+                      "end_ms": 6100,
+                      "start_ms": 3680
+                    },
+                    "text": " For",
+                    "tokens": [
+                      1114
+                    ]
+                  },
+                  {
+                    "span": {
+                      "end_ms": 6200,
+                      "start_ms": 6100
+                    },
+                    "text": " a",
+                    "tokens": [
+                      257
+                    ]
+                  },
+                  {
+                    "span": {
+                      "end_ms": 6440,
+                      "start_ms": 6200
+                    },
+                    "text": " while",
+                    "tokens": [
+                      981
+                    ]
+                  },
+                  {
+                    "span": {
+                      "end_ms": 6700,
+                      "start_ms": 6440
+                    },
+                    "text": " she",
+                    "tokens": [
+                      673
+                    ]
+                  },
+                  {
+                    "span": {
+                      "end_ms": 6920,
+                      "start_ms": 6700
+                    },
+                    "text": " lay",
+                    "tokens": [
+                      3830
+                    ]
+                  },
+                  {
+                    "span": {
+                      "end_ms": 7040,
+                      "start_ms": 6920
+                    },
+                    "text": " in",
+                    "tokens": [
+                      287
+                    ]
+                  },
+                  {
+                    "span": {
+                      "end_ms": 7260,
+                      "start_ms": 7040
+                    },
+                    "text": " her",
+                    "tokens": [
+                      607
+                    ]
+                  },
+                  {
+                    "span": {
+                      "end_ms": 7620,
+                      "start_ms": 7260
+                    },
+                    "text": " chair",
+                    "tokens": [
+                      5118
+                    ]
+                  },
+                  {
+                    "span": {
+                      "end_ms": 7880,
+                      "start_ms": 7620
+                    },
+                    "text": " in",
+                    "tokens": [
+                      287
+                    ]
+                  },
+                  {
+                    "span": {
+                      "end_ms": 8240,
+                      "start_ms": 7880
+                    },
+                    "text": " happy",
+                    "tokens": [
+                      3772
+                    ]
+                  },
+                  {
+                    "span": {
+                      "end_ms": 8740,
+                      "start_ms": 8240
+                    },
+                    "text": " dreamy",
+                    "tokens": [
+                      4320,
+                      88
+                    ]
+                  },
+                  {
+                    "span": {
+                      "end_ms": 9040,
+                      "start_ms": 8740
+                    },
+                    "text": " pleasure",
+                    "tokens": [
+                      9476
+                    ]
+                  },
+                  {
+                    "span": {
+                      "end_ms": 9380,
+                      "start_ms": 9040
+                    },
+                    "text": " at",
+                    "tokens": [
+                      379
+                    ]
+                  },
+                  {
+                    "span": {
+                      "end_ms": 9580,
+                      "start_ms": 9380
+                    },
+                    "text": " son",
+                    "tokens": [
+                      3367
+                    ]
+                  },
+                  {
+                    "span": {
+                      "end_ms": 9820,
+                      "start_ms": 9580
+                    },
+                    "text": " and",
+                    "tokens": [
+                      290
+                    ]
+                  },
+                  {
+                    "span": {
+                      "end_ms": 10040,
+                      "start_ms": 9820
+                    },
+                    "text": " bird",
+                    "tokens": [
+                      6512
+                    ]
+                  },
+                  {
+                    "span": {
+                      "end_ms": 10340,
+                      "start_ms": 10040
+                    },
+                    "text": " and",
+                    "tokens": [
+                      290
+                    ]
+                  },
+                  {
+                    "span": {
+                      "end_ms": 10620,
+                      "start_ms": 10340
+                    },
+                    "text": " tree",
+                    "tokens": [
+                      5509
+                    ]
+                  },
+                  {
+                    "span": {
+                      "end_ms": 10760,
+                      "start_ms": 10620
+                    },
+                    "text": ".",
+                    "tokens": [
+                      13
+                    ]
+                  }
+                ]
+              },
+              "analysis_span": {
+                "end_ms": 10890,
+                "start_ms": 3680
+              },
+              "boundary_tolerance_ms": 0,
+              "end_ms": 10890,
+              "final": true,
+              "start_ms": 3680,
+              "text": "For a while she lay in her chair in happy dreamy pleasure at son and bird and tree.",
+              "window_id": "noisy-head-only",
+              "word_end": 19,
+              "word_start": 0
+            },
+            "reason": "eof"
+          }
+        },
+        {
+          "alignment": {
+            "native": {
+              "analysis_span": {
+                "end_ms": 10890,
+                "start_ms": 3680
+              },
+              "end_ms": 10890,
+              "metadata": {
+                "avg_logprob": -0.25617613999739935,
+                "compression_ratio": 1.1216216216216217,
+                "language": "en",
+                "no_speech_prob": 0.00358025124296546,
+                "segments": [
+                  {
+                    "span": {
+                      "end_ms": 10680,
+                      "start_ms": 3680
+                    },
+                    "text": " For a while she lay in her chair in happy dreamy pleasure at son and bird and tree.",
+                    "tokens": [
+                      1114,
+                      257,
+                      981,
+                      673,
+                      3830,
+                      287,
+                      607,
+                      5118,
+                      287,
+                      3772,
+                      4320,
+                      88,
+                      9476,
+                      379,
+                      3367,
+                      290,
+                      6512,
+                      290,
+                      5509,
+                      13
+                    ]
+                  }
+                ],
+                "temperature": 0.0,
+                "timestamps_complete": true,
+                "tokens": [
+                  50363,
+                  1114,
+                  257,
+                  981,
+                  673,
+                  3830,
+                  287,
+                  607,
+                  5118,
+                  287,
+                  3772,
+                  4320,
+                  88,
+                  9476,
+                  379,
+                  3367,
+                  290,
+                  6512,
+                  290,
+                  5509,
+                  13,
+                  50713
+                ]
+              },
+              "publication_segment_indices": null,
+              "start_ms": 3680,
+              "text": "For a while she lay in her chair in happy dreamy pleasure at son and bird and tree.",
+              "window_id": "noisy-head-only"
+            },
+            "words": [
+              {
+                "span": {
+                  "end_ms": 6100,
+                  "start_ms": 3680
+                },
+                "text": " For",
+                "tokens": [
+                  1114
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 6200,
+                  "start_ms": 6100
+                },
+                "text": " a",
+                "tokens": [
+                  257
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 6440,
+                  "start_ms": 6200
+                },
+                "text": " while",
+                "tokens": [
+                  981
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 6700,
+                  "start_ms": 6440
+                },
+                "text": " she",
+                "tokens": [
+                  673
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 6920,
+                  "start_ms": 6700
+                },
+                "text": " lay",
+                "tokens": [
+                  3830
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 7040,
+                  "start_ms": 6920
+                },
+                "text": " in",
+                "tokens": [
+                  287
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 7260,
+                  "start_ms": 7040
+                },
+                "text": " her",
+                "tokens": [
+                  607
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 7620,
+                  "start_ms": 7260
+                },
+                "text": " chair",
+                "tokens": [
+                  5118
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 7880,
+                  "start_ms": 7620
+                },
+                "text": " in",
+                "tokens": [
+                  287
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 8240,
+                  "start_ms": 7880
+                },
+                "text": " happy",
+                "tokens": [
+                  3772
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 8740,
+                  "start_ms": 8240
+                },
+                "text": " dreamy",
+                "tokens": [
+                  4320,
+                  88
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 9040,
+                  "start_ms": 8740
+                },
+                "text": " pleasure",
+                "tokens": [
+                  9476
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 9380,
+                  "start_ms": 9040
+                },
+                "text": " at",
+                "tokens": [
+                  379
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 9580,
+                  "start_ms": 9380
+                },
+                "text": " son",
+                "tokens": [
+                  3367
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 9820,
+                  "start_ms": 9580
+                },
+                "text": " and",
+                "tokens": [
+                  290
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 10040,
+                  "start_ms": 9820
+                },
+                "text": " bird",
+                "tokens": [
+                  6512
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 10340,
+                  "start_ms": 10040
+                },
+                "text": " and",
+                "tokens": [
+                  290
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 10620,
+                  "start_ms": 10340
+                },
+                "text": " tree",
+                "tokens": [
+                  5509
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 10760,
+                  "start_ms": 10620
+                },
+                "text": ".",
+                "tokens": [
+                  13
+                ]
+              }
+            ]
+          },
+          "audio_evidence": {
+            "no_speech_prob": 0.00358025124296546,
+            "observation": {
+              "digital_silence": false,
+              "pcm_sha256": "cc9317e38baca23065fe325b32d4c095532fc29ca4b60763c7ed9b6e9f2e39c9",
+              "sample_count": 115360
+            },
+            "reason": "model_speech_candidate",
+            "state": "speech_candidate"
+          },
+          "decode_attempt": 2,
+          "decode_options": {
+            "beam_size": null,
+            "best_of": null,
+            "language": "en",
+            "length_penalty": null,
+            "max_initial_timestamp": 1.0,
+            "patience": null,
+            "prefix": null,
+            "prompt": "Concord returned to its place amidst the tents",
+            "sample_len": null,
+            "suppress_blank": true,
+            "suppress_tokens": "-1",
+            "task": "transcribe",
+            "temperature": 0,
+            "without_timestamps": false
+          },
+          "driver_steps": 23,
+          "encoder_forwards_so_far": 3,
+          "id": "published-prefix",
+          "prompt": "Concord returned to its place amidst the tents",
+          "publication_authorized": false,
+          "recognition": {
+            "against_human_reference": {
+              "exact_text_match": false,
+              "reference_word_count": 26,
+              "word_edit_distance": 1,
+              "word_edit_rate": 0.038461538461538464
+            },
+            "hypothetical_full_text": "Concord returned to its place amidst the tents For a while she lay in her chair in happy dreamy pleasure at son and bird and tree."
+          },
+          "result": {
+            "analysis_span": {
+              "end_ms": 10890,
+              "start_ms": 3680
+            },
+            "end_ms": 10890,
+            "metadata": {
+              "avg_logprob": -0.25617613999739935,
+              "compression_ratio": 1.1216216216216217,
+              "language": "en",
+              "no_speech_prob": 0.00358025124296546,
+              "segments": [
+                {
+                  "span": {
+                    "end_ms": 10680,
+                    "start_ms": 3680
+                  },
+                  "text": " For a while she lay in her chair in happy dreamy pleasure at son and bird and tree.",
+                  "tokens": [
+                    1114,
+                    257,
+                    981,
+                    673,
+                    3830,
+                    287,
+                    607,
+                    5118,
+                    287,
+                    3772,
+                    4320,
+                    88,
+                    9476,
+                    379,
+                    3367,
+                    290,
+                    6512,
+                    290,
+                    5509,
+                    13
+                  ]
+                }
+              ],
+              "temperature": 0.0,
+              "timestamps_complete": true,
+              "tokens": [
+                50363,
+                1114,
+                257,
+                981,
+                673,
+                3830,
+                287,
+                607,
+                5118,
+                287,
+                3772,
+                4320,
+                88,
+                9476,
+                379,
+                3367,
+                290,
+                6512,
+                290,
+                5509,
+                13,
+                50713
+              ]
+            },
+            "publication_segment_indices": null,
+            "start_ms": 3680,
+            "text": "For a while she lay in her chair in happy dreamy pleasure at son and bird and tree.",
+            "window_id": "noisy-head-only"
+          },
+          "session_version": 0,
+          "strict_candidate": false,
+          "word_decision": {
+            "anchor_diagnostic": null,
+            "next_anchor": [
+              {
+                "span": {
+                  "end_ms": 10040,
+                  "start_ms": 9820
+                },
+                "text": " bird",
+                "tokens": [
+                  6512
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 10340,
+                  "start_ms": 10040
+                },
+                "text": " and",
+                "tokens": [
+                  290
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 10620,
+                  "start_ms": 10340
+                },
+                "text": " tree",
+                "tokens": [
+                  5509
+                ]
+              },
+              {
+                "span": {
+                  "end_ms": 10760,
+                  "start_ms": 10620
+                },
+                "text": ".",
+                "tokens": [
+                  13
+                ]
+              }
+            ],
+            "publication": {
+              "alignment": {
+                "native": {
+                  "analysis_span": {
+                    "end_ms": 10890,
+                    "start_ms": 3680
+                  },
+                  "end_ms": 10890,
+                  "metadata": {
+                    "avg_logprob": -0.25617613999739935,
+                    "compression_ratio": 1.1216216216216217,
+                    "language": "en",
+                    "no_speech_prob": 0.00358025124296546,
+                    "segments": [
+                      {
+                        "span": {
+                          "end_ms": 10680,
+                          "start_ms": 3680
+                        },
+                        "text": " For a while she lay in her chair in happy dreamy pleasure at son and bird and tree.",
+                        "tokens": [
+                          1114,
+                          257,
+                          981,
+                          673,
+                          3830,
+                          287,
+                          607,
+                          5118,
+                          287,
+                          3772,
+                          4320,
+                          88,
+                          9476,
+                          379,
+                          3367,
+                          290,
+                          6512,
+                          290,
+                          5509,
+                          13
+                        ]
+                      }
+                    ],
+                    "temperature": 0.0,
+                    "timestamps_complete": true,
+                    "tokens": [
+                      50363,
+                      1114,
+                      257,
+                      981,
+                      673,
+                      3830,
+                      287,
+                      607,
+                      5118,
+                      287,
+                      3772,
+                      4320,
+                      88,
+                      9476,
+                      379,
+                      3367,
+                      290,
+                      6512,
+                      290,
+                      5509,
+                      13,
+                      50713
+                    ]
+                  },
+                  "publication_segment_indices": null,
+                  "start_ms": 3680,
+                  "text": "For a while she lay in her chair in happy dreamy pleasure at son and bird and tree.",
+                  "window_id": "noisy-head-only"
+                },
+                "words": [
+                  {
+                    "span": {
+                      "end_ms": 6100,
+                      "start_ms": 3680
+                    },
+                    "text": " For",
+                    "tokens": [
+                      1114
+                    ]
+                  },
+                  {
+                    "span": {
+                      "end_ms": 6200,
+                      "start_ms": 6100
+                    },
+                    "text": " a",
+                    "tokens": [
+                      257
+                    ]
+                  },
+                  {
+                    "span": {
+                      "end_ms": 6440,
+                      "start_ms": 6200
+                    },
+                    "text": " while",
+                    "tokens": [
+                      981
+                    ]
+                  },
+                  {
+                    "span": {
+                      "end_ms": 6700,
+                      "start_ms": 6440
+                    },
+                    "text": " she",
+                    "tokens": [
+                      673
+                    ]
+                  },
+                  {
+                    "span": {
+                      "end_ms": 6920,
+                      "start_ms": 6700
+                    },
+                    "text": " lay",
+                    "tokens": [
+                      3830
+                    ]
+                  },
+                  {
+                    "span": {
+                      "end_ms": 7040,
+                      "start_ms": 6920
+                    },
+                    "text": " in",
+                    "tokens": [
+                      287
+                    ]
+                  },
+                  {
+                    "span": {
+                      "end_ms": 7260,
+                      "start_ms": 7040
+                    },
+                    "text": " her",
+                    "tokens": [
+                      607
+                    ]
+                  },
+                  {
+                    "span": {
+                      "end_ms": 7620,
+                      "start_ms": 7260
+                    },
+                    "text": " chair",
+                    "tokens": [
+                      5118
+                    ]
+                  },
+                  {
+                    "span": {
+                      "end_ms": 7880,
+                      "start_ms": 7620
+                    },
+                    "text": " in",
+                    "tokens": [
+                      287
+                    ]
+                  },
+                  {
+                    "span": {
+                      "end_ms": 8240,
+                      "start_ms": 7880
+                    },
+                    "text": " happy",
+                    "tokens": [
+                      3772
+                    ]
+                  },
+                  {
+                    "span": {
+                      "end_ms": 8740,
+                      "start_ms": 8240
+                    },
+                    "text": " dreamy",
+                    "tokens": [
+                      4320,
+                      88
+                    ]
+                  },
+                  {
+                    "span": {
+                      "end_ms": 9040,
+                      "start_ms": 8740
+                    },
+                    "text": " pleasure",
+                    "tokens": [
+                      9476
+                    ]
+                  },
+                  {
+                    "span": {
+                      "end_ms": 9380,
+                      "start_ms": 9040
+                    },
+                    "text": " at",
+                    "tokens": [
+                      379
+                    ]
+                  },
+                  {
+                    "span": {
+                      "end_ms": 9580,
+                      "start_ms": 9380
+                    },
+                    "text": " son",
+                    "tokens": [
+                      3367
+                    ]
+                  },
+                  {
+                    "span": {
+                      "end_ms": 9820,
+                      "start_ms": 9580
+                    },
+                    "text": " and",
+                    "tokens": [
+                      290
+                    ]
+                  },
+                  {
+                    "span": {
+                      "end_ms": 10040,
+                      "start_ms": 9820
+                    },
+                    "text": " bird",
+                    "tokens": [
+                      6512
+                    ]
+                  },
+                  {
+                    "span": {
+                      "end_ms": 10340,
+                      "start_ms": 10040
+                    },
+                    "text": " and",
+                    "tokens": [
+                      290
+                    ]
+                  },
+                  {
+                    "span": {
+                      "end_ms": 10620,
+                      "start_ms": 10340
+                    },
+                    "text": " tree",
+                    "tokens": [
+                      5509
+                    ]
+                  },
+                  {
+                    "span": {
+                      "end_ms": 10760,
+                      "start_ms": 10620
+                    },
+                    "text": ".",
+                    "tokens": [
+                      13
+                    ]
+                  }
+                ]
+              },
+              "analysis_span": {
+                "end_ms": 10890,
+                "start_ms": 3680
+              },
+              "boundary_tolerance_ms": 0,
+              "end_ms": 10890,
+              "final": true,
+              "start_ms": 3680,
+              "text": "For a while she lay in her chair in happy dreamy pleasure at son and bird and tree.",
+              "window_id": "noisy-head-only",
+              "word_end": 19,
+              "word_start": 0
+            },
+            "reason": "eof"
+          }
+        }
+      ],
+      "capacity_restored": true,
+      "closed": true,
+      "decode_attempt_count": 2,
+      "end_ms": 10890,
+      "end_sample": 174240,
+      "error": null,
+      "first_snapshot_unchanged": true,
+      "id": "head-only",
+      "pcm_sha256": "cc9317e38baca23065fe325b32d4c095532fc29ca4b60763c7ed9b6e9f2e39c9",
+      "same_lease": true,
+      "sample_count": 115360,
+      "session_version": 0,
+      "start_ms": 3680,
+      "start_sample": 58880,
+      "window": {
+        "admitted_elapsed_ns": 12602841778,
+        "call_index": 2,
+        "capacity_restored": true,
+        "closed": true,
+        "decoder_forwards": [
+          {
+            "phase": "decode",
+            "token_count": 1
+          },
+          {
+            "phase": "decode",
+            "token_count": 1
+          },
+          {
+            "phase": "decode",
+            "token_count": 1
+          },
+          {
+            "phase": "decode",
+            "token_count": 1
+          },
+          {
+            "phase": "decode",
+            "token_count": 1
+          },
+          {
+            "phase": "decode",
+            "token_count": 1
+          },
+          {
+            "phase": "decode",
+            "token_count": 1
+          },
+          {
+            "phase": "decode",
+            "token_count": 1
+          },
+          {
+            "phase": "decode",
+            "token_count": 1
+          },
+          {
+            "phase": "decode",
+            "token_count": 1
+          },
+          {
+            "phase": "decode",
+            "token_count": 1
+          },
+          {
+            "phase": "decode",
+            "token_count": 1
+          },
+          {
+            "phase": "decode",
+            "token_count": 1
+          },
+          {
+            "phase": "decode",
+            "token_count": 1
+          },
+          {
+            "phase": "decode",
+            "token_count": 1
+          },
+          {
+            "phase": "decode",
+            "token_count": 1
+          },
+          {
+            "phase": "decode",
+            "token_count": 1
+          },
+          {
+            "phase": "decode",
+            "token_count": 1
+          },
+          {
+            "phase": "decode",
+            "token_count": 1
+          },
+          {
+            "phase": "decode",
+            "token_count": 1
+          },
+          {
+            "phase": "decode",
+            "token_count": 1
+          },
+          {
+            "phase": "decode",
+            "token_count": 1
+          },
+          {
+            "phase": "decode",
+            "token_count": 1
+          },
+          {
+            "phase": "alignment",
+            "token_count": 23
+          },
+          {
+            "phase": "redecode",
+            "token_count": 10
+          },
+          {
+            "phase": "decode",
+            "token_count": 1
+          },
+          {
+            "phase": "decode",
+            "token_count": 1
+          },
+          {
+            "phase": "decode",
+            "token_count": 1
+          },
+          {
+            "phase": "decode",
+            "token_count": 1
+          },
+          {
+            "phase": "decode",
+            "token_count": 1
+          },
+          {
+            "phase": "decode",
+            "token_count": 1
+          },
+          {
+            "phase": "decode",
+            "token_count": 1
+          },
+          {
+            "phase": "decode",
+            "token_count": 1
+          },
+          {
+            "phase": "decode",
+            "token_count": 1
+          },
+          {
+            "phase": "decode",
+            "token_count": 1
+          },
+          {
+            "phase": "decode",
+            "token_count": 1
+          },
+          {
+            "phase": "decode",
+            "token_count": 1
+          },
+          {
+            "phase": "decode",
+            "token_count": 1
+          },
+          {
+            "phase": "decode",
+            "token_count": 1
+          },
+          {
+            "phase": "decode",
+            "token_count": 1
+          },
+          {
+            "phase": "decode",
+            "token_count": 1
+          },
+          {
+            "phase": "decode",
+            "token_count": 1
+          },
+          {
+            "phase": "decode",
+            "token_count": 1
+          },
+          {
+            "phase": "decode",
+            "token_count": 1
+          },
+          {
+            "phase": "decode",
+            "token_count": 1
+          },
+          {
+            "phase": "decode",
+            "token_count": 1
+          },
+          {
+            "phase": "decode",
+            "token_count": 1
+          },
+          {
+            "phase": "alignment",
+            "token_count": 23
+          }
+        ],
+        "driver_steps": 46,
+        "encoder_calls": [
+          {
+            "input_frames": 3000,
+            "phase": "decode",
+            "use_sdpa": null
+          },
+          {
+            "input_frames": 3000,
+            "phase": "alignment",
+            "use_sdpa": false
+          },
+          {
+            "input_frames": 3000,
+            "phase": "alignment",
+            "use_sdpa": false
+          }
+        ],
+        "end_ms": 10890,
+        "mel_shape": [
+          80,
+          3000
+        ],
+        "mel_wall_ns": 12078822,
+        "operation_wall_ns": {
+          "alignment": 43799724,
+          "close": 248212,
+          "decode": 221953716,
+          "redecode": 5134930,
+          "result": 1382884
+        },
+        "pcm_sha256": "cc9317e38baca23065fe325b32d4c095532fc29ca4b60763c7ed9b6e9f2e39c9",
+        "start_ms": 3680,
+        "window_id": "noisy-head-only"
+      }
+    }
+  ],
+  "claim_boundary": {
+    "cross_window_feature_reuse": false,
+    "full_stream_recovery": false,
+    "general_speedup": false,
+    "generalization_beyond_development": false,
+    "gpu_device_timing": false,
+    "noisy_stream_recovery": false,
+    "omission_free_recognition": false,
+    "physical_spending_cap": false,
+    "production_readiness": false,
+    "publication_authority": false,
+    "recognition_improvement": false,
+    "word_or_subtitle_latency": false
+  },
+  "control": {
+    "head_only_control": "not_registered",
+    "ignored_fields": [
+      "window_id"
+    ],
+    "mismatch_is_observation_not_launch_failure": true,
+    "retained_null_alignment_equal": false
+  },
+  "decode_attempt_count": 4,
+  "effective_identity": {
+    "alignment_mode": "legacy",
+    "attention": {
+      "alignment": "explicit-non-sdpa",
+      "decode": "backend-default-sdpa"
+    },
+    "backend_artifacts": {
+      "whisper/assets/gpt2.tiktoken": "306cd27f03c1a714eca7108e03d66b7dc042abe8c258b44c199a7ed9838dd930",
+      "whisper/assets/mel_filters.npz": "7450ae70723a5ef9d341e3cee628c7cb0177f36ce42c44b7ed2bf3325f0f6d4c",
+      "whisper/audio.py": "36ed287b2de3eaf40207cd2a44a8d45d57ea5c212a39df07401d4fcb4d5a5a1a",
+      "whisper/decoding.py": "9bd6138ebeae0cbd5dad911a31330c89e9402d8838b0ef1880877465cdde63e5",
+      "whisper/model.py": "7bba626157d964910c553cf13db3ea3302dbe2e9fc20966384cad16e3f805360",
+      "whisper/timing.py": "f68a969e3094690ad61346023e09727a79fb2f783049382774111cb62365e0fd",
+      "whisper/tokenizer.py": "3b48e361a7e95b4ec0356ca6d72bba635778aa10269153136ee7bc34cae30b85"
+    },
+    "checkpoint_sha256": "d3dd57d32accea0b295c96e26691aa14d8822fac7d9d27d5dc00b4ca2826dd03",
+    "decode_options": {
+      "beam_size": null,
+      "best_of": null,
+      "language": "en",
+      "length_penalty": null,
+      "max_initial_timestamp": 1.0,
+      "patience": null,
+      "prefix": null,
+      "prompt": null,
+      "sample_len": null,
+      "suppress_blank": true,
+      "suppress_tokens": "-1",
+      "task": "transcribe",
+      "temperature": 0,
+      "without_timestamps": false
+    },
+    "model_sha256": "sha256:8041a80119a588f542472da35e97d0372fce1d9709ed9874475e9c03deac5de6",
+    "numpy": "2.5.2",
+    "precision": "float32",
+    "preprocessing": "s16le-to-float32-div32768/pad-or-trim-480000/log-mel-80x3000/contiguous",
+    "reuse_decode_features": true,
+    "rng_seed": 7,
+    "tiktoken": "0.14.0",
+    "tokenizer_eot": 50256,
+    "torch": "2.6.0+cu124"
+  },
+  "elapsed_ns": 14931408500,
+  "error": null,
+  "experiment_id": "modal-noisy-context-prompt-v1",
+  "input": {
+    "accepted_sample": 174240,
+    "anchor": [
+      {
+        "span": {
+          "end_ms": 2360,
+          "start_ms": 2020
+        },
+        "text": " place",
+        "tokens": [
+          1295
+        ]
+      },
+      {
+        "span": {
+          "end_ms": 2720,
+          "start_ms": 2360
+        },
+        "text": " amidst",
+        "tokens": [
+          31095
+        ]
+      },
+      {
+        "span": {
+          "end_ms": 3000,
+          "start_ms": 2720
+        },
+        "text": " the",
+        "tokens": [
+          262
+        ]
+      },
+      {
+        "span": {
+          "end_ms": 3680,
+          "start_ms": 3000
+        },
+        "text": " tents",
+        "tokens": [
+          29804
+        ]
+      }
+    ],
+    "archive": {
+      "arm": "retry",
+      "cell_id": "noisy-prefix",
+      "path": "evidence/modal-t4-tiny-en-paced-context-retry-2026-09-06.json",
+      "sha256": "fa856cb4f0028109e7524b6e563fd008600d6fe84043d86c8f433784bdc2e3bf"
+    },
+    "archive_backend": {
+      "commit": "a0b9695ae1cc52bad4b8626fe9fb6ea4ac0ee650",
+      "tree": "c011d2563c26763b5f147026e6b18ef85bccd4fb"
+    },
+    "archived_alignment": {
+      "native": {
+        "analysis_span": {
+          "end_ms": 10890,
+          "start_ms": 1680
+        },
+        "end_ms": 10890,
+        "metadata": {
+          "avg_logprob": -0.6660538673400879,
+          "compression_ratio": 0.7894736842105263,
+          "language": "en",
+          "no_speech_prob": 0.06749986857175827,
+          "segments": [
+            {
+              "span": {
+                "end_ms": 4680,
+                "start_ms": 1680
+              },
+              "text": " to its place amidst the tents.",
+              "tokens": [
+                284,
+                663,
+                1295,
+                31095,
+                262,
+                29804,
+                13
+              ]
+            }
+          ],
+          "temperature": 0.0,
+          "timestamps_complete": true,
+          "tokens": [
+            50363,
+            284,
+            663,
+            1295,
+            31095,
+            262,
+            29804,
+            13,
+            50513
+          ]
+        },
+        "publication_segment_indices": null,
+        "start_ms": 1680,
+        "text": "to its place amidst the tents.",
+        "window_id": "eof-context-retry:noisy-prefix:retry:window:26880:174240:unit"
+      },
+      "words": [
+        {
+          "span": {
+            "end_ms": 1860,
+            "start_ms": 1680
+          },
+          "text": " to",
+          "tokens": [
+            284
+          ]
+        },
+        {
+          "span": {
+            "end_ms": 2020,
+            "start_ms": 1860
+          },
+          "text": " its",
+          "tokens": [
+            663
+          ]
+        },
+        {
+          "span": {
+            "end_ms": 2360,
+            "start_ms": 2020
+          },
+          "text": " place",
+          "tokens": [
+            1295
+          ]
+        },
+        {
+          "span": {
+            "end_ms": 2680,
+            "start_ms": 2360
+          },
+          "text": " amidst",
+          "tokens": [
+            31095
+          ]
+        },
+        {
+          "span": {
+            "end_ms": 3000,
+            "start_ms": 2680
+          },
+          "text": " the",
+          "tokens": [
+            262
+          ]
+        },
+        {
+          "span": {
+            "end_ms": 3600,
+            "start_ms": 3000
+          },
+          "text": " tents",
+          "tokens": [
+            29804
+          ]
+        },
+        {
+          "span": {
+            "end_ms": 10860,
+            "start_ms": 3600
+          },
+          "text": ".",
+          "tokens": [
+            13
+          ]
+        }
+      ]
+    },
+    "config": {
+      "coalesce_previews": false,
+      "endpointing": {
+        "frame_ms": 20,
+        "max_quiet_unit_ms": 10000,
+        "min_unit_ms": 1000,
+        "quiet_ms": 600,
+        "quiet_peak": 32
+      },
+      "eof_context_retry": true,
+      "holdback_ms": 2000,
+      "input_evidence": true,
+      "left_context_ms": 2000,
+      "max_buffer_ms": 40000,
+      "max_window_ms": 30000,
+      "preview_interval_ms": 2000,
+      "source_units": true,
+      "timestamp_tolerance_ms": 200,
+      "word_alignment": false,
+      "word_boundary_fallback": true,
+      "word_context_limit_ms": 0
+    },
+    "crops": [
+      {
+        "end_ms": 10890,
+        "end_sample": 174240,
+        "id": "retained",
+        "pcm_sha256": "dd383988af4dda18b46f0fc6d1035b1debd6b51a9c7ecb9e8eb54be0ff201283",
+        "sample_count": 147360,
+        "start_ms": 1680,
+        "start_sample": 26880
+      },
+      {
+        "end_ms": 10890,
+        "end_sample": 174240,
+        "id": "head-only",
+        "pcm_sha256": "cc9317e38baca23065fe325b32d4c095532fc29ca4b60763c7ed9b6e9f2e39c9",
+        "sample_count": 115360,
+        "start_ms": 3680,
+        "start_sample": 58880
+      }
+    ],
+    "decode_options": {
+      "beam_size": null,
+      "best_of": null,
+      "language": "en",
+      "length_penalty": null,
+      "max_initial_timestamp": 1.0,
+      "patience": null,
+      "prefix": null,
+      "prompt": null,
+      "sample_len": null,
+      "suppress_blank": true,
+      "suppress_tokens": "-1",
+      "task": "transcribe",
+      "temperature": 0,
+      "without_timestamps": false
+    },
+    "effective_identity": {
+      "alignment_mode": "legacy",
+      "attention": {
+        "alignment": "explicit-non-sdpa",
+        "decode": "backend-default-sdpa"
+      },
+      "backend_artifacts": {
+        "whisper/assets/gpt2.tiktoken": "306cd27f03c1a714eca7108e03d66b7dc042abe8c258b44c199a7ed9838dd930",
+        "whisper/assets/mel_filters.npz": "7450ae70723a5ef9d341e3cee628c7cb0177f36ce42c44b7ed2bf3325f0f6d4c",
+        "whisper/audio.py": "36ed287b2de3eaf40207cd2a44a8d45d57ea5c212a39df07401d4fcb4d5a5a1a",
+        "whisper/decoding.py": "9bd6138ebeae0cbd5dad911a31330c89e9402d8838b0ef1880877465cdde63e5",
+        "whisper/model.py": "7bba626157d964910c553cf13db3ea3302dbe2e9fc20966384cad16e3f805360",
+        "whisper/timing.py": "f68a969e3094690ad61346023e09727a79fb2f783049382774111cb62365e0fd",
+        "whisper/tokenizer.py": "3b48e361a7e95b4ec0356ca6d72bba635778aa10269153136ee7bc34cae30b85"
+      },
+      "checkpoint_sha256": "d3dd57d32accea0b295c96e26691aa14d8822fac7d9d27d5dc00b4ca2826dd03",
+      "decode_options": {
+        "beam_size": null,
+        "best_of": null,
+        "language": "en",
+        "length_penalty": null,
+        "max_initial_timestamp": 1.0,
+        "patience": null,
+        "prefix": null,
+        "prompt": null,
+        "sample_len": null,
+        "suppress_blank": true,
+        "suppress_tokens": "-1",
+        "task": "transcribe",
+        "temperature": 0,
+        "without_timestamps": false
+      },
+      "model_sha256": "sha256:8041a80119a588f542472da35e97d0372fce1d9709ed9874475e9c03deac5de6",
+      "numpy": "2.5.2",
+      "precision": "float32",
+      "preprocessing": "s16le-to-float32-div32768/pad-or-trim-480000/log-mel-80x3000/contiguous",
+      "rng_seed": 7,
+      "tiktoken": "0.14.0",
+      "torch": "2.6.0+cu124"
+    },
+    "head_sample": 58880,
+    "id": "noisy-prefix",
+    "pcm_sha256": "5276e641f14eaae484a8da6f916e44f9373239fbe70c70ba41a3f1a36f747108",
+    "prompt": "Concord returned to its place amidst the tents",
+    "prompt_commits": [
+      {
+        "end_sample": 32000,
+        "revision": 2,
+        "segment_id": "eof-context-retry:noisy-prefix:retry:segment:0",
+        "sequence_number": 3,
+        "start_sample": 0,
+        "text": "Concord returned to its"
+      },
+      {
+        "end_sample": 58880,
+        "revision": 2,
+        "segment_id": "eof-context-retry:noisy-prefix:retry:segment:1",
+        "sequence_number": 6,
+        "start_sample": 32000,
+        "text": "place amidst the tents"
+      }
+    ],
+    "prompt_sha256": "080c8ba7114738f218ef4756bdee968a2167e5615e1eaf68bd6a0a25cfedffab",
+    "recipe": {
+      "addition": "saturate to [-32768,32767]",
+      "amplitude_s16": 64,
+      "lcg_increment": 1013904223,
+      "lcg_modulus": 4294967296,
+      "lcg_multiplier": 1664525,
+      "noise_sign": "positive iff updated state bit31 is set",
+      "operation": "add-two-level-lcg-noise/v1",
+      "seed_u32": 24301,
+      "state_update": "update before each sample"
+    },
+    "reference_text": "CONCORD RETURNED TO ITS PLACE AMIDST THE TENTS FOR A WHILE SHE LAY IN HER CHAIR IN HAPPY DREAMY PLEASURE AT SUN AND BIRD AND TREE",
+    "retained_sample": 26880,
+    "sample_count": 174240,
+    "session_version": 2,
+    "source_case_id": "mixed-continuous-noise64",
+    "source_pcm_sha256": "b98ad164a8fbe46c1f7832154c1422b0733cda0ec8fc8e69bb0fc597fb4946e2",
+    "source_trace": {
+      "accepted_through_sample": 174240,
+      "action": "unresolved",
+      "analysis_end_sample": 174240,
+      "analysis_start_sample": 26880,
+      "anchor_diagnostic": {
+        "end_deltas_ms": [
+          0,
+          -40,
+          0,
+          -80
+        ],
+        "lexical_match_count": 1,
+        "observation": "current",
+        "start_deltas_ms": [
+          0,
+          0,
+          -40,
+          0
+        ],
+        "status": "matched",
+        "text_match_count": 1,
+        "timed_match_count": 1,
+        "word_end": 6,
+        "word_start": 2
+      },
+      "audio_evidence": {
+        "no_speech_prob": 0.06749986857175827,
+        "observation": {
+          "digital_silence": false,
+          "pcm_sha256": "dd383988af4dda18b46f0fc6d1035b1debd6b51a9c7ecb9e8eb54be0ff201283",
+          "sample_count": 147360
+        },
+        "reason": "no_lexical_text",
+        "state": "uncertain"
+      },
+      "committed_before_sample": 58880,
+      "decode_index": 6,
+      "eof": true,
+      "publication_span": null,
+      "reason": "no_lexical_text",
+      "result": {
+        "analysis_span": {
+          "end_ms": 10890,
+          "start_ms": 1680
+        },
+        "end_ms": 10890,
+        "metadata": {
+          "avg_logprob": -0.6660538673400879,
+          "compression_ratio": 0.7894736842105263,
+          "language": "en",
+          "no_speech_prob": 0.06749986857175827,
+          "segments": [
+            {
+              "span": {
+                "end_ms": 4680,
+                "start_ms": 1680
+              },
+              "text": " to its place amidst the tents.",
+              "tokens": [
+                284,
+                663,
+                1295,
+                31095,
+                262,
+                29804,
+                13
+              ]
+            }
+          ],
+          "temperature": 0.0,
+          "timestamps_complete": true,
+          "tokens": [
+            50363,
+            284,
+            663,
+            1295,
+            31095,
+            262,
+            29804,
+            13,
+            50513
+          ]
+        },
+        "publication_segment_indices": null,
+        "start_ms": 1680,
+        "text": "to its place amidst the tents.",
+        "window_id": "eof-context-retry:noisy-prefix:retry:window:26880:174240:unit"
+      },
+      "retained_from_sample": 26880,
+      "silence_publication": null,
+      "source_unit": {
+        "end_sample": 174240,
+        "endpoint": null,
+        "origin": "end_of_input",
+        "start_sample": 58880
+      },
+      "word_alignment": {
+        "native": {
+          "analysis_span": {
+            "end_ms": 10890,
+            "start_ms": 1680
+          },
+          "end_ms": 10890,
+          "metadata": {
+            "avg_logprob": -0.6660538673400879,
+            "compression_ratio": 0.7894736842105263,
+            "language": "en",
+            "no_speech_prob": 0.06749986857175827,
+            "segments": [
+              {
+                "span": {
+                  "end_ms": 4680,
+                  "start_ms": 1680
+                },
+                "text": " to its place amidst the tents.",
+                "tokens": [
+                  284,
+                  663,
+                  1295,
+                  31095,
+                  262,
+                  29804,
+                  13
+                ]
+              }
+            ],
+            "temperature": 0.0,
+            "timestamps_complete": true,
+            "tokens": [
+              50363,
+              284,
+              663,
+              1295,
+              31095,
+              262,
+              29804,
+              13,
+              50513
+            ]
+          },
+          "publication_segment_indices": null,
+          "start_ms": 1680,
+          "text": "to its place amidst the tents.",
+          "window_id": "eof-context-retry:noisy-prefix:retry:window:26880:174240:unit"
+        },
+        "words": [
+          {
+            "span": {
+              "end_ms": 1860,
+              "start_ms": 1680
+            },
+            "text": " to",
+            "tokens": [
+              284
+            ]
+          },
+          {
+            "span": {
+              "end_ms": 2020,
+              "start_ms": 1860
+            },
+            "text": " its",
+            "tokens": [
+              663
+            ]
+          },
+          {
+            "span": {
+              "end_ms": 2360,
+              "start_ms": 2020
+            },
+            "text": " place",
+            "tokens": [
+              1295
+            ]
+          },
+          {
+            "span": {
+              "end_ms": 2680,
+              "start_ms": 2360
+            },
+            "text": " amidst",
+            "tokens": [
+              31095
+            ]
+          },
+          {
+            "span": {
+              "end_ms": 3000,
+              "start_ms": 2680
+            },
+            "text": " the",
+            "tokens": [
+              262
+            ]
+          },
+          {
+            "span": {
+              "end_ms": 3600,
+              "start_ms": 3000
+            },
+            "text": " tents",
+            "tokens": [
+              29804
+            ]
+          },
+          {
+            "span": {
+              "end_ms": 10860,
+              "start_ms": 3600
+            },
+            "text": ".",
+            "tokens": [
+              13
+            ]
+          }
+        ]
+      },
+      "word_publication": null
+    }
+  },
+  "model": {
+    "checkpoint_sha256": "d3dd57d32accea0b295c96e26691aa14d8822fac7d9d27d5dc00b4ca2826dd03",
+    "final_sha256": "sha256:8041a80119a588f542472da35e97d0372fce1d9709ed9874475e9c03deac5de6",
+    "initial_sha256": "sha256:8041a80119a588f542472da35e97d0372fce1d9709ed9874475e9c03deac5de6",
+    "unchanged": true
+  },
+  "native_window_count": 2,
+  "qualified": false,
+  "schema_version": "1-diagnostic",
+  "scope": {
+    "alignment": "legacy",
+    "benchmark": false,
+    "borrowed_alignment_features": false,
+    "cleanup_reserve_seconds": 15,
+    "configured_retries": 0,
+    "cuda_lanes": 1,
+    "expected_alignment_encoder_forwards": 4,
+    "expected_decode_encoder_forwards": 2,
+    "expected_encoder_counts_assume_nonempty_text_tokens": true,
+    "expected_encoder_forwards": 6,
+    "frozen_anchor_unchanged": true,
+    "gpu": "T4",
+    "gpu_calls": 1,
+    "gpu_timeout_seconds": 90,
+    "head_only_has_no_join_authority": true,
+    "host_timings_include_instrumentation": true,
+    "independent_decode_alignment_encoder_forwards": 8,
+    "inference_owners": 1,
+    "max_containers": 1,
+    "max_decode_attempts": 4,
+    "max_driver_steps_per_attempt": 224,
+    "max_native_windows": 2,
+    "model": "tiny.en",
+    "model_download": false,
+    "nonpublishing": true,
+    "precision": "float32",
+    "reference_scores_are_posthoc": true,
+    "reference_used_for_selection": false,
+    "reuse_decode_features": true,
+    "rng_seed": 7,
+    "sample_len": null,
+    "warmup_windows": 0
+  },
+  "source": {
+    "registration_sha256": "2b644ee6c73d89cfcc90716a29810cb7ea2185e59d230ebb7779ce99776ecdca",
+    "snapshot": {
+      "commit": "c743530c67398ad18e1ebd442bfd85ef70dfd436",
+      "digest": "0badcd5eda5fb18ea25863139e834060d7f951d0322e841b1a3748a8e3958635",
+      "dirty_source_paths": [
+        "evidence/modal-t4-tiny-en-paced-context-retry-2026-09-06.json",
+        "infra/eof_context_retry_worker.py",
+        "infra/modal_acoustic_diagnostic.py",
+        "infra/modal_cuda_lane.py",
+        "infra/modal_eof_context_retry.py",
+        "infra/modal_noisy_context_prompt.py",
+        "infra/noisy_context_prompt_worker.py",
+        "src/whisper_runtime/adapters/__init__.py",
+        "src/whisper_runtime/adapters/_checkpoint_io.py",
+        "src/whisper_runtime/adapters/audio_endpoints.py",
+        "src/whisper_runtime/adapters/continuous_stream.py",
+        "src/whisper_runtime/adapters/native_whisper.py",
+        "src/whisper_runtime/adapters/stream_checkpoint.py",
+        "src/whisper_runtime/state.py",
+        "tools/test_modal_noisy_context_prompt.py",
+        "tools/test_noisy_context_prompt_worker.py"
+      ],
+      "files": [
+        {
+          "path": "evidence/modal-t4-tiny-en-paced-context-retry-2026-09-06.json",
+          "sha256": "fa856cb4f0028109e7524b6e563fd008600d6fe84043d86c8f433784bdc2e3bf",
+          "size_bytes": 2094659
+        },
+        {
+          "path": "experiments/modal-acoustic-diagnostic-v2.json",
+          "sha256": "479f768e4c20b3cbf05d3518bd7b9c974dc40b7a539b449d593b260bf46dbfde",
+          "size_bytes": 3432
+        },
+        {
+          "path": "experiments/modal-word-corpus-v1.json",
+          "sha256": "0de0f0af9ec7a9f949d636721f036ed457b4417aa9e12da3faf6de42f1ebf925",
+          "size_bytes": 13179
+        },
+        {
+          "path": "infra/eof_context_retry_worker.py",
+          "sha256": "eeb7b19fe8db74b4557bd6955a69dd76257c58c8c38b03a3ef0ce83145b33c2a",
+          "size_bytes": 17379
+        },
+        {
+          "path": "infra/modal_acoustic_diagnostic.py",
+          "sha256": "351dbca515ba4f228e293f86af3de4fdc1f64a583a22f2a058222ff6307bbc21",
+          "size_bytes": 31834
+        },
+        {
+          "path": "infra/modal_continuous_smoke.py",
+          "sha256": "5f88560cdacb0780e108cd9b222b95a361f5a8b1107b7db59da5b5db55596f70",
+          "size_bytes": 36793
+        },
+        {
+          "path": "infra/modal_cuda_lane.py",
+          "sha256": "4affb7ae3d35fd5e35be945ae9b6c37af96d69c505141ec9d0c7bb6491b20bfc",
+          "size_bytes": 16005
+        },
+        {
+          "path": "infra/modal_eof_context_retry.py",
+          "sha256": "7d49d1c9f34d2b5a6b3dffe449634690ce8f4b51cb9d104cd49f73c3544b4e2d",
+          "size_bytes": 21635
+        },
+        {
+          "path": "infra/modal_native_cuda_qualification.py",
+          "sha256": "178285839ced6820d1fb139fa328ff10f8dbbd13e771eb9be50920358316e151",
+          "size_bytes": 98278
+        },
+        {
+          "path": "infra/modal_noisy_context_prompt.py",
+          "sha256": "2b644ee6c73d89cfcc90716a29810cb7ea2185e59d230ebb7779ce99776ecdca",
+          "size_bytes": 20924
+        },
+        {
+          "path": "infra/modal_stream_boundary_diagnostic.py",
+          "sha256": "a6c3d4d848acbc9e481ae49ae638abe45dcce74704d129967fbf92b755e2faa2",
+          "size_bytes": 60265
+        },
+        {
+          "path": "infra/modal_word_corpus.py",
+          "sha256": "3d518a6d633f0a4fc4e1dd265343168dd44cba0051e64ba738bb62123973328c",
+          "size_bytes": 74872
+        },
+        {
+          "path": "infra/native_cuda_trace.py",
+          "sha256": "5d06a37cc0d7ab19a70d0c7ba6ae80a8b0b1cfea48ae22aff768489ba28e9811",
+          "size_bytes": 25789
+        },
+        {
+          "path": "infra/noisy_context_prompt_worker.py",
+          "sha256": "f4e4e6ca348fe9d4613e3a1fe3fc76d11f6e67c7344d172117464754dd3875d7",
+          "size_bytes": 15944
+        },
+        {
+          "path": "src/whisper_runtime/__init__.py",
+          "sha256": "6b6c549bf89264c59b8808cf5cba240599af10f0cd12610a859ff964d6fed2aa",
+          "size_bytes": 1533
+        },
+        {
+          "path": "src/whisper_runtime/adapters/__init__.py",
+          "sha256": "4725355d4c8a23b02a6ae965d425dea913f8eb64e656fbf522769f72003eb818",
+          "size_bytes": 4417
+        },
+        {
+          "path": "src/whisper_runtime/adapters/_checkpoint_io.py",
+          "sha256": "a8ed81408367b81de835dcc47c0c26ae624ef5c53ef23ff7867bef7ec3659812",
+          "size_bytes": 15271
+        },
+        {
+          "path": "src/whisper_runtime/adapters/_model_binding.py",
+          "sha256": "3040ef1cf63cb415fd6063d627a4b9464f0691cf05c02e8a72d94bdc28302707",
+          "size_bytes": 6664
+        },
+        {
+          "path": "src/whisper_runtime/adapters/audio_endpoints.py",
+          "sha256": "0baf28f038a2c1caafdbb80aba18b439a6120fa90acb1e07f11adda577d7e30d",
+          "size_bytes": 10472
+        },
+        {
+          "path": "src/whisper_runtime/adapters/audio_evidence.py",
+          "sha256": "14db21a12f4c8ea3da76bede0814ac2cd1422162165fd65db1bcf951de176184",
+          "size_bytes": 9094
+        },
+        {
+          "path": "src/whisper_runtime/adapters/continuous_stream.py",
+          "sha256": "d4dd4efe5b81e32cb84ff09deb456bda261b06a089a3570e350594fed6334769",
+          "size_bytes": 73517
+        },
+        {
+          "path": "src/whisper_runtime/adapters/legacy_whisper.py",
+          "sha256": "14b6f771c114238317d5118ba64c64334857e8e9da1d0f360baeeef48f3415e0",
+          "size_bytes": 33513
+        },
+        {
+          "path": "src/whisper_runtime/adapters/native_result.py",
+          "sha256": "3198b3996e7445449d7c74092ecef79d5a3615c1ebb48951c9bc7bbba3c18d92",
+          "size_bytes": 12573
+        },
+        {
+          "path": "src/whisper_runtime/adapters/native_stream.py",
+          "sha256": "01898983175014ac33e66c00be5bc92b96d0f300c0b20eb57a13cb4f384f0c39",
+          "size_bytes": 27068
+        },
+        {
+          "path": "src/whisper_runtime/adapters/native_whisper.py",
+          "sha256": "8a79243c2b08ad2a2d30fc362b5eb780aff9d86600289d97a1c209b78aef4859",
+          "size_bytes": 81773
+        },
+        {
+          "path": "src/whisper_runtime/adapters/paced_replay.py",
+          "sha256": "04628898703772f7c3f45c7de2f7fae4f772b5192bc48c813a625737bf2b377e",
+          "size_bytes": 11659
+        },
+        {
+          "path": "src/whisper_runtime/adapters/stream_checkpoint.py",
+          "sha256": "0431b24437de8a57fcb74748d9b0202570303c996d800ad7a0b0f64f373b7116",
+          "size_bytes": 11386
+        },
+        {
+          "path": "src/whisper_runtime/adapters/stream_policy.py",
+          "sha256": "452d71993ffd9395a36a8b6a68fbe34b53d90665cc13ad22058b49ca32b0f5a9",
+          "size_bytes": 13353
+        },
+        {
+          "path": "src/whisper_runtime/adapters/word_policy.py",
+          "sha256": "4613f263f0ca51a4a1d836cb5af7ea96bf1ea00c2c04b035e2272ca6d1b1a70d",
+          "size_bytes": 23897
+        },
+        {
+          "path": "src/whisper_runtime/errors.py",
+          "sha256": "87127fee36ff6706360f8ad82ea49a0dea870d9cd1831ceec3aeb31c2d8e89df",
+          "size_bytes": 2439
+        },
+        {
+          "path": "src/whisper_runtime/execution.py",
+          "sha256": "ea758adb9ea4204f29f5b444ecf54331d751b66e3b4373014179522a225cef44",
+          "size_bytes": 7533
+        },
+        {
+          "path": "src/whisper_runtime/model.py",
+          "sha256": "bfe66fb074d308447e94af78851db46a1819d291cad9fde742b28dcc0be629c0",
+          "size_bytes": 558
+        },
+        {
+          "path": "src/whisper_runtime/resources.py",
+          "sha256": "5beec172371839ab73bb3ca594b22460f37723f1347db74841a43a4a102716d5",
+          "size_bytes": 6384
+        },
+        {
+          "path": "src/whisper_runtime/state.py",
+          "sha256": "551fe2e2f2c70d570744ac843e8d7e167b09b8ebc8400dc417cc488f78f71db5",
+          "size_bytes": 15249
+        },
+        {
+          "path": "src/whisper_runtime/transaction.py",
+          "sha256": "d9e4622ff289b182d7a2b23ebc6243e661da9f9061484107b3da09feb1ed44e4",
+          "size_bytes": 37581
+        },
+        {
+          "path": "src/whisper_runtime/worker.py",
+          "sha256": "92dc3f3366903c4304aaa7919dc84d8252bbdd02279d876701159bf0e092e077",
+          "size_bytes": 11824
+        },
+        {
+          "path": "tools/analyze_stream_text_agreement.py",
+          "sha256": "f5ff71ef3b0dec465d550cd3b218ffbb08a61640f7ee31cae6a0693d750ca13a",
+          "size_bytes": 15098
+        },
+        {
+          "path": "tools/analyze_word_resolution.py",
+          "sha256": "6e04c5e4eff4513666fdcd30daa86a6004e2acc0551a8204759f8b990dc9f13b",
+          "size_bytes": 14825
+        },
+        {
+          "path": "tools/prepare_acoustic_cases.py",
+          "sha256": "8d2eaa65dc5a6ce57589d91efac2c773901ba59fe14a54cf9a5d1028ac62c79d",
+          "size_bytes": 11344
+        },
+        {
+          "path": "tools/prepare_speech_corpus.py",
+          "sha256": "7ee1771a5642cddc6679a368c354a856ee99bd22d2b9e90caee8fb273b6c12a8",
+          "size_bytes": 17184
+        },
+        {
+          "path": "tools/test_modal_noisy_context_prompt.py",
+          "sha256": "d1c2cdc5c1a11f2da66104f9f2c161cce6367752ff1a5576e1b1a5bfa0c0dc0a",
+          "size_bytes": 16310
+        },
+        {
+          "path": "tools/test_noisy_context_prompt_worker.py",
+          "sha256": "0b415f59b57dc455290b259635ec010d00f2319571eb6109348d7fef0f8a45b6",
+          "size_bytes": 12289
+        },
+        {
+          "path": "tools/word_anchor_reconciliation.py",
+          "sha256": "f983c9a952e45afb0f957bd845c6df7e7d160b9bcbfdb339f974b6ad25ed5aea",
+          "size_bytes": 23786
+        }
+      ],
+      "tracked_tree": "261cf8686b86921c3c2ba6aec27664743630c967"
+    }
+  },
+  "status": "completed",
+  "stop": null,
+  "worker": {
+    "function_call_id": "fc-01M1V6DDPGWMWRSV4XPA3VMAMM",
+    "function_call_id_sha256": "c7d8945a8d796724eb6b08444a563a79c5715ea4d700cd474bdc4ca05dcbc454",
+    "modal": "1.5.5"
+  }
+}

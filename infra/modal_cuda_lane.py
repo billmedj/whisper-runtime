@@ -366,8 +366,11 @@ def run(*, replay_id, confirm_paid_gpu=False, root=ROOT, producer=None):
             + "\n"
         )
     try:
+        limits = {}
+        if hasattr(producer, "GPU_TIMEOUT_SECONDS"):
+            limits["timeout_seconds"] = producer.GPU_TIMEOUT_SECONDS
         app, echo, execute = shared.resources(
-            expected, root, worker_module=producer.__name__
+            expected, root, worker_module=producer.__name__, **limits
         )
         with app.run(detach=False):
             probe = corpus.b._transport_probe_payload()

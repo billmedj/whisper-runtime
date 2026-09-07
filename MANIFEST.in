@@ -9,7 +9,24 @@ include pyproject.toml
 recursive-include conformance *.json *.md
 recursive-include constraints *.txt
 recursive-include docs *.md
+recursive-include docs/assets *.svg
 recursive-include evidence *.json *.jsonl *.md
+include evidence/modal-composed-features-2026-09-07.zip
+include evidence/modal-draft-features-2026-09-07.zip
+include evidence/modal-draft-holdout-2026-09-07.zip
+include evidence/modal-early-commit-2026-09-06.zip
+include evidence/modal-integrated-draft-2026-09-07.zip
+include evidence/modal-live-v01-2026-09-06.zip
+include evidence/modal-memory-diagnostic-2026-09-07.zip
+include evidence/modal-capacity-smoke-2026-09-07.zip
+include evidence/modal-source-clock-replay-2026-09-07.zip
+include evidence/modal-verified-startup-2026-09-07.zip
+include evidence/modal-low-latency-v2-2026-09-07.zip
+include evidence/cpu-source-clock-probe-2026-09-07.zip
+include evidence/modal-release-soak-attempt-2026-09-07.zip
+include evidence/native-draft-fresh-process-cpu-2026-09-07.zip
+include evidence/native-draft-integration-2026-09-07.zip
+include evidence/pre-release-format-20260907.zip
 recursive-include experiments *.json
 recursive-include examples *.py
 recursive-include infra *.py
@@ -19,5 +36,6 @@ recursive-include patches LICENSE *.md *.patch SHA256SUMS
 recursive-include tools *.py *.ps1
 include src/whisper_runtime/py.typed
 prune formal/lean/.lake
+prune artifacts
 global-exclude __pycache__
 global-exclude *.py[cod]

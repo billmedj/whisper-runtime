@@ -1,0 +1,544 @@
+{
+  "attribution_scope": "source-span containment only; crossing commits unattributable; no per-arm lexical score",
+  "cleanup": {
+    "ephemeral_context_exit_completed": true,
+    "proxy_token_deleted": true
+  },
+  "final_sha256": "a812324418461c27423bcf456a97507a154b063f176902aca59027784f5921c2",
+  "identity_scope": "input hashes cross-checked against DONE; PCM not rehashed; terminal raw hash preserved, not reverified",
+  "input_recipe": {
+    "arms": {
+      "main": {
+        "end_sample": 538560,
+        "reference": "CONCORD RETURNED TO ITS PLACE AMIDST THE TENTS FOR A WHILE SHE LAY IN HER CHAIR IN HAPPY DREAMY PLEASURE AT SUN AND BIRD AND TREE AND THE GARDENER'S BOY CHOPPED THE TREE INTO SMALL PIECES THERE WAS A WHOLE HEAP LYING THERE CONCORD RETURNED TO ITS PLACE AMIDST THE TENTS FOR A WHILE SHE LAY IN HER CHAIR IN HAPPY DREAMY PLEASURE AT SUN AND BIRD AND TREE AND THE GARDENER'S BOY CHOPPED THE TREE INTO SMALL PIECES THERE WAS A WHOLE HEAP LYING THERE",
+        "start_sample": 0
+      },
+      "noisy": {
+        "end_sample": 728800,
+        "reference": "CONCORD RETURNED TO ITS PLACE AMIDST THE TENTS FOR A WHILE SHE LAY IN HER CHAIR IN HAPPY DREAMY PLEASURE AT SUN AND BIRD AND TREE",
+        "start_sample": 554560
+      }
+    },
+    "config_overrides": {
+      "left_context_ms": 20000,
+      "word_context_limit_ms": 24000
+    },
+    "cycle_samples": 744800,
+    "echo_sha256": "45789f3b61e874e03392676405e8b7829c7186d1cd06e50ab2b5885b67740627",
+    "long_tail": "whole cycles then digital silence",
+    "main_case": "concatenated-no-added-pauses",
+    "main_sha256": "f170f383aaefea4057c1d9a8ee2b105f6192b9aaa5b2995a9f0c01fac86f21aa",
+    "max_smoke_word_edit_rate": 0.1,
+    "noisy_prefix_samples": 174240,
+    "noisy_prefix_sha256": "5276e641f14eaae484a8da6f916e44f9373239fbe70c70ba41a3f1a36f747108",
+    "noisy_source_case": "mixed-continuous-noise64",
+    "quality_calibration": "preregistered before GPU: CPU main6/88 unchanged baseline, noisy1/26; 10% fixed development gate, not held-out accuracy",
+    "recipe": "full33.66s registered concatenated speech + 1s silence + registered10.89s noisy prefix + 1s silence",
+    "short_only": true,
+    "smoke_reference": "CONCORD RETURNED TO ITS PLACE AMIDST THE TENTS FOR A WHILE SHE LAY IN HER CHAIR IN HAPPY DREAMY PLEASURE AT SUN AND BIRD AND TREE AND THE GARDENER'S BOY CHOPPED THE TREE INTO SMALL PIECES THERE WAS A WHOLE HEAP LYING THERE CONCORD RETURNED TO ITS PLACE AMIDST THE TENTS FOR A WHILE SHE LAY IN HER CHAIR IN HAPPY DREAMY PLEASURE AT SUN AND BIRD AND TREE AND THE GARDENER'S BOY CHOPPED THE TREE INTO SMALL PIECES THERE WAS A WHOLE HEAP LYING THERE CONCORD RETURNED TO ITS PLACE AMIDST THE TENTS FOR A WHILE SHE LAY IN HER CHAIR IN HAPPY DREAMY PLEASURE AT SUN AND BIRD AND TREE",
+    "stages": {
+      "smoke": {
+        "cycles": 1,
+        "sample_count": 744800,
+        "sha256": "b8902a2cfd5c45b8a17d6b489f6ddc752cf76d7b620efa27ec6e173ea6e2f826",
+        "stream_config": {
+          "coalesce_previews": false,
+          "defer_word_commits": true,
+          "endpointing": {
+            "frame_ms": 20,
+            "max_quiet_unit_ms": 10000,
+            "min_unit_ms": 1000,
+            "quiet_ms": 600,
+            "quiet_peak": 32
+          },
+          "eof_context_retry": true,
+          "holdback_ms": 2000,
+          "input_evidence": true,
+          "left_context_ms": 20000,
+          "max_buffer_ms": 40000,
+          "max_window_ms": 30000,
+          "preview_interval_ms": 2000,
+          "resolution_probe": false,
+          "source_units": true,
+          "timestamp_tolerance_ms": 200,
+          "word_alignment": false,
+          "word_boundary_fallback": true,
+          "word_context_limit_ms": 24000
+        },
+        "timeout_seconds": 190
+      }
+    }
+  },
+  "preflight_sha256": "7a65a3812486729cb5d64033c2b42e60e6d029d6641d633e0f69c0784e904acb",
+  "registered_qualified": false,
+  "registered_status": "completed-short",
+  "scope": "short-only supplemental audit; not full V0.1 qualification",
+  "source": {
+    "commit": "c743530c67398ad18e1ebd442bfd85ef70dfd436",
+    "digest": "8020fe939a04104cb3c93f14835be59edabf8304b4611502eddb249c150e6979",
+    "files": [
+      {
+        "path": "examples/pcm_live.py",
+        "sha256": "9ff5a97e6e577b79e8bb8bfd870d9aef1f61ecc253c50e046ee427f3524f3f55",
+        "size_bytes": 184
+      },
+      {
+        "path": "examples/pcm_websocket.py",
+        "sha256": "45935d17ad104f7e0634032dceeaeffdb231d27ca325781acbf9053d640e1822",
+        "size_bytes": 21575
+      },
+      {
+        "path": "examples/replay_websocket.py",
+        "sha256": "161bff065b436e0999fa861e8fa3df670ea7ceaccdc2c418d5ca81791e531c6e",
+        "size_bytes": 192
+      },
+      {
+        "path": "experiments/modal-acoustic-diagnostic-v2.json",
+        "sha256": "479f768e4c20b3cbf05d3518bd7b9c974dc40b7a539b449d593b260bf46dbfde",
+        "size_bytes": 3432
+      },
+      {
+        "path": "experiments/modal-network-replay-v1.json",
+        "sha256": "0ba526b81db7d906ab7f6f1e9e46744917a864a87aa28163cc15c119363e7c53",
+        "size_bytes": 1785
+      },
+      {
+        "path": "experiments/modal-word-corpus-v1.json",
+        "sha256": "0de0f0af9ec7a9f949d636721f036ed457b4417aa9e12da3faf6de42f1ebf925",
+        "size_bytes": 13179
+      },
+      {
+        "path": "infra/modal-native-cuda-image-inputs.lock",
+        "sha256": "380ae21d86dcb1f1b6a4190fc30178f3e123ebfc862a144a928cc32276f65787",
+        "size_bytes": 446
+      },
+      {
+        "path": "infra/modal_acoustic_diagnostic.py",
+        "sha256": "351dbca515ba4f228e293f86af3de4fdc1f64a583a22f2a058222ff6307bbc21",
+        "size_bytes": 31834
+      },
+      {
+        "path": "infra/modal_continuous_smoke.py",
+        "sha256": "5f88560cdacb0780e108cd9b222b95a361f5a8b1107b7db59da5b5db55596f70",
+        "size_bytes": 36793
+      },
+      {
+        "path": "infra/modal_live_qualification.py",
+        "sha256": "96d0033cb41162809fadbe8fe9c9b8ddb6bf9103036dcdc86511179697140e37",
+        "size_bytes": 38720
+      },
+      {
+        "path": "infra/modal_native_cuda_qualification.py",
+        "sha256": "178285839ced6820d1fb139fa328ff10f8dbbd13e771eb9be50920358316e151",
+        "size_bytes": 98278
+      },
+      {
+        "path": "infra/modal_network_replay.py",
+        "sha256": "3aef57b69acd9197819e1ff43deed013f245353c992575041ae1a019f53b22f1",
+        "size_bytes": 35200
+      },
+      {
+        "path": "infra/modal_stream_boundary_diagnostic.py",
+        "sha256": "a6c3d4d848acbc9e481ae49ae638abe45dcce74704d129967fbf92b755e2faa2",
+        "size_bytes": 60265
+      },
+      {
+        "path": "infra/modal_word_corpus.py",
+        "sha256": "3d518a6d633f0a4fc4e1dd265343168dd44cba0051e64ba738bb62123973328c",
+        "size_bytes": 74872
+      },
+      {
+        "path": "infra/native_cuda_trace.py",
+        "sha256": "5d06a37cc0d7ab19a70d0c7ba6ae80a8b0b1cfea48ae22aff768489ba28e9811",
+        "size_bytes": 25789
+      },
+      {
+        "path": "src/whisper_runtime/__init__.py",
+        "sha256": "6b6c549bf89264c59b8808cf5cba240599af10f0cd12610a859ff964d6fed2aa",
+        "size_bytes": 1533
+      },
+      {
+        "path": "src/whisper_runtime/adapters/__init__.py",
+        "sha256": "4725355d4c8a23b02a6ae965d425dea913f8eb64e656fbf522769f72003eb818",
+        "size_bytes": 4417
+      },
+      {
+        "path": "src/whisper_runtime/adapters/_checkpoint_io.py",
+        "sha256": "6255dd12fd9bab1a80827cde4783994f66a08f0329f2749f95268411d2f6fb22",
+        "size_bytes": 15317
+      },
+      {
+        "path": "src/whisper_runtime/adapters/_model_binding.py",
+        "sha256": "3040ef1cf63cb415fd6063d627a4b9464f0691cf05c02e8a72d94bdc28302707",
+        "size_bytes": 6664
+      },
+      {
+        "path": "src/whisper_runtime/adapters/audio_endpoints.py",
+        "sha256": "0baf28f038a2c1caafdbb80aba18b439a6120fa90acb1e07f11adda577d7e30d",
+        "size_bytes": 10472
+      },
+      {
+        "path": "src/whisper_runtime/adapters/audio_evidence.py",
+        "sha256": "14db21a12f4c8ea3da76bede0814ac2cd1422162165fd65db1bcf951de176184",
+        "size_bytes": 9094
+      },
+      {
+        "path": "src/whisper_runtime/adapters/continuity_witness.py",
+        "sha256": "97cc58905e2ae81dfc2ee72929bbb4244dd0676124aee5ac3427b83ddd3451c9",
+        "size_bytes": 8962
+      },
+      {
+        "path": "src/whisper_runtime/adapters/continuous_stream.py",
+        "sha256": "2e65c1ebc4bcb2697222627e9da7ed548200d7c28534cd55f4a05008a10f75e4",
+        "size_bytes": 77119
+      },
+      {
+        "path": "src/whisper_runtime/adapters/legacy_whisper.py",
+        "sha256": "14b6f771c114238317d5118ba64c64334857e8e9da1d0f360baeeef48f3415e0",
+        "size_bytes": 33513
+      },
+      {
+        "path": "src/whisper_runtime/adapters/native_result.py",
+        "sha256": "3198b3996e7445449d7c74092ecef79d5a3615c1ebb48951c9bc7bbba3c18d92",
+        "size_bytes": 12573
+      },
+      {
+        "path": "src/whisper_runtime/adapters/native_stream.py",
+        "sha256": "01898983175014ac33e66c00be5bc92b96d0f300c0b20eb57a13cb4f384f0c39",
+        "size_bytes": 27068
+      },
+      {
+        "path": "src/whisper_runtime/adapters/native_whisper.py",
+        "sha256": "8a79243c2b08ad2a2d30fc362b5eb780aff9d86600289d97a1c209b78aef4859",
+        "size_bytes": 81773
+      },
+      {
+        "path": "src/whisper_runtime/adapters/paced_replay.py",
+        "sha256": "04628898703772f7c3f45c7de2f7fae4f772b5192bc48c813a625737bf2b377e",
+        "size_bytes": 11659
+      },
+      {
+        "path": "src/whisper_runtime/adapters/stream_checkpoint.py",
+        "sha256": "8e7126289063933902f9d1a347d6a4b7c59e71b9180d1cf06af046f31ca8ea7d",
+        "size_bytes": 13159
+      },
+      {
+        "path": "src/whisper_runtime/adapters/stream_policy.py",
+        "sha256": "452d71993ffd9395a36a8b6a68fbe34b53d90665cc13ad22058b49ca32b0f5a9",
+        "size_bytes": 13353
+      },
+      {
+        "path": "src/whisper_runtime/adapters/word_policy.py",
+        "sha256": "4613f263f0ca51a4a1d836cb5af7ea96bf1ea00c2c04b035e2272ca6d1b1a70d",
+        "size_bytes": 23897
+      },
+      {
+        "path": "src/whisper_runtime/audio_source.py",
+        "sha256": "7d5884bc3f5b54574bc0781a2b566afc243fc04d7215f371b66b27a002d22931",
+        "size_bytes": 6737
+      },
+      {
+        "path": "src/whisper_runtime/captions.py",
+        "sha256": "0dfe44a66e8c6a39a1763a37234180049e60cdbede783c9d280ac29bce01cf07",
+        "size_bytes": 5957
+      },
+      {
+        "path": "src/whisper_runtime/cli.py",
+        "sha256": "68de73e642e9c061910efca3541550029cb4031fe09b99ac066dfca412204ecb",
+        "size_bytes": 14168
+      },
+      {
+        "path": "src/whisper_runtime/errors.py",
+        "sha256": "87127fee36ff6706360f8ad82ea49a0dea870d9cd1831ceec3aeb31c2d8e89df",
+        "size_bytes": 2439
+      },
+      {
+        "path": "src/whisper_runtime/execution.py",
+        "sha256": "ea758adb9ea4204f29f5b444ecf54331d751b66e3b4373014179522a225cef44",
+        "size_bytes": 7533
+      },
+      {
+        "path": "src/whisper_runtime/model.py",
+        "sha256": "bfe66fb074d308447e94af78851db46a1819d291cad9fde742b28dcc0be629c0",
+        "size_bytes": 558
+      },
+      {
+        "path": "src/whisper_runtime/native_setup.py",
+        "sha256": "bd5c9a3a2fd6a8d529429e8a44649910ccd33d388b221e0e7092b63dd71bf51e",
+        "size_bytes": 12155
+      },
+      {
+        "path": "src/whisper_runtime/pcm_live.py",
+        "sha256": "e897f6103198d25993e77eb804f4105491abf8c286d3f80f6b470ab3184f09be",
+        "size_bytes": 1382
+      },
+      {
+        "path": "src/whisper_runtime/remote.py",
+        "sha256": "40d6874ee12cd14cb01a12f192710bbb108be15d87be21ae48d976ba42bf5583",
+        "size_bytes": 5692
+      },
+      {
+        "path": "src/whisper_runtime/remote_transport.py",
+        "sha256": "3cd0d0933fdfd5b1cad95c2e702caff0cdfca928461955ac2f09bcead1ac8b30",
+        "size_bytes": 37357
+      },
+      {
+        "path": "src/whisper_runtime/resources.py",
+        "sha256": "5beec172371839ab73bb3ca594b22460f37723f1347db74841a43a4a102716d5",
+        "size_bytes": 6384
+      },
+      {
+        "path": "src/whisper_runtime/state.py",
+        "sha256": "551fe2e2f2c70d570744ac843e8d7e167b09b8ebc8400dc417cc488f78f71db5",
+        "size_bytes": 15249
+      },
+      {
+        "path": "src/whisper_runtime/transaction.py",
+        "sha256": "d9e4622ff289b182d7a2b23ebc6243e661da9f9061484107b3da09feb1ed44e4",
+        "size_bytes": 37581
+      },
+      {
+        "path": "src/whisper_runtime/worker.py",
+        "sha256": "92dc3f3366903c4304aaa7919dc84d8252bbdd02279d876701159bf0e092e077",
+        "size_bytes": 11824
+      },
+      {
+        "path": "tools/prepare_acoustic_cases.py",
+        "sha256": "8d2eaa65dc5a6ce57589d91efac2c773901ba59fe14a54cf9a5d1028ac62c79d",
+        "size_bytes": 11344
+      },
+      {
+        "path": "tools/prepare_speech_corpus.py",
+        "sha256": "7ee1771a5642cddc6679a368c354a856ee99bd22d2b9e90caee8fb273b6c12a8",
+        "size_bytes": 17184
+      },
+      {
+        "path": "tools/test_modal_live_qualification.py",
+        "sha256": "c093cc38a2557119c5f20a8edb1f0a4f83faf9a3c99dd3e2e9b2a3cd7fc11af0",
+        "size_bytes": 22785
+      }
+    ],
+    "source_policy": "exact reviewed working-byte overlay; not a clean-tree claim"
+  },
+  "stages": {
+    "smoke": {
+      "arrival_minus_source_end_ms": {
+        "max": 8780.1753,
+        "median": 3239.02405,
+        "min": 390.2154,
+        "p95": 8780.1753
+      },
+      "commits": [
+        {
+          "arrival_minus_source_end_ms": 8780.1753,
+          "attribution": {
+            "arm": "main",
+            "cycle": 1
+          },
+          "attribution_reason": null,
+          "end_sample": 71040,
+          "sequence_number": 6,
+          "start_sample": 0,
+          "text": "Concord returned to its place amidst the tents. For a while"
+        },
+        {
+          "arrival_minus_source_end_ms": 3901.6312,
+          "attribution": {
+            "arm": "main",
+            "cycle": 1
+          },
+          "attribution_reason": null,
+          "end_sample": 157760,
+          "sequence_number": 8,
+          "start_sample": 71040,
+          "text": "she lay in her chair in happy dreamy pleasure at son and bird and tree. And the"
+        },
+        {
+          "arrival_minus_source_end_ms": 3008.1015,
+          "attribution": {
+            "arm": "main",
+            "cycle": 1
+          },
+          "attribution_reason": null,
+          "end_sample": 187200,
+          "sequence_number": 10,
+          "start_sample": 157760,
+          "text": "gardeners boy chopped the"
+        },
+        {
+          "arrival_minus_source_end_ms": 3898.2585,
+          "attribution": {
+            "arm": "main",
+            "cycle": 1
+          },
+          "attribution_reason": null,
+          "end_sample": 215360,
+          "sequence_number": 12,
+          "start_sample": 187200,
+          "text": "tree into small pieces"
+        },
+        {
+          "arrival_minus_source_end_ms": 2813.4017,
+          "attribution": {
+            "arm": "main",
+            "cycle": 1
+          },
+          "attribution_reason": null,
+          "end_sample": 255360,
+          "sequence_number": 14,
+          "start_sample": 215360,
+          "text": ". There was a whole heap lying"
+        },
+        {
+          "arrival_minus_source_end_ms": 2822.9189,
+          "attribution": {
+            "arm": "main",
+            "cycle": 1
+          },
+          "attribution_reason": null,
+          "end_sample": 288000,
+          "sequence_number": 16,
+          "start_sample": 255360,
+          "text": "there. Concord"
+        },
+        {
+          "arrival_minus_source_end_ms": 3298.3858,
+          "attribution": {
+            "arm": "main",
+            "cycle": 1
+          },
+          "attribution_reason": null,
+          "end_sample": 317440,
+          "sequence_number": 18,
+          "start_sample": 288000,
+          "text": "returned to its place amidst the"
+        },
+        {
+          "arrival_minus_source_end_ms": 3347.4842,
+          "attribution": {
+            "arm": "main",
+            "cycle": 1
+          },
+          "attribution_reason": null,
+          "end_sample": 349760,
+          "sequence_number": 20,
+          "start_sample": 317440,
+          "text": "tents. For a while she lay in"
+        },
+        {
+          "arrival_minus_source_end_ms": 3290.5758,
+          "attribution": {
+            "arm": "main",
+            "cycle": 1
+          },
+          "attribution_reason": null,
+          "end_sample": 409600,
+          "sequence_number": 23,
+          "start_sample": 349760,
+          "text": "her chair in happy dreamy pleasure at son and bird and tree"
+        },
+        {
+          "arrival_minus_source_end_ms": 3187.4723,
+          "attribution": {
+            "arm": "main",
+            "cycle": 1
+          },
+          "attribution_reason": null,
+          "end_sample": 474560,
+          "sequence_number": 26,
+          "start_sample": 409600,
+          "text": ". And the gardeners boy chopped the tree into small"
+        },
+        {
+          "arrival_minus_source_end_ms": 950.7349,
+          "attribution": null,
+          "attribution_reason": "crosses_recipe_boundary",
+          "end_sample": 548160,
+          "sequence_number": 29,
+          "start_sample": 474560,
+          "text": "pieces. There was a whole heap lying there."
+        },
+        {
+          "arrival_minus_source_end_ms": 6222.7036,
+          "attribution": null,
+          "attribution_reason": "crosses_recipe_boundary",
+          "end_sample": 618560,
+          "sequence_number": 35,
+          "start_sample": 548160,
+          "text": "Concord returned to its place amidst the tents"
+        },
+        {
+          "arrival_minus_source_end_ms": 779.8447,
+          "attribution": null,
+          "attribution_reason": "crosses_recipe_boundary",
+          "end_sample": 738560,
+          "sequence_number": 37,
+          "start_sample": 618560,
+          "text": ". For a while she lay in her chair in happy dreamy pleasure at son and bird and tree."
+        },
+        {
+          "arrival_minus_source_end_ms": 390.2154,
+          "attribution": {
+            "arm": "silence",
+            "cycle": 1
+          },
+          "attribution_reason": null,
+          "end_sample": 744800,
+          "sequence_number": 39,
+          "start_sample": 738560,
+          "text": ""
+        }
+      ],
+      "committed_samples": 744800,
+      "committed_text": "Concord returned to its place amidst the tents. For a while she lay in her chair in happy dreamy pleasure at son and bird and tree. And the gardeners boy chopped the tree into small pieces . There was a whole heap lying there. Concord returned to its place amidst the tents. For a while she lay in her chair in happy dreamy pleasure at son and bird and tree . And the gardeners boy chopped the tree into small pieces. There was a whole heap lying there. Concord returned to its place amidst the tents . For a while she lay in her chair in happy dreamy pleasure at son and bird and tree.",
+      "event_count": 40,
+      "event_receipt": {
+        "path": "live-v01-smoke.events.jsonl",
+        "sha256": "f423d059d7b741c88c3c8c74ec3b4839f26b96a0620dd95b5bbc2bb7d521ad32",
+        "size_bytes": 14967
+      },
+      "final": true,
+      "input": {
+        "cycles": 1,
+        "sample_count": 744800,
+        "sha256": "b8902a2cfd5c45b8a17d6b489f6ddc752cf76d7b620efa27ec6e173ea6e2f826",
+        "stream_config": {
+          "coalesce_previews": false,
+          "defer_word_commits": true,
+          "endpointing": {
+            "frame_ms": 20,
+            "max_quiet_unit_ms": 10000,
+            "min_unit_ms": 1000,
+            "quiet_ms": 600,
+            "quiet_peak": 32
+          },
+          "eof_context_retry": true,
+          "holdback_ms": 2000,
+          "input_evidence": true,
+          "left_context_ms": 20000,
+          "max_buffer_ms": 40000,
+          "max_window_ms": 30000,
+          "preview_interval_ms": 2000,
+          "resolution_probe": false,
+          "source_units": true,
+          "timestamp_tolerance_ms": 200,
+          "word_alignment": false,
+          "word_boundary_fallback": true,
+          "word_context_limit_ms": 24000
+        },
+        "timeout_seconds": 190
+      },
+      "status": "complete",
+      "terminal_receipt_sha256_reported": "a53a0d8ace5aa754be0182f547e2ebd075d759dba699d0f49c9a2507509d1e50",
+      "unattributable_commits": 3,
+      "whole_stage_score": {
+        "exact_text_match": false,
+        "reference_word_count": 114,
+        "word_edit_distance": 7,
+        "word_edit_rate": 0.06140350877192982
+      }
+    }
+  },
+  "status": "complete-short",
+  "timing_scope": "client post-READY event arrival minus committed-source-end; includes scheduling/transport; NOT word latency"
+}

@@ -4,6 +4,7 @@ import datetime as dt
 import hashlib
 import json
 import math
+import os
 import re
 from pathlib import Path, PurePosixPath
 from typing import Any
@@ -86,15 +87,26 @@ SEGMENT_FIELDS = {
 
 
 def tracked_text_files() -> list[Path]:
-    return [
-        path
-        for path in ROOT.rglob("*")
-        if path.is_file()
-        and path.suffix.lower() in TEXT_SUFFIXES
-        and not any(
-            part in IGNORED_PARTS or part.startswith(".tmp-") for part in path.parts
+    files: list[Path] = []
+    for directory, directories, filenames in os.walk(ROOT):
+        current = Path(directory)
+        # Local run outputs are not publication evidence. Distribution checks
+        # separately forbid packaging artifacts; evidence/ remains fully checked.
+        directories[:] = sorted(
+            name
+            for name in directories
+            if name not in IGNORED_PARTS
+            and not name.startswith(".tmp-")
+            and not (current == ROOT and name == "artifacts")
         )
-    ]
+        files.extend(
+            current / name
+            for name in sorted(filenames)
+            if Path(name).suffix.lower() in TEXT_SUFFIXES
+            and name not in IGNORED_PARTS
+            and not name.startswith(".tmp-")
+        )
+    return files
 
 
 def contains_absolute_user_path(text: str) -> bool:

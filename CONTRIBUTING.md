@@ -1,6 +1,6 @@
 # Contributing
 
-Whisper Execution Runtime is a pre-alpha reference implementation. Changes must
+Whisper Execution Runtime is a developer alpha. Changes must
 keep the runtime contract small, testable, and independent of application
 policy.
 
@@ -30,8 +30,8 @@ python -m pip install -e ".[validation,quality]" "build>=1.2,<2"
 ```sh
 python -B -m unittest discover -s tests -v
 python -B -m unittest discover -s tools -p "test_*.py" -v
-python -m ruff check src tests tools examples
-python -m ruff format --check src tests tools examples
+python -m ruff check src tests tools examples infra
+python -m ruff format --check src tests tools examples infra
 python -m mypy src
 python -B tools/check_repository.py
 python -B examples/minimal_transaction.py

@@ -7,7 +7,7 @@ authors:
     given-names: "Bilal"
 repository-code: "https://github.com/billmedj/whisper-runtime"
 url: "https://github.com/billmedj/whisper-runtime"
-version: "0.1.0.dev0"
+version: "0.1.0a1"
 keywords:
   - "Whisper"
   - "speech recognition"

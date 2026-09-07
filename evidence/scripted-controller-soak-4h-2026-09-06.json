@@ -1,0 +1,140 @@
+{
+  "capacity_restored": true,
+  "chunk_ms": 200,
+  "commits": 7201,
+  "config": {
+    "coalesce_previews": false,
+    "defer_word_commits": true,
+    "endpointing": {
+      "frame_ms": 20,
+      "max_quiet_unit_ms": 10000,
+      "min_unit_ms": 1000,
+      "quiet_ms": 600,
+      "quiet_peak": 32
+    },
+    "eof_context_retry": true,
+    "holdback_ms": 2000,
+    "input_evidence": true,
+    "left_context_ms": 2000,
+    "max_buffer_ms": 40000,
+    "max_window_ms": 30000,
+    "preview_interval_ms": 2000,
+    "resolution_probe": false,
+    "source_units": true,
+    "timestamp_tolerance_ms": 200,
+    "word_alignment": false,
+    "word_boundary_fallback": true,
+    "word_context_limit_ms": 6000
+  },
+  "driver_steps": 21603,
+  "elapsed_seconds": 95.48242039998877,
+  "event_sha256": "59bd64781de9b69c6dfb1940973d464c95fe6fe311275232d7fedc648e8f68f4",
+  "events": 14403,
+  "final_events": 1,
+  "full_transcript_retained_by_harness": false,
+  "gpu_used": false,
+  "memory_checkpoints": [
+    {
+      "peak_rss_bytes": 32493568,
+      "rss_bytes": 32493568,
+      "source_ms": 0
+    },
+    {
+      "peak_rss_bytes": 33263616,
+      "rss_bytes": 33263616,
+      "source_ms": 900000
+    },
+    {
+      "peak_rss_bytes": 33271808,
+      "rss_bytes": 33271808,
+      "source_ms": 1800000
+    },
+    {
+      "peak_rss_bytes": 33271808,
+      "rss_bytes": 33271808,
+      "source_ms": 2700000
+    },
+    {
+      "peak_rss_bytes": 33275904,
+      "rss_bytes": 33275904,
+      "source_ms": 3600000
+    },
+    {
+      "peak_rss_bytes": 33275904,
+      "rss_bytes": 33275904,
+      "source_ms": 4500000
+    },
+    {
+      "peak_rss_bytes": 33275904,
+      "rss_bytes": 33275904,
+      "source_ms": 5400000
+    },
+    {
+      "peak_rss_bytes": 33280000,
+      "rss_bytes": 33280000,
+      "source_ms": 6300000
+    },
+    {
+      "peak_rss_bytes": 33280000,
+      "rss_bytes": 33280000,
+      "source_ms": 7200000
+    },
+    {
+      "peak_rss_bytes": 33280000,
+      "rss_bytes": 33280000,
+      "source_ms": 8100000
+    },
+    {
+      "peak_rss_bytes": 33280000,
+      "rss_bytes": 33280000,
+      "source_ms": 9000000
+    },
+    {
+      "peak_rss_bytes": 33280000,
+      "rss_bytes": 33218560,
+      "source_ms": 9900000
+    },
+    {
+      "peak_rss_bytes": 33280000,
+      "rss_bytes": 33230848,
+      "source_ms": 10800000
+    },
+    {
+      "peak_rss_bytes": 33280000,
+      "rss_bytes": 33234944,
+      "source_ms": 11700000
+    },
+    {
+      "peak_rss_bytes": 33300480,
+      "rss_bytes": 33300480,
+      "source_ms": 12600000
+    },
+    {
+      "peak_rss_bytes": 33300480,
+      "rss_bytes": 33300480,
+      "source_ms": 13500000
+    }
+  ],
+  "metrics": {
+    "accepted_chunks": 72000,
+    "accepted_samples": 230400000,
+    "buffered_samples": 0,
+    "committed_samples": 230400000,
+    "decode_count": 7201,
+    "decoded_source_samples": 230400000,
+    "events_emitted": 14403,
+    "peak_buffered_samples": 32000
+  },
+  "native_inference": false,
+  "process_memory": {
+    "peak_rss_bytes": 33366016,
+    "rss_bytes": 33366016
+  },
+  "profile": "word_boundary_quiet_endpoint_stream/v1+word_context/v1+eof_context_retry/v1+deferred_word_commit/v1+input_evidence/v1",
+  "real_audio": false,
+  "retained_publications": 4,
+  "schema_version": "1-accelerated-controller-soak",
+  "simulated_audio_seconds": 14400,
+  "source_clock_paced": false,
+  "status": "completed"
+}

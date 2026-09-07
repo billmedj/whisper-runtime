@@ -17,6 +17,7 @@ import time
 from dataclasses import asdict
 from typing import Any, Callable
 
+from examples.pcm_live import LIVE_PROTOCOL, LiveLimits
 from whisper_runtime.adapters import ContinuousTranscriptStream, StreamEventKind
 
 PROTOCOL = "pcm-websocket/v1"
@@ -54,6 +55,8 @@ def parse_control(text: object) -> dict[str, Any]:
 
 
 def validate_start(value: dict[str, Any]) -> None:
+    if value == {"type": "start", "protocol": LIVE_PROTOCOL}:
+        return
     if (
         set(value) != {"type", "protocol", "sample_count", "sha256"}
         or value["type"] != "start"
@@ -69,9 +72,20 @@ def validate_start(value: dict[str, Any]) -> None:
 class StreamConnection:
     """One native owner, thread-safe admission, and a bounded output mailbox."""
 
-    def __init__(self, factory: Factory, start: dict[str, Any]) -> None:
+    def __init__(
+        self,
+        factory: Factory,
+        start: dict[str, Any],
+        *,
+        live_limits: LiveLimits | None = None,
+    ) -> None:
         validate_start(start)
         self.factory, self.start = factory, start
+        self.live = start["protocol"] == LIVE_PROTOCOL
+        self.live_limits = live_limits or LiveLimits()
+        self.chunks = self.trace_count = self.event_count = self.final_count = 0
+        self.last_event_kind = None
+        self.partial_frame = False
         self.stop = threading.Event()
         self.finished = threading.Event()
         self.guard = threading.RLock()
@@ -117,12 +131,19 @@ class StreamConnection:
         with self.guard:
             if self.stream is None or self.stop.is_set() or self.eof:
                 raise ProtocolError("input_closed")
-            expected = min(CHUNK_SAMPLES, self.start["sample_count"] - self.samples)
+            expected = (
+                len(pcm) // 2
+                if self.live
+                else min(CHUNK_SAMPLES, self.start["sample_count"] - self.samples)
+            )
+            if self.live and self.samples + expected > self.live_limits.max_samples:
+                raise ProtocolError("input_limit")
             if (
                 expected <= 0
                 or len(pcm) != expected * 2
-                or sequence != len(self.admissions)
+                or sequence != self.chunks
                 or start_sample != self.samples
+                or (self.live and self.partial_frame)
             ):
                 raise ProtocolError("invalid_audio_sequence")
             received = self.elapsed()
@@ -130,15 +151,18 @@ class StreamConnection:
             accepted = self.elapsed()
             self.digest.update(pcm)
             self.samples += expected
-            self.admissions.append(
-                {
-                    "sequence_number": sequence,
-                    "start_sample": start_sample,
-                    "end_sample": self.samples,
-                    "received_ns": received,
-                    "accepted_ns": accepted,
-                }
-            )
+            self.chunks += 1
+            self.partial_frame = expected < CHUNK_SAMPLES
+            if not self.live:
+                self.admissions.append(
+                    {
+                        "sequence_number": sequence,
+                        "start_sample": start_sample,
+                        "end_sample": self.samples,
+                        "received_ns": received,
+                        "accepted_ns": accepted,
+                    }
+                )
 
     def finish(self, value: dict[str, Any]) -> None:
         with self.guard:
@@ -147,11 +171,12 @@ class StreamConnection:
                 or value["type"] != "eof"
                 or type(value["chunks"]) is not int
                 or type(value["samples"]) is not int
-                or value["chunks"] != len(self.admissions)
+                or value["chunks"] != self.chunks
                 or value["samples"] != self.samples
-                or self.samples != self.start["sample_count"]
+                or self.samples <= 0
+                or (not self.live and self.samples != self.start["sample_count"])
                 or value["sha256"] != self.digest.hexdigest()
-                or value["sha256"] != self.start["sha256"]
+                or (not self.live and value["sha256"] != self.start["sha256"])
                 or self.stream is None
                 or self.stop.is_set()
                 or self.eof
@@ -178,17 +203,28 @@ class StreamConnection:
             self._emit(
                 {
                     "type": "ready",
-                    "protocol": PROTOCOL,
+                    "protocol": self.start["protocol"],
                     "sample_rate_hz": 16_000,
                     "chunk_samples": CHUNK_SAMPLES,
+                    **({"limits": asdict(self.live_limits)} if self.live else {}),
                 }
             )
             last_trace = -1
-            for _ in range(100_000):
+            driver_steps = 0
+            while driver_steps < (
+                self.live_limits.max_driver_steps if self.live else 100_000
+            ):
                 if self.stop.is_set() or stream.done:
                     break
                 if self.eof_ns is not None and self.elapsed() - self.eof_ns > 15e9:
                     raise ProtocolError("drain_timeout")
+                if self.live:
+                    if self.elapsed() > self.live_limits.max_duration_s * 1e9:
+                        raise ProtocolError("session_timeout")
+                    if not stream.ready:
+                        self.stop.wait(0.002)
+                        continue
+                driver_steps += 1
                 batch = stream.step()
                 observed = self.elapsed()
                 messages = [
@@ -199,18 +235,31 @@ class StreamConnection:
                     }
                     for event in batch
                 ]
-                # Preserve the entire committed batch even if delivery saturates.
-                # The limit may retain one final native batch before stopping.
-                self.events.extend(messages)
-                if len(self.events) > MAX_EVENTS:
+                # v1 preserves its committed diagnostic batch even if delivery
+                # saturates. Live counts it, then fails explicitly on overflow.
+                self.event_count += len(messages)
+                self.final_count += sum(
+                    event.kind == StreamEventKind.FINAL for event in batch
+                )
+                if batch:
+                    self.last_event_kind = batch[-1].kind
+                if not self.live:
+                    self.events.extend(messages)
+                if self.event_count > (
+                    self.live_limits.max_events if self.live else MAX_EVENTS
+                ):
                     raise ProtocolError("event_limit")
                 for message in messages:
                     self._emit(message)
                 trace = stream.last_trace
                 if trace is not None and trace.decode_index != last_trace:
-                    if len(self.traces) >= MAX_EVENTS:
+                    self.trace_count += 1
+                    if self.trace_count > (
+                        self.live_limits.max_driver_steps if self.live else MAX_EVENTS
+                    ):
                         raise ProtocolError("trace_limit")
-                    self.traces.append(asdict(trace))
+                    if not self.live:
+                        self.traces.append(asdict(trace))
                     last_trace = trace.decode_index
                 if not batch and not stream.active:
                     self.stop.wait(0.002)
@@ -219,21 +268,17 @@ class StreamConnection:
                 complete = (
                     not self.stop.is_set()
                     and self.eof
-                    and self.samples == self.start["sample_count"]
+                    and (self.live or self.samples == self.start["sample_count"])
                     and stream.done
                     and stream.metrics.committed_samples == self.samples
-                    and sum(
-                        entry["event"]["kind"] == StreamEventKind.FINAL
-                        for entry in self.events
-                    )
-                    == 1
-                    and self.events[-1]["event"]["kind"] == StreamEventKind.FINAL
+                    and self.final_count == 1
+                    and self.last_event_kind == StreamEventKind.FINAL
                 )
             if not complete and self.error_code is None:
                 self.abort("incomplete_stream")
         except BaseException as error:
             self.original_error = error
-            if self.stream is not None:
+            if self.stream is not None and not self.live:
                 try:
                     trace = self.stream.last_trace
                     if (
@@ -278,7 +323,15 @@ class StreamConnection:
                 "metrics": {
                     **metrics,
                     "accepted_sha256": self.digest.hexdigest(),
-                    "trace_count": len(self.traces),
+                    "trace_count": self.trace_count if self.live else len(self.traces),
+                    **(
+                        {
+                            "accepted_chunks": self.chunks,
+                            "event_count": self.event_count,
+                        }
+                        if self.live
+                        else {}
+                    ),
                 },
                 "source_eof_received": self.eof,
                 "eof_received_ns": self.eof_ns,
@@ -288,6 +341,12 @@ class StreamConnection:
                 "decision_traces": self.traces,
                 "metadata": metadata,
             }
+            if self.live:
+                for key in ("admissions", "events", "decision_traces"):
+                    self.result.pop(key)
+                self.result.update(
+                    protocol=LIVE_PROTOCOL, diagnostic_history="not_retained"
+                )
             self.finished.set()
 
 
@@ -296,6 +355,7 @@ def make_app(
     *,
     expected_samples: int | None = None,
     expected_sha256: str | None = None,
+    live_limits: LiveLimits | None = None,
 ) -> Callable[..., Any]:
     """Create one-shot ASGI application; authentication belongs to the ingress.
 
@@ -305,6 +365,7 @@ def make_app(
     """
     used = False
     claim = threading.Lock()
+    live_limits = live_limits or LiveLimits()
 
     async def app(scope: dict[str, Any], receive: Any, send: Any) -> None:
         nonlocal used
@@ -345,12 +406,16 @@ def make_app(
                 raise ProtocolError("invalid_start")
             start = parse_control(message.get("text"))
             validate_start(start)
+            if start["protocol"] == LIVE_PROTOCOL and (
+                expected_samples is not None or expected_sha256 is not None
+            ):
+                raise ProtocolError("unregistered_source")
             if (
                 expected_samples is not None
                 and start["sample_count"] != expected_samples
             ) or (expected_sha256 is not None and start["sha256"] != expected_sha256):
                 raise ProtocolError("unregistered_source")
-            connection = StreamConnection(factory, start)
+            connection = StreamConnection(factory, start, live_limits=live_limits)
             ready = asyncio.Event()
             connection.thread.start()
 
@@ -363,7 +428,10 @@ def make_app(
                     item = (
                         await receive()
                         if connection.eof
-                        else await asyncio.wait_for(receive(), 10)
+                        else await asyncio.wait_for(
+                            receive(),
+                            live_limits.input_timeout_s if connection.live else 10,
+                        )
                     )
                     if item["type"] == "websocket.disconnect":
                         connection.abort("disconnected")
@@ -402,7 +470,9 @@ def make_app(
                 asyncio.create_task(output_loop()),
             ]
             done, _ = await asyncio.wait(
-                tasks, timeout=170, return_when=asyncio.FIRST_COMPLETED
+                tasks,
+                timeout=live_limits.max_duration_s if connection.live else 170,
+                return_when=asyncio.FIRST_COMPLETED,
             )
             if not done:
                 raise ProtocolError("connection_timeout")

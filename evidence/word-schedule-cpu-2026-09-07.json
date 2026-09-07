@@ -1,0 +1,1176 @@
+{
+  "schema_version": "1-word-schedule-cpu-screen",
+  "date": "2026-09-07",
+  "model": "tiny.en",
+  "precision": "float32",
+  "seed": 7,
+  "backend_tree": "32163d5cdb87babc1cd415a86cc5a58116c86a16",
+  "scope": "Three new bounded CPU cells compared with two archived CPU controls. Chunk admission is unpaced. Not a GPU, sustained-live or checkpoint qualification.",
+  "production_defaults_changed": false,
+  "quality_thresholds_changed": false,
+  "publication_policy_changed": false,
+  "scheduling_override": "min(existing fallback offset, origin + 8000 ms)",
+  "raw_receipt_directory": ".tmp-composed-native",
+  "reports": [
+    {
+      "file": "cpu-fast20k24k-reuse-continuous-140s.jsonl",
+      "raw_sha256": "885134a5dfd7f33eb61c7c80a73041d22ed2a782259b8355c6f1c0f97b2cb582",
+      "data": {
+        "case": "concatenated-no-added-pauses",
+        "config": {
+          "preview_interval_ms": 2000,
+          "max_window_ms": 30000,
+          "max_buffer_ms": 40000,
+          "holdback_ms": 2000,
+          "timestamp_tolerance_ms": 200,
+          "left_context_ms": 20000,
+          "coalesce_previews": false,
+          "word_alignment": false,
+          "input_evidence": true,
+          "source_units": true,
+          "endpointing": {
+            "frame_ms": 20,
+            "quiet_ms": 600,
+            "min_unit_ms": 1000,
+            "max_quiet_unit_ms": 10000,
+            "quiet_peak": 32
+          },
+          "word_boundary_fallback": true,
+          "word_context_limit_ms": 24000,
+          "resolution_probe": false,
+          "eof_context_retry": true,
+          "defer_word_commits": true
+        },
+        "pcm_sha256": "f170f383aaefea4057c1d9a8ee2b105f6192b9aaa5b2995a9f0c01fac86f21aa",
+        "input_samples": 538560,
+        "done": true,
+        "error": null,
+        "timed_out": false,
+        "text": "Concord returned to its place amidst the tents. For a while she lay in her chair in happy dreamy pleasure at son and bird and tree. And the gardeners boy chopped the tree into small pieces . There was a whole heap lying there. Concord returned to its place amidst the tents. For a while she lay in her chair in happy dreamy pleasure at son and bird and tree . And the gardeners boy chopped the tree into small pieces. There was a whole heap lying there.",
+        "word_edits": 6,
+        "reference_word_count": 88,
+        "final_count": 1,
+        "commit_source_ends": [
+          71040,
+          157760,
+          187200,
+          215360,
+          255360,
+          288000,
+          317440,
+          349760,
+          409600,
+          474560,
+          538560
+        ],
+        "commit_input_samples": [
+          160000,
+          192000,
+          224000,
+          256000,
+          288000,
+          320000,
+          352000,
+          384000,
+          448000,
+          512000,
+          538560
+        ],
+        "metrics": {
+          "accepted_samples": 538560,
+          "committed_samples": 538560,
+          "buffered_samples": 0,
+          "peak_buffered_samples": 427840,
+          "decode_count": 17,
+          "decoded_source_samples": 4508800,
+          "events_emitted": 29,
+          "accepted_chunks": 17
+        },
+        "capacity_restored": true,
+        "queue_depth_after_close": 0,
+        "budget_lease_count_after_close": 0,
+        "native_windows": 17,
+        "all_windows_closed": true,
+        "all_window_capacity_restored": true,
+        "forward_counters": {
+          "encoder_forwards": 17,
+          "encoder_input_frames": 51000,
+          "decoder_forwards": 1009,
+          "decoder_input_frames": 1513500,
+          "decoder_input_tokens": 1844,
+          "hooks_removed": true
+        },
+        "source_paced": false,
+        "gpu_used": false,
+        "experiment": null,
+        "traces": [
+          {
+            "decode_index": 1,
+            "start_sample": 0,
+            "end_sample": 32000,
+            "reason": "word_commit_deferred",
+            "action": "preview",
+            "alignment_prepared": false,
+            "text": "Concourt return to its place."
+          },
+          {
+            "decode_index": 2,
+            "start_sample": 0,
+            "end_sample": 64000,
+            "reason": "word_commit_deferred",
+            "action": "preview",
+            "alignment_prepared": false,
+            "text": "Concord returned to its place amidst the tents."
+          },
+          {
+            "decode_index": 3,
+            "start_sample": 0,
+            "end_sample": 96000,
+            "reason": "word_commit_deferred",
+            "action": "preview",
+            "alignment_prepared": false,
+            "text": "Concord returned to its place amidst the tents. For a while, she lay in her chair in happy"
+          },
+          {
+            "decode_index": 4,
+            "start_sample": 0,
+            "end_sample": 128000,
+            "reason": "incomplete",
+            "action": "preview",
+            "alignment_prepared": true,
+            "text": "Concord returned to its place amidst the tents. For a while, she lay in her chair in happy, dreamy pleasure at son and bird."
+          },
+          {
+            "decode_index": 5,
+            "start_sample": 0,
+            "end_sample": 160000,
+            "reason": "candidate",
+            "action": "commit",
+            "alignment_prepared": true,
+            "text": "Concord returned to its place amidst the tents. For a while she lay in her chair in happy dreamy pleasure at son and bird and tree. And the guard"
+          },
+          {
+            "decode_index": 6,
+            "start_sample": 0,
+            "end_sample": 192000,
+            "reason": "candidate",
+            "action": "commit",
+            "alignment_prepared": true,
+            "text": "Concord returned to its place amidst the tents. For a while she lay in her chair in happy dreamy pleasure at son and bird and tree. And the gardeners boy chopped the tree."
+          },
+          {
+            "decode_index": 7,
+            "start_sample": 0,
+            "end_sample": 224000,
+            "reason": "candidate",
+            "action": "commit",
+            "alignment_prepared": true,
+            "text": "Concord returned to its place amidst the tents. For a while she lay in her chair in happy dreamy pleasure at son and bird and tree. And the gardeners boy chopped the tree into small pieces."
+          },
+          {
+            "decode_index": 8,
+            "start_sample": 0,
+            "end_sample": 256000,
+            "reason": "candidate",
+            "action": "commit",
+            "alignment_prepared": true,
+            "text": "Concord returned to its place amidst the tents. For a while she lay in her chair in happy dreamy pleasure at son and bird and tree. And the gardeners boy chopped the tree into small pieces. There was a whole heap lying there."
+          },
+          {
+            "decode_index": 9,
+            "start_sample": 0,
+            "end_sample": 288000,
+            "reason": "candidate",
+            "action": "commit",
+            "alignment_prepared": true,
+            "text": "Concord returned to its place amidst the tents. For a while she lay in her chair in happy dreamy pleasure at son and bird and tree. And the gardeners boy chopped the tree into small pieces. There was a whole heap lying there. Concord was a very good place to go."
+          },
+          {
+            "decode_index": 10,
+            "start_sample": 0,
+            "end_sample": 320000,
+            "reason": "candidate",
+            "action": "commit",
+            "alignment_prepared": true,
+            "text": "Concord returned to its place amidst the tents. For a while she lay in her chair in happy dreamy pleasure at son and bird and tree. And the gardeners boy chopped the tree into small pieces. There was a whole heap lying there. Concord returned to its place amidst the tents."
+          },
+          {
+            "decode_index": 11,
+            "start_sample": 0,
+            "end_sample": 352000,
+            "reason": "candidate",
+            "action": "commit",
+            "alignment_prepared": true,
+            "text": "Concord returned to its place amidst the tents. For a while she lay in her chair in happy dreamy pleasure at son and bird and tree. And the gardeners boy chopped the tree into small pieces. There was a whole heap lying there. Concord returned to its place amidst the tents. For a while she lay in her"
+          },
+          {
+            "decode_index": 12,
+            "start_sample": 0,
+            "end_sample": 384000,
+            "reason": "candidate",
+            "action": "commit",
+            "alignment_prepared": true,
+            "text": "Concord returned to its place amidst the tents. For a while she lay in her chair in happy dreamy pleasure at son and bird and tree. And the gardeners boy chopped the tree into small pieces. There was a whole heap lying there. Concord returned to its place amidst the tents. For a while she lay in her chair in happy dreamy pleasure at"
+          },
+          {
+            "decode_index": 13,
+            "start_sample": 29760,
+            "end_sample": 416000,
+            "reason": "incomplete",
+            "action": "preview",
+            "alignment_prepared": true,
+            "text": "place amidst the tents. For a while she lay in her chair in happy dreamy pleasure at son and bird and tree. And the gardeners boy chopped the tree into small pieces. There was a whole heap lying there. Concord returned to its place amidst the tents. For a while she lay in her chair in happy dreamy pleasure at son and bird and tree."
+          },
+          {
+            "decode_index": 14,
+            "start_sample": 29760,
+            "end_sample": 448000,
+            "reason": "candidate",
+            "action": "commit",
+            "alignment_prepared": true,
+            "text": "place amidst the tents. For a while she lay in her chair in happy dreamy pleasure at son and bird and tree. And the gardeners boy chopped the tree into small pieces. There was a whole heap lying there. Concord returned to its place amidst the tents. For a while she lay in her chair in happy dreamy pleasure at son and bird and tree. And the"
+          },
+          {
+            "decode_index": 15,
+            "start_sample": 84160,
+            "end_sample": 480000,
+            "reason": "incomplete",
+            "action": "preview",
+            "alignment_prepared": true,
+            "text": "and happy dreamy pleasure at son and bird and tree. And the gardeners boy chopped the tree into small pieces. There was a whole heap lying there. Concord returned to its place amidst the tents. For a while she lay in her chair in happy dreamy pleasure at son and bird and tree. And the gardeners boy chopped the tree into small pieces."
+          },
+          {
+            "decode_index": 16,
+            "start_sample": 84160,
+            "end_sample": 512000,
+            "reason": "candidate",
+            "action": "commit",
+            "alignment_prepared": true,
+            "text": "There in happy dreamy pleasure at son and bird and tree. And the gardeners boy chopped the tree into small pieces. There was a whole heap lying there. Concord returned to its place amidst the tents. For a while she lay in her chair in happy dreamy pleasure at son and bird and tree. And the gardeners boy chopped the tree into small pieces."
+          },
+          {
+            "decode_index": 17,
+            "start_sample": 153920,
+            "end_sample": 538560,
+            "reason": "source_unit",
+            "action": "commit",
+            "alignment_prepared": true,
+            "text": "The gardeners boy chopped the tree into small pieces. There was a whole heap lying there. Concord returned to its place amidst the tents. For a while she lay in her chair in happy dreamy pleasure at son and bird and tree. And the gardeners boy chopped the tree into small pieces. There was a whole heap lying there."
+          }
+        ],
+        "commit_admission_times_seconds": [
+          10,
+          12,
+          14,
+          16,
+          18,
+          20,
+          22,
+          24,
+          28,
+          32,
+          33.66
+        ],
+        "maximum_between_commit_admission_gap_seconds": 4
+      }
+    },
+    {
+      "file": "cpu-fast20k24k-reuse.jsonl",
+      "raw_sha256": "a05c9967f19b924ffab74b510fbfc2d29a461ce12c5ad9899188ad4208460f35",
+      "data": {
+        "case": "noisy-prefix",
+        "config": {
+          "preview_interval_ms": 2000,
+          "max_window_ms": 30000,
+          "max_buffer_ms": 40000,
+          "holdback_ms": 2000,
+          "timestamp_tolerance_ms": 200,
+          "left_context_ms": 20000,
+          "coalesce_previews": false,
+          "word_alignment": false,
+          "input_evidence": true,
+          "source_units": true,
+          "endpointing": {
+            "frame_ms": 20,
+            "quiet_ms": 600,
+            "min_unit_ms": 1000,
+            "max_quiet_unit_ms": 10000,
+            "quiet_peak": 32
+          },
+          "word_boundary_fallback": true,
+          "word_context_limit_ms": 24000,
+          "resolution_probe": false,
+          "eof_context_retry": true,
+          "defer_word_commits": true
+        },
+        "pcm_sha256": "5276e641f14eaae484a8da6f916e44f9373239fbe70c70ba41a3f1a36f747108",
+        "input_samples": 174240,
+        "done": true,
+        "error": null,
+        "timed_out": null,
+        "text": "Concord returned to its place amidst the tents. For a while she lay in her chair in happy dreamy pleasure at son and bird and tree.",
+        "word_edits": 1,
+        "reference_word_count": 26,
+        "final_count": 1,
+        "commit_source_ends": [
+          102720,
+          174240
+        ],
+        "commit_input_samples": [
+          160000,
+          174240
+        ],
+        "metrics": {
+          "accepted_samples": 174240,
+          "committed_samples": 174240,
+          "buffered_samples": 0,
+          "peak_buffered_samples": 174240,
+          "decode_count": 7,
+          "decoded_source_samples": 769600,
+          "events_emitted": 9,
+          "accepted_chunks": 6
+        },
+        "capacity_restored": true,
+        "queue_depth_after_close": 0,
+        "budget_lease_count_after_close": 0,
+        "native_windows": 7,
+        "all_windows_closed": true,
+        "all_window_capacity_restored": true,
+        "forward_counters": {
+          "encoder_forwards": 7,
+          "encoder_input_frames": 21000,
+          "decoder_forwards": 153,
+          "decoder_input_frames": 229500,
+          "decoder_input_tokens": 259,
+          "hooks_removed": true
+        },
+        "source_paced": false,
+        "gpu_used": false,
+        "experiment": null,
+        "traces": [
+          {
+            "decode_index": 1,
+            "start_sample": 0,
+            "end_sample": 32000,
+            "reason": "word_commit_deferred",
+            "action": "preview",
+            "alignment_prepared": false,
+            "text": "Concord returned to its place."
+          },
+          {
+            "decode_index": 2,
+            "start_sample": 0,
+            "end_sample": 64000,
+            "reason": "word_commit_deferred",
+            "action": "preview",
+            "alignment_prepared": false,
+            "text": "Concord returned to its place amidst the tents."
+          },
+          {
+            "decode_index": 3,
+            "start_sample": 0,
+            "end_sample": 96000,
+            "reason": "word_commit_deferred",
+            "action": "preview",
+            "alignment_prepared": false,
+            "text": "Concord returned to its place amidst the tents."
+          },
+          {
+            "decode_index": 4,
+            "start_sample": 0,
+            "end_sample": 128000,
+            "reason": "incomplete",
+            "action": "preview",
+            "alignment_prepared": true,
+            "text": "Concord returned to its place amidst the tents. For a while, she lay in her chair in happy"
+          },
+          {
+            "decode_index": 5,
+            "start_sample": 0,
+            "end_sample": 160000,
+            "reason": "candidate",
+            "action": "commit",
+            "alignment_prepared": true,
+            "text": "Concord returned to its place amidst the tents. For a while she lay in her chair in happy dreamy pleasure at Son and Bird."
+          },
+          {
+            "decode_index": 6,
+            "start_sample": 0,
+            "end_sample": 174240,
+            "reason": "anchor_missing",
+            "action": "unresolved",
+            "alignment_prepared": true,
+            "text": "Concord returned to its place amidst the tents. For a while, she lay in her chair in happy, dreamy pleasure at son and bird and tree."
+          },
+          {
+            "decode_index": 7,
+            "start_sample": 58880,
+            "end_sample": 174240,
+            "reason": "source_unit",
+            "action": "commit",
+            "alignment_prepared": true,
+            "text": "For a while she lay in her chair in happy dreamy pleasure at son and bird and tree."
+          }
+        ],
+        "commit_admission_times_seconds": [
+          10,
+          10.89
+        ],
+        "maximum_between_commit_admission_gap_seconds": 0.8900000000000006
+      }
+    },
+    {
+      "file": "cpu-early8k-context2k-v1.jsonl",
+      "raw_sha256": "69b03d147d03fdd69d04d9f6f4ae4b72c1e277850284cda9c10066dd6365c2ab",
+      "data": {
+        "case": "concatenated-no-added-pauses",
+        "config": {
+          "preview_interval_ms": 2000,
+          "max_window_ms": 30000,
+          "max_buffer_ms": 40000,
+          "holdback_ms": 2000,
+          "timestamp_tolerance_ms": 200,
+          "left_context_ms": 2000,
+          "coalesce_previews": false,
+          "word_alignment": false,
+          "input_evidence": true,
+          "source_units": true,
+          "endpointing": {
+            "frame_ms": 20,
+            "quiet_ms": 600,
+            "min_unit_ms": 1000,
+            "max_quiet_unit_ms": 10000,
+            "quiet_peak": 32
+          },
+          "word_boundary_fallback": true,
+          "word_context_limit_ms": 6000,
+          "resolution_probe": false,
+          "eof_context_retry": true,
+          "defer_word_commits": true
+        },
+        "pcm_sha256": "f170f383aaefea4057c1d9a8ee2b105f6192b9aaa5b2995a9f0c01fac86f21aa",
+        "input_samples": 538560,
+        "done": true,
+        "error": null,
+        "timed_out": false,
+        "text": "Concord returned to its place amidst the tents. For a while she lay in her chair in happy dreamy pleasure at son and bird and tree. And the gardeners boy chopped the tree into small pieces. There was a whole heap lying there. Concord returned to its place amidst the tents . For a while she lay in her chair in happy dreamy pleasure at son and bird and tree. And the gardeners boy chopped the tree into small pieces. There was a whole heap lying there.",
+        "word_edits": 6,
+        "reference_word_count": 88,
+        "final_count": 1,
+        "commit_source_ends": [
+          71040,
+          323200,
+          474560,
+          538560
+        ],
+        "commit_input_samples": [
+          160000,
+          384000,
+          512000,
+          538560
+        ],
+        "metrics": {
+          "accepted_samples": 538560,
+          "committed_samples": 538560,
+          "buffered_samples": 0,
+          "peak_buffered_samples": 346560,
+          "decode_count": 18,
+          "decoded_source_samples": 2957120,
+          "events_emitted": 23,
+          "accepted_chunks": 17
+        },
+        "capacity_restored": true,
+        "queue_depth_after_close": 0,
+        "budget_lease_count_after_close": 0,
+        "native_windows": 18,
+        "all_windows_closed": true,
+        "all_window_capacity_restored": true,
+        "forward_counters": {
+          "encoder_forwards": 18,
+          "encoder_input_frames": 54000,
+          "decoder_forwards": 550,
+          "decoder_input_frames": 825000,
+          "decoder_input_tokens": 986,
+          "hooks_removed": true
+        },
+        "source_paced": false,
+        "gpu_used": false,
+        "experiment": {
+          "first_word_check_ms": 8000,
+          "context_selection_unchanged": true,
+          "production_defaults_changed": false,
+          "checkpoint_qualification": false,
+          "tool_sha256": "392bbc0c195726a50e138fc308f956130df0bd0109d0c7621a4c6c0a8a8e4bee"
+        },
+        "traces": [
+          {
+            "decode_index": 1,
+            "start_sample": 0,
+            "end_sample": 32000,
+            "reason": "word_commit_deferred",
+            "action": "preview",
+            "alignment_prepared": false,
+            "text": "Concourt return to its place."
+          },
+          {
+            "decode_index": 2,
+            "start_sample": 0,
+            "end_sample": 64000,
+            "reason": "word_commit_deferred",
+            "action": "preview",
+            "alignment_prepared": false,
+            "text": "Concord returned to its place amidst the tents."
+          },
+          {
+            "decode_index": 3,
+            "start_sample": 0,
+            "end_sample": 96000,
+            "reason": "word_commit_deferred",
+            "action": "preview",
+            "alignment_prepared": false,
+            "text": "Concord returned to its place amidst the tents. For a while, she lay in her chair in happy"
+          },
+          {
+            "decode_index": 4,
+            "start_sample": 0,
+            "end_sample": 128000,
+            "reason": "incomplete",
+            "action": "preview",
+            "alignment_prepared": true,
+            "text": "Concord returned to its place amidst the tents. For a while, she lay in her chair in happy, dreamy pleasure at son and bird."
+          },
+          {
+            "decode_index": 5,
+            "start_sample": 0,
+            "end_sample": 160000,
+            "reason": "candidate",
+            "action": "commit",
+            "alignment_prepared": true,
+            "text": "Concord returned to its place amidst the tents. For a while she lay in her chair in happy dreamy pleasure at son and bird and tree. And the guard"
+          },
+          {
+            "decode_index": 6,
+            "start_sample": 37440,
+            "end_sample": 165440,
+            "reason": "incomplete",
+            "action": "preview",
+            "alignment_prepared": true,
+            "text": "for a while she lay in her chair in happy dreamy pleasure at son and bird and tree."
+          },
+          {
+            "decode_index": 7,
+            "start_sample": 37440,
+            "end_sample": 197440,
+            "reason": "anchor_missing",
+            "action": "preview",
+            "alignment_prepared": true,
+            "text": "amidst the tents."
+          },
+          {
+            "decode_index": 8,
+            "start_sample": 37440,
+            "end_sample": 229440,
+            "reason": "anchor_missing",
+            "action": "preview",
+            "alignment_prepared": true,
+            "text": "amidst the tents. For a while, she lay in her chair in happy dreamy pleasure at son and bird and tree. And the gardeners boy chopped the tree into small pieces."
+          },
+          {
+            "decode_index": 9,
+            "start_sample": 37440,
+            "end_sample": 261440,
+            "reason": "anchor_missing",
+            "action": "preview",
+            "alignment_prepared": true,
+            "text": "amidst the tents."
+          },
+          {
+            "decode_index": 10,
+            "start_sample": 37440,
+            "end_sample": 293440,
+            "reason": "anchor_missing",
+            "action": "preview",
+            "alignment_prepared": true,
+            "text": "amidst the tents."
+          },
+          {
+            "decode_index": 11,
+            "start_sample": 37440,
+            "end_sample": 325440,
+            "reason": "anchor_missing",
+            "action": "preview",
+            "alignment_prepared": true,
+            "text": "amidst the tents. For a while she lay in her chair in happy dreamy pleasure at son and bird and tree. And the gardeners boy chopped the tree into small pieces. There was a whole heap lying there. Concord returned to its place amidst the tents."
+          },
+          {
+            "decode_index": 12,
+            "start_sample": 37440,
+            "end_sample": 357440,
+            "reason": "candidate",
+            "action": "commit",
+            "alignment_prepared": true,
+            "text": "commits the tents. For a while she lay in her chair in happy dreamy pleasure at son and bird and tree. And the gardeners boy chopped the tree into small pieces. There was a whole heap lying there. Concord returned to its place amidst the tents. For a while she lay in her chair"
+          },
+          {
+            "decode_index": 13,
+            "start_sample": 287040,
+            "end_sample": 389440,
+            "reason": "word_commit_deferred",
+            "action": "preview",
+            "alignment_prepared": true,
+            "text": "return to its place amidst the tents. For a while, she lay in her chair in happy, dreamy pleasure at sun."
+          },
+          {
+            "decode_index": 14,
+            "start_sample": 287040,
+            "end_sample": 415040,
+            "reason": "incomplete",
+            "action": "preview",
+            "alignment_prepared": true,
+            "text": "return to its place amidst the tents. For a while she lay in her chair in happy dreamy pleasure at son and bird and tree."
+          },
+          {
+            "decode_index": 15,
+            "start_sample": 287040,
+            "end_sample": 447040,
+            "reason": "unstable",
+            "action": "preview",
+            "alignment_prepared": true,
+            "text": "return to its place amidst the tents."
+          },
+          {
+            "decode_index": 16,
+            "start_sample": 287040,
+            "end_sample": 479040,
+            "reason": "unstable",
+            "action": "preview",
+            "alignment_prepared": true,
+            "text": "return to its place amidst the tents. For a while she lay in her chair in happy dreamy pleasure at son and bird and tree. And the gardeners boy chopped the tree into small pieces."
+          },
+          {
+            "decode_index": 17,
+            "start_sample": 287040,
+            "end_sample": 511040,
+            "reason": "candidate",
+            "action": "commit",
+            "alignment_prepared": true,
+            "text": "returned to its place amidst the tents. For a while she lay in her chair in happy dreamy pleasure at son and bird and tree. And the gardeners boy chopped the tree into small pieces. There was a whole"
+          },
+          {
+            "decode_index": 18,
+            "start_sample": 435840,
+            "end_sample": 538560,
+            "reason": "source_unit",
+            "action": "commit",
+            "alignment_prepared": true,
+            "text": "boy chopped the tree into small pieces. There was a whole heap lying there."
+          }
+        ],
+        "commit_admission_times_seconds": [
+          10,
+          24,
+          32,
+          33.66
+        ],
+        "maximum_between_commit_admission_gap_seconds": 14
+      }
+    },
+    {
+      "file": "cpu-early8k-context6k-v1.jsonl",
+      "raw_sha256": "92f75ad22722f24b25dc06ff29766ca3f6c4e96d6ba460387a9c6ed3f6e56c05",
+      "data": {
+        "case": "concatenated-no-added-pauses",
+        "config": {
+          "preview_interval_ms": 2000,
+          "max_window_ms": 30000,
+          "max_buffer_ms": 40000,
+          "holdback_ms": 2000,
+          "timestamp_tolerance_ms": 200,
+          "left_context_ms": 6000,
+          "coalesce_previews": false,
+          "word_alignment": false,
+          "input_evidence": true,
+          "source_units": true,
+          "endpointing": {
+            "frame_ms": 20,
+            "quiet_ms": 600,
+            "min_unit_ms": 1000,
+            "max_quiet_unit_ms": 10000,
+            "quiet_peak": 32
+          },
+          "word_boundary_fallback": true,
+          "word_context_limit_ms": 10000,
+          "resolution_probe": false,
+          "eof_context_retry": true,
+          "defer_word_commits": true
+        },
+        "pcm_sha256": "f170f383aaefea4057c1d9a8ee2b105f6192b9aaa5b2995a9f0c01fac86f21aa",
+        "input_samples": 538560,
+        "done": true,
+        "error": null,
+        "timed_out": false,
+        "text": "Concord returned to its place amidst the tents. For a while she lay in her chair in happy dreamy pleasure at son and bird and tree. And the gardeners boy chopped the tree into small pieces . There was a whole heap lying there. Concord returned to its place amidst the tents. For a while she lay in her chair in happy dreamy pleasure at son and bird and tree. And the gardeners boy chopped the tree into small pieces. There was a whole heap lying there.",
+        "word_edits": 6,
+        "reference_word_count": 88,
+        "final_count": 1,
+        "commit_source_ends": [
+          71040,
+          157760,
+          215040,
+          244800,
+          255360,
+          317440,
+          340160,
+          359040,
+          382080,
+          538560
+        ],
+        "commit_input_samples": [
+          160000,
+          192000,
+          256000,
+          288000,
+          320000,
+          352000,
+          384000,
+          416000,
+          448000,
+          538560
+        ],
+        "metrics": {
+          "accepted_samples": 538560,
+          "committed_samples": 538560,
+          "buffered_samples": 0,
+          "peak_buffered_samples": 263360,
+          "decode_count": 27,
+          "decoded_source_samples": 4039360,
+          "events_emitted": 38,
+          "accepted_chunks": 17
+        },
+        "capacity_restored": true,
+        "queue_depth_after_close": 0,
+        "budget_lease_count_after_close": 0,
+        "native_windows": 27,
+        "all_windows_closed": true,
+        "all_window_capacity_restored": true,
+        "forward_counters": {
+          "encoder_forwards": 27,
+          "encoder_input_frames": 81000,
+          "decoder_forwards": 920,
+          "decoder_input_frames": 1380000,
+          "decoder_input_tokens": 1678,
+          "hooks_removed": true
+        },
+        "source_paced": false,
+        "gpu_used": false,
+        "experiment": {
+          "first_word_check_ms": 8000,
+          "context_selection_unchanged": true,
+          "production_defaults_changed": false,
+          "checkpoint_qualification": false,
+          "tool_sha256": "392bbc0c195726a50e138fc308f956130df0bd0109d0c7621a4c6c0a8a8e4bee"
+        },
+        "traces": [
+          {
+            "decode_index": 1,
+            "start_sample": 0,
+            "end_sample": 32000,
+            "reason": "word_commit_deferred",
+            "action": "preview",
+            "alignment_prepared": false,
+            "text": "Concourt return to its place."
+          },
+          {
+            "decode_index": 2,
+            "start_sample": 0,
+            "end_sample": 64000,
+            "reason": "word_commit_deferred",
+            "action": "preview",
+            "alignment_prepared": false,
+            "text": "Concord returned to its place amidst the tents."
+          },
+          {
+            "decode_index": 3,
+            "start_sample": 0,
+            "end_sample": 96000,
+            "reason": "word_commit_deferred",
+            "action": "preview",
+            "alignment_prepared": false,
+            "text": "Concord returned to its place amidst the tents. For a while, she lay in her chair in happy"
+          },
+          {
+            "decode_index": 4,
+            "start_sample": 0,
+            "end_sample": 128000,
+            "reason": "incomplete",
+            "action": "preview",
+            "alignment_prepared": true,
+            "text": "Concord returned to its place amidst the tents. For a while, she lay in her chair in happy, dreamy pleasure at son and bird."
+          },
+          {
+            "decode_index": 5,
+            "start_sample": 0,
+            "end_sample": 160000,
+            "reason": "candidate",
+            "action": "commit",
+            "alignment_prepared": true,
+            "text": "Concord returned to its place amidst the tents. For a while she lay in her chair in happy dreamy pleasure at son and bird and tree. And the guard"
+          },
+          {
+            "decode_index": 6,
+            "start_sample": 0,
+            "end_sample": 192000,
+            "reason": "candidate",
+            "action": "commit",
+            "alignment_prepared": true,
+            "text": "Concord returned to its place amidst the tents. For a while she lay in her chair in happy dreamy pleasure at son and bird and tree. And the gardeners boy chopped the tree."
+          },
+          {
+            "decode_index": 7,
+            "start_sample": 55680,
+            "end_sample": 183680,
+            "reason": "incomplete",
+            "action": "preview",
+            "alignment_prepared": true,
+            "text": "For a while, she lay in her chair in happy, dreamy pleasure at son and bird and tree."
+          },
+          {
+            "decode_index": 8,
+            "start_sample": 55680,
+            "end_sample": 215680,
+            "reason": "anchor_missing",
+            "action": "preview",
+            "alignment_prepared": true,
+            "text": "For a while she lay in her chair in happy dreamy pleasure at son and bird and tree. And the gardeners boy chopped the tree into small pieces."
+          },
+          {
+            "decode_index": 9,
+            "start_sample": 55680,
+            "end_sample": 247680,
+            "reason": "candidate",
+            "action": "commit",
+            "alignment_prepared": true,
+            "text": "For a while she lay in her chair in happy dreamy pleasure at son and bird and tree. And the gardeners boy chopped the tree into small pieces. There was a whole heap."
+          },
+          {
+            "decode_index": 10,
+            "start_sample": 118080,
+            "end_sample": 246080,
+            "reason": "incomplete",
+            "action": "preview",
+            "alignment_prepared": true,
+            "text": "and bird and tree. And the gardeners boy chopped the tree into small pieces. There was a whole heat."
+          },
+          {
+            "decode_index": 11,
+            "start_sample": 118080,
+            "end_sample": 278080,
+            "reason": "candidate",
+            "action": "commit",
+            "alignment_prepared": true,
+            "text": "and bird and tree. And the gardeners boy chopped the tree into small pieces. There was a whole heap lying there."
+          },
+          {
+            "decode_index": 12,
+            "start_sample": 140480,
+            "end_sample": 268480,
+            "reason": "incomplete",
+            "action": "preview",
+            "alignment_prepared": true,
+            "text": "And the gardeners boy chopped the tree into small pieces. There was a whole heap lying there."
+          },
+          {
+            "decode_index": 13,
+            "start_sample": 140480,
+            "end_sample": 300480,
+            "reason": "candidate",
+            "action": "commit",
+            "alignment_prepared": true,
+            "text": "And the gardeners boy chopped the tree into small pieces. There was a whole heap lying there. Concord returned to its"
+          },
+          {
+            "decode_index": 14,
+            "start_sample": 158080,
+            "end_sample": 286080,
+            "reason": "incomplete",
+            "action": "preview",
+            "alignment_prepared": true,
+            "text": "Hardener's boy chopped the tree into small pieces. There was a whole heap lying there. Concor"
+          },
+          {
+            "decode_index": 15,
+            "start_sample": 158080,
+            "end_sample": 318080,
+            "reason": "context_unresolved",
+            "action": "preview",
+            "alignment_prepared": true,
+            "text": "Hardner's boy chopped the tree into small pieces. There was a whole heap lying there. Concord returned to its place amidst the tent."
+          },
+          {
+            "decode_index": 16,
+            "start_sample": 158080,
+            "end_sample": 350080,
+            "reason": "candidate",
+            "action": "commit",
+            "alignment_prepared": true,
+            "text": "Hardner's boy chopped the tree into small pieces. There was a whole heap lying there. Concord returned to its place amidst the tents. For a while she lay in her"
+          },
+          {
+            "decode_index": 17,
+            "start_sample": 215040,
+            "end_sample": 343040,
+            "reason": "incomplete",
+            "action": "preview",
+            "alignment_prepared": true,
+            "text": "There was a whole heap lying there. Concord returned to its place amidst the tents. For a while, she"
+          },
+          {
+            "decode_index": 18,
+            "start_sample": 215040,
+            "end_sample": 375040,
+            "reason": "candidate",
+            "action": "commit",
+            "alignment_prepared": true,
+            "text": "There was a whole heap lying there. Concord returned to its place amidst the tents. For a while she lay in her chair in happy dreamy"
+          },
+          {
+            "decode_index": 19,
+            "start_sample": 240320,
+            "end_sample": 368320,
+            "reason": "incomplete",
+            "action": "preview",
+            "alignment_prepared": true,
+            "text": "keep lying there. Concord returned to its place amidst the tents. For a while she lay in her chair and happy."
+          },
+          {
+            "decode_index": 20,
+            "start_sample": 240320,
+            "end_sample": 400320,
+            "reason": "candidate",
+            "action": "commit",
+            "alignment_prepared": true,
+            "text": "keep lying there. Concord returned to its place amidst the tents. For a while she lay in her chair in happy dreamy pleasure at son and bird and ch"
+          },
+          {
+            "decode_index": 21,
+            "start_sample": 255360,
+            "end_sample": 383360,
+            "reason": "incomplete",
+            "action": "preview",
+            "alignment_prepared": true,
+            "text": "there. Concord returned to its place amidst the tents. For a while she lay in her chair in happy dreamy pleasure at the"
+          },
+          {
+            "decode_index": 22,
+            "start_sample": 255360,
+            "end_sample": 415360,
+            "reason": "candidate",
+            "action": "commit",
+            "alignment_prepared": true,
+            "text": "there. Concord returned to its place amidst the tents. For a while she lay in her chair in happy dreamy pleasure at son and bird and tree."
+          },
+          {
+            "decode_index": 23,
+            "start_sample": 275200,
+            "end_sample": 403200,
+            "reason": "incomplete",
+            "action": "preview",
+            "alignment_prepared": true,
+            "text": "Concord returned to its place amidst the tents."
+          },
+          {
+            "decode_index": 24,
+            "start_sample": 275200,
+            "end_sample": 435200,
+            "reason": "anchor_missing",
+            "action": "preview",
+            "alignment_prepared": true,
+            "text": "Concord returned to its place amidst the tents. For a while, she lay in her chair in happy, dreamy pleasure at son and bird and tree. And the gardeners,"
+          },
+          {
+            "decode_index": 25,
+            "start_sample": 275200,
+            "end_sample": 467200,
+            "reason": "anchor_missing",
+            "action": "preview",
+            "alignment_prepared": true,
+            "text": "Concord returned to its place amidst the tents. For a while, she lay in her chair in happy, dreamy pleasure at son and bird and tree. And the gardeners boy chopped the tree into sea."
+          },
+          {
+            "decode_index": 26,
+            "start_sample": 275200,
+            "end_sample": 499200,
+            "reason": "anchor_missing",
+            "action": "preview",
+            "alignment_prepared": true,
+            "text": "Concord returned to its place amidst the tents. For a while, she lay in her chair in happy, dreamy pleasure at son and bird and tree. And the gardeners boy chopped the tree into small pieces."
+          },
+          {
+            "decode_index": 27,
+            "start_sample": 275200,
+            "end_sample": 538560,
+            "reason": "source_unit",
+            "action": "commit",
+            "alignment_prepared": true,
+            "text": "Concord returned to its place amidst the tents. For a while she lay in her chair in happy dreamy pleasure at son and bird and tree. And the gardeners boy chopped the tree into small pieces. There was a whole heap lying there."
+          }
+        ],
+        "commit_admission_times_seconds": [
+          10,
+          12,
+          16,
+          18,
+          20,
+          22,
+          24,
+          26,
+          28,
+          33.66
+        ],
+        "maximum_between_commit_admission_gap_seconds": 5.659999999999997
+      }
+    },
+    {
+      "file": "cpu-early8k-context2k-noisy-v1.jsonl",
+      "raw_sha256": "025e8c978c569fed03603e3bbc62919984265ce4730f2d38716ef832f4e39614",
+      "data": {
+        "case": "noisy-prefix",
+        "config": {
+          "preview_interval_ms": 2000,
+          "max_window_ms": 30000,
+          "max_buffer_ms": 40000,
+          "holdback_ms": 2000,
+          "timestamp_tolerance_ms": 200,
+          "left_context_ms": 2000,
+          "coalesce_previews": false,
+          "word_alignment": false,
+          "input_evidence": true,
+          "source_units": true,
+          "endpointing": {
+            "frame_ms": 20,
+            "quiet_ms": 600,
+            "min_unit_ms": 1000,
+            "max_quiet_unit_ms": 10000,
+            "quiet_peak": 32
+          },
+          "word_boundary_fallback": true,
+          "word_context_limit_ms": 6000,
+          "resolution_probe": false,
+          "eof_context_retry": true,
+          "defer_word_commits": true
+        },
+        "pcm_sha256": "5276e641f14eaae484a8da6f916e44f9373239fbe70c70ba41a3f1a36f747108",
+        "input_samples": 174240,
+        "done": true,
+        "error": null,
+        "timed_out": false,
+        "text": "Concord returned to its place amidst the tents. For a while she lay in her chair in happy dreamy pleasure at son and bird and tree.",
+        "word_edits": 1,
+        "reference_word_count": 26,
+        "final_count": 1,
+        "commit_source_ends": [
+          102720,
+          174240
+        ],
+        "commit_input_samples": [
+          160000,
+          174240
+        ],
+        "metrics": {
+          "accepted_samples": 174240,
+          "committed_samples": 174240,
+          "buffered_samples": 0,
+          "peak_buffered_samples": 160000,
+          "decode_count": 6,
+          "decoded_source_samples": 587360,
+          "events_emitted": 9,
+          "accepted_chunks": 6
+        },
+        "capacity_restored": true,
+        "queue_depth_after_close": 0,
+        "budget_lease_count_after_close": 0,
+        "native_windows": 6,
+        "all_windows_closed": true,
+        "all_window_capacity_restored": true,
+        "forward_counters": {
+          "encoder_forwards": 6,
+          "encoder_input_frames": 18000,
+          "decoder_forwards": 116,
+          "decoder_input_frames": 174000,
+          "decoder_input_tokens": 189,
+          "hooks_removed": true
+        },
+        "source_paced": false,
+        "gpu_used": false,
+        "experiment": {
+          "first_word_check_ms": 8000,
+          "context_selection_unchanged": true,
+          "production_defaults_changed": false,
+          "checkpoint_qualification": false,
+          "tool_sha256": "392bbc0c195726a50e138fc308f956130df0bd0109d0c7621a4c6c0a8a8e4bee"
+        },
+        "traces": [
+          {
+            "decode_index": 1,
+            "start_sample": 0,
+            "end_sample": 32000,
+            "reason": "word_commit_deferred",
+            "action": "preview",
+            "alignment_prepared": false,
+            "text": "Concord returned to its place."
+          },
+          {
+            "decode_index": 2,
+            "start_sample": 0,
+            "end_sample": 64000,
+            "reason": "word_commit_deferred",
+            "action": "preview",
+            "alignment_prepared": false,
+            "text": "Concord returned to its place amidst the tents."
+          },
+          {
+            "decode_index": 3,
+            "start_sample": 0,
+            "end_sample": 96000,
+            "reason": "word_commit_deferred",
+            "action": "preview",
+            "alignment_prepared": false,
+            "text": "Concord returned to its place amidst the tents."
+          },
+          {
+            "decode_index": 4,
+            "start_sample": 0,
+            "end_sample": 128000,
+            "reason": "incomplete",
+            "action": "preview",
+            "alignment_prepared": true,
+            "text": "Concord returned to its place amidst the tents. For a while, she lay in her chair in happy"
+          },
+          {
+            "decode_index": 5,
+            "start_sample": 0,
+            "end_sample": 160000,
+            "reason": "candidate",
+            "action": "commit",
+            "alignment_prepared": true,
+            "text": "Concord returned to its place amidst the tents. For a while she lay in her chair in happy dreamy pleasure at Son and Bird."
+          },
+          {
+            "decode_index": 6,
+            "start_sample": 66880,
+            "end_sample": 174240,
+            "reason": "source_unit",
+            "action": "commit",
+            "alignment_prepared": true,
+            "text": "For a while she lay in her chair in happy dreamy pleasure at son and bird and tree."
+          }
+        ],
+        "commit_admission_times_seconds": [
+          10,
+          10.89
+        ],
+        "maximum_between_commit_admission_gap_seconds": 0.8900000000000006
+      }
+    }
+  ]
+}

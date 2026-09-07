@@ -1,0 +1,289 @@
+{
+  "schema_version": "1",
+  "created_on": "2026-09-07",
+  "kind": "local_development_candidate_checks",
+  "package_version": "0.1.0.dev0",
+  "released": false,
+  "environment": {
+    "os": "Windows",
+    "python": "3.13.1",
+    "network_downloads": false
+  },
+  "runtime_source_files": 32,
+  "source_sha256": {
+    "src/whisper_runtime/__init__.py": "6b6c549bf89264c59b8808cf5cba240599af10f0cd12610a859ff964d6fed2aa",
+    "src/whisper_runtime/audio_source.py": "7d5884bc3f5b54574bc0781a2b566afc243fc04d7215f371b66b27a002d22931",
+    "src/whisper_runtime/captions.py": "0dfe44a66e8c6a39a1763a37234180049e60cdbede783c9d280ac29bce01cf07",
+    "src/whisper_runtime/cli.py": "be2a4e96c25d1086e184e8e73e5036b4a32aafa24ba7144b15392f218ad361bb",
+    "src/whisper_runtime/errors.py": "87127fee36ff6706360f8ad82ea49a0dea870d9cd1831ceec3aeb31c2d8e89df",
+    "src/whisper_runtime/execution.py": "ea758adb9ea4204f29f5b444ecf54331d751b66e3b4373014179522a225cef44",
+    "src/whisper_runtime/model.py": "bfe66fb074d308447e94af78851db46a1819d291cad9fde742b28dcc0be629c0",
+    "src/whisper_runtime/native_setup.py": "265f4d70a3859ccc3edea622276069ca8d77499eebc3373f343260af99043214",
+    "src/whisper_runtime/pcm_live.py": "e897f6103198d25993e77eb804f4105491abf8c286d3f80f6b470ab3184f09be",
+    "src/whisper_runtime/profiles.py": "3bef2de48da176b8e735ed07de67f9c272951f6c481401c174cc05f2533f47d3",
+    "src/whisper_runtime/remote.py": "40d6874ee12cd14cb01a12f192710bbb108be15d87be21ae48d976ba42bf5583",
+    "src/whisper_runtime/remote_transport.py": "3cd0d0933fdfd5b1cad95c2e702caff0cdfca928461955ac2f09bcead1ac8b30",
+    "src/whisper_runtime/resources.py": "5beec172371839ab73bb3ca594b22460f37723f1347db74841a43a4a102716d5",
+    "src/whisper_runtime/state.py": "551fe2e2f2c70d570744ac843e8d7e167b09b8ebc8400dc417cc488f78f71db5",
+    "src/whisper_runtime/transaction.py": "d9e4622ff289b182d7a2b23ebc6243e661da9f9061484107b3da09feb1ed44e4",
+    "src/whisper_runtime/worker.py": "92dc3f3366903c4304aaa7919dc84d8252bbdd02279d876701159bf0e092e077",
+    "src/whisper_runtime/adapters/__init__.py": "4725355d4c8a23b02a6ae965d425dea913f8eb64e656fbf522769f72003eb818",
+    "src/whisper_runtime/adapters/_checkpoint_io.py": "84322a6d8f95d7085eb49effa01ba3102ea5080cd678177dbcca260333e70da8",
+    "src/whisper_runtime/adapters/_draft_inference.py": "e07795bb2601d06d458401e122072c7758d70ca513cad3481264370c278a0164",
+    "src/whisper_runtime/adapters/_model_binding.py": "3040ef1cf63cb415fd6063d627a4b9464f0691cf05c02e8a72d94bdc28302707",
+    "src/whisper_runtime/adapters/audio_endpoints.py": "0baf28f038a2c1caafdbb80aba18b439a6120fa90acb1e07f11adda577d7e30d",
+    "src/whisper_runtime/adapters/audio_evidence.py": "14db21a12f4c8ea3da76bede0814ac2cd1422162165fd65db1bcf951de176184",
+    "src/whisper_runtime/adapters/continuity_witness.py": "97cc58905e2ae81dfc2ee72929bbb4244dd0676124aee5ac3427b83ddd3451c9",
+    "src/whisper_runtime/adapters/continuous_stream.py": "9720f9a4ae57f58a4a5303cde5c395c09442c02a62f0ceedc769212abefb7c62",
+    "src/whisper_runtime/adapters/legacy_whisper.py": "14b6f771c114238317d5118ba64c64334857e8e9da1d0f360baeeef48f3415e0",
+    "src/whisper_runtime/adapters/native_result.py": "3198b3996e7445449d7c74092ecef79d5a3615c1ebb48951c9bc7bbba3c18d92",
+    "src/whisper_runtime/adapters/native_stream.py": "01898983175014ac33e66c00be5bc92b96d0f300c0b20eb57a13cb4f384f0c39",
+    "src/whisper_runtime/adapters/native_whisper.py": "025a4cdd7c0e00d400e06897849d63c9366b61cb3c45d3d9fa30117a06616d4a",
+    "src/whisper_runtime/adapters/paced_replay.py": "04628898703772f7c3f45c7de2f7fae4f772b5192bc48c813a625737bf2b377e",
+    "src/whisper_runtime/adapters/stream_checkpoint.py": "8e7126289063933902f9d1a347d6a4b7c59e71b9180d1cf06af046f31ca8ea7d",
+    "src/whisper_runtime/adapters/stream_policy.py": "452d71993ffd9395a36a8b6a68fbe34b53d90665cc13ad22058b49ca32b0f5a9",
+    "src/whisper_runtime/adapters/word_policy.py": "4613f263f0ca51a4a1d836cb5af7ea96bf1ea00c2c04b035e2272ca6d1b1a70d"
+  },
+  "source_manifest_sha256": "65639ef2b87a2999ecaf0dfa482de9cc10a98d4721f447a07f10a9b1d95a7b6b",
+  "release_tooling_sha256": {
+    "infra/modal_release_soak.py": "4e452fec4faa02fce6118a59ea85c4695519c28970265b519fd6e5544b8d636e",
+    "tools/test_modal_release_soak.py": "97efc588470bbea6e2eaebae61b92de0df79304ccba18714562eaf8867d39226",
+    "tools/check_repository.py": "7d670716bdf963d19bd7f6aa8d7abca093e753a96c464976ac7f6c2cc8d73501",
+    "tools/check_distribution.py": "c08713ab0b23fef5c902d99b6267ec85cff4779a6cede5df6129e577c1b91b6e",
+    "MANIFEST.in": "d562d1541aa7a2b35eb3af3769cb273503bd1c4d2e836c4646ac79b862888aa4",
+    "pyproject.toml": "3fd0b520ae90181a02070efa45847a611060dc9c3f4a831683e9de3b4d416de3",
+    ".github/workflows/ci.yml": "a2a30db10c76ec0925f0eca1e448a642bd8929beced57414599b6b227f57405f"
+  },
+  "suites": {
+    "runtime": {
+      "status": "passed",
+      "tests": 871,
+      "skipped": 7,
+      "elapsed_seconds": 30.548,
+      "skip_details": [
+        {
+          "test": "test_fifo_read_is_rejected_without_blocking (test_checkpoint_io.CheckpointFilesystemTests.test_fifo_read_is_rejected_without_blocking)",
+          "reason": "POSIX named pipes only"
+        },
+        {
+          "test": "test_admission_overload_is_an_error_without_exports_or_retry (test_remote.RemoteCliLoopbackTests.test_admission_overload_is_an_error_without_exports_or_retry)",
+          "reason": "optional real-loopback test dependencies unavailable"
+        },
+        {
+          "test": "test_final_then_disconnect_has_no_complete_message_or_exports (test_remote.RemoteCliLoopbackTests.test_final_then_disconnect_has_no_complete_message_or_exports)",
+          "reason": "optional real-loopback test dependencies unavailable"
+        },
+        {
+          "test": "test_final_then_invalid_done_has_no_complete_message_or_exports (test_remote.RemoteCliLoopbackTests.test_final_then_invalid_done_has_no_complete_message_or_exports)",
+          "reason": "optional real-loopback test dependencies unavailable"
+        },
+        {
+          "test": "test_full_cli_uses_actual_sdk_commits_and_three_exports (test_remote.RemoteCliLoopbackTests.test_full_cli_uses_actual_sdk_commits_and_three_exports)",
+          "reason": "optional real-loopback test dependencies unavailable"
+        },
+        {
+          "test": "test_native_failure_never_creates_success_exports (test_remote.RemoteCliLoopbackTests.test_native_failure_never_creates_success_exports)",
+          "reason": "optional real-loopback test dependencies unavailable"
+        },
+        {
+          "test": "test_source_cancellation_has_no_eof_or_success_exports (test_remote.RemoteCliLoopbackTests.test_source_cancellation_has_no_eof_or_success_exports)",
+          "reason": "optional real-loopback test dependencies unavailable"
+        }
+      ],
+      "local_log": "artifacts/release-validation-20260907/runtime-tests-candidate.log",
+      "log_sha256": "f7791134aa4e6c5ff5fa40455cb3fba265264dfe6c5883d88ea4f38fa04e95fd"
+    },
+    "repository_tools": {
+      "status": "passed",
+      "tests": 815,
+      "skipped": 3,
+      "elapsed_seconds": 233.464,
+      "skip_details": [
+        {
+          "test": "test_actual_sdk_defines_functions_without_app_run (test_modal_acoustic_diagnostic.AcousticDiagnosticTests.test_actual_sdk_defines_functions_without_app_run)",
+          "reason": "Modal SDK is not installed"
+        },
+        {
+          "test": "test_pinned_sdk_accepts_cpu_and_gpu_asgi_definitions_without_running (test_modal_network_replay.NetworkDiagnosticTests.test_pinned_sdk_accepts_cpu_and_gpu_asgi_definitions_without_running)",
+          "reason": "Modal SDK is not installed"
+        },
+        {
+          "test": "test_real_loopback_websocket_uses_public_live_client (test_pcm_websocket.LiveTransportTests.test_real_loopback_websocket_uses_public_live_client)",
+          "reason": "optional loopback WebSocket dependencies unavailable"
+        }
+      ],
+      "local_log": "artifacts/release-validation-20260907/tool-tests-frozen.log",
+      "log_sha256": "3ff49de861eef77fc533aa61d8b19db412c8a546e0bf37ed0b9c847184631664"
+    }
+  },
+  "static_checks": {
+    "ruff_lint": {
+      "status": "passed",
+      "local_log": "artifacts/release-validation-20260907/ruff-check-candidate.log",
+      "log_sha256": "a4443afdcfb6d7363adb285762515ccf7cf50473b1a05c20c1a50f6bed4d26b0"
+    },
+    "ruff_format": {
+      "status": "passed",
+      "local_log": "artifacts/release-validation-20260907/ruff-format-candidate.log",
+      "log_sha256": "eb5cbb90ba145b2e01f00900934c82489c50315593a3a5a4f3d2cf79829877ee"
+    },
+    "mypy": {
+      "status": "passed",
+      "local_log": "artifacts/release-validation-20260907/mypy-candidate.log",
+      "log_sha256": "5b3e3905d4d9e175f9dd86715f6d5a9643abecae88f3e6e7b2349e013c8e9006"
+    },
+    "compilation": {
+      "status": "passed",
+      "local_log": "artifacts/release-validation-20260907/compile-candidate.log",
+      "log_sha256": "83e5af0213ff8e97d3470a6ca607e640d74685e955267772367b910dfcb58787"
+    },
+    "minimal_example": {
+      "status": "passed",
+      "local_log": "artifacts/release-validation-20260907/minimal-candidate.log",
+      "log_sha256": "fac04feb2eede94916c018ce0aa344cd5ed1cc7a2d795f699437b54170e9ec57"
+    },
+    "installed_dependency_consistency": {
+      "status": "passed",
+      "local_log": "artifacts/release-validation-20260907/pip-check-candidate.log",
+      "log_sha256": "672aec65a45bed50e70229c70934a7eebf0462595c459b83023027645d57cccf"
+    },
+    "repository_contracts_before_this_record": {
+      "status": "passed",
+      "local_log": "artifacts/release-validation-20260907/repository-candidate-before-record.log",
+      "log_sha256": "79cc11ce64c4b8903d8d2cafab40e296d37558f55590e620aa95a73b064e60e6"
+    }
+  },
+  "installed_smoke": {
+    "status": "passed",
+    "receipt_sha256": "6d3ac72926e672561bf07f83447f6f57abf6dd7ef913edf2db839123ed8bdc3b",
+    "source_hashes_reverified_after_both_runs": true,
+    "help_optional_dependencies_absent": {
+      "torch": true,
+      "numpy": true,
+      "whisper": true,
+      "aiohttp": true
+    },
+    "help_receipt_sha256": "259e15b3469d227536ccd4ffdd0b886b46df59520607aa031ca1b46bacc61136",
+    "console_help_log_sha256": "c7166098cfb4e29dbfcd0775a470be8f60f3ee5d7b519721c86e98e69046629f",
+    "input": {
+      "label": "cached 11-second JFK PCM WAV",
+      "samples": 176000,
+      "sample_rate_hz": 16000,
+      "pcm_sha256": "252fca5b7c2acd89dfd4c01b27c67e7e6a6f5ab7d9973e9963732f8307a744d3",
+      "file_sha256": "d83ad8f8667949fc6efbf50463047dc5842be52b94f6d8f71740ed76458ae02f"
+    },
+    "ml_dependencies": {
+      "torch": "2.6.0+cpu",
+      "numpy": "2.5.2",
+      "numba": "0.67.0",
+      "tiktoken": "0.14.0",
+      "more-itertools": "11.1.0",
+      "tqdm": "4.70.0"
+    },
+    "runs": [
+      {
+        "profile": "conservative-v1",
+        "selection": "omitted flag (default)",
+        "exit_code": 0,
+        "sdk_final_displayed": true,
+        "selected_profile_reported": true,
+        "outputs": {
+          "transcript.srt": {
+            "bytes": 139,
+            "sha256": "a204199c282638ddb0737629e8779f71126bd8fb47e143ad6359e22c9da6926c"
+          },
+          "transcript.txt": {
+            "bytes": 106,
+            "sha256": "b141cb01b4b691dac27c6ebc485a15914b5dbb427f5ab2f72b81b295779ff22b"
+          },
+          "transcript.vtt": {
+            "bytes": 147,
+            "sha256": "bdbeac0e9ae92f93723940dd1d7c710dc363560ad02978a5e2137edc7d7586cd"
+          }
+        },
+        "displayed_committed_coverage_seconds": 11.0,
+        "displayed_coverage_contiguous_from_zero": true,
+        "output_hashes_reverified": true
+      },
+      {
+        "profile": "experimental-optimized-v1",
+        "selection": "explicit flag",
+        "exit_code": 0,
+        "sdk_final_displayed": true,
+        "selected_profile_reported": true,
+        "outputs": {
+          "transcript.srt": {
+            "bytes": 139,
+            "sha256": "a204199c282638ddb0737629e8779f71126bd8fb47e143ad6359e22c9da6926c"
+          },
+          "transcript.txt": {
+            "bytes": 106,
+            "sha256": "b141cb01b4b691dac27c6ebc485a15914b5dbb427f5ab2f72b81b295779ff22b"
+          },
+          "transcript.vtt": {
+            "bytes": 147,
+            "sha256": "bdbeac0e9ae92f93723940dd1d7c710dc363560ad02978a5e2137edc7d7586cd"
+          }
+        },
+        "displayed_committed_coverage_seconds": 11.0,
+        "displayed_coverage_contiguous_from_zero": true,
+        "output_hashes_reverified": true
+      }
+    ],
+    "profile_export_bytes_identical": true,
+    "environment_scope": "Fresh package venv; reused local ML prerequisites via an explicit .pth file for native runs, not a clean OS",
+    "reuse_rule": "Final candidate wheel must contain exactly these 32 runtime Python modules with matching hashes; native inference is not repeated when only release tooling or documentation changes."
+  },
+  "additional_host_loopback": {
+    "remote": {
+      "status": "passed",
+      "tests": 12,
+      "skipped": 0,
+      "elapsed_seconds": 5.581,
+      "skip_details": [],
+      "local_log": "artifacts/release-validation-20260907/remote-loopback-host.log",
+      "log_sha256": "3dbf1b718ba2d1f894344d2a6a9017c10b2fb3c2ce5c770c0d2faf56b81a4e61"
+    },
+    "pcm_websocket": {
+      "status": "passed",
+      "tests": 11,
+      "skipped": 0,
+      "elapsed_seconds": 3.272,
+      "skip_details": [],
+      "local_log": "artifacts/release-validation-20260907/pcm-websocket-host.log",
+      "log_sha256": "9e3bd897399d1bbe06f406243a1b13ba8258c593ead1b48be05545ccc0431908"
+    },
+    "aiohttp": "3.13.5",
+    "uvicorn": "0.42.0",
+    "declared_aiohttp": "3.14.3",
+    "declared_pin_validated_by_this_run": false
+  },
+  "preformat_preservation": {
+    "archive": "evidence/pre-release-format-20260907.zip",
+    "archive_sha256": "3b77111df24d699138224bbfed8aee517c191b3682ce907bc8270362d09e8d5d",
+    "files": 9,
+    "original_hashes_verified": true,
+    "formatted_ast_equivalence_verified": true
+  },
+  "candidate_packaging": {
+    "directory": "artifacts/release-validation-20260907/dist-candidate",
+    "build_mode": "offline frontend build, no isolation; existing build 1.6.0 and setuptools 82.0.1",
+    "final_archive_hashes": "Recorded only in the ignored local summary after final packaging, avoiding a self-referential sdist digest.",
+    "post_build_validation": "Re-run distribution and repository checks; verify the sdist contains this exact receipt and the candidate runtime source hashes match the installed smoke."
+  },
+  "limits": [
+    "Native smoke reuses verified local ML dependencies, backend checkouts and a cached checkpoint; not clean-OS or fresh-dependency qualification.",
+    "Separate host loopbacks cover the seven unavailable loopback checks in the base suites, but not the declared aiohttp 3.14.3 pin.",
+    "One POSIX FIFO test and two Modal SDK definition checks remain unexecuted on this environment.",
+    "The new 14-test soak-harness coverage is scripted and offline; it does not execute or qualify native endurance.",
+    "No GPU run, physical microphone test, remote CI, package publication or version bump was performed.",
+    "Runtime module hashes identify this local source, not a clean committed release revision; release CI and remaining qualification gates stay open."
+  ],
+  "claims": {
+    "production_readiness": false,
+    "stable_release": false,
+    "gpu_qualification": false,
+    "four_hour_native_endurance": false,
+    "general_speedup": false
+  }
+}

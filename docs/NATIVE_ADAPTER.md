@@ -232,8 +232,12 @@ For a live driver, inspect the actual result before selecting its span:
 
 ```python
 with adapter.start_window(
-    session=session, request=request, window_id="next-window",
-    mel=mel, start_ms=17_000, end_ms=26_000,
+    session=session,
+    request=request,
+    window_id="next-window",
+    mel=mel,
+    start_ms=17_000,
+    end_ms=26_000,
     options=NativeDecodeOptions(language="en", without_timestamps=False),
 ) as run:
     while not run.complete:
@@ -319,6 +323,68 @@ published text and spans on complete normal and attenuated inputs, with fewer
 encoder forwards and lower observed allocation peaks. Both modes still fail
 to complete the noisy prefix. This single-worker diagnostic does not qualify
 general service latency or noisy live transcription.
+
+## Optional prompt re-decode
+
+Set `NativeExecutionProfile(..., reuse_decode_features=True)` to allow one
+second decode of the exact same audio with a different prompt. This uses the
+encoded-input path in the pinned backend. No additional backend patch is needed.
+The default profile does not enable it.
+
+```python
+with adapter.start_window(
+    session=session,
+    request=request,
+    window_id="window-1",
+    mel=mel,
+    start_ms=0,
+    end_ms=30_000,
+    options=NativeDecodeOptions(language="en", prompt="Earlier context."),
+) as run:
+    while not run.complete:
+        run.step()
+    first = run.prepare_result()
+    run.redecode(prompt=None)
+    while not run.complete:
+        run.step()
+    second = run.prepare_result()
+    # Inspect the second candidate before publication. Close to reject it.
+    # run.finish() would publish the second candidate, not the first.
+```
+
+`redecode()` changes only the prompt. It creates a new decoding task, KV cache
+and random generator. The generator starts from the first attempt's seed.
+The first decoder is cleaned before the replacement starts. The execution
+scope owns the replacement before prefill or cancellation checks can run.
+
+Both attempts use the same resource lease, deadline, audio span and model
+identity. The method accepts no external feature tensor and cannot extend
+access to the worker. It rejects a repeated prompt, an incomplete first decode
+and a third attempt. Growing or shifting the audio requires a new window.
+
+The first returned result stays immutable. The active result and cached word
+alignment are cleared. After re-decoding, `finish()` can publish only the new
+candidate. There is no automatic quality decision, rollback to the first
+candidate, or change to the live stream policy. Record `run.decode_attempt` and
+the effective prompt alongside diagnostic results: the window ID stays the
+same. `run.step_count` includes both attempts.
+
+This removes a repeated encoder forward when the caller needs both contexts.
+It still requires a second decoder pass. It does not offload GPU state or
+provide durable resume. Resource declarations must cover the selected decode
+options; this path does not measure or enforce physical allocation peaks.
+
+`tools/verify_native_prompt_reuse.py` compares two independent CPU decodes with
+two prompts on one shared encoding. It requires an existing audio file, an
+existing checkpoint and the applied backend commit. It checks exact results,
+encoder call counts, model identity and resource release. It never downloads
+weights. Its timings include validation overhead and are not a benchmark.
+
+Local contract tests pass. The [CPU and T4 comparison](research/2026-09-06-prompt-feature-reuse.md)
+matches independent results exactly for greedy, beam-size-2 and sampled
+decoding on one `tiny.en` input, with one encoder forward instead of two.
+The T4 run also verifies cancellation after replacement and release of the
+owned lane. These are fixed-input checks, not a live quality or speed benchmark.
 
 ## Strict CUDA profile
 
@@ -537,6 +603,32 @@ kernels execute simultaneously. The check makes no claim about kernel overlap,
 throughput, CUDA, production readiness, or general thread safety across other
 models, devices, operating systems, or dependency versions. The default
 adapter profile remains serialized.
+
+## Verified token drafts (experimental)
+
+`start_window(..., draft_tokens=ids)` can verify up to 32 proposed token IDs
+during greedy decoding. The default empty tuple uses ordinary decoding.
+Nonempty drafts reject sampling, beam search and legacy shared-cache backends.
+IDs must belong to the bound model's vocabulary.
+
+The proposal is separate from `NativeDecodeOptions.prompt`. Each run computes
+fresh current-audio features and a private decoder cache. The normal Whisper
+filters and token-selection loop verify each proposal. On disagreement, the
+run discards the remaining draft and continues ordinary decoding. Only the
+self-attention cache is cropped; current-audio cross-attention state is kept.
+Drafts that exceed the remaining text context are shortened, not forced in.
+
+No decoder class or process-global method is patched. The transaction owns the
+wrapper before prefill and cleans it on completion, cancellation or failure.
+Rows, audio references, token hints and owned cache are released on cleanup.
+Prefill is one native operation; cancellation takes effect at the next existing
+transaction boundary, not inside a GPU kernel. Prompt re-decode starts without
+a draft. This option does not implement GPU-state checkpointing.
+
+The [T4 prototype comparison](research/2026-09-07-draft-gpu-results.md) motivates
+this integration. It is not a GPU qualification of the new integrated path.
+Floating-point scores can differ even when tokens match. No publication
+threshold is changed. CLI defaults remain unchanged.
 
 ## Runtime adapter concurrency check
 

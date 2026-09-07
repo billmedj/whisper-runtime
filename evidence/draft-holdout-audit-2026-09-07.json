@@ -1,0 +1,542 @@
+{
+  "schema_version": "1-independent-offline-audit",
+  "experiment_id": "modal-draft-holdout-v1",
+  "qualified": false,
+  "method": "Independent raw-record replay using read-only measure/commits/source_clocks/selected_decisions helpers; no producer import, GPU or network.",
+  "provenance": {
+    "result_sha256": "d9ae60b5fbe8beb73df3c4ac8e94dc666b7ddddbaac219a634357d822802ea9a",
+    "compressed_sha256": "acc3f7d50ec66a70fd7404737b6aae4ce3ba642b327ed4cace1e18397ab6a4c4",
+    "preflight_sha256": "a94e634f507dfc464c4d7717b8a8a92c01956ddae6f01506de8aa65439d6678a",
+    "manifest_sha256": "b19c234e53e338d62e835079f4662537ec25433052ca3e31bab599a2e0bba614",
+    "source_digest": "69326bfcb630460d6c33927eb0a759a5dddf93cb936a54cdb968bf6ed2a3eac3",
+    "source_digest_recomputed": true,
+    "source_file_count": 67,
+    "source_mismatches": [],
+    "record_snapshot_exact": true,
+    "raw_json_exact": true,
+    "input_scope_exact": true,
+    "producer_hash_exact": true,
+    "function_call_id_hash_exact": true,
+    "pcm_fixtures": [
+      {
+        "id": "260-123286-0000",
+        "size_matches": true,
+        "sha256_matches": true
+      },
+      {
+        "id": "4446-2275-0005",
+        "size_matches": true,
+        "sha256_matches": true
+      }
+    ],
+    "stream_pcm_exact": true
+  },
+  "checks": {
+    "provenance": true,
+    "all_four_events_exact": true,
+    "all_four_tokens_exact": true,
+    "all_four_selected_decisions_exact": true,
+    "all_cleanup": true,
+    "all_source_clocks": true,
+    "window_accounting": true,
+    "all_native_cleanup": true,
+    "model_unchanged": true,
+    "hooks_unchanged": true
+  },
+  "all_checks_pass": true,
+  "elapsed_seconds": 74.470242263,
+  "native_windows": 40,
+  "cells": [
+    {
+      "position": "a1",
+      "measurement": {
+        "windows": 9,
+        "raw_forwards": {
+          "decode:encoder": 9,
+          "decode:decoder": 131,
+          "alignment:decoder": 2
+        },
+        "decoder_input_positions": {
+          "decode:decoder": 131,
+          "alignment:decoder": 44
+        },
+        "forward_interval_ms": {
+          "decode:encoder": 199.41913509368896,
+          "decode:decoder": 544.9737603664398,
+          "alignment:decoder": 12.75494384765625
+        },
+        "operation_wall_ns": {
+          "close": 973673,
+          "decode": 891378260,
+          "result": 6246651,
+          "alignment": 489750184,
+          "finish": 1150150
+        },
+        "total_operation_wall_ns": 1389498918,
+        "total_forward_interval_ms": 757.147839307785,
+        "draft_stats": {}
+      },
+      "event_count": 13,
+      "commit_count": 3,
+      "commits": [
+        {
+          "start_sample": 0,
+          "end_sample": 120960,
+          "text": "Saturday, August 15th. The sea unbroken all round. No land in sight."
+        },
+        {
+          "start_sample": 120960,
+          "end_sample": 225600,
+          "text": "I felt it in my bones when I woke this morning that something splendid was going to turn up."
+        },
+        {
+          "start_sample": 225600,
+          "end_sample": 247760,
+          "text": ""
+        }
+      ],
+      "source_clocks": {
+        "admission_count": 775,
+        "admission_contract": true,
+        "source_not_early": true,
+        "full_admitted": true,
+        "max_source_lag_ns": 35397011,
+        "max_admission_lag_ns": 35477668,
+        "stored_lag_values_exact": true,
+        "source_lags_within_bound": true,
+        "output_clocks_valid": true,
+        "all_events_delivered": true
+      },
+      "cleanup": {
+        "capacity_restored": true,
+        "hint_cleared": true,
+        "done": true,
+        "no_error": true,
+        "full_input": true,
+        "full_coverage": true,
+        "final_once": true,
+        "native_closed": true
+      },
+      "memory": {
+        "memory_before": {
+          "allocated_bytes": 160720896,
+          "reserved_bytes": 247463936
+        },
+        "memory_after_close": {
+          "allocated_bytes": 160720896,
+          "reserved_bytes": 247463936
+        },
+        "peak_allocated_bytes": 190260736,
+        "peak_reserved_bytes": 247463936
+      },
+      "memory_allocated_delta": 0,
+      "summary_counts_exact": true,
+      "summary_wall_exact": true,
+      "summary_commits_exact": true
+    },
+    {
+      "position": "b1",
+      "measurement": {
+        "windows": 9,
+        "raw_forwards": {
+          "decode:encoder": 9,
+          "decode:decoder": 70,
+          "alignment:decoder": 2
+        },
+        "decoder_input_positions": {
+          "decode:decoder": 189,
+          "alignment:decoder": 44
+        },
+        "forward_interval_ms": {
+          "decode:encoder": 208.94790267944336,
+          "decode:decoder": 335.8203492164612,
+          "alignment:decoder": 12.9334397315979
+        },
+        "operation_wall_ns": {
+          "close": 947179,
+          "decode": 697121179,
+          "result": 6683046,
+          "alignment": 19288786,
+          "finish": 1122386
+        },
+        "total_operation_wall_ns": 725162576,
+        "total_forward_interval_ms": 557.7016916275024,
+        "draft_stats": {
+          "cleanup_calls": 8,
+          "context_cropped_tokens": 0,
+          "effective_draft_tokens": 119,
+          "matched_tokens": 61,
+          "ordinary_suffix_forwards": 55,
+          "parallel_prefills": 8,
+          "proposed_tokens": 119,
+          "saved_row_calls": 61
+        }
+      },
+      "event_count": 13,
+      "commit_count": 3,
+      "commits": [
+        {
+          "start_sample": 0,
+          "end_sample": 120960,
+          "text": "Saturday, August 15th. The sea unbroken all round. No land in sight."
+        },
+        {
+          "start_sample": 120960,
+          "end_sample": 225600,
+          "text": "I felt it in my bones when I woke this morning that something splendid was going to turn up."
+        },
+        {
+          "start_sample": 225600,
+          "end_sample": 247760,
+          "text": ""
+        }
+      ],
+      "source_clocks": {
+        "admission_count": 775,
+        "admission_contract": true,
+        "source_not_early": true,
+        "full_admitted": true,
+        "max_source_lag_ns": 1165656,
+        "max_admission_lag_ns": 1245732,
+        "stored_lag_values_exact": true,
+        "source_lags_within_bound": true,
+        "output_clocks_valid": true,
+        "all_events_delivered": true
+      },
+      "cleanup": {
+        "capacity_restored": true,
+        "hint_cleared": true,
+        "done": true,
+        "no_error": true,
+        "full_input": true,
+        "full_coverage": true,
+        "final_once": true,
+        "native_closed": true
+      },
+      "memory": {
+        "memory_before": {
+          "allocated_bytes": 160720896,
+          "reserved_bytes": 247463936
+        },
+        "memory_after_close": {
+          "allocated_bytes": 160720896,
+          "reserved_bytes": 247463936
+        },
+        "peak_allocated_bytes": 190260736,
+        "peak_reserved_bytes": 247463936
+      },
+      "memory_allocated_delta": 0,
+      "summary_counts_exact": true,
+      "summary_wall_exact": true,
+      "summary_commits_exact": true
+    },
+    {
+      "position": "b2",
+      "measurement": {
+        "windows": 9,
+        "raw_forwards": {
+          "decode:encoder": 9,
+          "decode:decoder": 70,
+          "alignment:decoder": 2
+        },
+        "decoder_input_positions": {
+          "decode:decoder": 189,
+          "alignment:decoder": 44
+        },
+        "forward_interval_ms": {
+          "decode:encoder": 208.83484649658203,
+          "decode:decoder": 311.1096954345703,
+          "alignment:decoder": 12.57475233078003
+        },
+        "operation_wall_ns": {
+          "close": 933781,
+          "decode": 669598469,
+          "result": 6301989,
+          "alignment": 18849622,
+          "finish": 1088932
+        },
+        "total_operation_wall_ns": 696772793,
+        "total_forward_interval_ms": 532.5192942619324,
+        "draft_stats": {
+          "cleanup_calls": 8,
+          "context_cropped_tokens": 0,
+          "effective_draft_tokens": 119,
+          "matched_tokens": 61,
+          "ordinary_suffix_forwards": 55,
+          "parallel_prefills": 8,
+          "proposed_tokens": 119,
+          "saved_row_calls": 61
+        }
+      },
+      "event_count": 13,
+      "commit_count": 3,
+      "commits": [
+        {
+          "start_sample": 0,
+          "end_sample": 120960,
+          "text": "Saturday, August 15th. The sea unbroken all round. No land in sight."
+        },
+        {
+          "start_sample": 120960,
+          "end_sample": 225600,
+          "text": "I felt it in my bones when I woke this morning that something splendid was going to turn up."
+        },
+        {
+          "start_sample": 225600,
+          "end_sample": 247760,
+          "text": ""
+        }
+      ],
+      "source_clocks": {
+        "admission_count": 775,
+        "admission_contract": true,
+        "source_not_early": true,
+        "full_admitted": true,
+        "max_source_lag_ns": 1184165,
+        "max_admission_lag_ns": 1965287,
+        "stored_lag_values_exact": true,
+        "source_lags_within_bound": true,
+        "output_clocks_valid": true,
+        "all_events_delivered": true
+      },
+      "cleanup": {
+        "capacity_restored": true,
+        "hint_cleared": true,
+        "done": true,
+        "no_error": true,
+        "full_input": true,
+        "full_coverage": true,
+        "final_once": true,
+        "native_closed": true
+      },
+      "memory": {
+        "memory_before": {
+          "allocated_bytes": 160720896,
+          "reserved_bytes": 247463936
+        },
+        "memory_after_close": {
+          "allocated_bytes": 160720896,
+          "reserved_bytes": 247463936
+        },
+        "peak_allocated_bytes": 190260736,
+        "peak_reserved_bytes": 247463936
+      },
+      "memory_allocated_delta": 0,
+      "summary_counts_exact": true,
+      "summary_wall_exact": true,
+      "summary_commits_exact": true
+    },
+    {
+      "position": "a2",
+      "measurement": {
+        "windows": 9,
+        "raw_forwards": {
+          "decode:encoder": 9,
+          "decode:decoder": 131,
+          "alignment:decoder": 2
+        },
+        "decoder_input_positions": {
+          "decode:decoder": 131,
+          "alignment:decoder": 44
+        },
+        "forward_interval_ms": {
+          "decode:encoder": 201.21801948547363,
+          "decode:decoder": 548.0831654071808,
+          "alignment:decoder": 11.247519969940186
+        },
+        "operation_wall_ns": {
+          "close": 961594,
+          "decode": 894807364,
+          "result": 6256129,
+          "alignment": 17540305,
+          "finish": 1143127
+        },
+        "total_operation_wall_ns": 920708519,
+        "total_forward_interval_ms": 760.5487048625946,
+        "draft_stats": {}
+      },
+      "event_count": 13,
+      "commit_count": 3,
+      "commits": [
+        {
+          "start_sample": 0,
+          "end_sample": 120960,
+          "text": "Saturday, August 15th. The sea unbroken all round. No land in sight."
+        },
+        {
+          "start_sample": 120960,
+          "end_sample": 225600,
+          "text": "I felt it in my bones when I woke this morning that something splendid was going to turn up."
+        },
+        {
+          "start_sample": 225600,
+          "end_sample": 247760,
+          "text": ""
+        }
+      ],
+      "source_clocks": {
+        "admission_count": 775,
+        "admission_contract": true,
+        "source_not_early": true,
+        "full_admitted": true,
+        "max_source_lag_ns": 1229345,
+        "max_admission_lag_ns": 1312924,
+        "stored_lag_values_exact": true,
+        "source_lags_within_bound": true,
+        "output_clocks_valid": true,
+        "all_events_delivered": true
+      },
+      "cleanup": {
+        "capacity_restored": true,
+        "hint_cleared": true,
+        "done": true,
+        "no_error": true,
+        "full_input": true,
+        "full_coverage": true,
+        "final_once": true,
+        "native_closed": true
+      },
+      "memory": {
+        "memory_before": {
+          "allocated_bytes": 160720896,
+          "reserved_bytes": 247463936
+        },
+        "memory_after_close": {
+          "allocated_bytes": 160720896,
+          "reserved_bytes": 247463936
+        },
+        "peak_allocated_bytes": 190260736,
+        "peak_reserved_bytes": 247463936
+      },
+      "memory_allocated_delta": 0,
+      "summary_counts_exact": true,
+      "summary_wall_exact": true,
+      "summary_commits_exact": true
+    }
+  ],
+  "pairs": [
+    {
+      "control": "a1",
+      "candidate": "b1",
+      "exact": {
+        "events": true,
+        "tokens": true,
+        "native_spans": true,
+        "decisions": true,
+        "commits": true
+      },
+      "maximum_absolute_score_delta": {
+        "avg_logprob": 1.430511474609375e-06,
+        "no_speech_prob": 6.556510925292969e-07,
+        "compression_ratio": 0.0
+      },
+      "no_speech_gate_crossings": 0,
+      "decode_wall_ns": {
+        "control": 891378260,
+        "candidate": 697121179,
+        "delta": -194257081,
+        "reduction_percent": 21.792889698700975
+      },
+      "decode_decoder_cuda_ms": {
+        "control": 544.9737603664398,
+        "candidate": 335.8203492164612,
+        "delta": -209.15341114997864,
+        "reduction_percent": 38.37862046960648
+      },
+      "all_native_wall_ns": {
+        "control": 1389498918,
+        "candidate": 725162576,
+        "delta": -664336342,
+        "reduction_percent": 47.81121693539887
+      },
+      "all_forward_cuda_ms": {
+        "control": 757.147839307785,
+        "candidate": 557.7016916275024,
+        "delta": -199.4461476802826,
+        "reduction_percent": 26.341770698655665
+      }
+    },
+    {
+      "control": "a2",
+      "candidate": "b2",
+      "exact": {
+        "events": true,
+        "tokens": true,
+        "native_spans": true,
+        "decisions": true,
+        "commits": true
+      },
+      "maximum_absolute_score_delta": {
+        "avg_logprob": 1.430511474609375e-06,
+        "no_speech_prob": 6.556510925292969e-07,
+        "compression_ratio": 0.0
+      },
+      "no_speech_gate_crossings": 0,
+      "decode_wall_ns": {
+        "control": 894807364,
+        "candidate": 669598469,
+        "delta": -225208895,
+        "reduction_percent": 25.16842217226098
+      },
+      "decode_decoder_cuda_ms": {
+        "control": 548.0831654071808,
+        "candidate": 311.1096954345703,
+        "delta": -236.97346997261047,
+        "reduction_percent": 43.23677225089711
+      },
+      "all_native_wall_ns": {
+        "control": 920708519,
+        "candidate": 696772793,
+        "delta": -223935726,
+        "reduction_percent": 24.322108612964836
+      },
+      "all_forward_cuda_ms": {
+        "control": 760.5487048625946,
+        "candidate": 532.5192942619324,
+        "delta": -228.02941060066223,
+        "reduction_percent": 29.982223247866738
+      }
+    }
+  ],
+  "pooled_decode_wall_ns": {
+    "control": 1786185624,
+    "candidate": 1366719648,
+    "delta": -419465976,
+    "reduction_percent": 23.483896094776764
+  },
+  "no_speech_gate": {
+    "threshold": 0.6,
+    "strict_operator": ">",
+    "observations": 36,
+    "minimum_observed": 0.015011252835392952,
+    "maximum_observed": 0.94770747423172,
+    "minimum_absolute_margin": 0.2493563652038574,
+    "above_threshold_count": 4,
+    "paired_crossings": 0
+  },
+  "word_errors": {
+    "normalization": "casefold and regex word tokens, matching the registered scorer; no numeric expansion",
+    "reference_words": 31,
+    "hypothesis_words": 31,
+    "levenshtein_edits": 1,
+    "word_edit_rate": 0.03225806451612903,
+    "edits": [
+      {
+        "operation": "replace",
+        "reference": [
+          "fifteenth"
+        ],
+        "hypothesis": [
+          "15th"
+        ]
+      }
+    ]
+  },
+  "counterexamples": [],
+  "limitations": [
+    "Only two short clean read-speech speakers; project-new, not certified absent from Whisper training.",
+    "One fixed ABBA worker run, no independent replicas, confidence interval or population generalization.",
+    "A1 alignment is a strong first-cell/order confound; report decode-only and reverse-order results separately.",
+    "No paired no-speech threshold crossing occurred; exact tokens do not imply numeric identity."
+  ]
+}

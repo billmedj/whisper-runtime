@@ -6,6 +6,15 @@ It does not change the existing bounded-preview or offline adapters.
 
 ## Use
 
+An opt-in `eof_context_retry=True` policy can try one shifted retained-context
+window after an aligned EOF refusal. It requires word alignment and
+`input_evidence=True`, and cannot be combined with `resolution_probe`.
+It uses the unchanged publication checks and never revises committed output.
+Inspect `context_retry_observation` for the original refusal and retry outcome.
+The [incremental comparison](research/2026-09-06-eof-context-retry.md) and
+[source-paced T4 comparison](research/2026-09-06-paced-context-retry.md) recover
+one blocked development stream. Noisy inputs and long sessions remain unqualified.
+
 For an independent source clock, use the [paced PCM replay driver](PACED_REPLAY.md).
 It supplies recorded chunks while the model owner drives decoding and reports
 overload instead of slowing the source to match the decoder.
@@ -33,7 +42,58 @@ number. The producer must retry, pause its source, or report overload. It must
 not silently drop the rejected input. A microphone driver may have its own
 overflow behavior outside this contract.
 
+## Optional verified token drafts
+
+`ContinuousStreamConfig(max_draft_tokens=32)` enables request-local draft
+verification during greedy decoding. Values from 1 to 32 cap the proposal;
+the default `0` disables it. Sampling and beam search are rejected when enabled.
+
+For the existing local factory, keep its profile and change only this option:
+
+```python
+from dataclasses import replace
+from pathlib import Path
+from whisper_runtime.native_setup import CLI_STREAM_CONFIG, create_stream
+
+stream = create_stream(
+    manifest=Path(".tmp-composed-native/manifest.json"),
+    model=Path("/absolute/path/to/tiny.en.pt"),
+    reuse_alignment_features=True,
+    config=replace(CLI_STREAM_CONFIG, max_draft_tokens=32),
+)
+# Feed PCM and consume events through the existing stream API. Always close it.
+```
+
+Use paths from your existing native setup; this example downloads nothing.
+The draft option also works without alignment-feature reuse and does not
+change the native backend pin. The 20/24-second context used in the recorded
+comparison is a separate opt-in, not the factory default shown above.
+
+Each stream keeps only the leading raw token IDs from its last completed
+analysis. Those IDs are proposals, not published text, a prompt or a continuity
+witness. Current-audio decoding still selects the output. Other streams share
+neither hints nor decoder cache. Failure, cancellation, auxiliary recovery and
+terminal cleanup drop the hint. Prompt re-decode uses ordinary decoding.
+
+Savepoints retain the configuration but omit the disposable hint. The first
+window after restore uses ordinary decoding and builds a new hint. Older v1
+savepoints without the option restore with it disabled. This is logical
+boundary restore, not a saved GPU cache or exact mid-token continuation.
+
+See the [integrated CPU result](research/2026-09-07-native-draft-integration.md)
+for the tested scope. Numeric scores may change; the policy thresholds do not.
+The default stream profile does not enable drafts. The installed CLI exposes
+the separate opt-in `experimental-optimized-v1` profile, which also changes
+context and alignment reuse. See [execution profiles](CLI.md#versioned-local-execution-profiles)
+for its settings and backend requirements.
+
 ## Publication rule
+
+An offline [crop/prompt comparison](research/2026-09-06-noisy-context-prompt.md)
+shows why better recognition alone cannot authorize a retry: published decoder
+history restores a missing utterance, but its word alignment no longer contains
+the frozen anchor. This diagnostic does not enable prompt retries in the live
+profile or change its publication checks.
 
 ### Caller-delimited source units
 

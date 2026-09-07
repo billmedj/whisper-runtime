@@ -380,16 +380,56 @@ class SocketTests(unittest.IsolatedAsyncioTestCase):
 
     async def test_audio_idle_timeout_does_not_apply_after_eof(self):
         wait_for = asyncio.wait_for
+        finish = StreamConnection.finish
+        eof_received = threading.Event()
+        drain_receive = threading.Event()
+        post_eof_timeouts = []
+        post_eof_receives = []
+        native_steps = []
 
-        async def short_input_wait(awaitable, timeout):
-            return await wait_for(awaitable, 0.02 if timeout == 10 else timeout)
+        def record_eof(connection, value):
+            finish(connection, value)
+            self.assertTrue(connection.eof)
+            eof_received.set()
 
-        # Final native work exceeds the scaled input-idle timeout, but stays
-        # inside the separate drain deadline. No audio is expected after EOF.
-        app = make_app(self.factory(on_step=lambda: time.sleep(0.04)))
-        with patch("examples.pcm_websocket.asyncio.wait_for", short_input_wait):
-            messages = await self.exchange(app, bytes(640))
+        async def record_timeout(awaitable, timeout):
+            if timeout == 10 and eof_received.is_set():
+                post_eof_timeouts.append(timeout)
+            return await wait_for(awaitable, timeout)
+
+        def wait_for_drain_receive():
+            native_steps.append(True)
+            self.assertTrue(drain_receive.wait(5), "post-EOF receive was not reached")
+
+        # Hold the native owner until the transport is waiting after actual EOF.
+        # Inspect whether an idle deadline is armed; no tiny wall-clock deadline
+        # should race the start message or the final audio admission.
+        app = make_app(self.factory(on_step=wait_for_drain_receive))
+
+        async def observed_app(scope, receive, send):
+            async def observed_receive():
+                if eof_received.is_set():
+                    post_eof_receives.append(True)
+                    drain_receive.set()
+                return await receive()
+
+            await app(scope, observed_receive, send)
+
+        try:
+            with (
+                patch.object(StreamConnection, "finish", record_eof),
+                patch("examples.pcm_websocket.asyncio.wait_for", record_timeout),
+            ):
+                messages = await self.exchange(observed_app, bytes(640))
+        finally:
+            drain_receive.set()
+        self.assertTrue(eof_received.is_set())
+        self.assertTrue(post_eof_receives)
+        self.assertTrue(native_steps)
+        self.assertEqual(post_eof_timeouts, [])
         self.assertEqual(messages[-1]["status"], "completed")
+        self.assertTrue(messages[-1]["source_eof_received"])
+        self.assertTrue(messages[-1]["metadata"]["capacity_restored"])
 
 
 if __name__ == "__main__":

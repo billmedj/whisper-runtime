@@ -14,7 +14,7 @@ import math
 import re
 from collections.abc import Callable
 from contextlib import AbstractContextManager
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from importlib import import_module
 from inspect import Parameter, signature
 from numbers import Real
@@ -425,10 +425,13 @@ class NativeExecutionProfile:
     max_concurrent_decodes: int = 1
     device: str = "cpu"
     reuse_alignment_features: bool = False
+    reuse_decode_features: bool = False
 
     def __post_init__(self) -> None:
         if type(self.reuse_alignment_features) is not bool:
             raise TypeError("reuse_alignment_features must be a boolean")
+        if type(self.reuse_decode_features) is not bool:
+            raise TypeError("reuse_decode_features must be a boolean")
         if not self.profile_id or self.profile_id.isspace():
             raise ValueError("profile_id must not be empty")
         if not isinstance(self.resources, ResourceVector):
@@ -814,6 +817,34 @@ class _CudaDecodeScope:
 NativeModelIdentityProbe = Callable[[object], ModelSnapshot]
 
 
+def _replace_completed_run(
+    scope: _CpuDecodeScope | _CudaDecodeScope,
+    previous: NativeDecodeRun,
+    create: Callable[[], object],
+) -> object:
+    """Hand off one cleaned decoder without releasing its execution scope.
+
+    The owner calls this inside an admitted submission and the model lock.
+    If cleanup or creation fails, the fence still owns the previous handle.
+    Register the replacement before validating it or submitting prefill.
+    """
+
+    with scope._condition:
+        if scope._cleaned or scope._run is not previous:
+            raise NativeDecodeContractError("the decode scope cannot change owners")
+    cleanup = cast(Callable[[], object], previous.cleanup)
+    cleanup_result = cleanup()
+    if cleanup_result is not None:
+        close = getattr(cleanup_result, "close", None)
+        if callable(close):
+            close()
+        raise NativeDecodeContractError("decode cleanup must complete synchronously")
+    replacement = create()
+    with scope._condition:
+        scope._run = replacement
+    return replacement
+
+
 def _alignment_number(name: str, value: object) -> float:
     """Return one finite backend alignment value without coercing strings."""
 
@@ -923,6 +954,12 @@ class NativeWindowRun:
         alignment_max_frames: int = 3_000,
         reuse_alignment_features: bool = False,
         alignment_float32: object | None = None,
+        decode_options: NativeDecodeOptions | None = None,
+        build_redecode_task: Callable[
+            [NativeDecodeOptions],
+            tuple[_NativeDecodingTask, Callable[[object], object]],
+        ]
+        | None = None,
     ) -> None:
         self._worker = worker
         self._model_binding = model_binding
@@ -948,6 +985,9 @@ class NativeWindowRun:
         self._complete = complete
         self._closed = False
         self._owner_thread = current_thread()
+        self._decode_options = decode_options
+        self._build_redecode_task = build_redecode_task
+        self._decode_attempt = 1
 
     def __enter__(self) -> NativeWindowRun:
         return self
@@ -1002,9 +1042,92 @@ class NativeWindowRun:
 
     @property
     def step_count(self) -> int:
-        """Return the number of token steps submitted through this handle."""
+        """Return token steps across all decode attempts through this handle."""
 
         return self._step_count
+
+    @property
+    def decode_attempt(self) -> int:
+        """Return the current attempt number: one, or two after prompt reuse."""
+
+        return self._decode_attempt
+
+    def redecode(self, *, prompt: str | tuple[int, ...] | None) -> None:
+        """Replace a completed candidate with one new prompt on the same audio.
+
+        Requires an opted-in profile. Only the prompt changes. The new decoder
+        has private state and starts from the original seed. It keeps the same
+        lease, deadline and publication boundary. Drive it with ``step()``.
+
+        Previously returned snapshots stay immutable. Cached result and word
+        alignment are discarded; ``finish()`` can publish only the new attempt.
+        This does not select a better transcript or publish either candidate.
+        """
+
+        self._require_open()
+        build_task = self._build_redecode_task
+        options = self._decode_options
+        if build_task is None or options is None:
+            raise ValueError("prompt reuse requires an opted-in profile")
+        if self._decode_attempt != 1:
+            raise NativeDecodeContractError("only one prompt re-decode is allowed")
+        if not self.complete:
+            raise NativeDecodeContractError("prompt reuse requires a completed decode")
+        updated = replace(options, prompt=prompt)
+        if updated.prompt == options.prompt:
+            raise ValueError("the replacement prompt must differ from the first prompt")
+
+        try:
+            self.prepare_result()
+
+            def restart() -> tuple[NativeDecodeRun, NativeTokenizer | None]:
+                with self._model_binding.lock:
+                    require_model_available(self._model_binding)
+                    self._require_model_identity()
+                    previous = self._require_backend_run()
+                    _require_isolated_run(previous)
+                    features = self._require_encoder_features(self._alignment_model)
+                    unsqueeze = getattr(features, "unsqueeze", None)
+                    if not callable(unsqueeze):
+                        raise NativeDecodeContractError(
+                            "audio_features cannot be batched"
+                        )
+                    task, start = build_task(updated)
+                    _require_isolated_task(task)
+                    value = _replace_completed_run(
+                        self._execution, previous, lambda: start(unsqueeze(0))
+                    )
+                    if not isinstance(value, NativeDecodeRun):
+                        raise NativeDecodeContractError(
+                            "_start_run returned an incompatible decode handle"
+                        )
+                    _require_isolated_run(value)
+                    return value, cast(
+                        NativeTokenizer | None, getattr(task, "tokenizer", None)
+                    )
+
+            self._transaction.checkpoint()
+            backend, tokenizer = self._submit(restart)
+            self._backend_run = backend
+            self._tokenizer = tokenizer
+            self._decode_options = updated
+            self._decode_attempt = 2
+            self._complete = False
+            self._prepared_result = None
+            self._prepared_alignment = None
+            self._alignment_audio_features = None
+            self._alignment_reused_features = None
+            self._transaction.checkpoint()
+            if _require_run_complete(backend):
+                raise NativeDecodeContractError(
+                    "the decode run completed before its prefill stage"
+                )
+            self._submit(backend.prefill)
+            self._transaction.checkpoint()
+            self._complete = _require_run_complete(backend)
+        except BaseException as operation_error:
+            self._close_owner(operation_error=operation_error, committed_state=None)
+            raise
 
     def step(self) -> bool:
         """Run at most one token-generation step and stop at a safe boundary."""
@@ -1216,7 +1339,7 @@ class NativeWindowRun:
                             "alignment feature reuse requires the optional audio_features backend"
                         )
                     feature_arguments["audio_features"] = (
-                        self._require_alignment_features(model)
+                        self._require_encoder_features(model)
                     )
                 try:
                     mel = batched_mel[0]  # type: ignore[index]
@@ -1261,7 +1384,10 @@ class NativeWindowRun:
                     analysis_span=AudioSpan(self._start_ms, self._end_ms),
                     tokenizer=self._tokenizer,
                 )
-                if self._reuse_alignment_features:
+                if (
+                    self._reuse_alignment_features
+                    or self._build_redecode_task is not None
+                ):
                     # Only the exact finalized result of this owned backend run
                     # can supply features. Never accept a caller-provided tensor.
                     self._alignment_audio_features = getattr(
@@ -1271,11 +1397,11 @@ class NativeWindowRun:
                 raise NativeDecodeContractError(str(exc)) from exc
         return self._prepared_result
 
-    def _require_alignment_features(self, model: object) -> object:
+    def _require_encoder_features(self, model: object) -> object:
         features = self._alignment_audio_features
         if features is None:
             raise NativeDecodeContractError(
-                "the finalized result has no alignment audio_features"
+                "the finalized result has no audio_features"
             )
         dims = getattr(model, "dims", None)
         expected = (
@@ -1288,21 +1414,21 @@ class NativeWindowRun:
             )
         if getattr(features, "shape", None) != expected:
             raise NativeDecodeContractError(
-                "alignment audio_features must match one unbatched model window"
+                "audio_features must match one unbatched model window"
             )
-        # NativeDecodeOptions fixes FP32. The companion API also validates the
-        # real tensor type; these owner-side checks bind precision and device.
+        # NativeDecodeOptions fixes FP32. Check precision and device before
+        # either decoding or alignment can consume the retained tensor.
         if (
             self._alignment_float32 is None
             or getattr(features, "dtype", None) != self._alignment_float32
         ):
             raise NativeDecodeContractError(
-                "alignment audio_features must use native float32 precision"
+                "audio_features must use native float32 precision"
             )
         try:
             _require_exact_device(
                 features,
-                subject="alignment audio_features",
+                subject="audio_features",
                 expected=str(getattr(model, "device", None)),
             )
         except ValueError as exc:
@@ -1321,10 +1447,11 @@ class NativeWindowRun:
         self._alignment_model = None
         self._alignment_batched_mel = None
         self._alignment_audio_features = None
-        if self._reuse_alignment_features:
+        if self._reuse_alignment_features or self._build_redecode_task is not None:
             # Completed backend results themselves retain encoder tensors.
             # The execution scope has already dropped its run after fencing.
             self._backend_run = None
+        self._build_redecode_task = None
 
     def finish(
         self,
@@ -1563,9 +1690,21 @@ class NativeWhisperAdapter:
                 concurrency=concurrency,
                 device=execution_profile.device,
                 execution_variant=(
-                    "alignment_features/v1"
-                    if execution_profile.reuse_alignment_features
-                    else None
+                    "+".join(
+                        name
+                        for enabled, name in (
+                            (
+                                execution_profile.reuse_alignment_features,
+                                "alignment_features/v1",
+                            ),
+                            (
+                                execution_profile.reuse_decode_features,
+                                "decode_features/v1",
+                            ),
+                        )
+                        if enabled
+                    )
+                    or None
                 ),
             )
 
@@ -1592,12 +1731,15 @@ class NativeWhisperAdapter:
         start_ms: int,
         end_ms: int,
         options: NativeDecodeOptions | None = None,
+        draft_tokens: tuple[int, ...] = (),
     ) -> NativeWindowRun:
         """Start one native window and return after decoder prefill.
 
         The returned handle owns the admitted transaction. Drive and close it
         from this thread. Another thread may call ``cancel()`` for cooperative
         cancellation or ``stop()`` to fence and reclaim an orphaned run.
+        Optional draft tokens are untrusted greedy proposals, not a prompt.
+        They affect this run only; prompt re-decode starts without a draft.
         """
 
         if request.model != self._model_identity:
@@ -1611,6 +1753,18 @@ class NativeWhisperAdapter:
         if options is not None and not isinstance(options, NativeDecodeOptions):
             raise TypeError("options must be a NativeDecodeOptions or None")
         decode_options = options or NativeDecodeOptions()
+        if not isinstance(draft_tokens, tuple):
+            raise TypeError("draft_tokens must be a tuple")
+        if any(type(token) is not int or token < 0 for token in draft_tokens):
+            raise ValueError("draft_tokens must contain non-negative integer IDs")
+        if len(draft_tokens) > 32:
+            raise ValueError("draft_tokens cannot exceed 32 tokens")
+        if draft_tokens and (
+            decode_options.temperature != 0
+            or decode_options.beam_size is not None
+            or decode_options.best_of is not None
+        ):
+            raise ValueError("draft tokens require greedy decoding")
         WindowResult(window_id=window_id, text="", start_ms=start_ms, end_ms=end_ms)
         if end_ms - start_ms > 30_000:
             raise ValueError("a native decode window cannot exceed 30 seconds")
@@ -1697,6 +1851,8 @@ class NativeWhisperAdapter:
                     if (
                         cuda_profile
                         or self.execution_profile.max_concurrent_decodes == 2
+                        or self.execution_profile.reuse_decode_features
+                        or draft_tokens
                     ):
                         _require_isolated_task(task)
                     batched_mel = unsqueeze(0)
@@ -1738,8 +1894,22 @@ class NativeWhisperAdapter:
                     if (
                         cuda_profile
                         or self.execution_profile.max_concurrent_decodes == 2
+                        or self.execution_profile.reuse_decode_features
+                        or draft_tokens
                     ):
                         _require_isolated_run(run_value)
+                    if draft_tokens:
+                        from ._draft_inference import VerifiedDraftInference
+
+                        # The execution scope already owns cleanup if validation
+                        # or construction fails. No task or class is patched.
+                        setattr(
+                            run_value,
+                            "inference",
+                            VerifiedDraftInference(
+                                getattr(run_value, "inference"), draft_tokens
+                            ),
+                        )
                     return run_value
 
             run = submit_native(start_run)
@@ -1770,6 +1940,14 @@ class NativeWhisperAdapter:
                 alignment_max_frames=components.n_frames,
                 reuse_alignment_features=self.execution_profile.reuse_alignment_features,
                 alignment_float32=getattr(components.torch_module, "float32", None),
+                decode_options=decode_options,
+                build_redecode_task=(
+                    lambda updated: self._build_native_task(
+                        components, updated, seed=seed
+                    )
+                )
+                if self.execution_profile.reuse_decode_features
+                else None,
             )
             owner_transferred = True
             return handle

@@ -1,0 +1,329 @@
+{
+  "schema": "draft-t4-independent-audit/v1",
+  "provenance": {
+    "raw_matches_local_result": true,
+    "source_matches_preflight": true,
+    "current_frozen_files_match": true
+  },
+  "files": {
+    "acoustic-diagnostic.json": "8d1923e2fe79505a82c7a25cfc7abbac56752c9e7e848958185180b385ecf9a0",
+    "acoustic-diagnostic.result.zlib": "521911814bd10045a26cc1fca0b2822737450d5be8a6e2526d240339a8b4b110",
+    "draft-preflight.json": "230b6f19d68cca29f90cc861a0dcde579c1f59a0b91e3962f2d41b42e3263956",
+    "acoustic-diagnostic.attempt.jsonl": "2a6aead2dd7174ff397b56f69352320c7992b135917c5478851027b891205736"
+  },
+  "source_file_count": 59,
+  "arms": [
+    {
+      "arm": "fast-reuse",
+      "phases": {
+        "encoder/decode": {
+          "calls": 25,
+          "interval_ms": 440.6936616897583,
+          "input_tokens": 0
+        },
+        "decoder/decode": {
+          "calls": 1196,
+          "interval_ms": 4155.460451841354,
+          "input_tokens": 1196
+        },
+        "decoder/alignment": {
+          "calls": 18,
+          "interval_ms": 99.3507833480835,
+          "input_tokens": 1001
+        }
+      },
+      "operation_wall_ns": {
+        "close": 1961853,
+        "decode": 5729337474,
+        "result": 18950958,
+        "alignment": 1783066077,
+        "finish": 5801549
+      },
+      "total_operation_wall_ns": 7539117911,
+      "commits": [
+        {
+          "start_sample": 0,
+          "end_sample": 71040,
+          "text": "Concord returned to its place amidst the tents. For a while"
+        },
+        {
+          "start_sample": 71040,
+          "end_sample": 157760,
+          "text": "she lay in her chair in happy dreamy pleasure at son and bird and tree. And the"
+        },
+        {
+          "start_sample": 157760,
+          "end_sample": 187200,
+          "text": "gardeners boy chopped the"
+        },
+        {
+          "start_sample": 187200,
+          "end_sample": 215360,
+          "text": "tree into small pieces"
+        },
+        {
+          "start_sample": 215360,
+          "end_sample": 255360,
+          "text": ". There was a whole heap lying"
+        },
+        {
+          "start_sample": 255360,
+          "end_sample": 288000,
+          "text": "there. Concord"
+        },
+        {
+          "start_sample": 288000,
+          "end_sample": 317440,
+          "text": "returned to its place amidst the"
+        },
+        {
+          "start_sample": 317440,
+          "end_sample": 349760,
+          "text": "tents. For a while she lay in"
+        },
+        {
+          "start_sample": 349760,
+          "end_sample": 409600,
+          "text": "her chair in happy dreamy pleasure at son and bird and tree"
+        },
+        {
+          "start_sample": 409600,
+          "end_sample": 474560,
+          "text": ". And the gardeners boy chopped the tree into small"
+        },
+        {
+          "start_sample": 474560,
+          "end_sample": 548160,
+          "text": "pieces. There was a whole heap lying there."
+        },
+        {
+          "start_sample": 548160,
+          "end_sample": 618560,
+          "text": "Concord returned to its place amidst the tents"
+        },
+        {
+          "start_sample": 618560,
+          "end_sample": 738560,
+          "text": ". For a while she lay in her chair in happy dreamy pleasure at son and bird and tree."
+        },
+        {
+          "start_sample": 738560,
+          "end_sample": 744800,
+          "text": ""
+        }
+      ],
+      "native_windows": 25,
+      "observations_match": true,
+      "closed_and_released": true,
+      "matched_tokens": 0,
+      "proposed_tokens": 0,
+      "memory": {
+        "memory_before": {
+          "allocated_bytes": 160720896,
+          "reserved_bytes": 245366784
+        },
+        "memory_after_close": {
+          "allocated_bytes": 160720896,
+          "reserved_bytes": 306184192
+        },
+        "peak_allocated_bytes": 224433152,
+        "peak_reserved_bytes": 306184192
+      },
+      "clock": {
+        "first_commit_ns": 10539125382,
+        "final_event_ns": 46602896014,
+        "final_after_input_finished_ns": 52521419
+      }
+    },
+    {
+      "arm": "fast-draft32",
+      "phases": {
+        "encoder/decode": {
+          "calls": 25,
+          "interval_ms": 424.3615961074829,
+          "input_tokens": 0
+        },
+        "decoder/decode": {
+          "calls": 899,
+          "interval_ms": 3175.633695602417,
+          "input_tokens": 1532
+        },
+        "decoder/alignment": {
+          "calls": 18,
+          "interval_ms": 103.26240015029907,
+          "input_tokens": 1001
+        }
+      },
+      "operation_wall_ns": {
+        "close": 2077771,
+        "decode": 4762892085,
+        "result": 19496678,
+        "alignment": 182787298,
+        "finish": 6316772
+      },
+      "total_operation_wall_ns": 4973570604,
+      "commits": [
+        {
+          "start_sample": 0,
+          "end_sample": 71040,
+          "text": "Concord returned to its place amidst the tents. For a while"
+        },
+        {
+          "start_sample": 71040,
+          "end_sample": 157760,
+          "text": "she lay in her chair in happy dreamy pleasure at son and bird and tree. And the"
+        },
+        {
+          "start_sample": 157760,
+          "end_sample": 187200,
+          "text": "gardeners boy chopped the"
+        },
+        {
+          "start_sample": 187200,
+          "end_sample": 215360,
+          "text": "tree into small pieces"
+        },
+        {
+          "start_sample": 215360,
+          "end_sample": 255360,
+          "text": ". There was a whole heap lying"
+        },
+        {
+          "start_sample": 255360,
+          "end_sample": 288000,
+          "text": "there. Concord"
+        },
+        {
+          "start_sample": 288000,
+          "end_sample": 317440,
+          "text": "returned to its place amidst the"
+        },
+        {
+          "start_sample": 317440,
+          "end_sample": 349760,
+          "text": "tents. For a while she lay in"
+        },
+        {
+          "start_sample": 349760,
+          "end_sample": 409600,
+          "text": "her chair in happy dreamy pleasure at son and bird and tree"
+        },
+        {
+          "start_sample": 409600,
+          "end_sample": 474560,
+          "text": ". And the gardeners boy chopped the tree into small"
+        },
+        {
+          "start_sample": 474560,
+          "end_sample": 548160,
+          "text": "pieces. There was a whole heap lying there."
+        },
+        {
+          "start_sample": 548160,
+          "end_sample": 618560,
+          "text": "Concord returned to its place amidst the tents"
+        },
+        {
+          "start_sample": 618560,
+          "end_sample": 738560,
+          "text": ". For a while she lay in her chair in happy dreamy pleasure at son and bird and tree."
+        },
+        {
+          "start_sample": 738560,
+          "end_sample": 744800,
+          "text": ""
+        }
+      ],
+      "native_windows": 25,
+      "observations_match": true,
+      "closed_and_released": true,
+      "matched_tokens": 297,
+      "proposed_tokens": 633,
+      "memory": {
+        "memory_before": {
+          "allocated_bytes": 160720896,
+          "reserved_bytes": 306184192
+        },
+        "memory_after_close": {
+          "allocated_bytes": 160720896,
+          "reserved_bytes": 306184192
+        },
+        "peak_allocated_bytes": 224433152,
+        "peak_reserved_bytes": 306184192
+      },
+      "clock": {
+        "first_commit_ns": 10196125717,
+        "final_event_ns": 46610980246,
+        "final_after_input_finished_ns": 60780573
+      }
+    }
+  ],
+  "exact": {
+    "committed_output": true,
+    "window_tokens": true,
+    "window_text": true,
+    "native_window_spans": true,
+    "policy": true,
+    "metrics": true
+  },
+  "historical_control_reproduction": {
+    "committed_output": true,
+    "native_window_spans": true,
+    "policy": true,
+    "forward_counts": true,
+    "reference_errors": true
+  },
+  "efficiency": {
+    "total_forward_intervals_ms": [
+      4695.504896879196,
+      3703.257691860199
+    ],
+    "total_forward_intervals_change_percent": -21.131853268398903,
+    "decode_operation_wall_change_percent": -16.868362064301046,
+    "total_operation_wall_change_percent": -34.02980742954983,
+    "gate_recomputed": true
+  },
+  "max_absolute_score_difference": {
+    "avg_logprob": 9.5367431640625e-7,
+    "no_speech_prob": 0.0000014156103134155273,
+    "compression_ratio": 0
+  },
+  "cancellation_probe": {
+    "cache_empty": true,
+    "cancellation_changed_state": true,
+    "capacity_restored": true,
+    "features_cleared": true,
+    "hooks_empty": true,
+    "kind": "cancel_after_speculative_prefill",
+    "published_events": 0,
+    "rows_cleared": true,
+    "stats": {
+      "cleanup_calls": 1,
+      "crop_length": null,
+      "matched_tokens": 0,
+      "mismatch_index": null,
+      "ordinary_suffix_forwards": 0,
+      "parallel_prefills": 1,
+      "proposed_tokens": 32,
+      "saved_row_calls": 0
+    }
+  },
+  "lifecycle": {
+    "status": "completed",
+    "capacity_restored": true,
+    "hooks_unchanged": true,
+    "native_window_count": 55,
+    "elapsed_ns": 106252013989
+  },
+  "model_unchanged": true,
+  "registered_efficiency_gate": true,
+  "caveats": [
+    "Single fixed-order paired screening run, not a general speed or energy estimate.",
+    "Control alignment has six 190-351 ms host stalls versus about 10 ms in the candidate; shape/JIT warmup is a hypothesis, not established causality.",
+    "Do not attribute the full 34.03 percent total-operation wall reduction to draft decoding. Decode-operation wall falls 16.87 percent on this run.",
+    "Native-operation wall excludes mel construction, stream policy, driver work and source waiting.",
+    "Numerical scores differ. Exact tokens and policy decisions here do not prove equality near all decision thresholds.",
+    "Cancellation records actual native cleanup; published_events=0 is assigned, not a public-stream event counter.",
+    "Peak allocated/reserved memory is unchanged between arms; the reserved allocator pool is not released to other applications."
+  ]
+}

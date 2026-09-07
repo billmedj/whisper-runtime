@@ -1,0 +1,23 @@
+{
+  "schema": "cpu-development-observation-summary/v1",
+  "source": "Initial guarded tools/verify_deferred_word_commits.py stdout in this task; summary, not a byte-identical raw receipt",
+  "superseded_rule": "First alignment at max_window-preview_interval, second at hard max_window: 28/30 seconds",
+  "case": "concatenated-no-added-pauses",
+  "pcm_sha256": "f170f383aaefea4057c1d9a8ee2b105f6192b9aaa5b2995a9f0c01fac86f21aa",
+  "input_samples": 538560,
+  "endpoint_samples": [],
+  "error": "no stable contiguous prefix within the audio window; input retained",
+  "accepted_samples": 480000,
+  "committed_samples": 0,
+  "buffered_samples": 480000,
+  "decode_count": 15,
+  "final_count": 0,
+  "first_fallback": {"end_sample": 448000, "reason": "incomplete", "alignment_prepared": true},
+  "hard_bound": {"end_sample": 480000, "reason": "conflicting_speech_score", "alignment_prepared": false},
+  "capacity_restored": true,
+  "wall_seconds": 45.44876260001911,
+  "original_reporter_done_after_close": true,
+  "reporter_caveat": "The initial reporter read done after explicit close, which also marks abandonment done. No FINAL occurred. Later reports capture done before close.",
+  "gpu_used": false,
+  "source_paced": false
+}

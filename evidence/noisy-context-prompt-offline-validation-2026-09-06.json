@@ -1,0 +1,32 @@
+{
+  "schema_version": "1-offline-validation",
+  "observation_sha256": "03dde4ce7468ec5904f6bab6fd0252b6585a87097b5d5345672cf4b8e672c92c",
+  "dispatched_snapshot_digest": "0badcd5eda5fb18ea25863139e834060d7f951d0322e841b1a3748a8e3958635",
+  "verifier_sha256": "86b434532f1688c7d01c24028d7fb4bd92d9f68a2fc6d8c6b7abdb5629d7cbcc",
+  "current_producer_sha256": "7bdc4b49dc794b9f6cff87130aa102b848e085cabf6265eec78ac1646e2e870e",
+  "original_control": {
+    "head_only_control": "not_registered",
+    "ignored_fields": [
+      "window_id"
+    ],
+    "mismatch_is_observation_not_launch_failure": true,
+    "retained_null_alignment_equal": false
+  },
+  "replayed_control": {
+    "retained_null_alignment_equal": true,
+    "ignored_fields": [
+      "window_id"
+    ],
+    "head_only_control": "not_registered",
+    "mismatch_is_observation_not_launch_failure": true
+  },
+  "report_only_correction": true,
+  "corrected_fields": [
+    "control.retained_null_alignment_equal"
+  ],
+  "all_other_record_fields_unchanged": true,
+  "record_checks_pass": true,
+  "inference_run": false,
+  "publication_authorized": false,
+  "input_file_sha256": "fba47d51a5bcaa7582bb19086857a0d53dc79d193bff62b5d1a038f60cc8c460"
+}
