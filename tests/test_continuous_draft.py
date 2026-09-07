@@ -262,6 +262,7 @@ class ContinuousDraftTests(unittest.TestCase):
         first_commit(stream, pcm_ms(350, 9))
         self.assertTrue(stream._draft_tokens)
         with tempfile.TemporaryDirectory() as directory:
+            directory = Path(directory).resolve()
             path = Path(directory) / "draft-savepoint.json"
             digest = stream.save_checkpoint(path, pipeline_identity=PIPELINE)
             fresh = DraftRecordingAdapter(raw_result)
@@ -291,6 +292,7 @@ class ContinuousDraftTests(unittest.TestCase):
             DraftRecordingAdapter(), config=replace(self.config, max_draft_tokens=0)
         )
         with tempfile.TemporaryDirectory() as directory:
+            directory = Path(directory).resolve()
             path = Path(directory) / "savepoint.json"
             stream.save_checkpoint(path, pipeline_identity=PIPELINE)
             raw = json.loads(path.read_bytes())

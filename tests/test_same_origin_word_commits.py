@@ -232,6 +232,7 @@ class SameOriginWordCommitTests(unittest.TestCase):
         before = stream._word_previous
         pipeline = "sha256:" + "c" * 64
         with tempfile.TemporaryDirectory() as directory:
+            directory = Path(directory).resolve()
             path = Path(directory) / "same-origin.json"
             digest = stream.save_checkpoint(path, pipeline_identity=pipeline)
             self.assertIs(stream._word_previous, before)
@@ -278,6 +279,7 @@ class SameOriginWordCommitTests(unittest.TestCase):
         self.drain(stream)
         pipeline = "sha256:" + "c" * 64
         with tempfile.TemporaryDirectory() as directory:
+            directory = Path(directory).resolve()
             path = Path(directory) / "same-origin.json"
             stream.save_checkpoint(path, pipeline_identity=pipeline)
             saved = checkpoint.storage.decode(path.read_bytes(), checkpoint._TYPES)[
@@ -320,6 +322,7 @@ class SameOriginWordCommitTests(unittest.TestCase):
                 accepted = getattr(stream, field)
                 setattr(stream, field, replace(accepted))
                 with tempfile.TemporaryDirectory() as directory:
+                    directory = Path(directory).resolve()
                     with self.assertRaises(NativeStreamError):
                         stream.save_checkpoint(
                             Path(directory) / "invalid.json",
@@ -327,6 +330,7 @@ class SameOriginWordCommitTests(unittest.TestCase):
                         )
                 setattr(stream, field, None)
                 with tempfile.TemporaryDirectory() as directory:
+                    directory = Path(directory).resolve()
                     with self.assertRaises(NativeStreamError):
                         stream.save_checkpoint(
                             Path(directory) / "half.json",

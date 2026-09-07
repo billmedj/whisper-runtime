@@ -269,8 +269,10 @@ class CheckpointCodecTests(unittest.TestCase):
 
 
 class CheckpointFilesystemTests(unittest.TestCase):
+    # Resolve platform aliases in the fixture root, never the checkpoint under test.
     def test_exclusive_roundtrip_and_existing_file_unchanged(self) -> None:
         with tempfile.TemporaryDirectory() as root:
+            root = Path(root).resolve()
             path = Path(root) / "savepoint.json"
             checkpoint.write_new(path, b"first")
             self.assertEqual(checkpoint.read(path), b"first")
@@ -287,6 +289,7 @@ class CheckpointFilesystemTests(unittest.TestCase):
                 self.subTest(operation=operation),
                 tempfile.TemporaryDirectory() as root,
             ):
+                root = Path(root).resolve()
                 path = Path(root) / "savepoint.json"
                 with patch(
                     f"whisper_runtime.adapters._checkpoint_io.{operation}",
@@ -298,6 +301,7 @@ class CheckpointFilesystemTests(unittest.TestCase):
 
     def test_concurrent_writers_never_replace_each_other(self) -> None:
         with tempfile.TemporaryDirectory() as root:
+            root = Path(root).resolve()
             path = Path(root) / "savepoint.json"
 
             def attempt(value: bytes) -> bytes | None:
@@ -318,6 +322,7 @@ class CheckpointFilesystemTests(unittest.TestCase):
 
     def test_temp_collision_does_not_delete_an_unowned_file(self) -> None:
         with tempfile.TemporaryDirectory() as root:
+            root = Path(root).resolve()
             path = Path(root) / "savepoint.json"
             existing = Path(root) / ".savepoint-fixed.tmp"
             existing.write_bytes(b"unowned")
@@ -331,6 +336,7 @@ class CheckpointFilesystemTests(unittest.TestCase):
 
     def test_file_growth_after_stat_is_still_bounded(self) -> None:
         with tempfile.TemporaryDirectory() as root:
+            root = Path(root).resolve()
             path = Path(root) / "savepoint.json"
             path.write_bytes(b"small")
             original_fstat = os.fstat
@@ -350,6 +356,7 @@ class CheckpointFilesystemTests(unittest.TestCase):
 
     def test_oversized_read_write_and_directory_are_refused(self) -> None:
         with tempfile.TemporaryDirectory() as root:
+            root = Path(root).resolve()
             path = Path(root) / "savepoint.json"
             with patch.object(checkpoint, "_MAX_BYTES", 16):
                 with self.assertRaises(ValueError):
@@ -363,11 +370,13 @@ class CheckpointFilesystemTests(unittest.TestCase):
 
     def test_symlink_file_and_parent_are_refused(self) -> None:
         with tempfile.TemporaryDirectory() as root:
+            root = Path(root).resolve()
             directory = Path(root)
             actual = directory / "actual"
             actual.mkdir()
             original = actual / "saved.json"
             original.write_bytes(b"untouched")
+            self.assertEqual(checkpoint.read(original), b"untouched")
             linked_file, linked_dir = directory / "file-link", directory / "dir-link"
             try:
                 linked_file.symlink_to(original)
@@ -387,6 +396,7 @@ class CheckpointFilesystemTests(unittest.TestCase):
     @unittest.skipUnless(hasattr(os, "mkfifo"), "POSIX named pipes only")
     def test_fifo_read_is_rejected_without_blocking(self) -> None:
         with tempfile.TemporaryDirectory() as root:
+            root = Path(root).resolve()
             path = Path(root) / "pipe"
             os.mkfifo(path)
             with self.assertRaises(OSError):

@@ -106,6 +106,12 @@ coordinated writers. No distributed lease or rollback protection is provided.
 - The file contains audio and transcript content. Protect it with local access
   controls. Do not commit personal recordings to a public repository.
 
+Choose a trusted storage directory before constructing the checkpoint filename.
+For an application-created temporary directory, resolve that directory first:
+`Path(temporary_directory).resolve() / "session.checkpoint"`. This matters on
+macOS, where temporary paths can start with the `/var` alias for `/private/var`.
+Do not resolve arbitrary untrusted checkpoint paths to bypass link refusal.
+
 Only input included in this explicit savepoint is recoverable. `push()` still
 acknowledges in-memory admission; this API does not make each acknowledgement
 durable. Nor does it replay an output-delivery journal. Those are separate D6a

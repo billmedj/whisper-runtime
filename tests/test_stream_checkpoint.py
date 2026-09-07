@@ -111,7 +111,7 @@ def json_value(value):
 
 def process_stage(stage, directory, hybrid, digest=None):
     """Executed by separately terminated producer and fresh consumer processes."""
-    path = Path(directory) / "process-checkpoint.json"
+    path = Path(directory).resolve() / "process-checkpoint.json"
     stream, adapter = make_stream(hybrid=hybrid)
     if stage == "producer":
         prefix = first_commit(stream)
@@ -147,7 +147,7 @@ class StreamCheckpointTests(unittest.TestCase):
     def setUp(self):
         self.directory = tempfile.TemporaryDirectory()
         self.addCleanup(self.directory.cleanup)
-        self.root = Path(self.directory.name)
+        self.root = Path(self.directory.name).resolve()
         self.counter = 0
 
     def path(self):
@@ -314,6 +314,7 @@ class StreamCheckpointTests(unittest.TestCase):
         )
         for hybrid in (False, True):
             with self.subTest(hybrid=hybrid), tempfile.TemporaryDirectory() as folder:
+                folder = str(Path(folder).resolve())
                 control, _ = self.stream(hybrid=hybrid)
                 prefix, tail = first_commit(control), complete(control)
 
