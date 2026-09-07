@@ -1,62 +1,29 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1040" height="556" viewBox="0 0 1040 556" role="img" aria-labelledby="title desc">
-  <title id="title">From audio chunks to confirmed text</title>
-  <desc id="desc">Audio enters a bounded buffer. Whisper proposes text and timing. Provisional text can change. Publication checks use agreement, context and audio evidence before extending the confirmed prefix. The train sentence is illustrative, not a measured transcript.</desc>
+<svg xmlns="http://www.w3.org/2000/svg" width="880" height="360" viewBox="0 0 880 360" role="img" aria-labelledby="title desc">
+  <title id="title">Text arrives before the recording ends</title>
+  <desc id="desc">Audio goes through Whisper to produce preview text. After checks, text can be confirmed. The train sentence is an example.</desc>
   <defs>
-    <marker id="arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M1 1L7 4L1 7" fill="none" stroke="#2459D3" stroke-width="1.6"/></marker>
+    <marker id="arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M1 1L7 4L1 7" fill="none" stroke="#087E8B" stroke-width="1.5"/></marker>
     <style>
-      text{font-family:'Segoe UI',Arial,sans-serif;fill:#172A3A}
-      .heading{font-family:Bahnschrift,'Segoe UI',Arial,sans-serif;font-size:28px;font-weight:600}
-      .label{font-size:21px;font-weight:600}.body{font-size:18px}.note{font-size:16px;fill:#536879}
-      .mono{font-family:Consolas,'DejaVu Sans Mono',monospace;font-size:16px}
-      .link{fill:none;stroke:#2459D3;stroke-width:2;marker-end:url(#arrow)}
+      text{font-family:'Segoe UI',Helvetica,Arial,sans-serif;fill:#12343B}
+      .title{font-family:'Arial Nova',Helvetica,Arial,sans-serif;font-size:28px;font-weight:700;letter-spacing:-.6px}
+      .label{font-size:21px;font-weight:600}.sample{font-size:25px}.note{font-size:17px;fill:#52666A}
+      .arrow{fill:none;stroke:#087E8B;stroke-width:2;marker-end:url(#arrow)}
     </style>
   </defs>
-  <rect x="1" y="1" width="1038" height="554" rx="16" fill="#F5F8FC" stroke="#CED9E5"/>
-  <text class="heading" x="32" y="46">From audio chunks to confirmed text</text>
-  <text class="note" x="32" y="74">Existing Whisper weights. Separate rules for recognition and publication.</text>
-
-  <rect x="32" y="112" width="212" height="112" rx="10" fill="white" stroke="#CED9E5"/>
-  <text class="label" x="52" y="146">Audio input</text>
-  <path d="M52 177H67L71 167L76 188L83 154L89 198L96 165L101 186L108 174H119L124 159L131 195L138 170L145 181H158L165 166L172 190L179 176H219" fill="none" stroke="#2459D3" stroke-width="2.2" stroke-linejoin="round"/>
-  <text class="note" x="52" y="210">Bounded PCM buffer</text>
-
-  <path class="link" d="M246 169H280"/>
-  <rect x="294" y="112" width="360" height="112" rx="10" fill="white" stroke="#CED9E5"/>
-  <text class="label" x="318" y="146">Whisper backend</text>
-  <text class="body" x="318" y="178">Encode audio · decode tokens</text>
-  <text class="note" x="318" y="208">Reuse same-window features for alignment</text>
-
-  <path class="link" d="M656 169H698"/>
-  <rect x="712" y="112" width="296" height="112" rx="10" fill="white" stroke="#CED9E5"/>
-  <text class="label" x="732" y="146">Provisional text</text>
-  <text class="body" x="732" y="178">The train leaves at five.</text>
-  <text class="note" x="732" y="208">Visible now. Still open to revision.</text>
-
-  <path class="link" d="M474 226V286"/>
-  <rect x="342" y="241" width="265" height="27" rx="4" fill="#F5F8FC"/>
-  <text class="note" x="354" y="260">Hypotheses and word timings</text>
-
-  <text class="label" x="32" y="328">When unsure</text>
-  <text class="body" x="32" y="361">Retain context</text>
-  <text class="body" x="32" y="388">or stop explicitly.</text>
-  <text class="note" x="32" y="426">An unresolved result</text>
-  <text class="note" x="32" y="450">does not become final.</text>
-
-  <rect x="294" y="300" width="360" height="180" rx="10" fill="white" stroke="#2459D3"/>
-  <text class="label" x="318" y="335">Publication checks</text>
-  <path d="M318 359H630" stroke="#CED9E5"/>
-  <circle cx="323" cy="382" r="3" fill="#2459D3"/><text class="body" x="339" y="389">Agreement across observations</text>
-  <circle cx="323" cy="417" r="3" fill="#2459D3"/><text class="body" x="339" y="424">Right context and word timing</text>
-  <circle cx="323" cy="452" r="3" fill="#2459D3"/><text class="body" x="339" y="459">Supporting audio evidence</text>
-
-  <path class="link" d="M656 389H698"/>
-  <rect x="712" y="300" width="296" height="180" rx="10" fill="white" stroke="#087F75"/>
-  <rect x="732" y="319" width="4" height="22" rx="2" fill="#087F75"/>
-  <text class="label" x="749" y="338">Confirmed text</text>
-  <text class="body" x="732" y="382">The train leaves at nine.</text>
-  <path d="M732 406H984" stroke="#CED9E5"/>
-  <text class="note" x="732" y="434">Confirmed prefixes stay fixed.</text>
-  <text class="mono" x="732" y="461">TXT  /  SRT  /  VTT</text>
-
-  <text class="note" x="32" y="525">Illustrative flow, not a benchmark waveform. Confirmation does not guarantee correct recognition.</text>
+  <rect width="880" height="360" rx="12" fill="#FFFFFF"/>
+  <text class="title" x="36" y="48">Text arrives before the recording ends.</text>
+  <text class="label" x="36" y="121">Audio</text>
+  <path d="M36 152H51L57 137L66 170L77 124L89 173L99 145L107 157H134" fill="none" stroke="#087E8B" stroke-width="3" stroke-linejoin="round"/>
+  <path class="arrow" d="M160 141H238"/>
+  <rect x="257" y="99" width="170" height="84" rx="8" fill="#EAF6F4"/>
+  <text class="label" x="299" y="149">Whisper</text>
+  <path class="arrow" d="M445 141H494"/>
+  <text class="label" x="519" y="119">Preview</text>
+  <text class="sample" x="519" y="154" style="fill:#52666A">The train leaves…</text>
+  <path class="arrow" d="M342 184V262H494"/>
+  <text class="note" x="360" y="241">After checks</text>
+  <text class="label" x="519" y="242">Confirmed</text>
+  <text class="sample" x="519" y="278">The train leaves at nine.</text>
+  <path d="M519 291H795" stroke="#087E8B" stroke-width="3"/>
+  <text class="note" x="36" y="331">Example transcript</text>
 </svg>

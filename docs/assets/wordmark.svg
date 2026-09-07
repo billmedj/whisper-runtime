@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="560" height="100" viewBox="0 0 560 100" role="img" aria-labelledby="title">
+  <title id="title">Whisper Runtime</title>
+  <rect width="560" height="100" fill="#FFFFFF"/>
+  <path d="M18 35L29 65L42 29L55 65L66 40H88" fill="none" stroke="#087E8B" stroke-width="9" stroke-linecap="square" stroke-linejoin="round"/>
+  <text x="114" y="64" font-family="'Arial Nova',Helvetica,Arial,sans-serif" font-size="42" font-weight="700" letter-spacing="-1.4" fill="#12343B">Whisper <tspan font-weight="400">Runtime</tspan></text>
+</svg>

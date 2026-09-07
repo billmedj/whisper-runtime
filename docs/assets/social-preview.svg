@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" role="img" aria-labelledby="title desc">
+  <title id="title">Whisper Runtime</title>
+  <desc id="desc">Streaming transcription for Whisper. Python API and CLI.</desc>
+  <rect width="1200" height="630" fill="#EAF6F4"/>
+  <path d="M77 103L93 149L112 95L131 149L147 111H180" fill="none" stroke="#087E8B" stroke-width="13" stroke-linecap="square" stroke-linejoin="round"/>
+  <text x="70" y="292" font-family="'Arial Nova',Helvetica,Arial,sans-serif" font-size="88" font-weight="700" letter-spacing="-3.5" fill="#12343B">Whisper <tspan font-weight="400">Runtime</tspan></text>
+  <text x="74" y="358" font-family="'Segoe UI',Helvetica,Arial,sans-serif" font-size="34" fill="#12343B">Streaming transcription for Whisper.</text>
+  <path d="M74 473H1126" stroke="#B5D8D7"/>
+  <text x="74" y="531" font-family="Consolas,'Liberation Mono',monospace" font-size="25" fill="#52666A">Python API + CLI</text>
+  <text x="1126" y="531" text-anchor="end" font-family="Consolas,'Liberation Mono',monospace" font-size="25" fill="#52666A">billmedj/whisper-runtime</text>
+</svg>

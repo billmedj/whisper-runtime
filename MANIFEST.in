@@ -10,6 +10,7 @@ recursive-include conformance *.json *.md
 recursive-include constraints *.txt
 recursive-include docs *.md
 recursive-include docs/assets *.svg
+include docs/assets/social-preview.png
 recursive-include evidence *.json *.jsonl *.md
 include evidence/modal-composed-features-2026-09-07.zip
 include evidence/modal-draft-features-2026-09-07.zip

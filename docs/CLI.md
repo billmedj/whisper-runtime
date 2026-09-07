@@ -1,77 +1,50 @@
 # Single-stream transcript CLI
 
-`whisper-runtime` runs one alpha local or remote stream. Confirmed text requires
-the SDK's agreement and audio-evidence checks; this is not an omission-free
-recognizer or a production streaming guarantee. Local inference supports the
-pinned `tiny.en` checkpoint, English transcription, FP32, on `cpu` or an available
-`cuda:0`. For a first local run, follow [Getting started](GETTING_STARTED.md).
+`whisper-runtime` transcribes one stream locally or through a live-v2 server.
+Local mode uses the pinned English `tiny.en` model in FP32 on `cpu` or `cuda:0`.
+For your first run, see [Getting started](GETTING_STARTED.md).
 
-Use `--profile low-latency-v2` for earlier confirmed text. It starts word-agreement
-checks without waiting for the late-window schedule and requires two seconds of
-right context in both observations. Confirmation still depends on supported
-audio and agreement, not a fixed timer. This profile needs the separate reuse
-backend described below; it does not use token drafts.
-
-Omitting `--profile` retains `conservative-v1`. That default keeps text provisional
-until a quiet endpoint, EOF, or a reserved pair of boundary checks before the
-30-second window fills. Previews update every two seconds, but without a pause
-confirmed text can take roughly one window to become available. See the
-[standard-policy comparison](research/2026-09-06-deferred-word-commits.md) and
-[two-observation results](research/2026-09-07-two-observation-holdback.md).
-Remote mode sends audio to an explicitly selected live-v2 server and requires no
-local model, setup manifest, PyTorch, Whisper or NumPy.
+Choose `--profile low-latency-v2` for earlier confirmed text. Omitting it selects
+`conservative-v1`, which can wait nearly 30 seconds to confirm continuous speech.
+Both check agreement and audio evidence; neither guarantees correct recognition
+or a fixed caption delay. See [profiles](#versioned-local-execution-profiles).
 
 ## Installation and verified backend
 
-The package exposes a real console-script entrypoint:
+From the repository checkout:
 
 ```console
 python -m pip install .
 whisper-runtime --help
 ```
 
-Installation of the runtime itself does not install PyTorch, Whisper, NumPy or
-microphone support. Help and argument parsing work without those dependencies.
-Use the interpreter/environment containing the verified native prerequisites for
-transcription. `python -m whisper_runtime.cli` is an equivalent entrypoint.
-Bootstrap installs the runtime into its own environment: activate
-`.tmp-native-reuse/venv` for a reuse profile, or `.tmp-native/venv` for Standard.
-The separate core-only `.venv` does not acquire those native dependencies.
+The package and help command need no ML dependencies.
+`python -m whisper_runtime.cli` runs the same command.
 
-First prepare or verify the repository's native setup using
-`tools/bootstrap_native_backend.py` and the instructions in
-[NATIVE_ADAPTER.md](NATIVE_ADAPTER.md). The bootstrap can install dependencies and
-fetch backend source; that is a separate, explicit setup operation. The CLI does
-not run bootstrap, install packages, fetch models, or accept an arbitrary stock
-Whisper installation.
+For local transcription, use `tools/bootstrap_native_backend.py` as described in
+[Getting started](GETTING_STARTED.md). It installs the runtime and dependencies
+into its own environment. Activate `.tmp-native-reuse/venv` for reuse profiles,
+or `.tmp-native/venv` for Standard—not the core-only `.venv`.
+The CLI does not bootstrap, install packages or download models. Stock Whisper
+and custom weights are not supported.
 
-Every local transcription requires the setup manifest and a local checkpoint path.
-The installed factory checks the backend checkout identity and patch artifacts,
-dependency versions, checkpoint SHA-256 and loaded model fingerprint before
-inference. A checkpoint path is passed directly to the backend loader; model-name
-download fallback is not used. Because local-path loading omits the named-model
-alignment mask, the factory restores the verified backend's `tiny.en` mask before
-moving the model to the requested device. This preserves the named model's legacy
-alignment-head selection; the mask is not part of the weight-state fingerprint.
-The initial release deliberately supports only the recorded `tiny.en` checkpoint,
-not custom or user-trained weights.
+Supply a setup manifest and an existing checkpoint. Before inference, the
+factory verifies the backend checkout, dependency versions, checkpoint SHA-256
+and model fingerprint. It restores the `tiny.en` alignment-head mask when loading
+by path; that mask is separate from the weight fingerprint.
 
-Selecting `cuda:0` also requires the verified backend's CUDA alignment
-prerequisites, including importable Triton. Its otherwise-lazy alignment module is
-loaded under the same fresh-bytecode-cache guard before checkpoint loading; a
-missing prerequisite fails early. Before creating the worker or accepting audio,
-CUDA startup compiles the alignment backtrace's two CPU Numba signatures:
-two-dimensional int32 arrays with contiguous or general strided layout. Compilation
-failure prevents readiness. It runs no model decode, allocates no GPU tensors for
-warm-up, and leaves Triton kernels lazy. Startup precedes the source-pacing clock;
-it does not remove later kernel-compilation costs or change any lateness limit.
-CPU skips both CUDA-specific preparation steps. Neither preparation nor READY
-alone qualifies GPU performance or changes alignment numerics.
+Bootstrap installs CPU dependencies. CUDA needs compatible CUDA PyTorch, Triton
+and an NVIDIA driver supplied separately. Use CPU on native Windows; changing
+`--device` does not set up CUDA.
 
-The repository bootstrap installs a CPU environment. CUDA requires separately
-provisioned compatible PyTorch/CUDA, Triton and driver prerequisites; changing
-`--device` does not install them. Native Windows uses the CPU path, not a bundled
-Windows CUDA setup. See [current platform and release limits](V01_STATUS.md).
+CUDA startup imports the alignment module under the fresh-bytecode guard before
+loading the checkpoint. It then compiles the CPU backtrace for contiguous and
+strided 2-D int32 arrays before creating a worker or accepting audio. An import
+or compile failure stops startup. Backtrace compilation runs no model decode
+and allocates no GPU tensors; Triton kernels stay lazy. CPU skips these
+CUDA-specific steps. Startup is outside the source-pacing clock; later kernel
+compilation still counts against the unchanged timing limits. See
+[platform status](V01_STATUS.md).
 
 ## File transcription
 
@@ -79,86 +52,64 @@ Windows CUDA setup. See [current platform and release limits](V01_STATUS.md).
 whisper-runtime speech.wav --setup-manifest .tmp-native-reuse/manifest.json --model "PATH/TO/EXISTING/tiny.en.pt" --profile low-latency-v2 --txt speech.txt --srt speech.srt --vtt speech.vtt
 ```
 
-Replace the model placeholder with the existing checkpoint's actual path; no
-particular model-cache directory is assumed or created. Use the actual manifest
-path printed by bootstrap. Input must be uncompressed,
-mono, 16 kHz, signed 16-bit PCM WAV (`.wav`/`.wave`) or little-endian raw PCM
-(`.pcm`/`.s16le`). No resampling, channel mixing, compressed decoding, or implicit
-ffmpeg invocation is performed. Empty, incomplete and truncated inputs fail
-explicitly. Files are read in 20 ms chunks, including a partial final chunk.
+Use the manifest path printed by bootstrap and your checkpoint's path.
+Input must be uncompressed mono, 16 kHz, signed 16-bit PCM WAV (`.wav`/`.wave`)
+or little-endian raw PCM (`.pcm`/`.s16le`). The CLI does not resample, mix channels,
+decode compressed formats or run FFmpeg. Empty or truncated input is rejected.
+Reads use 20 ms chunks, including a partial final chunk.
 
-In local mode a file is offered as fast as the SDK can accept it. Backpressure keeps
-and retries the exact rejected chunk without losing samples. Add `--paced` to
-offer chunks on their real source clock instead. A source-clock delay above
-250 ms or a full runtime input buffer stops paced mode with an error; it never
-slows the clock or drops audio to claim success. This option is a local replay,
-not a device-latency or GPU benchmark.
+Local files run as fast as the SDK can accept them; a full buffer delays and
+retries the same chunk. With `--paced`, chunks follow the source clock instead.
+Lateness above 250 ms or a full buffer stops paced mode. Audio is not dropped,
+and pacing is not slowed to accommodate decoding. CPU may not keep up in this mode.
 
-Stdout shows `[provisional]`, `[replace]`, `[commit]`, and `[final]` events with
-revision numbers and source intervals. Redirecting stdout captures this event
-display, not a clean transcript. Use `--txt` for committed transcript text.
+Stdout shows `[provisional]`, `[replace]`, `[commit]` and `[final]` events with
+revisions and source intervals. Use `--txt` for a transcript; redirected stdout
+contains the event display.
 
 ## Remote WebSocket transcription
 
-Install the optional client dependency and select an existing live-v2 endpoint:
+Remote mode needs an existing live-v2 server and the client dependency, but no
+local model or ML packages:
 
 ```console
 python -m pip install ".[remote]"
 whisper-runtime speech.wav --server wss://YOUR-SERVER/ --header-env Authorization=WHISPER_AUTHORIZATION --txt speech.txt --srt speech.srt --vtt speech.vtt
 ```
 
-Set `WHISPER_AUTHORIZATION` securely in the process environment before running;
-its value is the full header value, such as the authentication scheme followed
-by its credential. Do not put credentials in command arguments or URL paths.
-`--header-env HEADER=ENV_NAME` is repeatable for gateways needing several headers
-(for example, `Modal-Key` and `Modal-Secret`). The command receives variable names,
-not credential values. Missing variables, header injection, duplicate header
-names and reserved WebSocket/connection headers fail before connecting. The CLI
-does not print headers, the server URL, or raw transport/server exceptions, and
-rejects transcript text reflecting supplied credentials before displaying it.
+Set `WHISPER_AUTHORIZATION` in the environment to the full header value, including
+its authentication scheme. Pass variable names, never credentials, on the command
+line. Repeat `--header-env HEADER=ENV_NAME` for additional headers. Missing
+variables, injected newlines, duplicate names and reserved connection headers are
+rejected before connecting. The CLI hides headers, the server URL and raw remote
+exceptions. It also rejects transcript text that repeats supplied credentials.
 
-`--server` excludes `--setup-manifest`, `--model`, `--device` and `--profile`.
-The live-v2 protocol does not negotiate or attest the server's execution profile;
-the client neither chooses nor claims to verify one. Even an explicit
-`--profile conservative-v1` is rejected remotely. Configure the server separately.
-Non-loopback
-servers require `wss://`; `ws://` is accepted only for `localhost`, `127.0.0.1` or
-`::1` testing. URL user/password fields, query strings and fragments are rejected.
-The client uses normal TLS verification, does not follow redirects or reconnect,
-and does not use environment proxy/netrc credentials. Server deployment and access
-control are separate operations; this command does not create or configure a server.
+`--server` cannot be combined with `--setup-manifest`, `--model`, `--device` or
+`--profile`. Configure the server's profile separately; the client cannot verify
+it. You must also provide the server and its access controls.
 
-Remote files are always paced in 20 ms chunks, beginning only after the server's
-READY message. The same optional bounded microphone source can be selected with
-`--microphone --duration 30`; install `.[remote,microphone]` for that combination.
-Capture likewise starts only after READY. Both sources use the existing
-`pcm-websocket/live-v2` protocol, with unknown length at START and actual sample
-count/hash at EOF. No legacy replay-v1 fallback or audio retry is attempted.
+Use `wss://` except for loopback tests: `ws://` allows only `localhost`,
+`127.0.0.1` or `::1`. URL credentials, query strings and fragments are rejected.
+TLS verification stays enabled. The client does not follow redirects, reconnect
+or use environment proxy/netrc credentials.
 
-Bounds remain explicit: at most one hour of audio, 3,700 seconds for the whole
-connection, 90 seconds for READY, 10 seconds without source data, and 250 ms for
-a send or output callback. `--drain-timeout` defaults to 30 seconds remotely and
-may only be lowered. File-clock lateness above 250 ms, a blocked send, a source or
-server overload, protocol errors, premature completion or failed cleanup aborts;
-none is converted into a successful partial export. A real FINAL is necessary
-but insufficient: verified DONE, EOF hash/count and full committed coverage are
-also required. Remote failures are intentionally shown as fixed local error codes.
-The CLI retains SDK FINAL internally but prints `[final] complete` only after
-those remote completion checks pass. FINAL followed by invalid DONE or a
-disconnect therefore prints neither completion nor success exports.
+Files are paced in 20 ms chunks after READY. For a microphone, install
+`.[remote,microphone]` and use `--microphone --duration 30`; capture also starts
+after READY. Both use `pcm-websocket/live-v2`, sending the sample count and hash
+at EOF. There is no replay-v1 fallback or audio retry.
 
-The installed transport lives in `whisper_runtime.remote_transport`; old
-`examples.replay_websocket` imports remain compatibility aliases. The synchronous
-audio source and stdout callback are bridged with Python's
+Limits are one hour of audio, 3,700 seconds per connection, 90 seconds for READY,
+10 seconds without source data, and 250 ms per send or output callback.
+Remote `--drain-timeout` defaults to 30 seconds and may only be lowered.
+File-clock lateness above 250 ms, overload, blocked sends, protocol errors,
+premature completion or failed cleanup stop the run. Errors use fixed local
+codes, not raw server messages. FINAL alone cannot produce successful exports;
+see [completion checks](#final-exports-and-failures).
+
+Audio reads and output callbacks run through
 [`asyncio.to_thread`](https://docs.python.org/3.10/library/asyncio-task.html#asyncio.to_thread)
-so they do not block network receiving. The callback deadline bounds protocol
-waiting, not process exit: if stdout blocks, timing out its coroutine cannot stop
-the underlying thread, and executor shutdown may wait for that write to return.
-OS file/device/terminal calls likewise stop cooperatively; Python cannot forcibly
-terminate a stuck I/O thread. Source/callback deadlines are not hard wall-clock
-guarantees for CLI cancellation or exit. Loopback
-scripted-backend tests establish integration behavior, not WAN/GPU capacity or
-physical microphone qualification.
+to keep network receiving responsive. Timing out a callback does not kill its
+thread: blocked stdout or device I/O can still delay process exit.
 
 ## Optional microphone capture
 
@@ -167,66 +118,54 @@ python -m pip install ".[microphone]"
 whisper-runtime --microphone --duration 30 --setup-manifest .tmp-native/manifest.json --model "PATH/TO/EXISTING/tiny.en.pt" --txt recording.txt
 ```
 
-Microphone support is lazy and optional: `sounddevice` plus a functioning
-PortAudio installation and device capable of mono 16 kHz int16 capture are
-required. `--input-device "device name"` selects a sounddevice name/query.
-`--duration` is mandatory (greater than zero, at most one hour); completion of
-that finite capture closes input and drains the SDK. Ctrl+C cancels rather than
-synthesizing EOF or a final transcript.
+This example uses Standard and its `.tmp-native` setup. Capture needs
+`sounddevice`, PortAudio and a device that supports mono 16 kHz int16 input on a
+little-endian host. Select a device with `--input-device "device name"`.
+`--duration` is required: greater than zero and at most one hour. At the end,
+capture closes input and drains the stream. Ctrl+C cancels; it does not create EOF.
 
-Capture uses a bounded 64-frame queue (1.28 seconds at the 20 ms callback size).
-Device status errors, capture-queue overflow, runtime-buffer overflow, a stopped
-device, or five seconds without a callback abort explicitly. There is no silent
-drop, restart, reconnect, or conversion. This Python callback path is experimental,
-not a hard-real-time implementation. Little-endian hosts are currently required.
-Physical-device behavior has to be verified on the deployment machine; scripted
-tests do not establish microphone reliability.
+The queue holds 64 frames of 20 ms (1.28 seconds). Device errors, either input
+buffer overflowing, a stopped device or five seconds without a callback stop
+capture. It does not drop audio, restart or reconnect. Physical microphones still
+need testing on the deployment machine; this is not a hard-real-time path.
 
-The capture API and error semantics follow the primary
-[sounddevice raw-stream documentation](https://python-sounddevice.readthedocs.io/en/0.5.3/api/raw-streams.html),
-[callback status documentation](https://python-sounddevice.readthedocs.io/en/0.5.3/api/misc.html),
-and [stream lifecycle documentation](https://python-sounddevice.readthedocs.io/en/0.5.3/api/streams.html).
+See sounddevice's [raw streams](https://python-sounddevice.readthedocs.io/en/0.5.3/api/raw-streams.html),
+[callback status](https://python-sounddevice.readthedocs.io/en/0.5.3/api/misc.html)
+and [stream lifecycle](https://python-sounddevice.readthedocs.io/en/0.5.3/api/streams.html).
 
 ## Final exports and failures
 
-TXT/SRT/VTT are created only after a real SDK `FINAL`, exact committed revisions,
-full offered/accepted/committed sample coverage, and cleanup (plus verified DONE
-and EOF hash/count remotely). Preview text
-never appears in a final export. Empty committed silence advances coverage but
-does not create an empty subtitle cue. SRT/VTT use one cue per nonempty commit;
-their times describe committed source coverage, not acoustic word boundaries.
-There is no heuristic cue splitting or line-length/reading-speed optimization.
+Completion requires SDK FINAL, valid committed revisions, full sample coverage
+from input through commit, and successful cleanup. Remote runs also need valid
+DONE and matching EOF counts/hash. Only then does the CLI print `[final] complete`
+and write exports. A disconnect or invalid DONE after FINAL is still a failure.
 
-The CLI prints `[final] complete` only after the driver and cleanup succeed.
-An SDK FINAL alone does not confirm successful completion of the command.
+Exports contain no preview text. SRT/VTT create one cue per nonempty commit;
+silence advances coverage without an empty cue. Times describe committed audio,
+not word boundaries. Cue splitting and reading-speed formatting are not provided.
 
-Existing paths are never overwritten, and the CLI does not create missing parent
-directories. Choose distinct output paths. Creation is exclusive even if a file
-appears after preflight. Multiple exports are not one atomic filesystem transaction:
-an I/O failure or interruption during writing can leave new files partial or some
-exports complete. The error reports that possibility; existing files stay intact.
+Choose distinct paths in existing directories. Output creation never overwrites
+a file, even one created after preflight. The files are not written as one atomic
+group: an export error can leave new files incomplete or only some formats saved.
+Failures before export create no final files.
 
-Exit status is `0` only on successful completion, `1` on input, native-policy,
-network, execution, cleanup or export failure, `2` for argparse usage errors, and `130` for
-Ctrl+C cancellation unless cleanup itself fails. An unresolved SDK boundary stays
-an error; a prompt is not automatically injected and acceptance rules are not
-weakened. On pre-export failure/cancellation no final files are generated; printed
-commits are still committed history, not proof of complete recognition.
+Exit codes: `0` for success, `1` for run or export failure, `2` for invalid
+arguments, and `130` for Ctrl+C unless cleanup fails. Unresolved boundaries remain
+errors; the CLI does not inject prompts or relax publication checks to finish.
+Previously printed commits do not prove that the whole recording was transcribed.
 
-Locally, `--drain-timeout` defaults to 90 seconds. Its clock starts when the
-source ends, before the driver publishes EOF to the stream. Cancellation and
-deadlines are checked again after native work and before reporting completion.
-They remain cooperative: a blocking native call cannot be forcibly preempted
-by this CLI. It does not offer microphone recovery, resume/checkpoint
-controls, multiple concurrent streams, diarization,
-translation, or automatic model choice.
+Local `--drain-timeout` defaults to 90 seconds, starting when the source ends,
+before EOF is sent to the stream. Cancellation and deadlines are checked after
+native work and before completion. Blocking native calls and I/O cannot be
+forcibly interrupted, so these deadlines do not guarantee process exit time.
+The CLI has no microphone recovery, resume/checkpoint controls, concurrent
+streams, diarization, translation or automatic model selection.
 
 ## Versioned local execution profiles
 
-`--profile` selects an exact, versioned local configuration. Omitting it keeps
-`conservative-v1` and all existing conservative defaults. Profile names are stable
-identifiers, not model names or a promise of qualification; the runtime remains
-experimental. A changed registered definition requires a new profile version.
+`--profile` selects a versioned local configuration, not a model.
+The default remains `conservative-v1`. Changed settings require a new profile
+version; unknown names are errors, with no fallback.
 
 | Profile | Display label | Left / retained word context | Alignment feature reuse | Draft token limit |
 | --- | --- | --- | --- | --- |
@@ -235,52 +174,47 @@ experimental. A changed registered definition requires a new profile version.
 | `low-latency-v2` (recommended for earlier confirmation) | Low latency v2 (experimental) | 20 / 24 seconds | On, same window only | 0 |
 | `experimental-optimized-v1` | Optimized (experimental) | 20 / 24 seconds | On, same window only | 32 |
 
-All choices keep English `tiny.en`, FP32, one inference lane, the same decode
-options and RNG seed, 2-second previews/holdback, 30-second maximum window,
-40-second input buffer, endpoint settings, source-unit/evidence checks,
-word-boundary fallback and EOF context retry. The low-latency profiles start word
-agreement checks without waiting for the late-window schedule. Version 2 also
-requires two seconds of right context in the earlier observation before a word
-can be confirmed. Version 1 checks that holdback only in the later observation.
-Standard and Optimized defer those checks. Publication still needs supported
-audio and matching hypotheses; no clock alone can authorize text. The
-optimized choice does not relax publication checks, change draft thresholds, or
-reuse an encoder result across a changed audio window. Its name does not claim
-universal speedup, accuracy, low final-caption latency, or sustained live capacity.
-See the [composition experiment](research/2026-09-06-composed-inference.md) and
-[integrated draft results](research/2026-09-07-integrated-draft-gpu-results.md).
+All profiles use one inference lane, the same decode options and RNG seed,
+2-second preview intervals and holdback, a 30-second window and a 40-second input
+buffer. Endpoint, audio-evidence, word-boundary and EOF-retry checks are shared.
+
+Low-latency profiles start agreement checks early. During nonfinal agreement,
+version 2 requires two seconds of audio after a word in both observations;
+version 1 applies that holdback only to the later one. When a source unit closes
+or the stream ends, these holdbacks do not apply; word anchors are still checked.
+Standard and Optimized defer checks until a quiet endpoint,
+EOF or the reserved checks near the window limit. Reuse stays within one audio
+window. Optimized enables token drafts without weakening their acceptance or
+publication checks.
+
+See the [standard-policy comparison](research/2026-09-06-deferred-word-commits.md),
+[two-observation results](research/2026-09-07-two-observation-holdback.md),
+[reuse experiment](research/2026-09-06-composed-inference.md) and
+[draft results](research/2026-09-07-integrated-draft-gpu-results.md).
 
 ```console
 whisper-runtime speech.wav --setup-manifest PATH/TO/REUSE/manifest.json --model PATH/TO/tiny.en.pt --profile low-latency-v2 --txt speech.txt
 ```
 
-The standard profile requires the original pinned backend tree
-`c011d2563c26763b5f147026e6b18ef85bccd4fb`. The feature-reuse profiles require the
-separate alignment-reuse tree `32163d5cdb87babc1cd415a86cc5a58116c86a16`.
-Each rejects the other tree, even when the checkpoint is correct. Both check the
-manifest, clean checkout, actual tree, dependency versions and checkpoint before
-inference. The command never applies patches or downloads a model. Unknown names
-are usage errors, with no fallback to another profile. Profiles are local only;
-there is no corresponding live-v2 server-selection field.
-
-Prepare the separate feature-reuse backend explicitly:
+Standard requires backend tree `c011d2563c26763b5f147026e6b18ef85bccd4fb`;
+reuse profiles require `32163d5cdb87babc1cd415a86cc5a58116c86a16`. Each rejects
+the other tree, even with the right checkpoint. Prepare the reuse backend with:
 
 ```console
 python tools/bootstrap_native_backend.py --alignment-feature-reuse
 python tools/bootstrap_native_backend.py --alignment-feature-reuse --verify-only
 ```
 
-This uses `.tmp-native-reuse` by default and leaves `.tmp-native` unchanged. Use
-the resulting `.tmp-native-reuse/manifest.json` with a feature-reuse profile.
-The opt-in verifies and applies the pinned
-[alignment patch](../patches/openai-whisper/experimental/README.md), then checks
-the clean backend tree. The ordinary bootstrap still uses seven patches; the
-opt-in uses eight. Setup can fetch source and install dependencies. Verification
-does neither. A matching local checkpoint is still required separately.
+This creates `.tmp-native-reuse` without changing `.tmp-native`. Use its
+`manifest.json` with a reuse profile. Bootstrap checks and applies the
+[alignment patch](../patches/openai-whisper/experimental/README.md): eight patches
+instead of Standard's seven. Setup can fetch source and install dependencies;
+verification does neither. The checkpoint is still supplied separately.
 
 ### Python catalog and factory
 
-The installed catalog is usable without Torch, NumPy, Whisper or device access:
+The catalog needs no ML imports. Calling `create_stream` does need the native
+environment, manifest and model:
 
 ```python
 from pathlib import Path
@@ -304,23 +238,19 @@ finally:
     stream.close()
 ```
 
-Records expose `name`, `label`, `experimental`, `native_profile_id`,
-`stream_config`, and `reuse_alignment_features`. The tuple, records, stream
-configurations and nested endpoint configuration are immutable; there is no
-registration API or implicit `latest` alias. `get_profile` accepts an exact name
-and raises `ValueError` for unknown names or `TypeError` for non-string names.
-The factory accepts names rather than caller-created profile records. These are
-configuration identities, not cryptographic attestation of a running server or
-of the installed runtime source. `experimental=False` for Standard only means it
-is the conservative baseline, not that the release is production-qualified.
+Records expose `name`, `label`, `experimental`, `native_profile_id`, `stream_config`
+and `reuse_alignment_features`. The catalog and nested settings are immutable;
+there is no registration API or `latest` alias. `get_profile` raises `ValueError`
+for an unknown name and `TypeError` for a non-string. The factory takes names,
+not profile records. These IDs do not verify installed source or a remote server.
+Standard's `experimental=False` labels the baseline, not production readiness.
 
-For compatibility, omitting `profile` in the Python factory still permits
-`config=ContinuousStreamConfig(...)` and `reuse_alignment_features=True` for
-custom experiments. Explicit named profiles cannot be combined with a custom
-config or enabled reuse override; such combinations fail before backend setup.
-Legacy custom calls retain their existing native profile ID, so that ID alone
-does not attest custom settings. The named standard profile preserves the old
-`tiny.en/cli-fp32-v1` native identity; the optimized choice has the distinct
-`tiny.en/cli-experimental-optimized-fp32-v1` identity. `CLI_STREAM_CONFIG` remains
-a compatibility alias of the standard stream config. `stream.profile_id`
-continues to describe the SDK publication policy, not this execution selection.
+For custom experiments, omit `profile` and pass `config=ContinuousStreamConfig(...)`
+or `reuse_alignment_features=True`. A named profile cannot be combined with either
+override; rejection happens before setup. Custom calls keep the legacy native
+profile ID, so that ID alone does not describe their settings.
+
+Standard keeps `tiny.en/cli-fp32-v1`; Optimized uses
+`tiny.en/cli-experimental-optimized-fp32-v1`. `CLI_STREAM_CONFIG` remains an alias
+for the standard config. `stream.profile_id` describes the publication policy,
+not the execution selection.
