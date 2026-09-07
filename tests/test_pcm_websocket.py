@@ -6,6 +6,7 @@ import json
 import threading
 import time
 import unittest
+from dataclasses import asdict
 from unittest.mock import patch
 
 from test_continuous_evidence import EvidenceNativeAdapter, speech_result
@@ -316,14 +317,90 @@ class SocketTests(unittest.IsolatedAsyncioTestCase):
             await asyncio.to_thread(connection.thread.join, 2)
 
     async def test_event_limit_retains_last_committed_batch(self):
-        with patch("examples.pcm_websocket.MAX_EVENTS", 1):
-            messages = await self.exchange(make_app(self.factory()), bytes(640))
+        eof_received = threading.Event()
+        finish = StreamConnection.finish
+        batches = []
+
+        def wait_for_eof():
+            self.assertTrue(eof_received.wait(5), "actual EOF was not received")
+
+        create = self.factory(on_step=wait_for_eof)
+
+        def factory():
+            stream, finalize = create()
+            step = stream.step
+
+            def record_step():
+                batch = step()
+                if batch:
+                    batches.append(batch)
+                return batch
+
+            stream.step = record_step
+            return stream, finalize
+
+        def record_eof(connection, value):
+            finish(connection, value)
+            eof_received.set()
+
+        # A 20 ms frame can otherwise generate two 10 ms previews before the
+        # receiver processes EOF, exhausting MAX_EVENTS without any commit.
+        # Hold native work until real EOF so this case tests commit-batch loss,
+        # not which thread happens to win the admission/decode race.
+        try:
+            with (
+                patch("examples.pcm_websocket.MAX_EVENTS", 1),
+                patch.object(StreamConnection, "finish", record_eof),
+            ):
+                messages = await self.exchange(make_app(factory), bytes(640))
+        finally:
+            eof_received.set()
         done = messages[-1]
         self.assertEqual(done["status"], "failed")
         self.assertEqual(done["error_code"], "event_limit")
+        self.assertTrue(done["source_eof_received"])
         self.assertTrue(
             any(item["event"]["kind"] == "commit" for item in done["events"])
         )
+        self.assertGreater(len(batches[-1]), 1)
+        self.assertEqual(
+            [item["event"] for item in done["events"]],
+            [asdict(event) for batch in batches for event in batch],
+        )
+        self.assertEqual(done["events"][-1]["event"]["kind"], "final")
+        self.assertEqual(done["metrics"]["committed_samples"], 320)
+        self.assertTrue(done["metadata"]["capacity_restored"])
+
+    async def test_event_limit_before_eof_retains_uncommitted_previews(self):
+        # Force the other legal ordering: the owner exhausts the event budget
+        # before EOF is sent. Absence of a commit is then correct, not event loss.
+        connection = StreamConnection(self.factory(), start_message(bytes(640)))
+        with patch("examples.pcm_websocket.MAX_EVENTS", 1):
+            connection.thread.start()
+            try:
+                ready = await asyncio.to_thread(connection.output.get, True, 2)
+                self.assertEqual(ready["type"], "ready")
+                connection.admit(HEADER.pack(0, 0) + bytes(640))
+                await asyncio.to_thread(connection.thread.join, 2)
+                self.assertFalse(connection.thread.is_alive())
+                done = connection.result
+                self.assertEqual(done["status"], "failed")
+                self.assertEqual(done["error_code"], "event_limit")
+                self.assertFalse(done["source_eof_received"])
+                self.assertEqual(done["metrics"]["accepted_samples"], 320)
+                self.assertEqual(done["metrics"]["committed_samples"], 0)
+                self.assertEqual(
+                    [item["event"]["kind"] for item in done["events"]],
+                    ["provisional", "replace"],
+                )
+                self.assertEqual(
+                    [item["event"]["sequence_number"] for item in done["events"]],
+                    [1, 2],
+                )
+                self.assertTrue(done["metadata"]["capacity_restored"])
+            finally:
+                connection.abort("test_cleanup")
+                await asyncio.to_thread(connection.thread.join, 2)
 
     async def test_finalizer_exception_is_redacted(self):
         create = self.factory()

@@ -29,7 +29,7 @@ class NativeSetupTests(unittest.TestCase):
     def setUp(self):
         self.directory = tempfile.TemporaryDirectory()
         self.addCleanup(self.directory.cleanup)
-        self.root = Path(self.directory.name)
+        self.root = Path(self.directory.name).resolve()
         self.backend = self.root / "backend"
         package = self.backend / "whisper"
         package.mkdir(parents=True)
@@ -71,6 +71,43 @@ class NativeSetupTests(unittest.TestCase):
             observed = setup.validate_backend(self.manifest)
         self.assertEqual(observed.path, self.backend)
         self.assertEqual(observed.revision, "a" * 40)
+
+    def test_path_aliases_resolve_to_one_backend_without_accepting_another(self):
+        hop = self.root / "path-alias"
+        hop.mkdir()
+        alias = hop / ".."
+        aliased_backend = alias / "backend"
+        self.assertNotEqual(aliased_backend, self.backend)
+        self.assertEqual(aliased_backend.resolve(), self.backend)
+        for reuse, tree in (
+            (False, setup.BACKEND_TREE),
+            (True, setup.BACKEND_REUSE_TREE),
+        ):
+            with self.subTest(reuse=reuse):
+                self.document["backend"]["tree"] = tree
+                self.document["backend"]["path"] = str(aliased_backend)
+                self.write_manifest()
+                answers = self.git_answers(tree=tree)
+                answers[0] = str(aliased_backend)
+                with patch.object(setup, "_git", side_effect=answers) as git:
+                    observed = setup.validate_backend(
+                        alias / "manifest.json", reuse_alignment_features=reuse
+                    )
+                self.assertEqual(observed, setup.BackendSetup(self.backend, "a" * 40))
+                self.assertTrue(git.call_args_list)
+                for invocation in git.call_args_list:
+                    self.assertEqual(invocation.args[0], self.backend)
+
+                self.document["backend"]["path"] = str(alias / "other" / "backend")
+                self.write_manifest()
+                with patch.object(setup, "_git") as git:
+                    with self.assertRaisesRegex(
+                        setup.NativeSetupError, "belong to this bootstrap directory"
+                    ):
+                        setup.validate_backend(
+                            alias / "manifest.json", reuse_alignment_features=reuse
+                        )
+                    git.assert_not_called()
 
     def test_reuse_requires_its_exact_explicit_source_pin(self):
         for reuse, tree in (

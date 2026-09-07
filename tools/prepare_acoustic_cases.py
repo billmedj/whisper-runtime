@@ -13,6 +13,7 @@ import hashlib
 import json
 import math
 import sys
+import zipfile
 from array import array
 from pathlib import Path
 from typing import Any
@@ -22,6 +23,8 @@ from tools.prepare_speech_corpus import load_manifest
 ROOT = Path(__file__).resolve().parents[1]
 MANIFEST_PATH = "experiments/modal-word-corpus-v1.json"
 ASSET_PATH = "artifacts/speech-corpus-v1"
+ARCHIVED_ASSETS = "evidence/native-draft-fresh-process-cpu-2026-09-07.zip"
+MAX_ARCHIVE_BYTES = 4 * 1024 * 1024
 SOURCE_CASE_ID = "three-speakers-repeat-pauses"
 SAMPLE_RATE_HZ = 16_000
 MAX_CASE_SAMPLES = 120 * SAMPLE_RATE_HZ
@@ -115,14 +118,43 @@ def signal_stats(pcm: bytes) -> dict[str, Any]:
     }
 
 
+def _source_bytes(root: Path, asset_dir: Path, filename: str, samples: int) -> bytes:
+    """Read the default cache or one bounded shipped member; never extract or fetch."""
+    path = asset_dir / filename
+    if path.resolve().parent != asset_dir.resolve():
+        raise ValueError("registered fixture escapes the asset directory")
+    try:
+        size = path.stat().st_size
+    except FileNotFoundError:
+        # An explicitly selected alternate directory stays strict. A corrupt
+        # existing cache is not silently replaced by the archive either.
+        if asset_dir.resolve() != (root / ASSET_PATH).resolve():
+            raise
+        archived = root / ARCHIVED_ASSETS
+        if not 0 < archived.stat().st_size <= MAX_ARCHIVE_BYTES:
+            raise ValueError("registered PCM archive exceeds the local size bound")
+        member = f"{ASSET_PATH}/{filename}"
+        with zipfile.ZipFile(archived) as archive:
+            matches = [item for item in archive.infolist() if item.filename == member]
+            if len(matches) != 1 or matches[0].file_size != samples * 2:
+                raise ValueError(
+                    "registered archive fixture sample count or identity mismatch"
+                )
+            return archive.read(matches[0])
+    if size != samples * 2:
+        raise ValueError("registered fixture sample count mismatch")
+    return path.read_bytes()
+
+
 def build_cases(
     root: Path = ROOT, asset_dir: Path | None = None
 ) -> tuple[dict[str, Any], dict[str, bytes]]:
     """Return JSON-safe metadata and a separate ordered ID-to-PCM mapping.
 
     ``root`` owns the existing corpus manifest; ``asset_dir`` can point to the
-    cached three PCM assets in another environment. No original registration
-    is copied or changed. Every source byte is checked against its registration.
+    cached three PCM assets in another environment. Missing default-cache files
+    are read directly from the reviewed shipped evidence archive. No original
+    registration is copied or changed; all bytes must match its count and digest.
     """
     root = Path(root)
     asset_dir = Path(asset_dir) if asset_dir is not None else root / ASSET_PATH
@@ -153,12 +185,7 @@ def build_cases(
     for fixture in fixtures:
         if not 0 < fixture.sample_count <= MAX_CASE_SAMPLES:
             raise ValueError("registered fixture exceeds the acoustic input bound")
-        path = asset_dir / fixture.filename
-        if path.resolve().parent != asset_dir.resolve():
-            raise ValueError("registered fixture escapes the asset directory")
-        if path.stat().st_size != fixture.sample_count * 2:
-            raise ValueError("registered fixture sample count mismatch")
-        content = path.read_bytes()
+        content = _source_bytes(root, asset_dir, fixture.filename, fixture.sample_count)
         if (
             len(content) != fixture.sample_count * 2
             or _digest(content) != fixture.pcm_sha256

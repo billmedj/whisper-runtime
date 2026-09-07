@@ -4,6 +4,8 @@ One known receipt has an incorrect control-comparison flag: Python tuples were
 compared with JSON lists. Preserve that receipt. Correct only an in-memory copy
 for validation, identify it by its full canonical hash, and report the change.
 No native result, alignment, score, model identity or execution claim is edited.
+PCM reconstruction uses registered cached bytes or the reviewed shipped evidence
+archive when the default ignored cache is absent; it never downloads fixtures.
 """
 
 from __future__ import annotations

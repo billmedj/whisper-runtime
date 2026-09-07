@@ -2,10 +2,14 @@
 
 import copy
 import json
+import tempfile
 import unittest
+import zipfile
+from pathlib import Path
 from unittest.mock import patch
 
 from infra import modal_noisy_context_prompt as p
+from tools import prepare_acoustic_cases as acoustic
 from tools.verify_noisy_context_prompt import KNOWN_CONTROL_ERROR_SHA, verify
 
 
@@ -29,6 +33,74 @@ class NoisyContextPromptEvidenceTests(unittest.TestCase):
         self.assertFalse(result["original_control"]["retained_null_alignment_equal"])
         self.assertTrue(result["replayed_control"]["retained_null_alignment_equal"])
         self.assertFalse(result["inference_run"])
+
+    def clean_root(self, directory):
+        root = Path(directory)
+        for name in (
+            acoustic.MANIFEST_PATH,
+            acoustic.ARCHIVED_ASSETS,
+            p.ARCHIVE,
+            p.PRODUCER,
+        ):
+            target = root / name
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_bytes((p.ROOT / name).read_bytes())
+        return root
+
+    def test_clean_checkout_replays_shipped_pcm_without_creating_cache_or_mutating_receipt(
+        self,
+    ):
+        before = copy.deepcopy(self.record)
+        with tempfile.TemporaryDirectory() as directory:
+            root = self.clean_root(directory)
+            result = verify(self.record, root)
+            self.assertTrue(result["record_checks_pass"])
+            self.assertTrue(result["report_only_correction"])
+            self.assertFalse((root / acoustic.ASSET_PATH).exists())
+        self.assertEqual(self.record, before)
+        self.assertEqual(p.shared._hash(self.record), KNOWN_CONTROL_ERROR_SHA)
+
+    def test_corrupt_archive_pcm_is_rejected_without_weakening_source_hash(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = self.clean_root(directory)
+            path = root / acoustic.ARCHIVED_ASSETS
+            with zipfile.ZipFile(path) as archive:
+                entries = {name: archive.read(name) for name in archive.namelist()}
+            name = acoustic.ASSET_PATH + "/6930-75918-0000.pcm"
+            entries[name] = bytes([entries[name][0] ^ 1]) + entries[name][1:]
+            with zipfile.ZipFile(
+                path, "w", compression=zipfile.ZIP_DEFLATED
+            ) as archive:
+                for name, raw in entries.items():
+                    archive.writestr(name, raw)
+            with self.assertRaisesRegex(ValueError, "PCM digest mismatch"):
+                verify(self.record, root)
+
+    def test_memory_diagnostic_registration_uses_same_cache_free_source(self):
+        from infra import modal_memory_diagnostic as memory
+
+        with tempfile.TemporaryDirectory() as directory:
+            root = self.clean_root(directory)
+            seed, registration = memory.input_plan(root, capacity_smoke=True)
+            self.assertEqual(len(seed) // 2, 744800)
+            self.assertEqual(registration["seed_sha256"], p.shared._sha(seed))
+            self.assertEqual(
+                registration["phases"][0]["sha256"],
+                registration["phases"][1]["sha256"],
+            )
+            self.assertEqual(registration["profile"]["name"], "low-latency-v2")
+            self.assertFalse((root / acoustic.ASSET_PATH).exists())
+
+    def test_missing_alternate_assets_and_corrupt_existing_cache_do_not_fall_back(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = self.clean_root(directory)
+            with self.assertRaises(FileNotFoundError):
+                acoustic.build_cases(root, root / "explicit-assets")
+            cache = root / acoustic.ASSET_PATH
+            cache.mkdir(parents=True)
+            (cache / "6930-75918-0000.pcm").write_bytes(bytes(112160))
+            with self.assertRaisesRegex(ValueError, "PCM digest mismatch"):
+                verify(self.record, root)
 
     def test_unknown_receipt_cannot_use_the_report_correction(self):
         for key, value in (("elapsed_ns", 1), ("qualified", True)):
