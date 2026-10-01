@@ -471,6 +471,77 @@ class RuntimeTransactionTests(unittest.TestCase):
             self.assertEqual(budget.lease_count, 0)
             self.assertEqual(worker.queue_depth, 0)
 
+    def test_post_fence_stop_check_and_publication_are_atomic(self) -> None:
+        for stop_kind in ("cancel", "abort", "expire"):
+            with self.subTest(stop_kind=stop_kind):
+                budget = Budget(self.capacity)
+                worker = Worker("gpu-0", self.model, budget, queue_capacity=1)
+                session = Session("session")
+                request = self.request("request", "session", 9)
+                transaction = worker.prepare(
+                    session=session,
+                    request=request,
+                    window_id="window",
+                    resources=self.cost,
+                )
+                original_lock = transaction._lock
+                original_clock = transaction._clock
+                armed = False
+                stop_results: list[object] = []
+
+                def stop() -> None:
+                    try:
+                        if stop_kind == "cancel":
+                            stop_results.append(transaction.cancel())
+                        elif stop_kind == "abort":
+                            stop_results.append(transaction.abort())
+                        else:
+                            stop_results.append(transaction.expire(float("inf")))
+                    except TransactionStateError as error:
+                        stop_results.append(error)
+
+                class StopAtUnlock:
+                    depth = 0
+
+                    def __enter__(self) -> None:
+                        original_lock.acquire()
+                        self.depth += 1
+
+                    def __exit__(self, *args: object) -> None:
+                        nonlocal armed
+                        self.depth -= 1
+                        original_lock.release()
+                        if armed and self.depth == 0:
+                            armed = False
+                            thread = threading.Thread(target=stop)
+                            thread.start()
+                            thread.join(timeout=5)
+                            if thread.is_alive():
+                                raise AssertionError("stop did not finish")
+
+                def clock() -> float:
+                    nonlocal armed
+                    # The final deadline check is the last stop decision before
+                    # publication. Schedule a competing stop at its lock release.
+                    if transaction._quiescent:
+                        armed = True
+                    return original_clock()
+
+                transaction.start(ImmediateFence())
+                with (
+                    patch.object(transaction, "_lock", StopAtUnlock()),
+                    patch.object(transaction, "_clock", clock),
+                ):
+                    transaction.commit(self.result("window", "committed"))
+
+                self.assertEqual(len(stop_results), 1)
+                self.assertEqual(session.snapshot().version, 1)
+                self.assertIs(transaction.status, TransactionStatus.COMMITTED)
+                self.assertIs(request.status, RequestStatus.COMMITTED)
+                self.assertEqual(budget.available, self.capacity)
+                self.assertEqual(budget.lease_count, 0)
+                self.assertEqual(worker.queue_depth, 0)
+
     def test_cancel_after_commit_cannot_change_the_request_outcome(self) -> None:
         budget = Budget(self.capacity)
         worker = Worker("gpu-0", self.model, budget, queue_capacity=1)
