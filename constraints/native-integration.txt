@@ -1,5 +1,5 @@
 more-itertools==11.1.0
-jsonschema==4.25.1
+jsonschema==4.26.0
 numba==0.67.0
 numpy==2.5.2
 setuptools==82.0.1
