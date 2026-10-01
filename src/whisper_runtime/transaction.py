@@ -7,7 +7,7 @@ from inspect import isasyncgenfunction, iscoroutinefunction, isgeneratorfunction
 from random import Random
 from threading import Condition, RLock, Thread, current_thread
 from types import TracebackType
-from typing import Callable, TypeVar
+from typing import Callable, NoReturn, TypeVar
 
 from .errors import (
     ModelMismatchError,
@@ -415,39 +415,37 @@ class WindowTransaction:
                 self._deadline_requested = True
                 post_fence_stop = _CloseOutcome.EXPIRE
 
-            if post_fence_stop is not None:
-                execution_after_fence = self._execution
-            else:
-                execution_after_fence = None
+            if post_fence_stop is None:
+                # The final stop decision and publication must share one critical
+                # section: a stop cannot change the outcome between them.
+                self._require_quiescing_locked(_CloseOutcome.COMMIT)
+                assert record is not None
+                assert random_state is not None
+                try:
+                    self._lease._require_active()
+                    committed_state = self._request._commit_running(
+                        lambda: self._session._commit(self._expected_version, record),
+                        random_state,
+                    )
+                except BaseException:
+                    self._request._abort_active()
+                    self._status = TransactionStatus.ABORTED
+                    self._finish_locked()
+                    raise
 
-        if post_fence_stop is not None:
-            if execution_after_fence is None:
-                raise TransactionStateError("quiescing work has no execution scope")
-            self._complete_stop(post_fence_stop, execution_after_fence)
-            self._raise_stop(post_fence_stop)
-
-        with self._lock:
-            self._require_quiescing_locked(_CloseOutcome.COMMIT)
-            assert record is not None
-            assert random_state is not None
-            try:
-                self._lease._require_active()
-                committed_state = self._request._commit_running(
-                    lambda: self._session._commit(self._expected_version, record),
-                    random_state,
-                )
-            except BaseException:
-                self._request._abort_active()
-                self._status = TransactionStatus.ABORTED
+                self._committed_result = result
+                self._committed_through_ms = committed_through_ms
+                self._committed_state = committed_state
+                self._status = TransactionStatus.COMMITTED
                 self._finish_locked()
-                raise
+                return committed_state
 
-            self._committed_result = result
-            self._committed_through_ms = committed_through_ms
-            self._committed_state = committed_state
-            self._status = TransactionStatus.COMMITTED
-            self._finish_locked()
-            return committed_state
+            execution_after_fence = self._execution
+
+        if execution_after_fence is None:
+            raise TransactionStateError("quiescing work has no execution scope")
+        self._complete_stop(post_fence_stop, execution_after_fence)
+        self._raise_stop(post_fence_stop)
 
     def abort(self) -> bool:
         """Abort idle work or request a stop from outside its execution owner."""
@@ -764,7 +762,7 @@ class WindowTransaction:
                 self._status = TransactionStatus.ABORTED
             self._finish_locked()
 
-    def _raise_stop(self, outcome: _CloseOutcome) -> None:
+    def _raise_stop(self, outcome: _CloseOutcome) -> NoReturn:
         if outcome is _CloseOutcome.CANCEL:
             raise RequestCancelledError(f"request {self._admission_key!r} is cancelled")
         if outcome is _CloseOutcome.EXPIRE:
